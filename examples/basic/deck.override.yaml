@@ -1,0 +1,35 @@
+version: "1.0"
+
+operations:
+  - op: setLayout
+    target:
+      title: "주요 기능"
+    value:
+      preset: grid
+      columns: 2
+      rows: 2
+    reason: "4개의 주요 기능이므로 2x2 grid가 적합함"
+
+  - op: setLayout
+    target:
+      title: "기존 방식과 개선 방식"
+    value:
+      preset: comparison
+      direction: horizontal
+      columns: 2
+    reason: "기존/개선 비교 구조이므로 좌우 비교가 적합함"
+
+  - op: setLayout
+    target:
+      title: "5가지 실행 방법"
+    value:
+      preset: pentagon
+      direction: radial
+    reason: "5개 방법 소개이므로 radial pentagon layout을 강제함"
+
+  - op: setTypography
+    target:
+      title: "주요 기능"
+    value:
+      bodyFontSize: 21
+      minFontSize: 18

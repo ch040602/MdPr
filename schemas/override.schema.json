@@ -1,0 +1,365 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mdpresent.dev/schemas/override.schema.json",
+  "title": "mdpresent override manifest",
+  "type": "object",
+  "required": [
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "const": "1.0"
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/operation"
+      }
+    },
+    "overrides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/patchOverride"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "operations"
+      ]
+    },
+    {
+      "required": [
+        "overrides"
+      ]
+    }
+  ],
+  "$defs": {
+    "target": {
+      "type": "object",
+      "properties": {
+        "slideId": {
+          "type": "string"
+        },
+        "slideIndex": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string"
+        },
+        "headingPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "intent": {
+          "$ref": "#/$defs/slideIntent"
+        },
+        "slot": {
+          "type": "string"
+        },
+        "blockId": {
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "slideId"
+          ]
+        },
+        {
+          "required": [
+            "slideIndex"
+          ]
+        },
+        {
+          "required": [
+            "title"
+          ]
+        },
+        {
+          "required": [
+            "headingPath"
+          ]
+        },
+        {
+          "required": [
+            "intent"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "operation": {
+      "type": "object",
+      "required": [
+        "op",
+        "target",
+        "value"
+      ],
+      "properties": {
+        "op": {
+          "enum": [
+            "setLayout",
+            "setTypography",
+            "setBackground",
+            "setOverflow",
+            "setSplit",
+            "setSlot",
+            "moveBlock",
+            "hideBlock",
+            "pinBlock"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "value": {
+          "type": "object"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "patchOverride": {
+      "type": "object",
+      "required": [
+        "id",
+        "target",
+        "patch"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/target"
+        },
+        "patch": {
+          "$ref": "#/$defs/patch"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "patch": {
+      "type": "object",
+      "properties": {
+        "layout": {
+          "$ref": "#/$defs/layoutSpec"
+        },
+        "typography": {
+          "$ref": "#/$defs/typography"
+        },
+        "background": {
+          "$ref": "#/$defs/background"
+        },
+        "split": {
+          "$ref": "#/$defs/splitOverride"
+        },
+        "overflow": {
+          "$ref": "#/$defs/overflowOverride"
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/rect"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "layoutSpec": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "$ref": "#/$defs/layoutPreset"
+        },
+        "variant": {
+          "type": "string"
+        },
+        "columns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "rows": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "direction": {
+          "enum": [
+            "horizontal",
+            "vertical",
+            "radial"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "typography": {
+      "type": "object",
+      "properties": {
+        "fontFamily": {
+          "type": "string"
+        },
+        "titleFontSize": {
+          "type": "number",
+          "minimum": 1
+        },
+        "bodyFontSize": {
+          "type": "number",
+          "minimum": 1
+        },
+        "captionFontSize": {
+          "type": "number",
+          "minimum": 1
+        },
+        "minFontSize": {
+          "type": "number",
+          "minimum": 1
+        },
+        "lineHeight": {
+          "type": "number",
+          "minimum": 0.5
+        }
+      },
+      "additionalProperties": false
+    },
+    "background": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "image": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "useTemplateBackground": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "splitOverride": {
+      "type": "object",
+      "properties": {
+        "forceSingleSlide": {
+          "type": "boolean"
+        },
+        "splitBy": {
+          "enum": [
+            "h2",
+            "h3",
+            "h4",
+            "block-group",
+            "list-chunk",
+            "none"
+          ]
+        },
+        "maxDensity": {
+          "type": "number",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "overflowOverride": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "enum": [
+            "reflow",
+            "shrink",
+            "split",
+            "warn",
+            "fail"
+          ]
+        },
+        "minFontSize": {
+          "type": "number",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "rect": {
+      "type": "object",
+      "required": [
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number"
+        },
+        "h": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "slideIntent": {
+      "enum": [
+        "title",
+        "standard",
+        "comparison",
+        "list",
+        "grid",
+        "timeline",
+        "table",
+        "image",
+        "code",
+        "quote",
+        "summary"
+      ]
+    },
+    "layoutPreset": {
+      "enum": [
+        "cover",
+        "toc",
+        "section-divider",
+        "title-body",
+        "key-message",
+        "comparison",
+        "vertical-list",
+        "grid",
+        "pentagon",
+        "timeline",
+        "table-focus",
+        "image-focus",
+        "image-left",
+        "image-right",
+        "code-focus",
+        "quote",
+        "summary",
+        "single-card"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

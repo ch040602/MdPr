@@ -1,0 +1,340 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mdpresent.dev/schemas/config.schema.json",
+  "title": "mdpresent config",
+  "type": "object",
+  "required": [
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "const": "1.0"
+    },
+    "deck": {
+      "type": "object",
+      "properties": {
+        "titleFrom": {
+          "enum": [
+            "first-h1",
+            "frontmatter",
+            "filename",
+            "manual"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "ratio": {
+          "enum": [
+            "16:9",
+            "4:3"
+          ]
+        },
+        "language": {
+          "type": "string"
+        },
+        "defaultOutput": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "pptx",
+              "pdf",
+              "html"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "split": {
+      "type": "object",
+      "properties": {
+        "cover": {
+          "enum": [
+            "first-h1",
+            "none"
+          ]
+        },
+        "section": {
+          "enum": [
+            "h1",
+            "h2",
+            "none"
+          ]
+        },
+        "slide": {
+          "enum": [
+            "h1",
+            "h2",
+            "h3"
+          ]
+        },
+        "subsection": {
+          "enum": [
+            "h2",
+            "h3",
+            "h4",
+            "none"
+          ]
+        },
+        "autosplit": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "maxDensity": {
+              "type": "number",
+              "minimum": 1
+            },
+            "fallbackHeading": {
+              "enum": [
+                "h2",
+                "h3",
+                "h4"
+              ]
+            },
+            "allowContinuation": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "toc": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "position": {
+          "enum": [
+            "after-cover",
+            "none"
+          ]
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "includePageNumbers": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "layout": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "enum": [
+            "rule"
+          ]
+        },
+        "basePack": {
+          "enum": [
+            "marp",
+            "business",
+            "minimal"
+          ]
+        },
+        "defaultPreset": {
+          "$ref": "#/$defs/layoutPreset"
+        },
+        "maxItemsBeforeGrid": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "safeArea": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": true
+        },
+        "overflow": {
+          "$ref": "#/$defs/overflowPolicy"
+        }
+      },
+      "additionalProperties": false
+    },
+    "typography": {
+      "$ref": "#/$defs/typography"
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "designPreset": {
+          "$ref": "#/$defs/designPreset"
+        },
+        "backgroundColor": {
+          "type": "string"
+        },
+        "textColor": {
+          "type": "string"
+        },
+        "primaryColor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pptx": {
+      "type": "object",
+      "properties": {
+        "template": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "designPreset": {
+          "$ref": "#/$defs/designPreset"
+        },
+        "useTemplateBackground": {
+          "type": "boolean"
+        },
+        "lockBackgroundToMaster": {
+          "type": "boolean"
+        },
+        "editableObjects": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pdf": {
+      "type": "object",
+      "properties": {
+        "printBackground": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "html": {
+      "type": "object",
+      "properties": {
+        "navigation": {
+          "type": "boolean"
+        },
+        "responsive": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "designPreset": {
+      "enum": [
+        "plain",
+        "clean",
+        "executive",
+        "editorial",
+        "technical",
+        "dark",
+        "nord",
+        "solarized",
+        "dracula",
+        "tableau",
+        "gruvbox",
+        "monokai",
+        "material",
+        "tokyo-night"
+      ]
+    },
+    "layoutPreset": {
+      "enum": [
+        "cover",
+        "toc",
+        "section-divider",
+        "title-body",
+        "key-message",
+        "comparison",
+        "vertical-list",
+        "grid",
+        "pentagon",
+        "timeline",
+        "table-focus",
+        "image-focus",
+        "image-left",
+        "image-right",
+        "code-focus",
+        "quote",
+        "summary",
+        "single-card"
+      ]
+    },
+    "typography": {
+      "type": "object",
+      "properties": {
+        "fontFamily": {
+          "type": "string"
+        },
+        "titleFontSize": {
+          "type": "number",
+          "minimum": 1
+        },
+        "bodyFontSize": {
+          "type": "number",
+          "minimum": 1
+        },
+        "captionFontSize": {
+          "type": "number",
+          "minimum": 1
+        },
+        "minFontSize": {
+          "type": "number",
+          "minimum": 1
+        },
+        "lineHeight": {
+          "type": "number",
+          "minimum": 0.5
+        }
+      },
+      "additionalProperties": false
+    },
+    "overflowPolicy": {
+      "type": "object",
+      "properties": {
+        "defaultAction": {
+          "enum": [
+            "reflow",
+            "shrink",
+            "split",
+            "warn",
+            "fail"
+          ]
+        },
+        "allowedActions": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "reflow",
+              "shrink",
+              "split",
+              "warn",
+              "fail"
+            ]
+          }
+        },
+        "minFontSize": {
+          "type": "number",
+          "minimum": 1
+        },
+        "maxShrinkSteps": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

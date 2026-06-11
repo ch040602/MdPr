@@ -1,0 +1,343 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mdpresent.dev/schemas/layout-ir.schema.json",
+  "title": "Layout IR",
+  "type": "object",
+  "required": [
+    "version",
+    "slideSize",
+    "theme",
+    "slides",
+    "diagnostics"
+  ],
+  "properties": {
+    "version": {
+      "const": "1.0"
+    },
+    "slideSize": {
+      "$ref": "#/$defs/slideSize"
+    },
+    "theme": {
+      "$ref": "#/$defs/theme"
+    },
+    "slides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/layoutSlide"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    }
+  },
+  "$defs": {
+    "slideSize": {
+      "type": "object",
+      "required": [
+        "width",
+        "height",
+        "unit"
+      ],
+      "properties": {
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "unit": {
+          "enum": [
+            "in",
+            "px"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "fontFamily": {
+          "type": "string"
+        },
+        "designPreset": {
+          "type": "string"
+        },
+        "backgroundColor": {
+          "type": "string"
+        },
+        "textColor": {
+          "type": "string"
+        },
+        "primaryColor": {
+          "type": "string"
+        },
+        "titleFontSize": {
+          "type": "number"
+        },
+        "bodyFontSize": {
+          "type": "number"
+        },
+        "captionFontSize": {
+          "type": "number"
+        },
+        "minFontSize": {
+          "type": "number"
+        },
+        "lineHeight": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "layoutSlide": {
+      "type": "object",
+      "required": [
+        "id",
+        "sourceSlideId",
+        "index",
+        "layout",
+        "background",
+        "regions",
+        "overflowPolicy"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sourceSlideId": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "layout": {
+          "$ref": "#/$defs/layoutSpec"
+        },
+        "background": {
+          "$ref": "#/$defs/background"
+        },
+        "regions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/region"
+          }
+        },
+        "overflowPolicy": {
+          "$ref": "#/$defs/overflowPolicy"
+        }
+      },
+      "additionalProperties": false
+    },
+    "layoutSpec": {
+      "type": "object",
+      "required": [
+        "preset"
+      ],
+      "properties": {
+        "preset": {
+          "$ref": "#/$defs/layoutPreset"
+        },
+        "variant": {
+          "type": "string"
+        },
+        "columns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "rows": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "direction": {
+          "enum": [
+            "horizontal",
+            "vertical",
+            "radial"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "region": {
+      "type": "object",
+      "required": [
+        "id",
+        "role",
+        "blockIds",
+        "x",
+        "y",
+        "w",
+        "h",
+        "zIndex"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "title",
+            "subtitle",
+            "body",
+            "item",
+            "image",
+            "table",
+            "code",
+            "diagram",
+            "footer",
+            "pageNumber"
+          ]
+        },
+        "blockIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number"
+        },
+        "h": {
+          "type": "number"
+        },
+        "zIndex": {
+          "type": "integer"
+        },
+        "typography": {
+          "$ref": "#/$defs/typography"
+        }
+      },
+      "additionalProperties": false
+    },
+    "typography": {
+      "type": "object",
+      "properties": {
+        "fontFamily": {
+          "type": "string"
+        },
+        "fontSize": {
+          "type": "number"
+        },
+        "fontWeight": {
+          "enum": [
+            "normal",
+            "bold"
+          ]
+        },
+        "lineHeight": {
+          "type": "number"
+        },
+        "minFontSize": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "background": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "image": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "useTemplateBackground": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "overflowPolicy": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "enum": [
+            "reflow",
+            "shrink",
+            "split",
+            "warn",
+            "fail"
+          ]
+        },
+        "minFontSize": {
+          "type": "number"
+        },
+        "maxShrinkSteps": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": [
+        "level",
+        "message"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "info",
+            "warning",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "slideId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "layoutPreset": {
+      "enum": [
+        "cover",
+        "toc",
+        "section-divider",
+        "title-body",
+        "key-message",
+        "comparison",
+        "vertical-list",
+        "grid",
+        "pentagon",
+        "timeline",
+        "table-focus",
+        "image-focus",
+        "image-left",
+        "image-right",
+        "code-focus",
+        "quote",
+        "summary",
+        "single-card",
+        "pipeline"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

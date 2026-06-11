@@ -1,0 +1,95 @@
+import type { DesignPresetName, Diagnostic } from "@mdpresent/core";
+
+export type LayoutPreset =
+  | "cover"
+  | "toc"
+  | "section-divider"
+  | "title-body"
+  | "key-message"
+  | "comparison"
+  | "vertical-list"
+  | "grid"
+  | "pentagon"
+  | "timeline"
+  | "table-focus"
+  | "image-focus"
+  | "image-left"
+  | "image-right"
+  | "code-focus"
+  | "quote"
+  | "summary"
+  | "single-card"
+  | "pipeline";
+
+export type Rect = { x: number; y: number; w: number; h: number };
+
+export type LayoutSpec = {
+  preset: LayoutPreset;
+  variant?: string;
+  columns?: number | null;
+  rows?: number | null;
+  direction?: "horizontal" | "vertical" | "radial";
+};
+
+export type TypographySpec = {
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: "normal" | "bold";
+  lineHeight?: number;
+  minFontSize?: number;
+};
+
+export type RegionRole = "title" | "subtitle" | "body" | "item" | "image" | "table" | "code" | "diagram" | "footer" | "pageNumber";
+
+export type LayoutRegion = Rect & {
+  id: string;
+  role: RegionRole;
+  blockIds: string[];
+  zIndex: number;
+  typography?: TypographySpec;
+};
+
+export type BackgroundSpec = {
+  color?: string;
+  image?: string | null;
+  useTemplateBackground?: boolean;
+};
+
+export type OverflowPolicy = {
+  action: "reflow" | "shrink" | "split" | "warn" | "fail";
+  minFontSize: number;
+  maxShrinkSteps: number;
+};
+
+export type ThemeTokens = {
+  fontFamily: string;
+  designPreset?: DesignPresetName;
+  backgroundColor: string;
+  textColor: string;
+  primaryColor: string;
+  titleFontSize: number;
+  bodyFontSize: number;
+  captionFontSize: number;
+  minFontSize: number;
+  lineHeight: number;
+};
+
+export type SlideSize = { width: number; height: number; unit: "in" | "px" };
+
+export type LayoutSlide = {
+  id: string;
+  sourceSlideId: string;
+  index: number;
+  layout: LayoutSpec;
+  background: BackgroundSpec;
+  regions: LayoutRegion[];
+  overflowPolicy: OverflowPolicy;
+};
+
+export type LayoutIR = {
+  version: "1.0";
+  slideSize: SlideSize;
+  theme: ThemeTokens;
+  slides: LayoutSlide[];
+  diagnostics: Diagnostic[];
+};
