@@ -11,6 +11,8 @@ Language variants:
 
 The same Markdown source can produce editable PPTX slides with responsive structure, adaptive diagrams, and reusable design presets.
 
+[Open the interactive theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between all built-in themes, browse slides, and inspect the generated HTML deck output.
+
 | Cover / Title | Pipeline Diagram |
 | --- | --- |
 | <img src="docs/assets/readme-slides/cover.png" alt="Generated mdpresent cover slide preview" width="100%"> | <img src="docs/assets/readme-slides/pipeline.png" alt="Generated pipeline diagram slide preview" width="100%"> |
