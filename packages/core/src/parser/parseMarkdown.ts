@@ -369,7 +369,7 @@ function deriveListItemStructure(rawText: string, runs: InlineRunIR[]): Partial<
 }
 
 function parsePipelineList(items: ListItemIR[]) {
-  if (!items.length || !items.every((item) => /(?:=>|->)/.test(item.text))) return undefined;
+  if (!items.length || !items.every((item) => hasPipelineArrow(item.text))) return undefined;
 
   const labels = items
     .flatMap((item) => splitPipelineLabels(item.text))
@@ -390,12 +390,12 @@ function parseFencedPipelineDiagram(language: string, lines: string[]) {
   if (firstLinePipeline && cleaned.length === 1) return firstLinePipeline;
 
   const [first, ...rest] = cleaned;
-  const arrowLines = rest.filter((line) => /^(?:=>|->)\s+/.test(line));
+  const arrowLines = rest.filter((line) => /^PIPELINE_ARROW\s+/.test(normalizePipelineArrows(line)));
   if (!arrowLines.length) return undefined;
 
   const labels = [
     first,
-    ...arrowLines.map((line) => line.replace(/^(?:=>|->)\s+/, "").trim()),
+    ...arrowLines.map((line) => normalizePipelineArrows(line).replace(/^PIPELINE_ARROW\s+/, "").trim()),
   ].filter(Boolean);
   const branchOutputs = rest
     .filter((line) => /^[├└]─\s+/.test(line))
@@ -410,17 +410,25 @@ function parseFencedPipelineDiagram(language: string, lines: string[]) {
 }
 
 function parsePipelineDiagram(line: string) {
-  if (!/(?:=>|->)/.test(line)) return undefined;
+  if (!hasPipelineArrow(line)) return undefined;
   const labels = splitPipelineLabels(line);
   if (labels.length < 2) return undefined;
   return createPipelineDiagram(labels);
 }
 
 function splitPipelineLabels(text: string): string[] {
-  return text
-    .split(/\s*(?:=>|->)\s*/g)
+  return normalizePipelineArrows(text)
+    .split(/\s*PIPELINE_ARROW\s*/g)
     .map((part) => stripInlineMarkdown(part.trim()))
     .filter(Boolean);
+}
+
+function hasPipelineArrow(text: string): boolean {
+  return /(?:=>|->|→)/.test(text);
+}
+
+function normalizePipelineArrows(text: string): string {
+  return text.replace(/=>|->|→/g, "PIPELINE_ARROW");
 }
 
 function createPipelineDiagram(labels: string[]) {

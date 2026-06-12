@@ -2,6 +2,8 @@
 
 `mdpresent` 不是一个把 Markdown 直接转换成 PowerPoint 的工具。它是一个基于 CLI 的演示文稿结构化工具：先按规则把 Markdown 文档拆分为通用的 `Presentation IR`，再将该结构渲染为 `PPTX`、`PDF` 或 `HTML`。
 
+`mdpresent` 是一个 **NO LLM runtime** 引擎：解析、拆分、布局、验证和渲染都以 deterministic rule-based 方式运行，不需要外部 API 调用。由于 CLI 行为独立，它也可以封装为辅助 Codex skill 或本地自动化 skill。
+
 语言版本：
 
 - [English README](README.md)

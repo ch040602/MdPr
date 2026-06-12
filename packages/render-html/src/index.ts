@@ -46,12 +46,10 @@ body { margin: 0; background: #111; font-family: var(--font); }
 .item-label { font-weight: 700; display: block; margin-bottom: .12in; color: var(--primary); }
 .item-description { display: block; margin-left: .18in; color: var(--muted); }
 strong { color: var(--primary); }
-.pipeline { display: flex; align-items: center; gap: .18in; height: 100%; }
-.pipeline-vertical { flex-direction: column; align-items: stretch; }
-.pipeline-u, .pipeline-reverse-u, .pipeline-cycle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: center; }
-.pipeline-cycle { border-radius: .12in; }
-.pipeline-node { flex: 1; min-width: 0; border: 1px solid var(--surface-line); background: var(--surface); padding: .12in; text-align: center; box-sizing: border-box; }
-.pipeline-edge { color: var(--primary); font-weight: 700; }
+.pipeline { position: relative; height: 100%; min-height: 3.6in; }
+.pipeline-connectors { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 3; }
+.pipeline-connector { fill: none; stroke: var(--primary); stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.pipeline-node { position: absolute; z-index: 2; min-width: 0; border: 1px solid var(--surface-line); background: var(--surface); padding: .12in; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: .12in; font-weight: 700; line-height: 1.18; }
 `;
 
   const slides = layout.slides.map((slide) => {
@@ -145,11 +143,7 @@ function renderBlock(block: BlockIR): string {
   }
   if (block.type === "code") return `<pre><code>${escapeHtml(block.text ?? "")}</code></pre>`;
   if (block.type === "diagram" && block.diagram?.kind === "pipeline") {
-    const arrangement = chooseDiagramArrangement(block.diagram);
-    return `<div class="pipeline pipeline-${arrangement}" data-arrangement="${arrangement}">${block.diagram.nodes.map((node, index) => [
-      index > 0 ? `<span class="pipeline-edge">→</span>` : "",
-      `<div class="pipeline-node">${escapeHtml(node.label)}</div>`,
-    ].join("")).join("")}</div>`;
+    return renderPipelineDiagram(block.diagram);
   }
   if (block.type === "paragraph" && block.inlineRuns?.length) return `<p>${renderInlineRuns(block.inlineRuns)}</p>`;
   if (block.type === "paragraph" && block.sentences?.length) return `<p>${block.sentences.map(escapeHtml).join("<br />")}</p>`;
@@ -188,6 +182,166 @@ function renderInlineRuns(runs: InlineRunIR[]): string {
     if (run.italic) return `<em>${text}</em>`;
     return text;
   }).join("");
+}
+
+type HtmlDiagramArrangementKind = "horizontal" | "vertical" | "u" | "reverse-u" | "cycle";
+
+type HtmlDiagramNodeBox = {
+  node: NonNullable<BlockIR["diagram"]>["nodes"][number];
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+function renderPipelineDiagram(diagram: NonNullable<BlockIR["diagram"]>): string {
+  const arrangement = arrangeHtmlDiagramNodes(diagram);
+  const boxesById = new Map(arrangement.boxes.map((box) => [box.node.id, box]));
+  const markerId = `pipeline-arrow-${stableDiagramKey(diagram)}`;
+  const connectors = diagram.edges.map((edge, index) => {
+    const from = boxesById.get(edge.from);
+    const to = boxesById.get(edge.to);
+    if (!from || !to) return "";
+    const points = htmlConnectorPoints(from, to);
+    return `<polyline class="pipeline-connector" data-edge="${index + 1}" points="${points.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ")}" marker-end="url(#${markerId})" />`;
+  }).join("");
+  const nodes = arrangement.boxes.map((box, index) => [
+    `<div class="pipeline-node" data-node="${index + 1}" style="left:${box.x.toFixed(2)}%;top:${box.y.toFixed(2)}%;width:${box.w.toFixed(2)}%;height:${box.h.toFixed(2)}%">`,
+    escapeHtml(box.node.label),
+    "</div>",
+  ].join("")).join("");
+
+  return `<div class="pipeline pipeline-${arrangement.kind}" data-arrangement="${arrangement.kind}">
+<svg class="pipeline-connectors" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+<defs><marker id="${markerId}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--primary)" /></marker></defs>
+${connectors}
+</svg>
+${nodes}
+</div>`;
+}
+
+function arrangeHtmlDiagramNodes(diagram: NonNullable<BlockIR["diagram"]>): { kind: HtmlDiagramArrangementKind; boxes: HtmlDiagramNodeBox[] } {
+  const kind = chooseDiagramArrangement(diagram);
+  const nodes = diagram.nodes;
+  const gap = 3.2;
+
+  if (kind === "vertical") {
+    const nodeH = Math.min(17, Math.max(10, (100 - gap * (nodes.length - 1)) / nodes.length));
+    const nodeW = Math.min(84, Math.max(52, 100 - 18));
+    const startX = (100 - nodeW) / 2;
+    const startY = Math.max(0, (100 - nodeH * nodes.length - gap * (nodes.length - 1)) / 2);
+    return {
+      kind,
+      boxes: nodes.map((node, index) => ({ node, x: startX, y: startY + index * (nodeH + gap), w: nodeW, h: nodeH })),
+    };
+  }
+
+  if (kind === "cycle") {
+    const nodeW = 22;
+    const nodeH = 16;
+    const radiusX = 38;
+    const radiusY = 34;
+    return {
+      kind,
+      boxes: nodes.map((node, index) => {
+        const angle = -Math.PI / 2 + (2 * Math.PI * index) / nodes.length;
+        return {
+          node,
+          x: 50 + Math.cos(angle) * radiusX - nodeW / 2,
+          y: 50 + Math.sin(angle) * radiusY - nodeH / 2,
+          w: nodeW,
+          h: nodeH,
+        };
+      }),
+    };
+  }
+
+  if (kind === "u" || kind === "reverse-u") {
+    const columns = nodes.length <= 6 ? 3 : Math.min(4, Math.ceil(Math.sqrt(nodes.length + 1)));
+    const rows = Math.max(2, Math.ceil(nodes.length / columns));
+    const nodeW = (100 - gap * (columns - 1)) / columns;
+    const nodeH = Math.min(18, Math.max(12, (100 - gap * (rows - 1)) / rows));
+    const startY = Math.max(0, (100 - nodeH * rows - gap * (rows - 1)) / 2);
+    const cells = kind === "u"
+      ? htmlUShapeCells(columns, rows).slice(0, nodes.length)
+      : htmlReverseUShapeCells(columns, rows).slice(0, nodes.length);
+    return {
+      kind,
+      boxes: nodes.map((node, index) => {
+        const cell = cells[index] ?? { column: index % columns, row: Math.floor(index / columns) };
+        return { node, x: cell.column * (nodeW + gap), y: startY + cell.row * (nodeH + gap), w: nodeW, h: nodeH };
+      }),
+    };
+  }
+
+  const nodeW = (100 - gap * (nodes.length - 1)) / nodes.length;
+  const nodeH = 22;
+  const startY = (100 - nodeH) / 2;
+  return {
+    kind,
+    boxes: nodes.map((node, index) => ({ node, x: index * (nodeW + gap), y: startY, w: nodeW, h: nodeH })),
+  };
+}
+
+function htmlConnectorPoints(from: HtmlDiagramNodeBox, to: HtmlDiagramNodeBox): Array<{ x: number; y: number }> {
+  const { start, end } = htmlConnectorEndpoints(from, to);
+  if (Math.abs(start.x - end.x) < 0.5 || Math.abs(start.y - end.y) < 0.5) return [start, end];
+  const midX = (start.x + end.x) / 2;
+  return [start, { x: midX, y: start.y }, { x: midX, y: end.y }, end];
+}
+
+function htmlConnectorEndpoints(
+  from: HtmlDiagramNodeBox,
+  to: HtmlDiagramNodeBox,
+): { start: { x: number; y: number }; end: { x: number; y: number } } {
+  const fromCenter = { x: from.x + from.w / 2, y: from.y + from.h / 2 };
+  const toCenter = { x: to.x + to.w / 2, y: to.y + to.h / 2 };
+  const dx = toCenter.x - fromCenter.x;
+  const dy = toCenter.y - fromCenter.y;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    return dx >= 0
+      ? { start: { x: from.x + from.w, y: fromCenter.y }, end: { x: to.x, y: toCenter.y } }
+      : { start: { x: from.x, y: fromCenter.y }, end: { x: to.x + to.w, y: toCenter.y } };
+  }
+
+  return dy >= 0
+    ? { start: { x: fromCenter.x, y: from.y + from.h }, end: { x: toCenter.x, y: to.y } }
+    : { start: { x: fromCenter.x, y: from.y }, end: { x: toCenter.x, y: to.y + to.h } };
+}
+
+function htmlUShapeCells(columns: number, rows: number): Array<{ column: number; row: number }> {
+  const cells: Array<{ column: number; row: number }> = [];
+  for (let column = 0; column < columns; column++) cells.push({ column, row: 0 });
+  for (let row = 1; row < rows; row++) cells.push({ column: columns - 1, row });
+  for (let row = rows - 1; row >= 1; row--) {
+    for (let column = columns - 2; column >= 0; column--) cells.push({ column, row });
+  }
+  return uniqueHtmlCells(cells);
+}
+
+function htmlReverseUShapeCells(columns: number, rows: number): Array<{ column: number; row: number }> {
+  const cells: Array<{ column: number; row: number }> = [];
+  for (let column = 0; column < columns; column++) cells.push({ column, row: rows - 1 });
+  for (let row = rows - 2; row >= 0; row--) cells.push({ column: columns - 1, row });
+  for (let row = 0; row < rows - 1; row++) {
+    for (let column = columns - 2; column >= 0; column--) cells.push({ column, row });
+  }
+  return uniqueHtmlCells(cells);
+}
+
+function uniqueHtmlCells(cells: Array<{ column: number; row: number }>): Array<{ column: number; row: number }> {
+  const seen = new Set<string>();
+  return cells.filter((cell) => {
+    const key = `${cell.column}:${cell.row}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function stableDiagramKey(diagram: NonNullable<BlockIR["diagram"]>): string {
+  return diagram.nodes.map((node) => node.id).join("-").replace(/[^a-z0-9_-]/gi, "-").slice(0, 48) || "diagram";
 }
 
 function escapeHtml(value: string): string {

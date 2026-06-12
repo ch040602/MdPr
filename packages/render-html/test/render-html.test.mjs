@@ -169,6 +169,10 @@ test("renderHtml marks pipeline diagrams with selected graph arrangements", () =
   assert.match(vertical, /data-arrangement="vertical"/);
   assert.match(reverseU, /data-arrangement="reverse-u"/);
   assert.match(cycle, /data-arrangement="cycle"/);
+  assert.match(reverseU, /class="pipeline-connectors"/);
+  assert.equal((reverseU.match(/class="pipeline-connector"/g) ?? []).length >= 7, true);
+  assert.match(reverseU, /marker-end="url\(#pipeline-arrow-/);
+  assert.doesNotMatch(reverseU, /class="pipeline-edge"/);
 });
 
 test("renderHtml applies shared design preset tokens from LayoutIR", () => {

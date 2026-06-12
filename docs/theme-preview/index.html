@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>mdpresent theme preview</title>
+<title>엠디프레젠트 테마 미리보기</title>
 <style>
 :root {
   color-scheme: light;
@@ -193,45 +193,45 @@ iframe {
   <aside class="sidebar">
     <div class="brand">
       <div>
-        <h1>Theme Preview Gallery</h1>
-        <p class="meta">Source: README.md<br />Generated: 2026-06-11T14:49:46.551Z</p>
+        <h1>테마 미리보기 갤러리</h1>
+        <p class="meta">원본: 한국어 예시 덱<br />생성 시각: 2026-06-12T02:51:48.144Z</p>
       </div>
     </div>
     <div class="control-group">
-      <label for="themeSelect">Selected Theme</label>
+      <label for="themeSelect">선택한 테마</label>
       <select id="themeSelect"></select>
     </div>
     <div class="control-group">
-      <label for="zoomRange">Preview Zoom <span id="zoomValue">100%</span></label>
+      <label for="zoomRange">미리보기 확대 <span id="zoomValue">100%</span></label>
       <input id="zoomRange" type="range" min="55" max="120" value="100" />
     </div>
     <div class="control-group">
-      <label>Slide Navigation</label>
+      <label>슬라이드 이동</label>
       <div class="button-row">
-        <button id="prevSlide" type="button">Previous</button>
-        <button id="nextSlide" type="button">Next</button>
+        <button id="prevSlide" type="button">이전</button>
+        <button id="nextSlide" type="button">다음</button>
       </div>
-      <div id="slideList" class="slide-list" aria-label="Slides"></div>
+      <div id="slideList" class="slide-list" aria-label="슬라이드"></div>
     </div>
     <div class="control-group">
-      <label>All Themes</label>
+      <label>전체 테마</label>
       <div id="themeGrid" class="theme-grid"></div>
     </div>
   </aside>
   <main class="stage">
     <div class="toolbar">
-      <div><strong id="activeTheme">technical</strong> <span id="slideCounter" class="meta"></span></div>
-      <a id="openTheme" href="themes/technical.html" target="_blank" rel="noreferrer">Open selected deck</a>
+      <div><strong id="activeTheme">기술형</strong> <span id="slideCounter" class="meta"></span></div>
+      <a id="openTheme" href="themes/technical.html" target="_blank" rel="noreferrer">선택한 덱 열기</a>
     </div>
     <div class="viewport">
       <div class="frame-shell">
-        <iframe id="previewFrame" title="Selected theme deck preview" src="themes/technical.html"></iframe>
+        <iframe id="previewFrame" title="선택한 테마 덱 미리보기" src="themes/technical.html"></iframe>
       </div>
     </div>
   </main>
 </div>
 <script>
-const themes = [{"name":"plain","file":"themes/plain.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#93C5FD","surface":"#FFFFFF"}},{"name":"clean","file":"themes/clean.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#2563EB","secondary":"#DBEAFE","surface":"#FFFFFF"}},{"name":"executive","file":"themes/executive.html","colors":{"background":"#F8FAFC","text":"#0F172A","primary":"#1D4ED8","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"editorial","file":"themes/editorial.html","colors":{"background":"#F7F3EF","text":"#1F2937","primary":"#B45309","secondary":"#FCD34D","surface":"#FFFBF5"}},{"name":"technical","file":"themes/technical.html","colors":{"background":"#F9FAFB","text":"#111827","primary":"#047857","secondary":"#A7F3D0","surface":"#FFFFFF"}},{"name":"dark","file":"themes/dark.html","colors":{"background":"#111827","text":"#F9FAFB","primary":"#38BDF8","secondary":"#164E63","surface":"#1F2937"}},{"name":"nord","file":"themes/nord.html","colors":{"background":"#2E3440","text":"#ECEFF4","primary":"#88C0D0","secondary":"#B48EAD","surface":"#3B4252"}},{"name":"solarized","file":"themes/solarized.html","colors":{"background":"#FDF6E3","text":"#073642","primary":"#268BD2","secondary":"#B58900","surface":"#EEE8D5"}},{"name":"dracula","file":"themes/dracula.html","colors":{"background":"#282A36","text":"#F8F8F2","primary":"#BD93F9","secondary":"#FF79C6","surface":"#44475A"}},{"name":"tableau","file":"themes/tableau.html","colors":{"background":"#FFFFFF","text":"#1F2937","primary":"#4E79A7","secondary":"#F28E2B","surface":"#F7F7F7"}},{"name":"gruvbox","file":"themes/gruvbox.html","colors":{"background":"#282828","text":"#FBF1C7","primary":"#FABD2F","secondary":"#83A598","surface":"#3C3836"}},{"name":"monokai","file":"themes/monokai.html","colors":{"background":"#272822","text":"#F8F8F2","primary":"#A6E22E","secondary":"#FD971F","surface":"#3E3D32"}},{"name":"material","file":"themes/material.html","colors":{"background":"#FAFAFA","text":"#263238","primary":"#2196F3","secondary":"#FF9800","surface":"#FFFFFF"}},{"name":"tokyo-night","file":"themes/tokyo-night.html","colors":{"background":"#1A1B26","text":"#C0CAF5","primary":"#7AA2F7","secondary":"#BB9AF7","surface":"#24283B"}}];
+const themes = [{"name":"plain","label":"기본형","file":"themes/plain.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#93C5FD","surface":"#FFFFFF"}},{"name":"clean","label":"정돈형","file":"themes/clean.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#2563EB","secondary":"#DBEAFE","surface":"#FFFFFF"}},{"name":"executive","label":"업무형","file":"themes/executive.html","colors":{"background":"#F8FAFC","text":"#0F172A","primary":"#1D4ED8","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"editorial","label":"편집형","file":"themes/editorial.html","colors":{"background":"#F7F3EF","text":"#1F2937","primary":"#B45309","secondary":"#FCD34D","surface":"#FFFBF5"}},{"name":"technical","label":"기술형","file":"themes/technical.html","colors":{"background":"#F9FAFB","text":"#111827","primary":"#047857","secondary":"#A7F3D0","surface":"#FFFFFF"}},{"name":"dark","label":"어두운형","file":"themes/dark.html","colors":{"background":"#111827","text":"#F9FAFB","primary":"#38BDF8","secondary":"#164E63","surface":"#1F2937"}},{"name":"nord","label":"노르드형","file":"themes/nord.html","colors":{"background":"#2E3440","text":"#ECEFF4","primary":"#88C0D0","secondary":"#B48EAD","surface":"#3B4252"}},{"name":"solarized","label":"솔라라이즈형","file":"themes/solarized.html","colors":{"background":"#FDF6E3","text":"#073642","primary":"#268BD2","secondary":"#B58900","surface":"#EEE8D5"}},{"name":"dracula","label":"드라큘라형","file":"themes/dracula.html","colors":{"background":"#282A36","text":"#F8F8F2","primary":"#BD93F9","secondary":"#FF79C6","surface":"#44475A"}},{"name":"tableau","label":"표 분석형","file":"themes/tableau.html","colors":{"background":"#FFFFFF","text":"#1F2937","primary":"#4E79A7","secondary":"#F28E2B","surface":"#F7F7F7"}},{"name":"gruvbox","label":"그루브박스형","file":"themes/gruvbox.html","colors":{"background":"#282828","text":"#FBF1C7","primary":"#FABD2F","secondary":"#83A598","surface":"#3C3836"}},{"name":"monokai","label":"모노카이형","file":"themes/monokai.html","colors":{"background":"#272822","text":"#F8F8F2","primary":"#A6E22E","secondary":"#FD971F","surface":"#3E3D32"}},{"name":"material","label":"머티리얼형","file":"themes/material.html","colors":{"background":"#FAFAFA","text":"#263238","primary":"#2196F3","secondary":"#FF9800","surface":"#FFFFFF"}},{"name":"tokyo-night","label":"도쿄 야간형","file":"themes/tokyo-night.html","colors":{"background":"#1A1B26","text":"#C0CAF5","primary":"#7AA2F7","secondary":"#BB9AF7","surface":"#24283B"}}];
 const select = document.querySelector("#themeSelect");
 const grid = document.querySelector("#themeGrid");
 const frame = document.querySelector("#previewFrame");
@@ -248,7 +248,7 @@ let slides = [];
 for (const theme of themes) {
   const option = document.createElement("option");
   option.value = theme.name;
-  option.textContent = theme.name;
+  option.textContent = theme.label;
   select.append(option);
 
   const card = document.createElement("button");
@@ -256,7 +256,7 @@ for (const theme of themes) {
   card.className = "theme-card";
   card.dataset.theme = theme.name;
   card.innerHTML = `
-    <span class="theme-card-title"><span>${theme.name}</span><span aria-hidden="true">↗</span></span>
+    <span class="theme-card-title"><span>${theme.label}</span><span aria-hidden="true">↗</span></span>
     <span class="swatches">${Object.values(theme.colors).map((color) => `<span style="background:${color}"></span>`).join("")}</span>
   `;
   card.addEventListener("click", () => setTheme(theme.name));
@@ -283,7 +283,7 @@ function setTheme(name) {
   currentTheme = theme.name;
   select.value = theme.name;
   frame.src = theme.file;
-  activeTheme.textContent = theme.name;
+  activeTheme.textContent = theme.label;
   openTheme.href = theme.file;
   for (const card of grid.querySelectorAll(".theme-card")) {
     card.setAttribute("aria-current", String(card.dataset.theme === theme.name));
@@ -305,7 +305,7 @@ function applyZoom() {
 function renderSlideList() {
   slideList.replaceChildren();
   slides.forEach((slide, index) => {
-    const title = slide.querySelector(".title")?.textContent?.trim() || `Slide ${index + 1}`;
+    const title = slide.querySelector(".title")?.textContent?.trim() || `슬라이드 ${index + 1}`;
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = `${index + 1}. ${title}`;
@@ -318,7 +318,7 @@ function goToSlide(index) {
   if (!slides.length) return;
   currentSlide = Math.max(0, Math.min(index, slides.length - 1));
   slides[currentSlide].scrollIntoView({ block: "start", behavior: "smooth" });
-  slideCounter.textContent = `Slide ${currentSlide + 1} / ${slides.length}`;
+  slideCounter.textContent = `슬라이드 ${currentSlide + 1} / ${slides.length}`;
   [...slideList.children].forEach((button, buttonIndex) => {
     button.setAttribute("aria-current", String(buttonIndex === currentSlide));
   });

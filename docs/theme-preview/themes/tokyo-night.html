@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>mdpresent - tokyo-night</title>
+<title>엠디프레젠트 - 도쿄 야간형</title>
 <style>
 :root {
   --bg: #1A1B26;
@@ -33,94 +33,53 @@ body { margin: 0; background: #111; font-family: var(--font); }
 .item-label { font-weight: 700; display: block; margin-bottom: .12in; color: var(--primary); }
 .item-description { display: block; margin-left: .18in; color: var(--muted); }
 strong { color: var(--primary); }
-.pipeline { display: flex; align-items: center; gap: .18in; height: 100%; }
-.pipeline-vertical { flex-direction: column; align-items: stretch; }
-.pipeline-u, .pipeline-reverse-u, .pipeline-cycle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: center; }
-.pipeline-cycle { border-radius: .12in; }
-.pipeline-node { flex: 1; min-width: 0; border: 1px solid var(--surface-line); background: var(--surface); padding: .12in; text-align: center; box-sizing: border-box; }
-.pipeline-edge { color: var(--primary); font-weight: 700; }
+.pipeline { position: relative; height: 100%; min-height: 3.6in; }
+.pipeline-connectors { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 3; }
+.pipeline-connector { fill: none; stroke: var(--primary); stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.pipeline-node { position: absolute; z-index: 2; min-width: 0; border: 1px solid var(--surface-line); background: var(--surface); padding: .12in; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: .12in; font-weight: 700; line-height: 1.18; }
 </style>
 </head>
 <body>
 <main class="deck" data-preview-theme="tokyo-night">
-<section class="slide" data-slide-id="mdpresent-66f1a4" data-layout="cover"><div class="region title title" style="left:1in;top:2.25in;width:11.3in;height:1.25in;z-index:10;font-size:48pt;line-height:1.2">mdpresent</div></section>
+<section class="slide" data-slide-id="slide-df9a46" data-layout="cover"><div class="region title title" style="left:1in;top:2.25in;width:11.3in;height:1.25in;z-index:10;font-size:48pt;line-height:1.2">엠디프레젠트</div></section>
 <section class="slide" data-slide-id="toc-53a981" data-layout="toc"><div class="region title title" style="left:0.8in;top:0.42in;width:11.7in;height:0.9in;z-index:10;font-size:38pt;line-height:1.2">목차</div>
-<div class="region body body" style="left:1in;top:1.6in;width:11.2in;height:4.9in;z-index:10;font-size:22pt;line-height:1.2"><p>Example PPT Slides</p>
-<p>Core Philosophy</p>
-<p>Pipeline</p>
-<p>Quick Usage</p>
-<p>Markdown Semantics</p>
-<p>Design Presets</p>
-<p>Implementation Priorities</p>
-<p>Directory Summary</p>
-<p>Development Workflow</p></div></section>
-<section class="slide" data-slide-id="1-2-bd51e7" data-layout="title-body"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Example PPT Slides</div>
-<div class="region body body" style="left:1in;top:1.6in;width:11.2in;height:4.9in;z-index:10;font-size:22pt;line-height:1.2"><p>The same Markdown source can produce editable PPTX slides with responsive structure, adaptive diagrams, and reusable design presets.</p>
-<p>[Open the interactive theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between all built-in themes, browse slides, and inspect the generated HTML deck output.</p>
-<p>[Open the interactive theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between all built-in themes, browse slides, and inspect the generated HTML deck output.</p>
-<p>[Open the interactive theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between all built-in themes, browse slides, and inspect the generated HTML deck output.</p></div></section>
-<section class="slide" data-slide-id="2-2-249e71" data-layout="table-focus"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Example PPT Slides (Cont. 2/2)</div>
-<div class="region body body" style="left:1in;top:1.6in;width:11.2in;height:4.9in;z-index:10;font-size:22pt;line-height:1.2"><p>| Markdown Semantics |<br />| --- |<br />| &lt;img src=&quot;docs/assets/readme-slides/semantics.png&quot; alt=&quot;Generated Markdown semantics slide preview&quot; width=&quot;100%&quot;&gt; |</p>
-<p>| Markdown Semantics |<br />| --- |<br />| &lt;img src=&quot;docs/assets/readme-slides/semantics.png&quot; alt=&quot;Generated Markdown semantics slide preview&quot; width=&quot;100%&quot;&gt; |</p></div></section>
-<section class="slide" data-slide-id="core-philosophy-87a9f5" data-layout="key-message"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Core Philosophy</div>
-<div class="region body key-message" style="left:1in;top:1.55in;width:11.2in;height:1.45in;z-index:10;font-size:30pt;line-height:1.2"><blockquote>A Markdown file stays the source of truth; the deck is a rendered view of that structure.</blockquote></div>
-<div class="region body body" style="left:1in;top:3.35in;width:11.2in;height:2.95in;z-index:10;font-size:22pt;line-height:1.2"><pre><code>Markdown is the source document.
-Splitting is driven by headings and density.
-Layouts are selected from intent and item count.
-Exceptions are controlled through an override manifest.
-PPT templates provide only backgrounds and brand assets.
-Body layout is recalculated by the CLI.</code></pre></div></section>
-<section class="slide" data-slide-id="pipeline-787043" data-layout="pipeline"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Pipeline</div>
-<div class="region diagram diagram" style="left:0.7in;top:1.32in;width:11.95in;height:5.75in;z-index:10;font-size:22pt;line-height:1.2"><div class="pipeline pipeline-reverse-u" data-arrangement="reverse-u"><div class="pipeline-node">Markdown</div><span class="pipeline-edge">→</span><div class="pipeline-node">Markdown AST / Simple AST</div><span class="pipeline-edge">→</span><div class="pipeline-node">Outline Tree</div><span class="pipeline-edge">→</span><div class="pipeline-node">Split Planner</div><span class="pipeline-edge">→</span><div class="pipeline-node">Presentation IR</div><span class="pipeline-edge">→</span><div class="pipeline-node">Layout Planner</div><span class="pipeline-edge">→</span><div class="pipeline-node">Override Engine</div><span class="pipeline-edge">→</span><div class="pipeline-node">QA / Overflow Checker</div><span class="pipeline-edge">→</span><div class="pipeline-node">Renderer
-PPTX / PDF / HTML</div></div></div></section>
-<section class="slide" data-slide-id="1-2-42d76d" data-layout="code-focus"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Quick Usage</div>
-<div class="region code code" style="left:0.85in;top:1.55in;width:11.65in;height:5.25in;z-index:10;font-size:14pt;line-height:1.12"><pre><code>mdpresent inspect examples/basic/deck.md --json &gt; deck.plan.json
-mdpresent plan examples/basic/deck.md --json &gt; layout.plan.json
-mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml
-mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive</code></pre></div></section>
-<section class="slide" data-slide-id="2-2-e3c635" data-layout="code-focus"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Quick Usage (Cont. 2/2)</div>
-<div class="region code code" style="left:0.85in;top:1.55in;width:11.65in;height:5.25in;z-index:10;font-size:14pt;line-height:1.12"><pre><code>mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
-mdpresent build examples/basic/deck.md --to pptx --config examples/basic/mdpresent.config.yaml --out dist
-mdpresent build examples/basic/deck.md --to html,pptx --config examples/themes/nord.config.yaml --out dist
-mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery executive,nord,dracula,solarized</code></pre></div></section>
-<section class="slide" data-slide-id="1-2-96884e" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Markdown Semantics</div>
-<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Lists</span><span class="item-description">ordered and unordered lists keep numbering, nesting level, and fallback text</span></li></ul></div>
-<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Cleanup</span><span class="item-description">decorative empty bullet lines are removed before rendering</span></li></ul></div>
-<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Emphasis</span><span class="item-description">paragraph and list-item emphasis such as bold and italic is carried into HTML and editable PPTX text runs</span></li></ul></div>
-<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Key messages</span><span class="item-description">block quotes such as &gt; Important sentence become separated callout regions with accent styling</span></li></ul></div></section>
-<section class="slide" data-slide-id="2-2-05416e" data-layout="vertical-list"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Markdown Semantics (Cont. 2/2)</div>
-<div class="region item item-1" style="left:1in;top:1.55in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Line breaks</span><span class="item-description">paragraph line breaks and sentence units are kept for safer slide splitting</span></li></ul></div>
-<div class="region item item-2" style="left:1in;top:2.8in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Diagrams</span><span class="item-description">standalone pipeline lines such as Draft =&gt; Review =&gt; Render become semantic diagram blocks with adaptive horizontal, vertical, U-shaped, reverse-U, or cycle-like placement</span></li></ul></div>
-<div class="region item item-3" style="left:1in;top:4.05in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Diagram details</span><span class="item-description">when a diagram and explanatory blocks share one section, the diagram stays on the title slide and details move to the continuation slide</span></li></ul></div></section>
-<section class="slide" data-slide-id="1-3-fe9874" data-layout="comparison"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Design Presets</div>
-<div class="region body left" style="left:0.9in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><p>--design and theme.designPreset use one shared catalog across PPTX and HTML. Current presets include plain, clean, executive, editorial, technical, dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, and tokyo-night.</p></div>
-<div class="region body right" style="left:7in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><p>For visual QA, --theme-gallery executive,nord,dracula,solarized repeats the planned slides under multiple design presets in one PPTX.</p></div></section>
-<section class="slide" data-slide-id="2-3-d91b7b" data-layout="comparison"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Design Presets (Cont. 2/3)</div>
-<div class="region body left" style="left:0.9in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><p>Separated key messages, ordered item cards, and label/detail list items inherit the active preset's accent colors. PPTX output keeps these as editable text, shapes, one-sided accent lines, and number badges rather than flattened images.</p></div>
-<div class="region body right" style="left:7in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><p>When --template example.pptx is provided, PPTX output reads the template's theme colors and non-text decorative shapes. Decorations from example slides are reused only on generated slides with the same inferred layout family, while body placeholders and arbitrary content positions are still recalculated by mdpresent.</p></div></section>
-<section class="slide" data-slide-id="3-3-8128ba" data-layout="title-body"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Design Presets (Cont. 3/3)</div>
-<div class="region body body" style="left:1in;top:1.6in;width:11.2in;height:4.9in;z-index:10;font-size:22pt;line-height:1.2"><p>Cover/title slides use preset-specific editable templates. Theme-gallery output shows multiple title candidates, while --design &lt;preset&gt; renders only that preset's title treatment.</p></div></section>
-<section class="slide" data-slide-id="1-2-430dbc" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Implementation Priorities</div>
-<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-label"><span class="item-number">1</span>Schemas</span><span class="item-description">stabilize the JSON Schemas in schemas/ first.</span></li></ol></div>
-<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-label"><span class="item-number">2</span>Core</span><span class="item-description">build Markdown-to-Presentation IR in packages/core.</span></li></ol></div>
-<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-label"><span class="item-number">3</span>Layout</span><span class="item-description">build Presentation IR-to-Layout IR in packages/layout.</span></li></ol></div>
-<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-label"><span class="item-number">4</span>Overrides</span><span class="item-description">apply structured override manifests in packages/override.</span></li></ol></div></section>
-<section class="slide" data-slide-id="2-2-cfb2ab" data-layout="vertical-list"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Implementation Priorities (Cont. 2/2)</div>
-<div class="region item item-1" style="left:1in;top:1.55in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-label"><span class="item-number">5</span>HTML</span><span class="item-description">implement packages/render-html first to provide preview output.</span></li></ol></div>
-<div class="region item item-2" style="left:1in;top:2.8in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-label"><span class="item-number">6</span>PDF</span><span class="item-description">start packages/render-pdf from the HTML renderer.</span></li></ol></div>
-<div class="region item item-3" style="left:1in;top:4.05in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-label"><span class="item-number">7</span>PPTX</span><span class="item-description">implement packages/render-pptx around editable slide objects.</span></li></ol></div></section>
-<section class="slide" data-slide-id="directory-summary-e85072" data-layout="code-focus"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Directory Summary</div>
-<div class="region code code" style="left:0.85in;top:1.55in;width:11.65in;height:5.25in;z-index:10;font-size:14pt;line-height:1.12"><pre><code>docs/       Final requirements and design documents
-schemas/    JSON Schemas for Config, Override, Presentation IR, and Layout IR
-packages/   TypeScript package scaffold
-examples/   Example Markdown, config, and override files</code></pre></div></section>
-<section class="slide" data-slide-id="1-2-304f1d" data-layout="vertical-list"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Development Workflow</div>
-<div class="region item item-1" style="left:1in;top:1.55in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-number">1</span>Keep the implementation local and deterministic.</li></ol></div>
-<div class="region item item-2" style="left:1in;top:2.8in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-number">2</span>Do not require external API calls, API keys, or LLM calls for parsing, layout, validation, or rendering.</li></ol></div>
-<div class="region item item-3" style="left:1in;top:4.05in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-number">3</span>Keep generated body and item text above the readable font floor during overflow resolution.</li></ol></div></section>
-<section class="slide" data-slide-id="2-2-8e4b53" data-layout="comparison"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Development Workflow (Cont. 2/2)</div>
-<div class="region body left" style="left:0.9in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-number">4</span>Keep schemas/*.json stable unless a schema-contract TODO explicitly changes them.</li></ol></div>
-<div class="region body right" style="left:7in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><ol class="structured-list"><li class="level-0"><span class="item-label"><span class="item-number">5</span>Implement in this order</span><span class="item-description">packages/core, packages/layout, packages/override, then renderers.</span></li></ol></div></section>
+<div class="region body body" style="left:1in;top:1.6in;width:11.2in;height:4.9in;z-index:10;font-size:22pt;line-height:1.2"><p>핵심 원칙</p>
+<p>생성 흐름</p>
+<p>규칙 기반 엔진</p>
+<p>마크다운 구조 보존</p>
+<p>테마 선택</p>
+<p>품질 검사</p></div></section>
+<section class="slide" data-slide-id="slide-567c96" data-layout="key-message"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">핵심 원칙</div>
+<div class="region body key-message" style="left:1in;top:1.55in;width:11.2in;height:1.45in;z-index:10;font-size:30pt;line-height:1.2"><blockquote>원본은 마크다운이고 결과물은 렌더링된 발표 보기입니다.</blockquote></div>
+<div class="region body body" style="left:1in;top:3.35in;width:11.2in;height:2.95in;z-index:10;font-size:22pt;line-height:1.2"><p>마크다운 원고는 계속 사람이 읽을 수 있어야 합니다.<br />슬라이드 분할, 레이아웃 선택, 넘침 검사는 모두 정해진 규칙으로 처리합니다.</p></div></section>
+<section class="slide" data-slide-id="slide-7fa885" data-layout="pipeline"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">생성 흐름</div>
+<div class="region diagram diagram" style="left:0.7in;top:1.32in;width:11.95in;height:5.75in;z-index:10;font-size:22pt;line-height:1.2"><div class="pipeline pipeline-u" data-arrangement="u">
+<svg class="pipeline-connectors" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+<defs><marker id="pipeline-arrow-node-1-node-2-node-3-node-4-node-5-node-6-node-7" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--primary)" /></marker></defs>
+<polyline class="pipeline-connector" data-edge="1" points="31.20,28.80 34.40,28.80" marker-end="url(#pipeline-arrow-node-1-node-2-node-3-node-4-node-5-node-6-node-7)" /><polyline class="pipeline-connector" data-edge="2" points="65.60,28.80 68.80,28.80" marker-end="url(#pipeline-arrow-node-1-node-2-node-3-node-4-node-5-node-6-node-7)" /><polyline class="pipeline-connector" data-edge="3" points="84.40,37.80 84.40,41.00" marker-end="url(#pipeline-arrow-node-1-node-2-node-3-node-4-node-5-node-6-node-7)" /><polyline class="pipeline-connector" data-edge="4" points="84.40,59.00 84.40,62.20" marker-end="url(#pipeline-arrow-node-1-node-2-node-3-node-4-node-5-node-6-node-7)" /><polyline class="pipeline-connector" data-edge="5" points="68.80,71.20 65.60,71.20" marker-end="url(#pipeline-arrow-node-1-node-2-node-3-node-4-node-5-node-6-node-7)" /><polyline class="pipeline-connector" data-edge="6" points="34.40,71.20 31.20,71.20" marker-end="url(#pipeline-arrow-node-1-node-2-node-3-node-4-node-5-node-6-node-7)" />
+</svg>
+<div class="pipeline-node" data-node="1" style="left:0.00%;top:19.80%;width:31.20%;height:18.00%">마크다운 원고</div><div class="pipeline-node" data-node="2" style="left:34.40%;top:19.80%;width:31.20%;height:18.00%">구조 분석</div><div class="pipeline-node" data-node="3" style="left:68.80%;top:19.80%;width:31.20%;height:18.00%">슬라이드 분할</div><div class="pipeline-node" data-node="4" style="left:68.80%;top:41.00%;width:31.20%;height:18.00%">발표 구조</div><div class="pipeline-node" data-node="5" style="left:68.80%;top:62.20%;width:31.20%;height:18.00%">레이아웃 계획</div><div class="pipeline-node" data-node="6" style="left:34.40%;top:62.20%;width:31.20%;height:18.00%">품질 검사</div><div class="pipeline-node" data-node="7" style="left:0.00%;top:62.20%;width:31.20%;height:18.00%">결과 렌더링</div>
+</div></div></section>
+<section class="slide" data-slide-id="slide-a69e38" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">규칙 기반 엔진</div>
+<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">모델 호출 없음</span><span class="item-description">생성 과정은 외부 모델이나 외부 연결 호출 없이 동작합니다.</span></li></ul></div>
+<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">규칙 기반</span><span class="item-description">제목, 밀도, 목록 수, 문장 단위, 도식 신호를 기준으로 배치합니다.</span></li></ul></div>
+<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">재현 가능성</span><span class="item-description">같은 원고와 설정은 같은 발표 구조를 만듭니다.</span></li></ul></div>
+<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">보조 스킬화</span><span class="item-description">독립적인 명령행 도구이므로 로컬 자동화 스킬로 감쌀 수 있습니다.</span></li></ul></div></section>
+<section class="slide" data-slide-id="slide-7442e3" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">마크다운 구조 보존</div>
+<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">목록</span><span class="item-description">번호, 중첩, 설명 줄을 유지합니다.</span></li></ul></div>
+<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">강조</span><span class="item-description">굵게와 기울임을 편집 가능한 글자 효과로 옮깁니다.</span></li></ul></div>
+<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">인용</span><span class="item-description">핵심 문장을 별도 강조 영역으로 분리합니다.</span></li></ul></div>
+<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">도식</span><span class="item-description">화살표 흐름을 노드와 연결선으로 바꿉니다.</span></li></ul></div></section>
+<section class="slide" data-slide-id="slide-2eacaa" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">테마 선택</div>
+<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">프리셋</span><span class="item-description">밝은 업무형, 어두운 발표형, 기술 문서형 등 여러 색 조합을 제공합니다.</span></li></ul></div>
+<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">전환</span><span class="item-description">같은 발표 구조에 다른 색과 장식을 적용해 비교할 수 있습니다.</span></li></ul></div>
+<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">유지</span><span class="item-description">본문, 제목, 카드, 연결선의 역할별 스타일은 테마를 바꿔도 유지됩니다.</span></li></ul></div>
+<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">편집</span><span class="item-description">발표 파일에서는 글자와 도형을 계속 직접 수정할 수 있습니다.</span></li></ul></div></section>
+<section class="slide" data-slide-id="slide-6b7ee5" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">품질 검사</div>
+<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">글자 넘침</span><span class="item-description">영역 안에 글자가 들어가는지 검사합니다.</span></li></ul></div>
+<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">도식 연결</span><span class="item-description">노드 사이 연결선이 끊기지 않도록 좌표 기반으로 그립니다.</span></li></ul></div>
+<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">페이지 분리</span><span class="item-description">내용이 많으면 이어지는 슬라이드로 나눕니다.</span></li></ul></div>
+<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">불필요 문자 제거</span><span class="item-description">장식용 점이나 빈 항목은 렌더링 전에 제거합니다.</span></li></ul></div></section>
 </main>
 </body>
 </html>

@@ -2,6 +2,8 @@
 
 `mdpresent` is not a direct Markdown-to-PowerPoint converter. It is a CLI-based presentation structuring tool that splits Markdown documents into a shared `Presentation IR`, then renders that structure to `PPTX`, `PDF`, or `HTML`.
 
+`mdpresent` is a **NO LLM runtime** engine: parsing, splitting, layout, validation, and rendering are deterministic and rule-based. It can also be packaged as an auxiliary Codex skill or local automation skill because the CLI behavior does not require external API calls.
+
 Language variants:
 
 - [Korean README](README.ko.md)

@@ -6,9 +6,25 @@ import { DESIGN_PRESET_NAMES, resolveDesignTokens } from "../packages/core/dist/
 import { renderHtml } from "../packages/render-html/dist/index.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const inputPath = resolve(repoRoot, process.argv[2] ?? "README.md");
+const inputPath = resolve(repoRoot, process.argv[2] ?? "examples/theme-preview-ko/deck.md");
 const outDir = resolve(repoRoot, process.argv[3] ?? "docs/theme-preview");
 const themesDir = join(outDir, "themes");
+const THEME_LABELS_KO = {
+  plain: "기본형",
+  clean: "정돈형",
+  executive: "업무형",
+  editorial: "편집형",
+  technical: "기술형",
+  dark: "어두운형",
+  nord: "노르드형",
+  solarized: "솔라라이즈형",
+  dracula: "드라큘라형",
+  tableau: "표 분석형",
+  gruvbox: "그루브박스형",
+  monokai: "모노카이형",
+  material: "머티리얼형",
+  "tokyo-night": "도쿄 야간형",
+};
 
 mkdirSync(themesDir, { recursive: true });
 
@@ -18,12 +34,13 @@ const themeEntries = DESIGN_PRESET_NAMES.map((name) => {
   const fileName = `${name}.html`;
   const html = withPreviewMetadata(renderHtml(
     { presentation: deck.presentation, layout: deck.layout },
-    { title: `${deck.presentation.meta.title} - ${name}`, designPreset: name },
+    { title: `${deck.presentation.meta.title} - ${THEME_LABELS_KO[name] ?? name}`, designPreset: name },
   ), name);
   writeFileSync(join(themesDir, fileName), html, "utf-8");
 
   return {
     name,
+    label: THEME_LABELS_KO[name] ?? name,
     file: `themes/${fileName}`,
     colors: {
       background: `#${tokens.backgroundColor}`,
@@ -55,11 +72,11 @@ function renderPreviewShell({ title, source, generatedAt, themes }) {
   const themesJson = JSON.stringify(themes);
   const defaultTheme = themes.find((theme) => theme.name === "technical") ?? themes[0];
   return `<!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(title)} theme preview</title>
+<title>${escapeHtml(title)} 테마 미리보기</title>
 <style>
 :root {
   color-scheme: light;
@@ -249,39 +266,39 @@ iframe {
   <aside class="sidebar">
     <div class="brand">
       <div>
-        <h1>Theme Preview Gallery</h1>
-        <p class="meta">Source: ${escapeHtml(source)}<br />Generated: ${escapeHtml(generatedAt)}</p>
+        <h1>테마 미리보기 갤러리</h1>
+        <p class="meta">원본: 한국어 예시 덱<br />생성 시각: ${escapeHtml(generatedAt)}</p>
       </div>
     </div>
     <div class="control-group">
-      <label for="themeSelect">Selected Theme</label>
+      <label for="themeSelect">선택한 테마</label>
       <select id="themeSelect"></select>
     </div>
     <div class="control-group">
-      <label for="zoomRange">Preview Zoom <span id="zoomValue">100%</span></label>
+      <label for="zoomRange">미리보기 확대 <span id="zoomValue">100%</span></label>
       <input id="zoomRange" type="range" min="55" max="120" value="100" />
     </div>
     <div class="control-group">
-      <label>Slide Navigation</label>
+      <label>슬라이드 이동</label>
       <div class="button-row">
-        <button id="prevSlide" type="button">Previous</button>
-        <button id="nextSlide" type="button">Next</button>
+        <button id="prevSlide" type="button">이전</button>
+        <button id="nextSlide" type="button">다음</button>
       </div>
-      <div id="slideList" class="slide-list" aria-label="Slides"></div>
+      <div id="slideList" class="slide-list" aria-label="슬라이드"></div>
     </div>
     <div class="control-group">
-      <label>All Themes</label>
+      <label>전체 테마</label>
       <div id="themeGrid" class="theme-grid"></div>
     </div>
   </aside>
   <main class="stage">
     <div class="toolbar">
-      <div><strong id="activeTheme">${escapeHtml(defaultTheme.name)}</strong> <span id="slideCounter" class="meta"></span></div>
-      <a id="openTheme" href="${escapeHtml(defaultTheme.file)}" target="_blank" rel="noreferrer">Open selected deck</a>
+      <div><strong id="activeTheme">${escapeHtml(defaultTheme.label)}</strong> <span id="slideCounter" class="meta"></span></div>
+      <a id="openTheme" href="${escapeHtml(defaultTheme.file)}" target="_blank" rel="noreferrer">선택한 덱 열기</a>
     </div>
     <div class="viewport">
       <div class="frame-shell">
-        <iframe id="previewFrame" title="Selected theme deck preview" src="${escapeHtml(defaultTheme.file)}"></iframe>
+        <iframe id="previewFrame" title="선택한 테마 덱 미리보기" src="${escapeHtml(defaultTheme.file)}"></iframe>
       </div>
     </div>
   </main>
@@ -304,7 +321,7 @@ let slides = [];
 for (const theme of themes) {
   const option = document.createElement("option");
   option.value = theme.name;
-  option.textContent = theme.name;
+  option.textContent = theme.label;
   select.append(option);
 
   const card = document.createElement("button");
@@ -312,7 +329,7 @@ for (const theme of themes) {
   card.className = "theme-card";
   card.dataset.theme = theme.name;
   card.innerHTML = \`
-    <span class="theme-card-title"><span>\${theme.name}</span><span aria-hidden="true">↗</span></span>
+    <span class="theme-card-title"><span>\${theme.label}</span><span aria-hidden="true">↗</span></span>
     <span class="swatches">\${Object.values(theme.colors).map((color) => \`<span style="background:\${color}"></span>\`).join("")}</span>
   \`;
   card.addEventListener("click", () => setTheme(theme.name));
@@ -339,7 +356,7 @@ function setTheme(name) {
   currentTheme = theme.name;
   select.value = theme.name;
   frame.src = theme.file;
-  activeTheme.textContent = theme.name;
+  activeTheme.textContent = theme.label;
   openTheme.href = theme.file;
   for (const card of grid.querySelectorAll(".theme-card")) {
     card.setAttribute("aria-current", String(card.dataset.theme === theme.name));
@@ -361,7 +378,7 @@ function applyZoom() {
 function renderSlideList() {
   slideList.replaceChildren();
   slides.forEach((slide, index) => {
-    const title = slide.querySelector(".title")?.textContent?.trim() || \`Slide \${index + 1}\`;
+    const title = slide.querySelector(".title")?.textContent?.trim() || \`슬라이드 \${index + 1}\`;
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = \`\${index + 1}. \${title}\`;
@@ -374,7 +391,7 @@ function goToSlide(index) {
   if (!slides.length) return;
   currentSlide = Math.max(0, Math.min(index, slides.length - 1));
   slides[currentSlide].scrollIntoView({ block: "start", behavior: "smooth" });
-  slideCounter.textContent = \`Slide \${currentSlide + 1} / \${slides.length}\`;
+  slideCounter.textContent = \`슬라이드 \${currentSlide + 1} / \${slides.length}\`;
   [...slideList.children].forEach((button, buttonIndex) => {
     button.setAttribute("aria-current", String(buttonIndex === currentSlide));
   });

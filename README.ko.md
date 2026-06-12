@@ -2,10 +2,16 @@
 
 `mdpresent`는 Markdown 파일을 직접 PPT로 변환하는 도구가 아니라, Markdown 문서를 규칙 기반으로 분해하여 공통 발표 구조인 `Presentation IR`로 만들고, 이를 `PPTX / PDF / HTML`로 렌더링하는 CLI 기반 프레젠테이션 구조화 도구입니다.
 
+`mdpresent`는 **NO LLM runtime** 엔진입니다. 파싱, 분할, 레이아웃, 검증, 렌더링은 외부 API 호출 없이 deterministic rule-based 방식으로 동작합니다. CLI 동작이 독립적이므로 Codex 보조 skill 또는 로컬 자동화 skill로 패키징할 수 있습니다.
+
 언어별 문서:
 
 - [English README](README.md)
 - [Chinese README](README.zh.md)
+
+## 한국어 테마 미리보기
+
+[한국어 인터랙티브 테마 미리보기](https://ch040602.github.io/MdPr/theme-preview/)에서 모든 내장 테마를 선택하고, 생성된 HTML deck slide를 직접 탐색할 수 있습니다.
 
 ## 핵심 철학
 
@@ -21,15 +27,15 @@ PPT 템플릿은 배경과 브랜드만 제공한다.
 ## 파이프라인
 
 ```text
-Markdown
-  → Markdown AST / Simple AST
-  → Outline Tree
-  → Split Planner
-  → Presentation IR
-  → Layout Planner
-  → Override Engine
-  → QA / Overflow Checker
-  → Renderer
+마크다운
+  → 마크다운 구조 분석
+  → 목차 트리
+  → 슬라이드 분할기
+  → 발표 구조
+  → 레이아웃 계획기
+  → 예외 규칙 적용
+  → 품질 검사
+  → 렌더러
       ├─ PPTX
       ├─ PDF
       └─ HTML

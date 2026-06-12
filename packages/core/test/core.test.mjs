@@ -280,6 +280,31 @@ test("parseMarkdown promotes fenced text arrow flows into pipeline diagrams", ()
   ]);
 });
 
+test("parseMarkdown promotes fenced Unicode arrow flows into pipeline diagrams", () => {
+  const doc = parseMarkdown([
+    "# Deck",
+    "",
+    "## 파이프라인",
+    "",
+    "```text",
+    "마크다운",
+    "  → 구조 분석",
+    "  → 슬라이드 분할",
+    "  → 렌더링",
+    "```",
+  ].join("\n"));
+
+  const diagram = doc.blocks.find((block) => block.type === "diagram");
+
+  assert.equal(doc.blocks.some((block) => block.type === "code"), false);
+  assert.deepEqual(diagram.diagram.nodes.map((node) => node.label), [
+    "마크다운",
+    "구조 분석",
+    "슬라이드 분할",
+    "렌더링",
+  ]);
+});
+
 test("parseMarkdown promotes fenced flow with renderer output branches into one pipeline diagram", () => {
   const doc = parseMarkdown([
     "# Deck",
