@@ -490,31 +490,70 @@ function renderPlainListRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: 
 
   const baseFontSize = Math.max(14, Number(common.fontSize ?? 16));
   const lineHeightMultiple = Number(common.lineSpacingMultiple ?? 1.2);
-  const rowH = Math.max(0.28, Math.min(0.52, (baseFontSize * lineHeightMultiple) / 72 + 0.08));
-  const totalH = rowH * items.length;
   const baseX = Number(common.x ?? 0);
   const baseY = Number(common.y ?? 0);
   const baseW = Number(common.w ?? 1);
+  const rowHeights = items.map((item) => {
+    const indent = Math.min(0.55, Math.max(0, item.level) * 0.22);
+    const usableW = Math.max(0.3, baseW - indent);
+    const wrappedLines = estimateWrappedLineCount(item.text, usableW, baseFontSize);
+    return Math.max(0.32, (baseFontSize * lineHeightMultiple * wrappedLines) / 72 + 0.1);
+  });
+  const totalH = rowHeights.reduce((sum, height) => sum + height, 0);
   const baseH = Number(common.h ?? totalH);
   const startY = baseY + Math.max(0, (baseH - totalH) / 2);
+  const rowFit = totalH <= baseH ? "none" : common.fit;
+  let cursorY = startY;
 
   for (const [index, item] of items.entries()) {
     const indent = Math.min(0.55, Math.max(0, item.level) * 0.22);
+    const rowH = rowHeights[index] ?? 0.32;
     slide.addText(item.text, {
       ...common,
       x: baseX + indent,
-      y: startY + index * rowH,
+      y: cursorY,
       w: Math.max(0.3, baseW - indent),
       h: rowH,
       fontSize: baseFontSize,
       margin: common.margin ?? [0, 0, 0, 0],
       align: "left",
       valign: "middle",
-      fit: "shrink",
+      fit: rowFit,
       breakLine: false,
       isTextBox: true,
     });
+    cursorY += rowH;
   }
+}
+
+function estimateWrappedLineCount(text: string, widthIn: number, fontSizePt: number): number {
+  const normalized = normalizeRenderableText(text);
+  if (!normalized) return 1;
+  const charCapacity = Math.max(8, Math.floor((Math.max(0.3, widthIn) * 72) / Math.max(6, fontSizePt * 0.5)));
+  let lines = 0;
+  for (const rawLine of normalized.split(/\r?\n/)) {
+    const words = rawLine.split(/\s+/).filter(Boolean);
+    if (!words.length) {
+      lines += 1;
+      continue;
+    }
+    let used = 0;
+    for (const word of words) {
+      const wordLength = Math.max(1, Math.ceil(word.length * (/[^\x00-\x7F]/.test(word) ? 1.75 : 1)));
+      if (used > 0 && used + 1 + wordLength > charCapacity) {
+        lines += 1;
+        used = wordLength;
+      } else {
+        used += (used > 0 ? 1 : 0) + wordLength;
+      }
+      while (used > charCapacity) {
+        lines += 1;
+        used -= charCapacity;
+      }
+    }
+    lines += 1;
+  }
+  return Math.max(1, lines);
 }
 
 function renderListItemRuns(item: ListItemIR, breakLine: boolean, role: string, preset?: DesignTokens): PptxGenJS.TextProps[] {
@@ -707,17 +746,7 @@ function renderItemNumberBadge(
     line: { color: preset.primaryColor, transparency: 100 },
   } as never);
   slide.addText(String(number), {
-    ...common,
-    x,
-    y,
-    w: size,
-    h: size,
-    margin: [0, 0, 0, 0],
-    fontSize: Math.max(8, Math.min(13, (region.typography?.fontSize ?? 18) - 5)),
-    color: readableTextColor(preset.primaryColor),
-    bold: true,
-    align: "center",
-    valign: "middle",
+    ...centeredMarkerTextOptions(common, x, y, size, Math.max(8, Math.min(13, (region.typography?.fontSize ?? 18) - 5)), readableTextColor(preset.primaryColor)),
   });
   return { x, y, size, right: x + size };
 }
@@ -785,6 +814,32 @@ function textBoxForRegion(
     margin: placement.margin,
     align: options.reservedLeft !== undefined ? "left" : placement.align,
     valign: placement.valign,
+  };
+}
+
+function centeredMarkerTextOptions(
+  common: PptxGenJS.TextPropsOptions,
+  x: number,
+  y: number,
+  size: number,
+  fontSize: number,
+  color: string,
+): PptxGenJS.TextPropsOptions {
+  return {
+    ...common,
+    x,
+    y,
+    w: size,
+    h: size,
+    margin: [0, 0, 0, 0],
+    fontSize,
+    color,
+    bold: true,
+    align: "center",
+    valign: "middle",
+    breakLine: false,
+    fit: "shrink",
+    isTextBox: true,
   };
 }
 
@@ -883,32 +938,34 @@ function renderArcRingChart(
   const centerX = ringX + ringSize / 2;
   const centerY = ringY + ringSize / 2;
 
-  slide.addShape("ellipse", {
+  const arcThicknessRatio = 0.24;
+  slide.addShape("blockArc" as never, {
     x: ringX,
     y: ringY,
     w: ringSize,
     h: ringSize,
+    angleRange: [0, 359],
+    arcThicknessRatio,
     fill: { color: preset.surfaceLine, transparency: 18 },
     line: { color: preset.surfaceLine, transparency: 100 },
-  });
-  const segments = ringSegments(percent, ringX, ringY, ringSize);
-  for (const segment of segments) {
-    slide.addShape("roundRect", {
-      x: segment.x,
-      y: segment.y,
-      w: segment.w,
-      h: segment.h,
-      rectRadius: 0.03,
-      rotate: segment.rotate,
-      fill: { color: segment.active ? accent : preset.surfaceLine, transparency: segment.active ? 0 : 8 },
-      line: { color: segment.active ? accent : preset.surfaceLine, transparency: 100 },
+  } as never);
+  for (const angleRange of arcAngleRanges(percent)) {
+    slide.addShape("blockArc" as never, {
+      x: ringX,
+      y: ringY,
+      w: ringSize,
+      h: ringSize,
+      angleRange,
+      arcThicknessRatio,
+      fill: { color: accent, transparency: 0 },
+      line: { color: accent, transparency: 100 },
     } as never);
   }
   if (percent > 0 && percent < 100) {
-    const marker = segments[Math.max(0, Math.min(segments.length - 1, Math.ceil(percent / 100 * segments.length) - 1))]!;
+    const marker = arcEndpoint(percent, ringX, ringY, ringSize);
     slide.addShape("ellipse", {
-      x: marker.cx - ringSize * 0.035,
-      y: marker.cy - ringSize * 0.035,
+      x: marker.x - ringSize * 0.035,
+      y: marker.y - ringSize * 0.035,
       w: ringSize * 0.07,
       h: ringSize * 0.07,
       fill: { color: secondary },
@@ -1366,30 +1423,36 @@ function renderChartLegend(
   }
 }
 
-function ringSegments(percent: number, ringX: number, ringY: number, ringSize: number): Array<{ x: number; y: number; w: number; h: number; rotate: number; cx: number; cy: number; active: boolean }> {
-  const segmentCount = 24;
-  const activeCount = Math.round(clamp(percent, 0, 100) / 100 * segmentCount);
-  const width = ringSize * 0.12;
-  const height = ringSize * 0.055;
-  const centerX = ringX + ringSize / 2;
-  const centerY = ringY + ringSize / 2;
+function arcAngleRanges(percent: number): Array<[number, number]> {
+  const sweep = clamp(percent, 0, 100) / 100 * 359;
+  if (sweep <= 0) return [];
+  const ranges: Array<[number, number]> = [];
+  let remaining = Math.max(2, sweep);
+  let start = 270;
+
+  while (remaining > 0.5 && ranges.length < 2) {
+    const available = 359 - start;
+    const segmentSweep = Math.min(available, remaining);
+    ranges.push([start, Math.min(359, start + segmentSweep)]);
+    remaining -= segmentSweep;
+    start = 0;
+  }
+
+  return ranges.map(([startAngle, endAngle]) => [
+    Math.round(startAngle),
+    Math.max(Math.round(startAngle + 1), Math.round(endAngle)),
+  ]);
+}
+
+function arcEndpoint(percent: number, ringX: number, ringY: number, ringSize: number): { x: number; y: number } {
+  const sweep = clamp(percent, 0, 100) / 100 * 359;
+  const angle = -90 + sweep;
+  const radians = angle * Math.PI / 180;
   const radius = ringSize * 0.43;
-  return Array.from({ length: segmentCount }, (_, index) => {
-    const angle = -90 + index * (360 / segmentCount);
-    const radians = angle * Math.PI / 180;
-    const cx = centerX + Math.cos(radians) * radius;
-    const cy = centerY + Math.sin(radians) * radius;
-    return {
-      x: cx - width / 2,
-      y: cy - height / 2,
-      w: width,
-      h: height,
-      rotate: angle + 90,
-      cx,
-      cy,
-      active: index < activeCount,
-    };
-  });
+  return {
+    x: ringX + ringSize / 2 + Math.cos(radians) * radius,
+    y: ringY + ringSize / 2 + Math.sin(radians) * radius,
+  };
 }
 
 function formatChartValue(value: number): string {
@@ -1413,6 +1476,14 @@ function renderDiagramRegion(
   const arrangement = arrangeDiagramNodes(diagram, region);
   const boxesById = new Map(arrangement.boxes.map((box) => [box.node.id, box]));
   const labelFontSize = uniformDiagramLabelFontSize(arrangement.boxes, region.typography?.fontSize ?? common.fontSize ?? 14);
+
+  for (const edge of diagram.edges) {
+    const from = boxesById.get(edge.from);
+    const to = boxesById.get(edge.to);
+    if (!from || !to) continue;
+    const { start, end } = connectorEndpoints(from, to);
+    renderConnector(slide, start, end, preset.ruleColor);
+  }
 
   for (const [index, box] of arrangement.boxes.entries()) {
     const { node, x, y, w, h } = box;
@@ -1442,17 +1513,14 @@ function renderDiagramRegion(
       line: { color: accentColor, transparency: 100 },
     });
     slide.addText(String(index + 1), {
-      ...common,
-      x: badgeX,
-      y: badgeY,
-      w: badgeSize,
-      h: badgeSize,
-      fontSize: Math.max(14, Math.min(15, (region.typography?.fontSize ?? common.fontSize ?? 14) - 4)),
-      color: preset.backgroundColor,
-      bold: true,
-      align: "center",
-      valign: "middle",
-      margin: [0, 0, 0, 0],
+      ...centeredMarkerTextOptions(
+        common,
+        badgeX,
+        badgeY,
+        badgeSize,
+        Math.max(14, Math.min(15, (region.typography?.fontSize ?? common.fontSize ?? 14) - 4)),
+        preset.backgroundColor,
+      ),
     });
     slide.addText(node.label, {
       ...common,
@@ -1471,13 +1539,6 @@ function renderDiagramRegion(
     });
   }
 
-  for (const edge of diagram.edges) {
-    const from = boxesById.get(edge.from);
-    const to = boxesById.get(edge.to);
-    if (!from || !to) continue;
-    const { start, end } = connectorEndpoints(from, to);
-    renderConnector(slide, start, end, preset.ruleColor);
-  }
 }
 
 type DiagramArrangementKind = "horizontal" | "vertical" | "u" | "reverse-u" | "cycle";
@@ -1631,14 +1692,16 @@ function connectorEndpoints(
   const dy = toCenter.y - fromCenter.y;
 
   if (Math.abs(dx) >= Math.abs(dy)) {
+    const overlap = Math.min(0.08, Math.max(0.04, Math.min(from.w, to.w) * 0.025));
     return dx >= 0
-      ? { start: { x: from.x + from.w - 0.03, y: fromCenter.y }, end: { x: to.x + 0.03, y: toCenter.y } }
-      : { start: { x: from.x + 0.03, y: fromCenter.y }, end: { x: to.x + to.w - 0.03, y: toCenter.y } };
+      ? { start: { x: from.x + from.w - overlap, y: fromCenter.y }, end: { x: to.x + overlap, y: toCenter.y } }
+      : { start: { x: from.x + overlap, y: fromCenter.y }, end: { x: to.x + to.w - overlap, y: toCenter.y } };
   }
 
+  const overlap = Math.min(0.08, Math.max(0.04, Math.min(from.h, to.h) * 0.045));
   return dy >= 0
-    ? { start: { x: fromCenter.x, y: from.y + from.h - 0.03 }, end: { x: toCenter.x, y: to.y + 0.03 } }
-    : { start: { x: fromCenter.x, y: from.y + 0.03 }, end: { x: toCenter.x, y: to.y + to.h - 0.03 } };
+    ? { start: { x: fromCenter.x, y: from.y + from.h - overlap }, end: { x: toCenter.x, y: to.y + overlap } }
+    : { start: { x: fromCenter.x, y: from.y + overlap }, end: { x: toCenter.x, y: to.y + to.h - overlap } };
 }
 
 function renderConnector(

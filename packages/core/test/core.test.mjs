@@ -1050,6 +1050,13 @@ test("design tokens register a full contrast-aware harmony palette in PPT theme 
   assert.notEqual(tokens.themeColors.accent5, tokens.surfaceFill);
   assert.notEqual(tokens.themeColors.accent6, tokens.surfaceLine);
   assert.equal(contrastRatio(tokens.themeColors.accent6, tokens.backgroundColor) >= 3, true);
+  assert.equal(tokens.paletteSeed.sourceModel, "adobe-color-wheel");
+  assert.equal(tokens.paletteSeed.harmony, "split-complementary");
+  assert.equal(tokens.paletteSeed.usage.sequence, "brightness-variation");
+  assert.equal(tokens.paletteSeed.usage.contrast, "hue-opposition");
+  assert.deepEqual(tokens.paletteSeed.chart, tokens.chartColors);
+  assert.equal(tokens.paletteSeed.sequence.includes(tokens.themeColors.accent1), true);
+  assert.equal(tokens.paletteSeed.contrast.every((color) => accents.includes(color)), true);
 });
 
 function contentSlideIdsByTitle(presentation) {

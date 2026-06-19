@@ -15,6 +15,19 @@ export type ThemeColorTokens = {
   followedHyperlink: string;
 };
 
+export type PaletteSeedTokens = {
+  sourceModel: "adobe-color-wheel";
+  harmony: ColorCombinationName;
+  base: string;
+  sequence: string[];
+  contrast: string[];
+  chart: string[];
+  usage: {
+    sequence: "brightness-variation";
+    contrast: "hue-opposition";
+  };
+};
+
 type BaseDesignTokens = {
   name: DesignPresetName;
   backgroundColor: string;
@@ -34,6 +47,7 @@ export type DesignTokens = BaseDesignTokens & {
   colorCombination: ColorCombinationName;
   chartColors: string[];
   themeColors: ThemeColorTokens;
+  paletteSeed: PaletteSeedTokens;
 };
 
 export const DESIGN_PRESET_NAMES = [
@@ -288,11 +302,13 @@ function normalizeHex(color: string): string {
 function finalizeDesignTokens(tokens: BaseDesignTokens, colorCombination: ColorCombinationName): DesignTokens {
   const combined = colorCombination === "preset" ? tokens : applyColorCombination(tokens, colorCombination);
   const chartColors = chartColorsFor(combined, colorCombination);
+  const themeColors = themeColorsFor(combined, chartColors);
   return {
     ...combined,
     colorCombination,
     chartColors,
-    themeColors: themeColorsFor(combined, chartColors),
+    themeColors,
+    paletteSeed: paletteSeedFor(combined, chartColors, themeColors, colorCombination),
   };
 }
 
@@ -346,6 +362,40 @@ function themeColorsFor(tokens: BaseDesignTokens, chartColors: string[]): ThemeC
     accent6: normalizeHex(accent6),
     hyperlink: normalizeHex(tokens.primaryColor),
     followedHyperlink: normalizeHex(tokens.secondaryColor),
+  };
+}
+
+function paletteSeedFor(
+  tokens: BaseDesignTokens,
+  chartColors: string[],
+  themeColors: ThemeColorTokens,
+  colorCombination: ColorCombinationName,
+): PaletteSeedTokens {
+  const base = normalizeHex(tokens.primaryColor);
+  const sequence = [
+    tonalVariant(base, 0.28, -0.1),
+    tonalVariant(base, 0.12, -0.04),
+    base,
+    tonalVariant(base, -0.16, 0.05),
+  ].map(normalizeHex);
+  const contrast = [
+    themeColors.accent3,
+    themeColors.accent4,
+    themeColors.accent5,
+    themeColors.accent6,
+  ].map(normalizeHex);
+
+  return {
+    sourceModel: "adobe-color-wheel",
+    harmony: colorCombination,
+    base,
+    sequence,
+    contrast,
+    chart: chartColors.map(normalizeHex),
+    usage: {
+      sequence: "brightness-variation",
+      contrast: "hue-opposition",
+    },
   };
 }
 

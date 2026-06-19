@@ -148,12 +148,57 @@ test("renderPptx writes editable text boxes with stable coordinates, centered ti
     assert.equal((xml.match(/txBox="1"/g) ?? []).length, 3);
     assert.match(xml, /<a:off x="731520" y="411480"\/><a:ext cx="10698480" cy="731520"\/>/);
     assert.match(xml, /<a:off x="976122" y="1947672"\/><a:ext cx="585216" cy="585216"\/>/);
-    assert.match(xml, /<a:off x="1689354" y="2051304"\/><a:ext cx="3961638" cy="377952"\/>/);
+    const firstItemTextBox = /<a:off x="1689354" y="\d+"\/><a:ext cx="3961638" cy="(\d+)"\/>[\s\S]{0,900}<a:t>Markdown은 원본 문서다\.<\/a:t>/.exec(xml);
+    assert.ok(firstItemTextBox);
+    assert.ok(Number(firstItemTextBox[1]) >= 390000);
     assert.match(xml, /<a:bodyPr[^>]*wrap="square"/);
     assert.match(xml, /<a:normAutofit\/>/);
     assert.match(xml, /<a:bodyPr[^>]*anchor="ctr"/);
     assert.match(xml, /lIns="0" tIns="25400" rIns="25400" bIns="0"/);
     assert.match(xml, /<a:pPr[^>]*algn="ctr"/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx gives wrapped item text enough height to avoid PowerPoint overlap", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-wrapped-item-height-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "list-1",
+      type: "bulletList",
+      items: ["MDPR is the main presentation runtime."],
+    },
+  ];
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "item-1",
+      role: "item",
+      blockIds: ["list-1#0"],
+      x: 0.9,
+      y: 1.6,
+      w: 5.5,
+      h: 1.7,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 22, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "editorial" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+    const textBox = /<a:t>MDPR is the main presentation runtime\.<\/a:t>[\s\S]*?/.test(xml)
+      ? /<a:off x="1689354" y="\d+"\/><a:ext cx="3961638" cy="(\d+)"\/>[\s\S]{0,900}<a:t>MDPR is the main presentation runtime\.<\/a:t>/.exec(xml)
+      : null;
+
+    assert.ok(textBox);
+    assert.ok(Number(textBox[1]) >= 650000);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -185,6 +230,44 @@ test("renderPptx renders item text when a bullet list only contains structured l
     assert.match(xml, /Structured item alpha/);
     assert.match(xml, /Structured item beta/);
     assert.equal((xml.match(/Structured item/g) ?? []).length, 2);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx renders labeled list items with bold label, line break, and indented description", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-labeled-list-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "list-1",
+      type: "bulletList",
+      listItems: [
+        {
+          text: "Constraint: text must stay inside the card",
+          label: "Constraint",
+          description: "text must stay inside the card",
+          level: 0,
+          ordered: false,
+        },
+      ],
+      listKind: "unordered",
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "technical" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+
+    assert.match(xml, /Constraint/);
+    assert.match(xml, /text must stay inside the card/);
+    assert.match(xml, /<a:rPr[^>]*b="1"[\s\S]{0,240}<a:t>Constraint<\/a:t>/);
+    assert.match(xml, /Constraint[\s\S]*<a:pPr[^>]*algn="l"[\s\S]*text must stay inside the card/);
+    assert.match(xml, /<a:t>  text must stay inside the card<\/a:t>/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -658,7 +741,8 @@ test("renderPptx renders chart proof objects as editable shapes without native c
     assert.match(slideXml[3], /Renderer/);
     assert.match(slideXml[4], /Metric Dots/);
     assert.match(slideXml[4], /Ship/);
-    assert.equal((slideXml[0].match(/prst="roundRect"/g) ?? []).length >= 18, true);
+    assert.equal((slideXml[0].match(/prst="blockArc"/g) ?? []).length >= 2, true);
+    assert.equal((slideXml[0].match(/prst="roundRect"/g) ?? []).length < 12, true);
     assert.equal((combinedXml.match(/prst="ellipse"/g) ?? []).length >= 12, true);
     assert.equal((combinedXml.match(/prst="roundRect"/g) ?? []).length >= 16, true);
     assert.equal((combinedXml.match(/prst="line"/g) ?? []).length >= 4, true);
@@ -1008,7 +1092,51 @@ test("renderPptx adds editable number badges and accent-colored key text for ite
     assert.match(xml, /Render/);
     assert.match(xml, /val="1D4ED8"/);
     assert.equal((xml.match(/prst="ellipse"|prst="roundRect"/g) ?? []).length >= 2, true);
+    assert.equal((xml.match(/anchor="ctr"/g) ?? []).length >= 2, true);
+    assert.equal((xml.match(/<a:pPr[^>]*algn="ctr"/g) ?? []).length >= 2, true);
     assert.doesNotMatch(xml, /1\. Prepare/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx serializes marker badges with matching shape and text centers", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-marker-centers-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "list-1",
+      type: "bulletList",
+      items: ["Alpha", "Beta"],
+      listItems: [
+        { text: "Alpha", ordered: true, number: 1, level: 0, runs: [{ text: "Alpha" }] },
+        { text: "Beta", ordered: true, number: 2, level: 0, runs: [{ text: "Beta" }] },
+      ],
+    },
+  ];
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    { id: "item-1", role: "item", blockIds: ["list-1#0"], x: 0.9, y: 1.7, w: 5.5, h: 1.7, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 } },
+    { id: "item-2", role: "item", blockIds: ["list-1#1"], x: 6.9, y: 1.7, w: 5.5, h: 1.7, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 } },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "executive" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+    const centeredRuns = [...xml.matchAll(/<a:bodyPr[^>]*anchor="ctr"[\s\S]*?<a:pPr[^>]*algn="ctr"[\s\S]*?<a:t>(1|2)<\/a:t>/g)];
+
+    assert.equal(centeredRuns.length, 2);
+    for (const marker of ["1", "2"]) {
+      const markerIndex = xml.indexOf(`<a:t>${marker}</a:t>`);
+      assert.ok(markerIndex > 0);
+      const preceding = xml.slice(Math.max(0, markerIndex - 900), markerIndex);
+      assert.match(preceding, /<a:bodyPr[^>]*anchor="ctr"/);
+      assert.match(preceding, /<a:pPr[^>]*algn="ctr"/);
+    }
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -1144,6 +1272,7 @@ test("renderPptx renders pipeline diagrams as editable nodes and connectors", as
     assert.equal((xml.match(/prst="roundRect"/g) ?? []).length >= 3, true);
     assert.equal((xml.match(/prst="ellipse"/g) ?? []).length >= 3, true);
     assert.equal((xml.match(/<a:ln/g) ?? []).length >= 2, true);
+    assert.equal(xml.indexOf('prst="line"') < xml.indexOf('prst="roundRect"'), true);
     assert.doesNotMatch(xml, /<a:off x="914400" y="2286000"\/>\s*<a:ext cx="10241280" cy="1371600"\/>[\s\S]{0,420}<a:prstGeom prst="roundRect"/);
     assert.doesNotMatch(xml, /<a:off x="914400" y="2286000"\/>\s*<a:ext cx="10241280" cy="73152"\/>[\s\S]{0,420}<a:prstGeom prst="rect"/);
   } finally {

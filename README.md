@@ -2,7 +2,11 @@
 
 `mdpresent` is not a direct Markdown-to-PowerPoint converter. It is a CLI-based presentation structuring tool that splits Markdown documents into a shared `Presentation IR`, then renders that structure to `PPTX`, `PDF`, or `HTML`.
 
-`mdpresent` is a **NO LLM runtime** engine: parsing, splitting, layout, validation, and rendering are deterministic and rule-based. It can also be packaged as an auxiliary Codex skill or local automation skill because the CLI behavior does not require external API calls.
+`mdpresent` is the main deterministic runtime. Parsing, splitting, layout, validation, theme selection, editable object rendering, and PowerPoint output are rule-based and require no LLM calls. The separate `mdpr-skill` project is only a reasoning companion: it can prepare compact semantic hints or review artifacts, but MDPR may ignore those hints and still build the deck deterministically.
+
+![MDPR deterministic presentation pipeline teaser](docs/assets/readme-slides/mdpr-pipeline-teaser.png)
+
+The teaser above is generated as a one-slide PowerPoint deck at `docs/assets/readme-slides/mdpr-pipeline-teaser.pptx`, exported through Microsoft PowerPoint to `docs/assets/readme-slides/mdpr-pipeline-teaser.png`, and kept as a README image. Its design follows recent CHI-style teaser conventions: a single readable overview image, explicit research/system object, clear pipeline hierarchy, a visible proof/validation point, and restrained visual emphasis instead of decorative filler.
 
 Language variants:
 
@@ -27,7 +31,7 @@ The same Markdown source can produce editable PPTX slides with responsive struct
 
 MDPR keeps the runtime deterministic. Optional agent hints may suggest compact semantic tags before design selection, but MDPR owns parsing, slide/object splitting, graph preservation, layout, theme color derivation, editable proof objects, icon slots, z-order, overflow checks, and renderer output.
 
-<img src="docs/assets/readme-slides/design-components-pipeline.png" alt="MDPR deterministic design components pipeline" width="100%">
+<img src="docs/assets/readme-slides/mdpr-pipeline-teaser.png" alt="MDPR deterministic presentation pipeline" width="100%">
 
 ## Core Philosophy
 
@@ -142,3 +146,12 @@ examples/   Example Markdown, config, and override files
 4. Keep `schemas/*.json` stable unless a schema-contract TODO explicitly changes them.
 5. Implement in this order: `packages/core`, `packages/layout`, `packages/override`, then renderers.
 6. Build requests for multiple independent formats run through the shared plan once and render requested outputs such as HTML and PPTX as parallel jobs.
+
+## GitHub Actions
+
+The repository runs two Actions workflows:
+
+- `CI` installs the pnpm workspace, runs typecheck, builds all packages, and runs tests on push, pull request, and manual dispatch.
+- `Theme Preview` builds the package workspace, regenerates the theme preview gallery, and publishes it to GitHub Pages.
+
+These checks protect the deterministic MDPR runtime. The optional `mdpr-skill` repository may prepare semantic hints and review artifacts, but MDPR's Actions must pass without an LLM or external API key.
