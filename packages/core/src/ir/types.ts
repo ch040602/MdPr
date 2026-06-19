@@ -105,7 +105,7 @@ export type DiagramIR = {
   }>;
 };
 
-export type ChartKind = "bar" | "arc-ring" | "gauge" | "connected-strip";
+export type ChartKind = "bar" | "arc-ring" | "gauge" | "connected-strip" | "ranked-bars" | "metric-dots";
 
 export type ChartIR = {
   kind: ChartKind;

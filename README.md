@@ -83,9 +83,11 @@ The parser preserves presentation-relevant Markdown structure and avoids flatten
 
 `--design` and `theme.designPreset` use one shared catalog across PPTX and HTML. Current presets include `plain`, `clean`, `executive`, `editorial`, `technical`, `dark`, `nord`, `solarized`, `dracula`, `tableau`, `gruvbox`, `monokai`, `material`, and `tokyo-night`.
 
-`theme.colorCombination` can derive Adobe Color Wheel-style palettes from `theme.primaryColor` on top of a preset. Supported values are `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic`. Derived colors feed element accents, table borders, chart color tokens, and the generated PowerPoint document theme colors (`accent1` through `accent6`).
+`theme.colorCombination` can derive Adobe Color Wheel-style palettes from `theme.primaryColor` on top of a preset. Supported values are `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic`. Derived colors use harmony hue offsets plus saturation/lightness tuning, feed element accents and chart color tokens, and are registered into the generated PowerPoint document theme colors (`accent1` through `accent6`).
 
-Chart fences support native PowerPoint bar charts and editable chart proof objects. Use `chart` or `bar` for native bar charts, `arc-ring` for progress/ratio rings, `gauge` for score/readiness gauges, and `connected-strip` for small-multiple flow metrics. Generic `chart` fences may also declare `kind: arc-ring`, `kind: gauge`, or `kind: connected-strip`.
+Chart fences support native PowerPoint bar charts and editable chart proof objects. Use `chart` or `bar` for native bar charts, `arc-ring` for progress/ratio rings, `gauge` for score/readiness gauges, `connected-strip` for small-multiple flow metrics, `ranked-bars` for ranked evidence, and `metric-dots` for compact status/progress indicators. Generic `chart` fences may also declare `kind: arc-ring`, `kind: gauge`, `kind: connected-strip`, `kind: ranked-bars`, or `kind: metric-dots`.
+
+Text-only relief and item-card badges use restrained Material Icons-inspired monochrome glyphs. The icons follow the Material 24px box assumption, are centered inside their icon slot, and remain secondary to the text.
 
 When a chart slide contains prose but no table, MDPR reserves a left explanation region and a wider right chart region so interpretation and evidence are read together. When the same slide contains a table, MDPR preserves the chart-plus-table parallel layout and keeps table text vertically centered with readable margins.
 

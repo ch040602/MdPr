@@ -146,6 +146,9 @@ decorative lines and badges are drawn as editable shapes and text is inset away 
 PPTX text boxes use role-aware inner margins and vertical anchors so titles, item cards, proof points, code blocks, and body text align consistently inside their shape bounds
 chart slides with short prose and no table use a parallel body-plus-chart layout rather than pushing interpretation below the graph
 chart slides with a table reserve separate chart and table regions so numeric evidence and table details remain visible on the same page
+editable chart proof objects include segmented arc rings, gauges, connected strips, ranked bars, and metric dots
+generated monochrome icons follow a centered Material-style 24px icon box and remain secondary to slide text
+color-combination palettes feed PPT theme accent1-accent6 with contrast-aware saturation and lightness variants rather than surface-line duplicates
 ```
 
 Planned behavior:

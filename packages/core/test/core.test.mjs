@@ -319,6 +319,30 @@ test("parseMarkdown supports editable chart proof object variants", () => {
   });
 });
 
+test("parseMarkdown supports additional editable chart object variants", () => {
+  const doc = parseMarkdown([
+    "# Demo",
+    "",
+    "```ranked-bars",
+    "Parser, 91",
+    "Layout, 87",
+    "Renderer, 94",
+    "```",
+    "",
+    "```metric-dots",
+    "Draft, 20",
+    "Review, 68",
+    "Ship, 92",
+    "```",
+  ].join("\n"));
+
+  const charts = doc.blocks.filter((block) => block.type === "chart").map((block) => block.chart);
+
+  assert.deepEqual(charts.map((chart) => chart.kind), ["ranked-bars", "metric-dots"]);
+  assert.deepEqual(charts[0].labels, ["Parser", "Layout", "Renderer"]);
+  assert.deepEqual(charts[1].series[0].values, [20, 68, 92]);
+});
+
 test("parsePandocJson normalizes Pandoc AST blocks into MDPR semantic blocks", () => {
   const doc = parsePandocJson({
     "pandoc-api-version": [1, 23, 1],
@@ -977,9 +1001,32 @@ test("design tokens can derive Adobe-style color combinations for PPT and charts
 
   assert.equal(tokens.colorCombination, "complementary");
   assert.equal(tokens.themeColors.accent1, "2563EB");
-  assert.equal(tokens.themeColors.accent2, "EBAD25");
-  assert.deepEqual(tokens.chartColors.slice(0, 3), ["2563EB", "EBAD25", "25B2EB"]);
+  assert.equal(tokens.themeColors.accent2, "F0AA11");
+  assert.deepEqual(tokens.chartColors.slice(0, 3), ["2563EB", "F0AA11", "31B5EA"]);
   assert.equal(tokens.surfaceLine, "D3DDF0");
+});
+
+test("design tokens register a full contrast-aware harmony palette in PPT theme slots", () => {
+  const tokens = resolveDesignTokens("clean", {
+    ...defaultConfig.theme,
+    primaryColor: "#2563EB",
+    colorCombination: "split-complementary",
+  });
+  const accents = [
+    tokens.themeColors.accent1,
+    tokens.themeColors.accent2,
+    tokens.themeColors.accent3,
+    tokens.themeColors.accent4,
+    tokens.themeColors.accent5,
+    tokens.themeColors.accent6,
+  ];
+
+  assert.equal(tokens.themeColors.accent1, "2563EB");
+  assert.equal(new Set(accents).size >= 5, true);
+  assert.equal(tokens.chartColors.slice(0, 6).every((color) => accents.includes(color)), true);
+  assert.notEqual(tokens.themeColors.accent5, tokens.surfaceFill);
+  assert.notEqual(tokens.themeColors.accent6, tokens.surfaceLine);
+  assert.equal(contrastRatio(tokens.themeColors.accent6, tokens.backgroundColor) >= 3, true);
 });
 
 function contentSlideIdsByTitle(presentation) {
@@ -988,6 +1035,31 @@ function contentSlideIdsByTitle(presentation) {
       .filter((slide) => slide.role === "content")
       .map((slide) => [slide.title, slide.id]),
   );
+}
+
+function contrastRatio(left, right) {
+  const l1 = relativeLuminance(hexToRgb(left));
+  const l2 = relativeLuminance(hexToRgb(right));
+  const light = Math.max(l1, l2);
+  const dark = Math.min(l1, l2);
+  return (light + 0.05) / (dark + 0.05);
+}
+
+function relativeLuminance(rgb) {
+  const channels = [rgb.r, rgb.g, rgb.b].map((channel) => {
+    const value = channel / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function hexToRgb(hex) {
+  const normalized = hex.replace(/^#/, "");
+  return {
+    r: Number.parseInt(normalized.slice(0, 2), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+  };
 }
 
 function validateJsonSchemaSubset(schema, value, root, path = "$") {

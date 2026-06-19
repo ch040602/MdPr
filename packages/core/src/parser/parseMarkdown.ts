@@ -510,6 +510,8 @@ function chartKindFromLanguage(language: string): ChartIR["kind"] | undefined {
   if (["arc-ring", "arc-ring-chart", "ring", "ring-chart", "donut", "donut-chart"].includes(normalized)) return "arc-ring";
   if (["gauge", "gauge-chart", "gauge-dial", "dial"].includes(normalized)) return "gauge";
   if (["connected-strip", "chart-strip", "strip", "strip-chart", "sequence-strip"].includes(normalized)) return "connected-strip";
+  if (["ranked-bars", "rank-bars", "ranking-bars", "ranked-bar", "ranked-bar-chart"].includes(normalized)) return "ranked-bars";
+  if (["metric-dots", "dot-metrics", "status-dots", "progress-dots", "dot-strip"].includes(normalized)) return "metric-dots";
   return undefined;
 }
 

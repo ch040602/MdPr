@@ -519,9 +519,10 @@ test("renderPptx writes active color combination into PowerPoint document theme"
     assert.match(xml, /<a:lt1><a:srgbClr val="F8FAFC"\/><\/a:lt1>/);
     assert.match(xml, /<a:dk1><a:srgbClr val="111827"\/><\/a:dk1>/);
     assert.match(xml, /<a:accent1><a:srgbClr val="2563EB"\/><\/a:accent1>/);
-    assert.match(xml, /<a:accent2><a:srgbClr val="EBAD25"\/><\/a:accent2>/);
-    assert.match(xml, /<a:accent3><a:srgbClr val="25B2EB"\/><\/a:accent3>/);
-    assert.match(xml, /<a:accent6><a:srgbClr val="D3DDF0"\/><\/a:accent6>/);
+    assert.match(xml, /<a:accent2><a:srgbClr val="F0AA11"\/><\/a:accent2>/);
+    assert.match(xml, /<a:accent3><a:srgbClr val="31B5EA"\/><\/a:accent3>/);
+    assert.match(xml, /<a:accent5><a:srgbClr val="E7B955"\/><\/a:accent5>/);
+    assert.match(xml, /<a:accent6><a:srgbClr val="0A3CAA"\/><\/a:accent6>/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -618,6 +619,22 @@ test("renderPptx renders chart proof objects as editable shapes without native c
         series: [{ name: "Confidence", values: [20, 68, 92] }],
       },
     },
+    {
+      title: "Ranked Bars",
+      chart: {
+        kind: "ranked-bars",
+        labels: ["Parser", "Layout", "Renderer"],
+        series: [{ name: "Coverage", values: [91, 87, 94] }],
+      },
+    },
+    {
+      title: "Metric Dots",
+      chart: {
+        kind: "metric-dots",
+        labels: ["Draft", "Review", "Ship"],
+        series: [{ name: "Confidence", values: [20, 68, 92] }],
+      },
+    },
   ]);
 
   try {
@@ -626,7 +643,7 @@ test("renderPptx renders chart proof objects as editable shapes without native c
     const chartPaths = Object.keys(zip.files).filter((path) => /^ppt\/charts\/chart\d+\.xml$/.test(path));
     assert.equal(chartPaths.length, 0);
 
-    const slideXml = await Promise.all([1, 2, 3].map(async (index) => zip.file(`ppt/slides/slide${index}.xml`).async("string")));
+    const slideXml = await Promise.all([1, 2, 3, 4, 5].map(async (index) => zip.file(`ppt/slides/slide${index}.xml`).async("string")));
     const combinedXml = slideXml.join("\n");
 
     assert.match(slideXml[0], /Validation Ring/);
@@ -637,8 +654,13 @@ test("renderPptx renders chart proof objects as editable shapes without native c
     assert.match(slideXml[2], /Connected Strip/);
     assert.match(slideXml[2], /Draft/);
     assert.match(slideXml[2], /Validate/);
-    assert.equal((combinedXml.match(/prst="ellipse"/g) ?? []).length >= 5, true);
-    assert.equal((combinedXml.match(/prst="roundRect"/g) ?? []).length >= 6, true);
+    assert.match(slideXml[3], /Ranked Bars/);
+    assert.match(slideXml[3], /Renderer/);
+    assert.match(slideXml[4], /Metric Dots/);
+    assert.match(slideXml[4], /Ship/);
+    assert.equal((slideXml[0].match(/prst="roundRect"/g) ?? []).length >= 18, true);
+    assert.equal((combinedXml.match(/prst="ellipse"/g) ?? []).length >= 12, true);
+    assert.equal((combinedXml.match(/prst="roundRect"/g) ?? []).length >= 16, true);
     assert.equal((combinedXml.match(/prst="line"/g) ?? []).length >= 4, true);
     assert.equal((combinedXml.match(/sz="1[4-9]00"|sz="2[0-9]00"|sz="3[0-9]00"/g) ?? []).length >= 8, true);
   } finally {

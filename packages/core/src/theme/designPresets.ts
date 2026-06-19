@@ -298,7 +298,7 @@ function finalizeDesignTokens(tokens: BaseDesignTokens, colorCombination: ColorC
 
 function applyColorCombination(tokens: BaseDesignTokens, colorCombination: Exclude<ColorCombinationName, "preset">): BaseDesignTokens {
   const primary = normalizeHex(tokens.primaryColor);
-  const accents = accentColors(primary, colorCombination);
+  const accents = harmonyPalette(primary, colorCombination);
   return {
     ...tokens,
     primaryColor: primary,
@@ -321,16 +321,18 @@ function chartColorsFor(tokens: BaseDesignTokens, colorCombination: ColorCombina
     ].map(normalizeHex);
   }
 
-  const accents = accentColors(tokens.primaryColor, colorCombination);
+  const accents = harmonyPalette(tokens.primaryColor, colorCombination);
   return [
     tokens.primaryColor,
-    tokens.secondaryColor,
-    ...accents.slice(1),
-    tokens.surfaceLine,
+    ...accents,
+    tonalVariant(tokens.primaryColor, -0.18, 0.06),
+    tonalVariant(accents[0] ?? tokens.secondaryColor, -0.2, 0.04),
   ].slice(0, 6).map(normalizeHex);
 }
 
 function themeColorsFor(tokens: BaseDesignTokens, chartColors: string[]): ThemeColorTokens {
+  const accent5 = chartColors[4] ?? tonalVariant(tokens.primaryColor, 0.22, -0.04);
+  const accent6 = ensureMinimumContrast(chartColors[5] ?? tonalVariant(tokens.primaryColor, -0.24, 0.05), tokens.backgroundColor, 3);
   return {
     dark1: normalizeHex(tokens.textColor),
     light1: normalizeHex(tokens.backgroundColor),
@@ -340,32 +342,61 @@ function themeColorsFor(tokens: BaseDesignTokens, chartColors: string[]): ThemeC
     accent2: normalizeHex(tokens.secondaryColor),
     accent3: normalizeHex(chartColors[2] ?? tokens.ruleColor),
     accent4: normalizeHex(chartColors[3] ?? tokens.mutedTextColor),
-    accent5: normalizeHex(chartColors[4] ?? tokens.surfaceFill),
-    accent6: normalizeHex(tokens.surfaceLine),
+    accent5: normalizeHex(accent5),
+    accent6: normalizeHex(accent6),
     hyperlink: normalizeHex(tokens.primaryColor),
     followedHyperlink: normalizeHex(tokens.secondaryColor),
   };
 }
 
-function accentColors(primaryColor: string, colorCombination: Exclude<ColorCombinationName, "preset">): string[] {
+function harmonyPalette(primaryColor: string, colorCombination: Exclude<ColorCombinationName, "preset">): string[] {
   const primary = normalizeHex(primaryColor);
+  const accent = (degrees: number, lightnessDelta = 0, saturationDelta = 0) => tunedHarmonyColor(primary, degrees, lightnessDelta, saturationDelta);
   switch (colorCombination) {
     case "monochromatic":
-      return [mixHex(primary, "FFFFFF", 0.35), mixHex(primary, "000000", 0.18), mixHex(primary, "FFFFFF", 0.55), mixHex(primary, "000000", 0.32)];
+      return [
+        tonalVariant(primary, 0.18, -0.06),
+        tonalVariant(primary, -0.16, 0.05),
+        tonalVariant(primary, 0.34, -0.12),
+        tonalVariant(primary, -0.28, 0.08),
+      ];
     case "analogous":
-      return [rotateHue(primary, -30), rotateHue(primary, 30), rotateHue(primary, -55), rotateHue(primary, 55)];
+      return [accent(-30, 0.01, 0.04), accent(30, -0.01, 0.04), accent(-55, 0.04, -0.02), accent(55, -0.04, -0.02)];
     case "split-complementary":
-      return [rotateHue(primary, 150), rotateHue(primary, 210), rotateHue(primary, -30), rotateHue(primary, 30)];
+      return [accent(150, -0.03, 0.05), accent(210, -0.02, 0.05), accent(-30, 0.04, -0.02), accent(30, -0.04, -0.02)];
     case "triadic":
-      return [rotateHue(primary, 120), rotateHue(primary, 240), mixHex(rotateHue(primary, 120), "FFFFFF", 0.28), mixHex(rotateHue(primary, 240), "FFFFFF", 0.28)];
+      return [accent(120, -0.02, 0.04), accent(240, -0.02, 0.04), accent(120, 0.18, -0.08), accent(240, 0.18, -0.08)];
     case "complementary":
-      return [rotateHue(primary, 180), rotateHue(primary, -24), rotateHue(primary, 24), mixHex(rotateHue(primary, 180), "FFFFFF", 0.28)];
+      return [accent(180, -0.03, 0.05), accent(-24, 0.02, -0.02), accent(24, -0.02, -0.02), accent(180, 0.18, -0.08)];
   }
 }
 
-function rotateHue(hex: string, degrees: number): string {
+function tunedHarmonyColor(hex: string, degrees: number, lightnessDelta: number, saturationDelta: number): string {
   const { h, s, l } = rgbToHsl(hexToRgb(hex));
-  return rgbToHex(hslToRgb({ h: positiveModulo(h + degrees, 360), s, l }));
+  return rgbToHex(hslToRgb({
+    h: positiveModulo(h + degrees, 360),
+    s: clampUnit(Math.max(0.56, Math.min(0.9, s + saturationDelta))),
+    l: clampUnit(Math.max(0.34, Math.min(0.62, l + lightnessDelta))),
+  }));
+}
+
+function tonalVariant(hex: string, lightnessDelta: number, saturationDelta: number): string {
+  const { h, s, l } = rgbToHsl(hexToRgb(hex));
+  return rgbToHex(hslToRgb({
+    h,
+    s: clampUnit(Math.max(0.34, Math.min(0.92, s + saturationDelta))),
+    l: clampUnit(Math.max(0.22, Math.min(0.82, l + lightnessDelta))),
+  }));
+}
+
+function ensureMinimumContrast(hex: string, background: string, minContrast: number): string {
+  let candidate = normalizeHex(hex);
+  const backgroundRgb = hexToRgb(background);
+  const backgroundIsDark = relativeLuminance(backgroundRgb) < 0.5;
+  for (let step = 0; step < 10 && contrastRatio(candidate, background) < minContrast; step++) {
+    candidate = tonalVariant(candidate, backgroundIsDark ? 0.08 : -0.08, 0.02);
+  }
+  return candidate;
 }
 
 function mixHex(left: string, right: string, rightWeight: number): string {
@@ -437,6 +468,26 @@ function hueToRgb(p: number, q: number, t: number): number {
 
 function positiveModulo(value: number, modulo: number): number {
   return ((value % modulo) + modulo) % modulo;
+}
+
+function contrastRatio(left: string, right: string): number {
+  const leftLum = relativeLuminance(hexToRgb(left));
+  const rightLum = relativeLuminance(hexToRgb(right));
+  const light = Math.max(leftLum, rightLum);
+  const dark = Math.min(leftLum, rightLum);
+  return (light + 0.05) / (dark + 0.05);
+}
+
+function relativeLuminance(rgb: { r: number; g: number; b: number }): number {
+  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((channel) => {
+    const value = channel / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+}
+
+function clampUnit(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 function clamp(value: number, min: number, max: number): number {

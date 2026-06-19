@@ -9,6 +9,8 @@ import { extractTemplateDesignAssets, type TemplateShapeAsset, type TemplateThem
 
 export type { DesignPresetName } from "./designPresets.js";
 
+type MaterialIconKind = "article" | "account-tree" | "verified" | "auto-awesome" | "bar-chart" | "table-chart" | "image" | "palette" | "code";
+
 export type RenderPptxOptions = {
   outPath: string;
   templatePath?: string | null;
@@ -733,11 +735,7 @@ function renderItemIconBadge(
   const surfaceSize = size + 0.16;
   const surfaceX = x - 0.08;
   const surfaceY = y - 0.08;
-  const iconKind = Number(/\d+$/.exec(region.id)?.[0] ?? 0) % 3 === 0
-    ? "shield"
-    : Number(/\d+$/.exec(region.id)?.[0] ?? 0) % 2 === 0
-      ? "pipeline"
-      : "doc";
+  const iconKind = materialIconKindForIndex(Number(/\d+$/.exec(region.id)?.[0] ?? 0));
 
   slide.addShape("roundRect", {
     x: surfaceX,
@@ -748,7 +746,7 @@ function renderItemIconBadge(
     fill: { color: preset.backgroundColor },
     line: { color: preset.surfaceLine, pt: 0.7 },
   } as never);
-  drawMonoIcon(slide, iconKind, x + size * 0.12, y + size * 0.08, size, preset.textColor, preset.backgroundColor);
+  drawMonoIcon(slide, iconKind, x, y, size, preset.textColor, preset.backgroundColor);
 
   void common;
   return { x: surfaceX, y: surfaceY, size: surfaceSize, right: surfaceX + surfaceSize };
@@ -811,6 +809,16 @@ function renderChartRegion(
 
   if (chart.kind === "connected-strip") {
     renderConnectedStripChart(slide, chart, region, preset, common);
+    return;
+  }
+
+  if (chart.kind === "ranked-bars") {
+    renderRankedBarsChart(slide, chart, region, preset, common);
+    return;
+  }
+
+  if (chart.kind === "metric-dots") {
+    renderMetricDotsChart(slide, chart, region, preset, common);
     return;
   }
 
@@ -883,14 +891,30 @@ function renderArcRingChart(
     fill: { color: preset.surfaceLine, transparency: 18 },
     line: { color: preset.surfaceLine, transparency: 100 },
   });
-  slide.addShape("ellipse", {
-    x: ringX + ringSize * 0.06,
-    y: ringY + ringSize * 0.06,
-    w: ringSize * 0.88,
-    h: ringSize * 0.88,
-    fill: { color: accent, transparency: 8 },
-    line: { color: accent, transparency: 100 },
-  });
+  const segments = ringSegments(percent, ringX, ringY, ringSize);
+  for (const segment of segments) {
+    slide.addShape("roundRect", {
+      x: segment.x,
+      y: segment.y,
+      w: segment.w,
+      h: segment.h,
+      rectRadius: 0.03,
+      rotate: segment.rotate,
+      fill: { color: segment.active ? accent : preset.surfaceLine, transparency: segment.active ? 0 : 8 },
+      line: { color: segment.active ? accent : preset.surfaceLine, transparency: 100 },
+    } as never);
+  }
+  if (percent > 0 && percent < 100) {
+    const marker = segments[Math.max(0, Math.min(segments.length - 1, Math.ceil(percent / 100 * segments.length) - 1))]!;
+    slide.addShape("ellipse", {
+      x: marker.cx - ringSize * 0.035,
+      y: marker.cy - ringSize * 0.035,
+      w: ringSize * 0.07,
+      h: ringSize * 0.07,
+      fill: { color: secondary },
+      line: { color: preset.backgroundColor, pt: 1.1 },
+    });
+  }
   slide.addShape("ellipse", {
     x: innerX,
     y: innerY,
@@ -899,15 +923,6 @@ function renderArcRingChart(
     fill: { color: preset.backgroundColor },
     line: { color: preset.backgroundColor, transparency: 100 },
   });
-  for (const segment of ringSegments(percent, ringX, ringY, ringSize)) {
-    slide.addShape("roundRect", {
-      ...segment,
-      rectRadius: 0.04,
-      rotate: segment.rotate,
-      fill: { color: secondary, transparency: 0 },
-      line: { color: secondary, transparency: 100 },
-    } as never);
-  }
 
   slide.addText(`${Math.round(percent)}%`, {
     ...common,
@@ -1132,6 +1147,184 @@ function renderConnectedStripChart(
   }
 }
 
+function renderRankedBarsChart(
+  slide: PptxGenJS.Slide,
+  chart: ChartIR,
+  region: { x: number; y: number; w: number; h: number; typography?: { fontFamily?: string; fontSize?: number } },
+  preset: DesignTokens,
+  common: PptxGenJS.TextPropsOptions,
+): void {
+  const fontFace = region.typography?.fontFamily ?? common.fontFace ?? "Arial";
+  const bodySize = Math.max(14, region.typography?.fontSize ?? common.fontSize ?? 16);
+  const values = chart.series[0]?.values ?? [];
+  const rows = chart.labels
+    .map((label, index) => ({ label, value: values[index] ?? 0 }))
+    .filter((row) => Number.isFinite(row.value))
+    .sort((left, right) => right.value - left.value)
+    .slice(0, 5);
+  if (!rows.length) return;
+
+  const maxValue = Math.max(1, ...rows.map((row) => Math.abs(row.value)));
+  const rowGap = Math.min(0.12, Math.max(0.06, region.h * 0.02));
+  const rowH = Math.min(0.62, (region.h - 0.36 - rowGap * (rows.length - 1)) / rows.length);
+  const x = region.x + 0.32;
+  const y = region.y + (region.h - (rowH * rows.length + rowGap * (rows.length - 1))) / 2;
+  const labelW = Math.min(2.2, region.w * 0.3);
+  const barX = x + labelW + 0.32;
+  const barW = Math.max(1.2, region.x + region.w - barX - 0.55);
+
+  rows.forEach((row, index) => {
+    const rowY = y + index * (rowH + rowGap);
+    const accent = preset.chartColors[index % Math.max(1, preset.chartColors.length)] ?? preset.primaryColor;
+    const normalized = Math.abs(row.value) / maxValue;
+    slide.addShape("ellipse", {
+      x,
+      y: rowY + (rowH - 0.34) / 2,
+      w: 0.34,
+      h: 0.34,
+      fill: { color: accent },
+      line: { color: accent, transparency: 100 },
+    });
+    slide.addText(String(index + 1), {
+      ...common,
+      x,
+      y: rowY + (rowH - 0.34) / 2,
+      w: 0.34,
+      h: 0.34,
+      fontFace,
+      fontSize: 11,
+      bold: true,
+      color: readableTextColor(accent),
+      align: "center",
+      valign: "middle",
+      margin: [0, 0, 0, 0],
+    });
+    slide.addText(row.label, {
+      ...common,
+      x: x + 0.46,
+      y: rowY,
+      w: labelW - 0.46,
+      h: rowH,
+      fontFace,
+      fontSize: Math.max(13, Math.min(17, bodySize)),
+      bold: index === 0,
+      color: preset.textColor,
+      align: "left",
+      valign: "middle",
+      margin: [0, 0, 0, 0],
+      fit: "shrink",
+    });
+    slide.addShape("roundRect", {
+      x: barX,
+      y: rowY + rowH * 0.34,
+      w: barW,
+      h: rowH * 0.32,
+      rectRadius: 0.05,
+      fill: { color: preset.surfaceLine, transparency: 22 },
+      line: { color: preset.surfaceLine, transparency: 100 },
+    } as never);
+    slide.addShape("roundRect", {
+      x: barX,
+      y: rowY + rowH * 0.34,
+      w: Math.max(0.12, barW * normalized),
+      h: rowH * 0.32,
+      rectRadius: 0.05,
+      fill: { color: accent },
+      line: { color: accent, transparency: 100 },
+    } as never);
+    slide.addText(formatChartValue(row.value), {
+      ...common,
+      x: barX + barW + 0.08,
+      y: rowY,
+      w: 0.48,
+      h: rowH,
+      fontFace,
+      fontSize: Math.max(13, Math.min(16, bodySize - 1)),
+      bold: true,
+      color: accent,
+      align: "right",
+      valign: "middle",
+      margin: [0, 0, 0, 0],
+    });
+  });
+}
+
+function renderMetricDotsChart(
+  slide: PptxGenJS.Slide,
+  chart: ChartIR,
+  region: { x: number; y: number; w: number; h: number; typography?: { fontFamily?: string; fontSize?: number } },
+  preset: DesignTokens,
+  common: PptxGenJS.TextPropsOptions,
+): void {
+  const fontFace = region.typography?.fontFamily ?? common.fontFace ?? "Arial";
+  const bodySize = Math.max(14, region.typography?.fontSize ?? common.fontSize ?? 16);
+  const values = chart.series[0]?.values ?? [];
+  const count = Math.max(1, Math.min(chart.labels.length, values.length, 6));
+  const gap = Math.min(0.34, Math.max(0.16, region.w * 0.03));
+  const itemW = Math.min(1.35, (region.w - gap * (count - 1) - 0.5) / count);
+  const dotSize = Math.min(0.56, Math.max(0.34, itemW * 0.46));
+  const totalW = itemW * count + gap * (count - 1);
+  const startX = region.x + (region.w - totalW) / 2;
+  const baseY = region.y + region.h * 0.24;
+
+  for (let index = 0; index < count; index++) {
+    const value = clamp(values[index] ?? 0, 0, 100);
+    const x = startX + index * (itemW + gap);
+    const accent = preset.chartColors[index % Math.max(1, preset.chartColors.length)] ?? preset.primaryColor;
+    const activeDots = Math.max(1, Math.round(value / 20));
+    slide.addShape("roundRect", {
+      x,
+      y: baseY - 0.12,
+      w: itemW,
+      h: region.h * 0.58,
+      rectRadius: 0.06,
+      fill: { color: preset.surfaceFill, transparency: 0 },
+      line: { color: preset.surfaceLine, pt: 0.8 },
+    } as never);
+    for (let dot = 0; dot < 5; dot++) {
+      const active = dot < activeDots;
+      slide.addShape("ellipse", {
+        x: x + (itemW - dotSize) / 2,
+        y: baseY + dot * (dotSize * 0.52),
+        w: dotSize,
+        h: dotSize,
+        fill: { color: active ? accent : preset.surfaceLine, transparency: active ? 0 : 28 },
+        line: { color: active ? accent : preset.surfaceLine, transparency: 100 },
+      });
+    }
+    slide.addText(chart.labels[index] ?? `Metric ${index + 1}`, {
+      ...common,
+      x: x + 0.08,
+      y: baseY + region.h * 0.33,
+      w: itemW - 0.16,
+      h: 0.36,
+      fontFace,
+      fontSize: Math.max(12, Math.min(15, bodySize - 2)),
+      bold: true,
+      color: preset.textColor,
+      align: "center",
+      valign: "middle",
+      margin: [0, 0, 0, 0],
+      fit: "shrink",
+    });
+    slide.addText(formatChartValue(value), {
+      ...common,
+      x: x + 0.08,
+      y: baseY + region.h * 0.43,
+      w: itemW - 0.16,
+      h: 0.36,
+      fontFace,
+      fontSize: Math.max(14, Math.min(18, bodySize)),
+      bold: true,
+      color: accent,
+      align: "center",
+      valign: "middle",
+      margin: [0, 0, 0, 0],
+      fit: "shrink",
+    });
+  }
+}
+
 function renderChartLegend(
   slide: PptxGenJS.Slide,
   chart: ChartIR,
@@ -1173,22 +1366,28 @@ function renderChartLegend(
   }
 }
 
-function ringSegments(percent: number, ringX: number, ringY: number, ringSize: number): Array<{ x: number; y: number; w: number; h: number; rotate: number }> {
-  const segmentCount = Math.max(1, Math.min(4, Math.ceil(percent / 25)));
-  const width = ringSize * 0.23;
-  const height = ringSize * 0.085;
+function ringSegments(percent: number, ringX: number, ringY: number, ringSize: number): Array<{ x: number; y: number; w: number; h: number; rotate: number; cx: number; cy: number; active: boolean }> {
+  const segmentCount = 24;
+  const activeCount = Math.round(clamp(percent, 0, 100) / 100 * segmentCount);
+  const width = ringSize * 0.12;
+  const height = ringSize * 0.055;
   const centerX = ringX + ringSize / 2;
   const centerY = ringY + ringSize / 2;
-  const radius = ringSize * 0.39;
+  const radius = ringSize * 0.43;
   return Array.from({ length: segmentCount }, (_, index) => {
-    const angle = -70 + index * 36;
+    const angle = -90 + index * (360 / segmentCount);
     const radians = angle * Math.PI / 180;
+    const cx = centerX + Math.cos(radians) * radius;
+    const cy = centerY + Math.sin(radians) * radius;
     return {
-      x: centerX + Math.cos(radians) * radius - width / 2,
-      y: centerY + Math.sin(radians) * radius - height / 2,
+      x: cx - width / 2,
+      y: cy - height / 2,
       w: width,
       h: height,
       rotate: angle + 90,
+      cx,
+      cy,
+      active: index < activeCount,
     };
   });
 }
@@ -1598,41 +1797,58 @@ function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutI
   drawMonoIcon(slide, iconKindForLayout(layoutSlide), x, y, iconSize, preset.textColor, preset.backgroundColor);
 }
 
-function iconKindForLayout(layoutSlide: LayoutIR["slides"][number]): "doc" | "pipeline" | "shield" | "spark" {
+function iconKindForLayout(layoutSlide: LayoutIR["slides"][number]): MaterialIconKind {
   const titleRegion = layoutSlide.regions.find((region) => region.role === "title");
   const marker = `${layoutSlide.sourceSlideId} ${titleRegion?.id ?? ""}`.toLowerCase();
-  if (/pipeline|flow|process|단계/.test(marker)) return "pipeline";
-  if (/valid|qa|risk|guard|검증/.test(marker)) return "shield";
-  if (/design|hint|idea|skill/.test(marker)) return "spark";
-  return "doc";
+  if (/pipeline|flow|process|단계/.test(marker)) return "account-tree";
+  if (/valid|qa|risk|guard|검증/.test(marker)) return "verified";
+  if (/chart|metric|graph|score/.test(marker)) return "bar-chart";
+  if (/table|grid/.test(marker)) return "table-chart";
+  if (/image|visual|asset/.test(marker)) return "image";
+  if (/color|theme|palette/.test(marker)) return "palette";
+  if (/code|parser|markdown/.test(marker)) return "code";
+  if (/design|hint|idea|skill/.test(marker)) return "auto-awesome";
+  return "article";
+}
+
+function materialIconKindForIndex(index: number): MaterialIconKind {
+  const kinds: MaterialIconKind[] = ["article", "account-tree", "verified", "auto-awesome", "bar-chart", "table-chart", "image", "palette", "code"];
+  return kinds[Math.abs(index) % kinds.length]!;
 }
 
 function drawMonoIcon(
   slide: PptxGenJS.Slide,
-  kind: "doc" | "pipeline" | "shield" | "spark",
+  kind: MaterialIconKind,
   x: number,
   y: number,
   size: number,
   color: string,
   knockoutColor: string,
 ): void {
-  if (kind === "pipeline") {
+  const box = {
+    x: x + size * 0.14,
+    y: y + size * 0.14,
+    w: size * 0.72,
+    h: size * 0.72,
+  };
+
+  if (kind === "account-tree") {
     for (let index = 0; index < 3; index++) {
       slide.addShape("ellipse", {
-        x: x + index * size * 0.38,
-        y: y + size * 0.28,
-        w: size * 0.18,
-        h: size * 0.18,
+        x: box.x + index * box.w * 0.38,
+        y: box.y + box.h * 0.36,
+        w: box.w * 0.2,
+        h: box.w * 0.2,
         fill: { color },
         line: { color, transparency: 100 },
       });
     }
     for (let index = 0; index < 2; index++) {
       slide.addShape("rect", {
-        x: x + size * (0.17 + index * 0.38),
-        y: y + size * 0.36,
-        w: size * 0.22,
-        h: size * 0.035,
+        x: box.x + box.w * (0.2 + index * 0.38),
+        y: box.y + box.h * 0.45,
+        w: box.w * 0.22,
+        h: box.h * 0.045,
         fill: { color },
         line: { color, transparency: 100 },
       });
@@ -1640,49 +1856,102 @@ function drawMonoIcon(
     return;
   }
 
-  if (kind === "shield") {
+  if (kind === "verified") {
     slide.addShape("pentagon", {
-      x,
-      y,
-      w: size * 0.55,
-      h: size * 0.65,
+      x: box.x + box.w * 0.12,
+      y: box.y + box.h * 0.06,
+      w: box.w * 0.76,
+      h: box.h * 0.84,
       fill: { color },
       line: { color, transparency: 100 },
       rotate: 180,
     } as never);
     slide.addShape("rect", {
-      x: x + size * 0.22,
-      y: y + size * 0.12,
-      w: size * 0.1,
-      h: size * 0.28,
+      x: box.x + box.w * 0.45,
+      y: box.y + box.h * 0.28,
+      w: box.w * 0.11,
+      h: box.h * 0.38,
       fill: { color: knockoutColor },
       line: { color: knockoutColor, transparency: 100 },
+      rotate: 35,
     });
     return;
   }
 
-  if (kind === "spark") {
-    slide.addShape("rect", { x: x + size * 0.24, y, w: size * 0.06, h: size * 0.58, fill: { color }, line: { color, transparency: 100 } });
-    slide.addShape("rect", { x, y: y + size * 0.24, w: size * 0.58, h: size * 0.06, fill: { color }, line: { color, transparency: 100 } });
-    slide.addShape("ellipse", { x: x + size * 0.44, y: y + size * 0.44, w: size * 0.1, h: size * 0.1, fill: { color }, line: { color, transparency: 100 } });
+  if (kind === "auto-awesome") {
+    slide.addShape("diamond", { x: box.x + box.w * 0.28, y: box.y, w: box.w * 0.32, h: box.w * 0.32, fill: { color }, line: { color, transparency: 100 } } as never);
+    slide.addShape("diamond", { x: box.x + box.w * 0.05, y: box.y + box.h * 0.45, w: box.w * 0.2, h: box.w * 0.2, fill: { color }, line: { color, transparency: 100 } } as never);
+    slide.addShape("diamond", { x: box.x + box.w * 0.62, y: box.y + box.h * 0.55, w: box.w * 0.22, h: box.w * 0.22, fill: { color }, line: { color, transparency: 100 } } as never);
+    return;
+  }
+
+  if (kind === "bar-chart") {
+    [0.35, 0.62, 0.48].forEach((height, index) => {
+      slide.addShape("rect", {
+        x: box.x + box.w * (0.16 + index * 0.25),
+        y: box.y + box.h * (0.78 - height),
+        w: box.w * 0.13,
+        h: box.h * height,
+        fill: { color },
+        line: { color, transparency: 100 },
+      });
+    });
+    return;
+  }
+
+  if (kind === "table-chart") {
+    slide.addShape("rect", { x: box.x + box.w * 0.1, y: box.y + box.h * 0.18, w: box.w * 0.8, h: box.h * 0.64, fill: { color }, line: { color, transparency: 100 } });
+    for (let index = 0; index < 2; index++) {
+      slide.addShape("rect", { x: box.x + box.w * 0.16, y: box.y + box.h * (0.36 + index * 0.18), w: box.w * 0.68, h: box.h * 0.045, fill: { color: knockoutColor }, line: { color: knockoutColor, transparency: 100 } });
+    }
+    slide.addShape("rect", { x: box.x + box.w * 0.44, y: box.y + box.h * 0.22, w: box.w * 0.045, h: box.h * 0.54, fill: { color: knockoutColor }, line: { color: knockoutColor, transparency: 100 } });
+    return;
+  }
+
+  if (kind === "image") {
+    slide.addShape("roundRect", { x: box.x + box.w * 0.08, y: box.y + box.h * 0.16, w: box.w * 0.84, h: box.h * 0.68, rectRadius: 0.03, fill: { color }, line: { color, transparency: 100 } } as never);
+    slide.addShape("ellipse", { x: box.x + box.w * 0.62, y: box.y + box.h * 0.26, w: box.w * 0.12, h: box.w * 0.12, fill: { color: knockoutColor }, line: { color: knockoutColor, transparency: 100 } });
+    slide.addShape("triangle", { x: box.x + box.w * 0.22, y: box.y + box.h * 0.48, w: box.w * 0.5, h: box.h * 0.22, fill: { color: knockoutColor }, line: { color: knockoutColor, transparency: 100 } } as never);
+    return;
+  }
+
+  if (kind === "palette") {
+    slide.addShape("ellipse", {
+      x: box.x + box.w * 0.08,
+      y: box.y + box.h * 0.12,
+      w: box.w * 0.78,
+      h: box.h * 0.72,
+      fill: { color: knockoutColor, transparency: 100 },
+      line: { color, pt: Math.max(1, size * 4) },
+    });
+    for (const [px, py] of [[0.28, 0.3], [0.52, 0.28], [0.38, 0.52]]) {
+      slide.addShape("ellipse", { x: box.x + box.w * px, y: box.y + box.h * py, w: box.w * 0.1, h: box.w * 0.1, fill: { color }, line: { color, transparency: 100 } });
+    }
+    return;
+  }
+
+  if (kind === "code") {
+    slide.addShape("rect", { x: box.x + box.w * 0.1, y: box.y + box.h * 0.23, w: box.w * 0.22, h: box.h * 0.08, fill: { color }, line: { color, transparency: 100 }, rotate: -35 });
+    slide.addShape("rect", { x: box.x + box.w * 0.68, y: box.y + box.h * 0.23, w: box.w * 0.22, h: box.h * 0.08, fill: { color }, line: { color, transparency: 100 }, rotate: 35 });
+    slide.addShape("rect", { x: box.x + box.w * 0.42, y: box.y + box.h * 0.18, w: box.w * 0.1, h: box.h * 0.64, fill: { color }, line: { color, transparency: 100 }, rotate: 15 });
     return;
   }
 
   slide.addShape("roundRect", {
-    x,
-    y,
-    w: size * 0.48,
-    h: size * 0.62,
+    x: box.x + box.w * 0.22,
+    y: box.y + box.h * 0.1,
+    w: box.w * 0.56,
+    h: box.h * 0.78,
     rectRadius: 0.04,
     fill: { color },
     line: { color, transparency: 100 },
   });
   for (let index = 0; index < 3; index++) {
     slide.addShape("rect", {
-      x: x + size * 0.12,
-      y: y + size * (0.16 + index * 0.13),
-      w: size * 0.25,
-      h: size * 0.035,
+      x: box.x + box.w * 0.34,
+      y: box.y + box.h * (0.28 + index * 0.16),
+      w: box.w * 0.32,
+      h: box.h * 0.045,
       fill: { color: knockoutColor },
       line: { color: knockoutColor, transparency: 100 },
     });
