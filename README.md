@@ -93,6 +93,8 @@ The parser preserves presentation-relevant Markdown structure and avoids flatten
 
 Chart fences support native PowerPoint bar charts and editable chart proof objects. Use `chart` or `bar` for native bar charts, `arc-ring` for progress/ratio rings, `gauge` for score/readiness gauges, `connected-strip` for small-multiple flow metrics, `ranked-bars` for ranked evidence, and `metric-dots` for compact status/progress indicators. Generic `chart` fences may also declare `kind: arc-ring`, `kind: gauge`, `kind: connected-strip`, `kind: ranked-bars`, or `kind: metric-dots`.
 
+Current editable object families include cover/title text, paragraph text, ordered and unordered list cards, quote callouts, code windows, single-card layouts, comparison cards, vertical-list cards, 2x2 and 3x2 grid cards, pentagon/radial cards, native tables, native bar charts, chart-beside-prose, chart-plus-table, pipeline diagrams, image-focus layouts, image-beside-text layouts, text-icon-aside support, preset backgrounds, region surfaces, accent rails, number badges, icon badges, proof callouts, theme colors, and template assets.
+
 Text-only relief and item-card badges use restrained Material Icons-inspired monochrome glyphs. The icons follow the Material 24px box assumption, are centered inside their icon slot, and remain secondary to the text.
 
 When a chart slide contains prose but no table, MDPR reserves a left explanation region and a wider right chart region so interpretation and evidence are read together. When the same slide contains a table, MDPR preserves the chart-plus-table parallel layout and keeps table text vertically centered with readable margins.

@@ -140,6 +140,31 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
     ];
   }
 
+  if (layout.preset === "grid" && layout.columns === 3 && layout.rows === 2) {
+    const cells = [
+      { x: 0.9, y: 1.6 },
+      { x: 4.75, y: 1.6 },
+      { x: 8.6, y: 1.6 },
+      { x: 0.9, y: 4.1 },
+      { x: 4.75, y: 4.1 },
+      { x: 8.6, y: 4.1 },
+    ];
+    return [
+      titleRegion,
+      ...cells.map((cell, index) => ({
+        id: `item-${index + 1}`,
+        role: "item" as const,
+        blockIds: itemBlockIds.slice(index, index + 1),
+        x: cell.x,
+        y: cell.y,
+        w: 3.55,
+        h: 2.1,
+        zIndex: 10,
+        typography: compactBodyTypography(config),
+      })),
+    ];
+  }
+
   if (layout.preset === "vertical-list") {
     return [
       titleRegion,

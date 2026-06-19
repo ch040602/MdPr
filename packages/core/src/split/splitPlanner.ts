@@ -214,7 +214,7 @@ function splitParagraphSequence(blocks: SlideIR["blocks"]): SlideIR["blocks"][] 
 
 function shouldSplitListBlock(block: SlideIR["blocks"][number]): boolean {
   const itemCount = block.listItems?.length ?? block.items?.length ?? 0;
-  if (itemCount > 5) return true;
+  if (itemCount > 6) return true;
   if (itemCount < 5) return false;
 
   const items = block.listItems?.length

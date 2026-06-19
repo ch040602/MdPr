@@ -699,6 +699,29 @@ test("planPresentation splits long ordered lists into continuation slides", () =
   assert.deepEqual(contentSlides.map((slide) => slide.blocks[0].items.length), [4, 3]);
 });
 
+test("planPresentation keeps six short list items together for 3x2 grid layouts", () => {
+  const doc = parseMarkdown([
+    "# Product",
+    "",
+    "## Compact Grid",
+    "",
+    "- Title body",
+    "- Quote card",
+    "- Table focus",
+    "- Chart proof",
+    "- Image focus",
+    "- Code focus",
+  ].join("\n"));
+
+  const presentation = planPresentation(doc, defaultConfig);
+  const contentSlides = presentation.slides.filter((slide) => slide.role === "content");
+
+  assert.equal(contentSlides.length, 1);
+  assert.equal(contentSlides[0].primaryItemCount, 6);
+  assert.equal(contentSlides[0].intent, "grid");
+  assert.equal(contentSlides[0].blocks[0].items.length, 6);
+});
+
 test("planPresentation preserves text when splitting structured listItems-only blocks", () => {
   const listItems = Array.from({ length: 7 }, (_, index) => ({
     text: `Structured item ${index + 1}`,

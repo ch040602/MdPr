@@ -40,6 +40,28 @@ test("four primary items use a 2x2 grid with stable item regions", () => {
   assert.deepEqual(slide.regions.map((region) => region.id), ["title", "item-1", "item-2", "item-3", "item-4"]);
 });
 
+test("six primary items use a compact 3x2 grid with stable item regions", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Object Families",
+    "",
+    "- Text",
+    "- Cards",
+    "- Tables",
+    "- Charts",
+    "- Images",
+    "- Decoration",
+  ]);
+
+  const slide = layout.slides.find((candidate) => candidate.sourceSlideId !== layout.slides[0].sourceSlideId && candidate.layout.preset === "grid");
+
+  assert.equal(slide.layout.columns, 3);
+  assert.equal(slide.layout.rows, 2);
+  assert.deepEqual(slide.regions.map((region) => region.id), ["title", "item-1", "item-2", "item-3", "item-4", "item-5", "item-6"]);
+  assert.equal(slide.regions.find((region) => region.id === "item-1").w < slide.regions.find((region) => region.id === "item-1").h * 2.2, true);
+});
+
 test("five primary items use pentagon regions", () => {
   const layout = layoutFor([
     "# Demo",
