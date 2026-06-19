@@ -195,7 +195,7 @@ test("renderPptx aligns and fits text inside table cells", async () => {
   const outPath = join(outDir, "deck.pptx");
   const deck = structuredClone(sampleDeck);
   const rows = [
-    ["Metric", "Value"],
+    ["**Metric**", "*Value*"],
     ["Very long retained label that should stay readable inside one cell", "123"],
     ["Quality", "98%"],
     ["Coverage", "87%"],
@@ -232,13 +232,60 @@ test("renderPptx aligns and fits text inside table cells", async () => {
     const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
 
     assert.match(xml, /Metric/);
+    assert.doesNotMatch(xml, /\*\*Metric\*\*/);
+    assert.doesNotMatch(xml, /\*Value\*/);
     assert.match(xml, /Very long retained label that should stay readable inside one cell/);
     assert.match(xml, /<a:pPr[^>]*algn="ctr"[\s\S]*?<a:t>Metric<\/a:t>/);
-    assert.match(xml, /<a:pPr[^>]*algn="l"[\s\S]*?<a:t>Very long retained label/);
+    assert.match(xml, /<a:pPr[^>]*algn="l"[\s\S]{0,900}<a:rPr[^>]*b="1"[\s\S]{0,900}<a:t>Very long retained label/);
     assert.match(xml, /<a:pPr[^>]*algn="r"[\s\S]*?<a:t>123<\/a:t>/);
     assert.match(xml, /<a:tcPr[^>]*marL="54864"[^>]*marR="54864"[^>]*marT="36576"[^>]*marB="36576"[^>]*anchor="ctr"/);
-    assert.match(xml, /sz="1[0-9]00"/);
+    assert.match(xml, /sz="1[4-9]00"/);
     assert.doesNotMatch(xml, /<a:br\/>/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx avoids hard tab indentation in rich list text boxes", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-indent-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "list-1",
+      type: "bulletList",
+      listItems: [
+        { text: "Runtime owner: MDPR handles deterministic rendering", label: "Runtime owner", description: "MDPR handles deterministic rendering", ordered: false, level: 0 },
+        { text: "Hint owner: semantic grouping only", label: "Hint owner", description: "semantic grouping only", ordered: false, level: 0 },
+      ],
+      listKind: "unordered",
+    },
+  ];
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "body",
+      role: "body",
+      blockIds: ["list-1"],
+      x: 0.9,
+      y: 1.6,
+      w: 8.4,
+      h: 3.4,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "executive" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+
+    assert.match(xml, /Runtime owner/);
+    assert.match(xml, /MDPR handles deterministic rendering/);
+    assert.doesNotMatch(xml, /\t|&#x9;|_x0009_/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -548,7 +595,7 @@ test("renderPptx renders text-only slides with a restrained monotone icon aside"
     assert.match(xml, /Design Skill Boundary/);
     assert.match(xml, /MDPR owns deterministic slide structure/);
     assert.doesNotMatch(xml, /monotone icon aside/);
-    assert.match(xml, /<a:off x="7818120" y="1965960"\/><a:ext cx="2212848" cy="2212848"\/>/);
+    assert.doesNotMatch(xml, /<a:ext cx="2212848" cy="2212848"\/>/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

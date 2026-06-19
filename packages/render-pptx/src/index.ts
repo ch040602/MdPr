@@ -167,14 +167,19 @@ function buildAlignedTableRows(
 
   return rows.map((row, rowIndex) => row.map((value, columnIndex) => {
     const isHeader = rowIndex === 0;
+    const isRowLabel = !isHeader && columnIndex === 0;
     return {
       text: normalizeTableCellText(value),
       options: {
         fontFace: common.fontFace,
-        fontSize: isHeader ? Math.min(size + 1, common.fontSize ?? size) : size,
-        bold: isHeader,
+        fontSize: isHeader ? Math.min(size + 1, common.fontSize ?? size) : Math.max(14, size),
+        bold: isHeader || isRowLabel,
         color: isHeader ? readableTextColor(preset.primaryColor) : common.color,
-        fill: isHeader ? { color: preset.primaryColor, transparency: 0 } : undefined,
+        fill: isHeader
+          ? { color: preset.primaryColor, transparency: 0 }
+          : rowIndex % 2 === 0
+            ? { color: preset.surfaceFill, transparency: 20 }
+            : undefined,
         align: isHeader ? "center" : tableCellAlign(value, columnIndex),
         valign: "middle",
         margin: [0.04, 0.06, 0.04, 0.06],
@@ -201,7 +206,7 @@ function tableFontSize(rows: string[][], region: { w: number; h: number }, baseF
   else if (maxChars > columnWidth * 13) size -= 1;
   if (rowCount > 7) size -= 1;
 
-  return Math.max(minFontSize, Math.min(baseFontSize, Math.round(size)));
+  return Math.max(Math.max(14, minFontSize), Math.min(baseFontSize, Math.round(size)));
 }
 
 function tableCellAlign(value: string, columnIndex: number): PptxGenJS.HAlign {
@@ -210,7 +215,15 @@ function tableCellAlign(value: string, columnIndex: number): PptxGenJS.HAlign {
 }
 
 function normalizeTableCellText(value: string): string {
-  return value.replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+  return stripMarkdownEmphasis(value).replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
+}
+
+function stripMarkdownEmphasis(value: string): string {
+  return value
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "$1")
+    .replace(/(?<!_)_([^_\n]+)_(?!_)/g, "$1");
 }
 
 async function writePptxThemeColors(outPath: string, preset: DesignTokens): Promise<void> {
@@ -452,7 +465,7 @@ function renderListItemRuns(item: ListItemIR, breakLine: boolean, role: string, 
         text: `${prefix}${item.label}`,
         options: { breakLine, bold: true, color: preset?.primaryColor },
       },
-      ...renderInlineRuns(item.descriptionRuns?.length ? item.descriptionRuns : [{ text: item.description }], true, `${"\t".repeat(item.level + 1)}`, preset?.primaryColor),
+      ...renderInlineRuns(item.descriptionRuns?.length ? item.descriptionRuns : [{ text: item.description }], true, listDescriptionPrefix(item.level), preset?.primaryColor),
     ];
   }
 
@@ -499,9 +512,13 @@ function normalizeRenderableRunText(value: string): string {
 
 function formatListItemText(item: ListItemIR): string {
   if (item.label && item.description) {
-    return `${"  ".repeat(item.level)}${listPrefix(item, "body")}${item.label}\n${"\t".repeat(item.level + 1)}${item.description}`;
+    return `${"  ".repeat(item.level)}${listPrefix(item, "body")}${item.label}\n${listDescriptionPrefix(item.level)}${item.description}`;
   }
   return `${"  ".repeat(item.level)}${listPrefix(item, "body")}${item.text}`;
+}
+
+function listDescriptionPrefix(level: number): string {
+  return "  ".repeat(Math.max(1, level + 1));
 }
 
 function listPrefix(item: ListItemIR, role: string): string {
@@ -1139,17 +1156,10 @@ function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutI
   const region = layoutSlide.regions.find((candidate) => candidate.role === "icon" || candidate.id === "icon-aside");
   if (!region) return;
 
-  slide.addShape("roundRect", {
-    x: region.x,
-    y: region.y,
-    w: region.w,
-    h: region.h,
-    rectRadius: 0.08,
-    fill: { color: preset.surfaceFill },
-    line: { color: preset.surfaceLine, pt: 1 },
-    shadow: { type: "outer", color: "000000", opacity: 0.08, blur: 1, angle: 45 },
-  });
-  drawMonoIcon(slide, iconKindForLayout(layoutSlide), region.x + region.w * 0.26, region.y + region.h * 0.22, Math.min(region.w, region.h) * 0.56, preset.textColor, preset.surfaceFill);
+  const iconSize = Math.min(0.58, Math.max(0.36, Math.min(region.w, region.h) * 0.72));
+  const x = region.x + (region.w - iconSize) / 2;
+  const y = region.y + (region.h - iconSize) / 2;
+  drawMonoIcon(slide, iconKindForLayout(layoutSlide), x, y, iconSize, preset.textColor, preset.backgroundColor);
 }
 
 function iconKindForLayout(layoutSlide: LayoutIR["slides"][number]): "doc" | "pipeline" | "shield" | "spark" {

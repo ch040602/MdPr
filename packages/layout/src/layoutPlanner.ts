@@ -160,8 +160,8 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   if (layout.preset === "text-icon-aside") {
     return [
       titleRegion,
-      { id: "body-panel", role: "body", blockIds: slide.blocks.filter((block) => block.type !== "slideBreak").map((block) => block.id), x: 0.9, y: 1.72, w: 7.25, h: 3.62, zIndex: 10, typography: bodyTypography(config) },
-      { id: "icon-aside", role: "icon", blockIds: [], x: 8.7, y: 2.18, w: 2.34, h: 2.34, zIndex: 8 },
+      { id: "body-panel", role: "body", blockIds: slide.blocks.filter((block) => block.type !== "slideBreak").map((block) => block.id), x: 0.9, y: 1.72, w: 8.85, h: 3.62, zIndex: 10, typography: bodyTypography(config) },
+      { id: "icon-aside", role: "icon", blockIds: [], x: 10.38, y: 2.36, w: 0.72, h: 0.72, zIndex: 8 },
     ];
   }
 
