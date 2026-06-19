@@ -129,7 +129,7 @@ const sampleDeck = {
   },
 };
 
-test("renderPptx writes editable text boxes with stable coordinates and centered titles", async () => {
+test("renderPptx writes editable text boxes with stable coordinates, centered titles, and item icon gutters", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-"));
   const outPath = join(outDir, "deck.pptx");
 
@@ -147,7 +147,8 @@ test("renderPptx writes editable text boxes with stable coordinates and centered
     assert.match(xml, /Markdown은 원본 문서다\./);
     assert.equal((xml.match(/txBox="1"/g) ?? []).length, 3);
     assert.match(xml, /<a:off x="731520" y="411480"\/><a:ext cx="10698480" cy="731520"\/>/);
-    assert.match(xml, /<a:off x="1042416" y="1602943"\/><a:ext cx="4608576" cy="1274674"\/>/);
+    assert.match(xml, /<a:off x="976122" y="1947672"\/><a:ext cx="585216" cy="585216"\/>/);
+    assert.match(xml, /<a:off x="1689354" y="1602943"\/><a:ext cx="3961638" cy="1274674"\/>/);
     assert.match(xml, /<a:bodyPr[^>]*wrap="square"/);
     assert.match(xml, /<a:normAutofit\/>/);
     assert.match(xml, /<a:bodyPr[^>]*anchor="ctr"/);
@@ -430,6 +431,124 @@ test("renderPptx writes active color combination into PowerPoint document theme"
     assert.match(xml, /<a:accent2><a:srgbClr val="EBAD25"\/><\/a:accent2>/);
     assert.match(xml, /<a:accent3><a:srgbClr val="25B2EB"\/><\/a:accent3>/);
     assert.match(xml, /<a:accent6><a:srgbClr val="D3DDF0"\/><\/a:accent6>/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx renders chart blocks as native PowerPoint charts with theme colors", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-chart-"));
+  const outPath = join(outDir, "chart.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides = [
+    {
+      id: "slide-chart",
+      index: 0,
+      role: "content",
+      title: "Source Shape Summary",
+      headingPath: ["Source Shape Summary"],
+      source: {},
+      intent: "chart",
+      tags: [],
+      blocks: [
+        {
+          id: "chart-1",
+          type: "chart",
+          text: "Headings: 192, 28, 7",
+          chart: {
+            kind: "bar",
+            labels: ["Docs", "Examples", "Root"],
+            series: [{ name: "Headings", values: [192, 28, 7] }],
+          },
+        },
+        {
+          id: "table-1",
+          type: "table",
+          text: "Group | Files | Headings\nDocs | 12 | 192",
+          rows: [["Group", "Files", "Headings"], ["Docs", "12", "192"], ["Examples", "6", "28"], ["Root", "3", "7"]],
+        },
+      ],
+    },
+  ];
+  deck.layout.slides = [
+    {
+      id: "layout-slide-chart",
+      sourceSlideId: "slide-chart",
+      index: 0,
+      layout: { preset: "chart-table", direction: "horizontal" },
+      background: { color: "#FFFFFF" },
+      overflowPolicy: { action: "shrink", minFontSize: 14, maxShrinkSteps: 3 },
+      regions: [
+        { id: "title", role: "title", blockIds: ["__title:slide-chart"], x: 0.8, y: 0.45, w: 11.7, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 30, fontWeight: "bold", lineHeight: 1.2, minFontSize: 14 } },
+        { id: "chart", role: "chart", blockIds: ["chart-1"], x: 0.9, y: 1.7, w: 5.6, h: 3.5, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 16, lineHeight: 1.2, minFontSize: 14 } },
+        { id: "table", role: "table", blockIds: ["table-1"], x: 6.85, y: 1.8, w: 5.3, h: 2.2, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 15, lineHeight: 1.2, minFontSize: 14 } },
+      ],
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "executive" });
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const chartPaths = Object.keys(zip.files).filter((path) => /^ppt\/charts\/chart\d+\.xml$/.test(path));
+    assert.equal(chartPaths.length, 1);
+    const chartXml = await zip.file(chartPaths[0]).async("string");
+    assert.match(chartXml, /<c:barChart>/);
+    assert.match(chartXml, /<a:srgbClr val="1D4ED8"\/>/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx renders text-only slides with a restrained monotone icon aside", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-icon-aside-"));
+  const outPath = join(outDir, "icon-aside.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides = [
+    {
+      id: "slide-design-skill",
+      index: 0,
+      role: "content",
+      title: "Design Skill Boundary",
+      headingPath: ["Design Skill Boundary"],
+      source: {},
+      intent: "standard",
+      tags: [],
+      blocks: [
+        {
+          id: "body-1",
+          type: "paragraph",
+          text: "MDPR owns deterministic slide structure, theme colors, chart rendering, table coherence, and editable PowerPoint output. The skill adds lightweight agent hints only when extra design judgment is useful.",
+        },
+      ],
+    },
+  ];
+  deck.layout.slides = [
+    {
+      id: "layout-slide-icon-aside",
+      sourceSlideId: "slide-design-skill",
+      index: 0,
+      layout: { preset: "text-icon-aside" },
+      background: { color: "#FFFFFF" },
+      overflowPolicy: { action: "shrink", minFontSize: 14, maxShrinkSteps: 3 },
+      regions: [
+        { id: "title", role: "title", blockIds: ["__title:slide-design-skill"], x: 0.8, y: 0.45, w: 11.7, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 30, fontWeight: "bold", lineHeight: 1.2, minFontSize: 14 } },
+        { id: "body-panel", role: "body", blockIds: ["body-1"], x: 0.9, y: 1.68, w: 7, h: 3.72, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 } },
+        { id: "icon-aside", role: "icon", blockIds: [], x: 8.55, y: 2.15, w: 2.42, h: 2.42, zIndex: 5, typography: { fontFamily: "Arial", fontSize: 12, lineHeight: 1.2, minFontSize: 10 } },
+      ],
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "editorial" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+
+    assert.match(xml, /Design Skill Boundary/);
+    assert.match(xml, /MDPR owns deterministic slide structure/);
+    assert.doesNotMatch(xml, /monotone icon aside/);
+    assert.match(xml, /<a:off x="7818120" y="1965960"\/><a:ext cx="2212848" cy="2212848"\/>/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

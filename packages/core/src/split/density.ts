@@ -56,6 +56,10 @@ export function calculateDensity(blocks: BlockIR[]): DensityScore {
         score.textScore += Math.max(2, block.diagram?.nodes.length ?? 2);
         break;
       }
+      case "chart": {
+        score.textScore += Math.max(4, block.chart?.labels.length ?? 4);
+        break;
+      }
       case "heading": {
         score.headingScore += 1;
         break;

@@ -5,6 +5,7 @@ export type LayoutPreset =
   | "toc"
   | "section-divider"
   | "title-body"
+  | "text-icon-aside"
   | "key-message"
   | "comparison"
   | "vertical-list"
@@ -12,6 +13,7 @@ export type LayoutPreset =
   | "pentagon"
   | "timeline"
   | "table-focus"
+  | "chart-table"
   | "image-focus"
   | "image-left"
   | "image-right"
@@ -39,7 +41,7 @@ export type TypographySpec = {
   minFontSize?: number;
 };
 
-export type RegionRole = "title" | "subtitle" | "body" | "item" | "image" | "table" | "code" | "diagram" | "footer" | "pageNumber";
+export type RegionRole = "title" | "subtitle" | "body" | "item" | "image" | "table" | "chart" | "code" | "diagram" | "icon" | "footer" | "pageNumber";
 
 export type LayoutRegion = Rect & {
   id: string;

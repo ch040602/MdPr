@@ -134,7 +134,7 @@ test("pipeline diagram regions use most of the slide body area", () => {
   assert.equal(diagram.w >= 11.6, true);
 });
 
-test("graph detail content is planned on the continuation slide", () => {
+test("graph detail content stays with the diagram when it fits on one slide", () => {
   const presentation = planPresentation(parseMarkdown([
     "# Demo",
     "",
@@ -148,11 +148,10 @@ test("graph detail content is planned on the continuation slide", () => {
   const layout = planLayout(presentation, defaultConfig);
   const contentSlides = presentation.slides.filter((slide) => slide.role === "content");
   const graphLayout = layout.slides.find((slide) => slide.sourceSlideId === contentSlides[0].id);
-  const detailLayout = layout.slides.find((slide) => slide.sourceSlideId === contentSlides[1].id);
 
-  assert.deepEqual(contentSlides.map((slide) => slide.blocks.map((block) => block.type)), [["diagram"], ["bulletList"]]);
+  assert.deepEqual(contentSlides.map((slide) => slide.blocks.map((block) => block.type)), [["diagram", "bulletList"]]);
   assert.equal(graphLayout.layout.preset, "pipeline");
-  assert.notEqual(detailLayout.layout.preset, "pipeline");
+  assert.equal(contentSlides.length, 1);
 });
 
 test("paragraph-heavy continuation chunks use open two-column structure", () => {
@@ -238,6 +237,50 @@ test("mixed text and image slides use separate body and image regions", () => {
   assert.equal(slide.regions.find((region) => region.id === "body").x < slide.regions.find((region) => region.id === "image-1").x, true);
 });
 
+test("chart-table slides reserve enough width for native tables beside charts", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Chart And Table",
+    "",
+    "```chart",
+    "labels: Core, Layout, PPTX",
+    "Rules: 18, 14, 22",
+    "```",
+    "",
+    "| Area | MDPR-owned behavior | Skill-owned behavior |",
+    "| --- | --- | --- |",
+    "| Theme | Adobe-style color combination | Suggest emphasis only |",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "chart-table");
+  const chart = slide.regions.find((region) => region.id === "chart");
+  const table = slide.regions.find((region) => region.id === "table");
+
+  assert.ok(chart);
+  assert.ok(table);
+  assert.equal(table.w > chart.w, true);
+  assert.equal(table.w >= 6, true);
+  assert.equal(table.x > chart.x + chart.w, true);
+});
+
+test("text-only relief slides use a body panel and separate icon aside", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Text Only Relief",
+    "",
+    "Long text-only slides should not become plain prose walls. MDPR can add a restrained black or white icon aside, keep it secondary, and preserve enough breathing room around the copy.",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "text-icon-aside");
+  const body = slide.regions.find((region) => region.id === "body-panel");
+  const icon = slide.regions.find((region) => region.id === "icon-aside");
+
+  assert.ok(body);
+  assert.ok(icon);
+  assert.equal(body.w > icon.w, true);
+  assert.equal(icon.x > body.x + body.w, true);
+  assert.equal(body.typography.fontSize >= defaultConfig.typography.bodyFontSize, true);
+});
 
 test("overflow validation emits errors when policy is fail", () => {
   const diagnostics = validateLayoutOverflow({

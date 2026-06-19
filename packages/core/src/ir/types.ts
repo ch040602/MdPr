@@ -36,7 +36,8 @@ export type SlideIntent =
   | "code"
   | "quote"
   | "summary"
-  | "diagram";
+  | "diagram"
+  | "chart";
 
 export type SourceRange = {
   file?: string;
@@ -70,7 +71,8 @@ export type BlockType =
   | "quote"
   | "html"
   | "slideBreak"
-  | "diagram";
+  | "diagram"
+  | "chart";
 
 export type InlineRunIR = {
   text: string;
@@ -103,6 +105,15 @@ export type DiagramIR = {
   }>;
 };
 
+export type ChartIR = {
+  kind: "bar";
+  labels: string[];
+  series: Array<{
+    name: string;
+    values: number[];
+  }>;
+};
+
 export type BlockIR = {
   id: string;
   type: BlockType;
@@ -115,6 +126,7 @@ export type BlockIR = {
   listItems?: ListItemIR[];
   listKind?: "ordered" | "unordered" | "mixed";
   diagram?: DiagramIR;
+  chart?: ChartIR;
   rows?: string[][];
   src?: string;
   alt?: string;

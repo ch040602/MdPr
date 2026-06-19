@@ -1,4 +1,4 @@
-import type { BlockIR, DesignTokens, DiagramIR, InlineRunIR, ListItemIR, PresentationIR, SlideIR } from "@mdpresent/core";
+import type { BlockIR, ChartIR, DesignTokens, DiagramIR, InlineRunIR, ListItemIR, PresentationIR, SlideIR } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 import { readFile, writeFile } from "node:fs/promises";
 import PptxGenJSExport from "pptxgenjs";
@@ -105,12 +105,15 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           .filter((block): block is BlockIR => Boolean(block));
         const orderedItemNumber = region.role === "item" ? orderedListItemNumber(blocks) : undefined;
         const badge = orderedItemNumber !== undefined ? renderItemNumberBadge(slide, region, orderedItemNumber, designPreset, common) : undefined;
-        const textCommon = orderedItemNumber !== undefined
-          ? textBoxForRegion(region, common, badge ? { reservedLeft: badge.right - region.x + 0.14 } : undefined)
+        const iconBadge = orderedItemNumber === undefined && region.role === "item" ? renderItemIconBadge(slide, region, designPreset, common) : undefined;
+        const textCommon = orderedItemNumber !== undefined || iconBadge
+          ? textBoxForRegion(region, common, badge ? { reservedLeft: badge.right - region.x + 0.14 } : iconBadge ? { reservedLeft: iconBadge.right - region.x + 0.14 } : undefined)
           : textBoxForRegion(region, common);
 
         if (region.role === "title" && sourceSlide?.title) {
           slide.addText(sourceSlide.title, textCommon);
+        } else if (blocks.length === 1 && blocks[0].type === "chart" && blocks[0].chart) {
+          renderChartRegion(slide, blocks[0].chart, region, designPreset, common);
         } else if (blocks.length === 1 && blocks[0].type === "diagram" && blocks[0].diagram) {
           renderDiagramRegion(slide, blocks[0].diagram, region, designPreset, common);
         } else if (blocks.length === 1 && blocks[0].type === "table" && blocks[0].rows?.length) {
@@ -531,6 +534,15 @@ function textPlacementForRegion(region: { id: string; role: string; h: number; w
     };
   }
 
+  if (region.id === "body-panel") {
+    return {
+      inset: { top: 0.22, right: 0.32, bottom: 0.22, left: 0.32 },
+      margin: [0, 2, 0, 2],
+      align: "left",
+      valign: "middle",
+    };
+  }
+
   if (region.role === "title") {
     return {
       inset: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -562,6 +574,15 @@ function textPlacementForRegion(region: { id: string; role: string; h: number; w
   if (region.role === "diagram") {
     return {
       inset: { top: 0, right: 0, bottom: 0, left: 0 },
+      margin: [0, 0, 0, 0],
+      align: "center",
+      valign: "middle",
+    };
+  }
+
+  if (region.role === "chart") {
+    return {
+      inset: { top: 0.12, right: 0.16, bottom: 0.14, left: 0.16 },
       margin: [0, 0, 0, 0],
       align: "center",
       valign: "middle",
@@ -612,6 +633,40 @@ function renderItemNumberBadge(
   return { x, y, size, right: x + size };
 }
 
+function renderItemIconBadge(
+  slide: PptxGenJS.Slide,
+  region: { id: string; x: number; y: number; w: number; h: number },
+  preset: DesignTokens,
+  common: PptxGenJS.TextPropsOptions,
+): { x: number; y: number; size: number; right: number } | undefined {
+  if (region.w < 2.2 || region.h < 0.82) return undefined;
+  const size = Math.min(0.48, Math.max(0.34, region.h * 0.32));
+  const x = region.x + Math.min(0.28, Math.max(0.16, region.w * 0.045));
+  const y = region.y + (region.h - size) / 2;
+  const surfaceSize = size + 0.16;
+  const surfaceX = x - 0.08;
+  const surfaceY = y - 0.08;
+  const iconKind = Number(/\d+$/.exec(region.id)?.[0] ?? 0) % 3 === 0
+    ? "shield"
+    : Number(/\d+$/.exec(region.id)?.[0] ?? 0) % 2 === 0
+      ? "pipeline"
+      : "doc";
+
+  slide.addShape("roundRect", {
+    x: surfaceX,
+    y: surfaceY,
+    w: surfaceSize,
+    h: surfaceSize,
+    rectRadius: 0.04,
+    fill: { color: preset.backgroundColor },
+    line: { color: preset.surfaceLine, pt: 0.7 },
+  } as never);
+  drawMonoIcon(slide, iconKind, x + size * 0.12, y + size * 0.08, size, preset.textColor, preset.backgroundColor);
+
+  void common;
+  return { x: surfaceX, y: surfaceY, size: surfaceSize, right: surfaceX + surfaceSize };
+}
+
 function textBoxForRegion(
   region: { id: string; role: string; x: number; y: number; w: number; h: number },
   common: PptxGenJS.TextPropsOptions,
@@ -648,6 +703,52 @@ function textBoxForRegion(
   };
 }
 
+function renderChartRegion(
+  slide: PptxGenJS.Slide,
+  chart: ChartIR,
+  region: { x: number; y: number; w: number; h: number; typography?: { fontFamily?: string; fontSize?: number } },
+  preset: DesignTokens,
+  common: PptxGenJS.TextPropsOptions,
+): void {
+  if (chart.kind !== "bar" || !chart.labels.length || !chart.series.length) return;
+
+  const fontFace = region.typography?.fontFamily ?? common.fontFace ?? "Arial";
+  const labelFontSize = Math.max(8, Math.min(11, (region.typography?.fontSize ?? common.fontSize ?? 14) - 5));
+  const data = chart.series.map((series) => ({
+    name: series.name,
+    labels: chart.labels,
+    values: series.values,
+  }));
+  slide.addChart("bar", data, {
+    x: region.x + 0.14,
+    y: region.y + 0.16,
+    w: Math.max(0.5, region.w - 0.28),
+    h: Math.max(0.5, region.h - 0.32),
+    chartColors: preset.chartColors.slice(0, Math.max(1, chart.series.length)),
+    showLegend: chart.series.length > 1,
+    legendPos: "b",
+    legendFontFace: fontFace,
+    legendFontSize: labelFontSize,
+    legendColor: preset.mutedTextColor,
+    showValue: true,
+    dataLabelPosition: "outEnd",
+    showTitle: false,
+    showCatName: false,
+    showValAxis: true,
+    showCatAxis: true,
+    valAxisLabelColor: preset.mutedTextColor,
+    catAxisLabelColor: preset.textColor,
+    valAxisLabelFontFace: fontFace,
+    catAxisLabelFontFace: fontFace,
+    valAxisLabelFontSize: labelFontSize,
+    catAxisLabelFontSize: labelFontSize,
+    valGridLine: { color: preset.surfaceLine, transparency: 30 },
+    chartLineColor: preset.surfaceLine,
+    chartLineSize: 0.5,
+    showLeaderLines: false,
+  } as never);
+}
+
 function renderDiagramRegion(
   slide: PptxGenJS.Slide,
   diagram: DiagramIR,
@@ -664,7 +765,7 @@ function renderDiagramRegion(
   for (const [index, box] of arrangement.boxes.entries()) {
     const { node, x, y, w, h } = box;
     const accentColor = preset.primaryColor;
-    const badgeSize = Math.min(0.34, Math.max(0.24, h * 0.28));
+    const badgeSize = Math.min(0.44, Math.max(0.38, h * 0.32));
     const badgeX = x + Math.min(0.18, Math.max(0.1, w * 0.06));
     const badgeY = y + (h - badgeSize) / 2;
     const labelX = badgeX + badgeSize + 0.16;
@@ -694,7 +795,7 @@ function renderDiagramRegion(
       y: badgeY,
       w: badgeSize,
       h: badgeSize,
-      fontSize: Math.max(7, Math.min(11, (region.typography?.fontSize ?? common.fontSize ?? 14) - 8)),
+      fontSize: Math.max(14, Math.min(15, (region.typography?.fontSize ?? common.fontSize ?? 14) - 4)),
       color: preset.backgroundColor,
       bold: true,
       align: "center",
@@ -1005,18 +1106,19 @@ function diagramLabelFontSize(label: string, width: number, height: number, base
   const longestLine = Math.max(...label.split(/\r?\n/).map((line) => line.length));
   const capacity = Math.max(8, width * height * 18);
   const pressure = Math.max(longestLine, label.length / Math.max(lines, 1)) / capacity;
-  if (pressure > 0.26) return Math.max(10, baseFontSize - 5);
-  if (pressure > 0.18) return Math.max(11, baseFontSize - 3);
-  return Math.max(11, Math.min(baseFontSize - 1, 15));
+  if (pressure > 0.26) return Math.max(14, baseFontSize - 5);
+  if (pressure > 0.18) return Math.max(14, baseFontSize - 3);
+  return Math.max(14, Math.min(baseFontSize - 1, 16));
 }
 
 function uniformDiagramLabelFontSize(boxes: DiagramNodeBox[], baseFontSize: number): number {
-  if (!boxes.length) return Math.max(11, Math.min(baseFontSize - 1, 15));
+  if (!boxes.length) return Math.max(14, Math.min(baseFontSize - 1, 16));
   return Math.min(...boxes.map((box) => diagramLabelFontSize(box.node.label, box.w, box.h, baseFontSize)));
 }
 
 function addLayoutDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
   addRegionAccents(slide, layoutSlide, preset);
+  addTextIconAsideDecoration(slide, layoutSlide, preset);
   if (layoutSlide.layout.preset !== "pentagon") return;
   const itemRegions = layoutSlide.regions
     .filter((region) => region.role === "item")
@@ -1029,6 +1131,115 @@ function addLayoutDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["sli
     const from = { x: current.x + current.w / 2, y: current.y + current.h / 2 };
     const to = { x: next.x + next.w / 2, y: next.y + next.h / 2 };
     addNormalizedLine(slide, from, to, preset.secondaryColor, false, { pt: 1.2, transparency: 12 });
+  }
+}
+
+function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
+  if (layoutSlide.layout.preset !== "text-icon-aside") return;
+  const region = layoutSlide.regions.find((candidate) => candidate.role === "icon" || candidate.id === "icon-aside");
+  if (!region) return;
+
+  slide.addShape("roundRect", {
+    x: region.x,
+    y: region.y,
+    w: region.w,
+    h: region.h,
+    rectRadius: 0.08,
+    fill: { color: preset.surfaceFill },
+    line: { color: preset.surfaceLine, pt: 1 },
+    shadow: { type: "outer", color: "000000", opacity: 0.08, blur: 1, angle: 45 },
+  });
+  drawMonoIcon(slide, iconKindForLayout(layoutSlide), region.x + region.w * 0.26, region.y + region.h * 0.22, Math.min(region.w, region.h) * 0.56, preset.textColor, preset.surfaceFill);
+}
+
+function iconKindForLayout(layoutSlide: LayoutIR["slides"][number]): "doc" | "pipeline" | "shield" | "spark" {
+  const titleRegion = layoutSlide.regions.find((region) => region.role === "title");
+  const marker = `${layoutSlide.sourceSlideId} ${titleRegion?.id ?? ""}`.toLowerCase();
+  if (/pipeline|flow|process|단계/.test(marker)) return "pipeline";
+  if (/valid|qa|risk|guard|검증/.test(marker)) return "shield";
+  if (/design|hint|idea|skill/.test(marker)) return "spark";
+  return "doc";
+}
+
+function drawMonoIcon(
+  slide: PptxGenJS.Slide,
+  kind: "doc" | "pipeline" | "shield" | "spark",
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+  knockoutColor: string,
+): void {
+  if (kind === "pipeline") {
+    for (let index = 0; index < 3; index++) {
+      slide.addShape("ellipse", {
+        x: x + index * size * 0.38,
+        y: y + size * 0.28,
+        w: size * 0.18,
+        h: size * 0.18,
+        fill: { color },
+        line: { color, transparency: 100 },
+      });
+    }
+    for (let index = 0; index < 2; index++) {
+      slide.addShape("rect", {
+        x: x + size * (0.17 + index * 0.38),
+        y: y + size * 0.36,
+        w: size * 0.22,
+        h: size * 0.035,
+        fill: { color },
+        line: { color, transparency: 100 },
+      });
+    }
+    return;
+  }
+
+  if (kind === "shield") {
+    slide.addShape("pentagon", {
+      x,
+      y,
+      w: size * 0.55,
+      h: size * 0.65,
+      fill: { color },
+      line: { color, transparency: 100 },
+      rotate: 180,
+    } as never);
+    slide.addShape("rect", {
+      x: x + size * 0.22,
+      y: y + size * 0.12,
+      w: size * 0.1,
+      h: size * 0.28,
+      fill: { color: knockoutColor },
+      line: { color: knockoutColor, transparency: 100 },
+    });
+    return;
+  }
+
+  if (kind === "spark") {
+    slide.addShape("rect", { x: x + size * 0.24, y, w: size * 0.06, h: size * 0.58, fill: { color }, line: { color, transparency: 100 } });
+    slide.addShape("rect", { x, y: y + size * 0.24, w: size * 0.58, h: size * 0.06, fill: { color }, line: { color, transparency: 100 } });
+    slide.addShape("ellipse", { x: x + size * 0.44, y: y + size * 0.44, w: size * 0.1, h: size * 0.1, fill: { color }, line: { color, transparency: 100 } });
+    return;
+  }
+
+  slide.addShape("roundRect", {
+    x,
+    y,
+    w: size * 0.48,
+    h: size * 0.62,
+    rectRadius: 0.04,
+    fill: { color },
+    line: { color, transparency: 100 },
+  });
+  for (let index = 0; index < 3; index++) {
+    slide.addShape("rect", {
+      x: x + size * 0.12,
+      y: y + size * (0.16 + index * 0.13),
+      w: size * 0.25,
+      h: size * 0.035,
+      fill: { color: knockoutColor },
+      line: { color: knockoutColor, transparency: 100 },
+    });
   }
 }
 

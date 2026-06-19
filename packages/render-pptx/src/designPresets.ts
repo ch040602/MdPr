@@ -47,7 +47,7 @@ export function addPresetBackground(
 
 export function addRegionSurface(slide: PptxGenJS.Slide, preset: DesignPreset, region: LayoutRegion): void {
   if (!region.blockIds.length) return;
-  if (!preset.cards || !["item", "table", "code"].includes(region.role) && region.id !== "key-message") return;
+  if (!preset.cards || !["item", "table", "chart", "code"].includes(region.role) && !["key-message", "body-panel"].includes(region.id)) return;
 
   if (region.id === "key-message") {
     const stripe = keyMessageStripe(region);

@@ -1,4 +1,4 @@
-import type { BlockIR, HeadingLevel, InlineRunIR, ListItemIR, MarkdownDocument } from "../ir/types.js";
+import type { BlockIR, ChartIR, HeadingLevel, InlineRunIR, ListItemIR, MarkdownDocument } from "../ir/types.js";
 
 /**
  * MVP용 단순 Markdown parser.
@@ -105,8 +105,17 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
         codeLang = line.slice(3).trim();
         codeLines = [];
       } else {
+        const chart = parseFencedChart(codeLang, codeLines);
         const pipeline = parseFencedPipelineDiagram(codeLang, codeLines);
-        blocks.push(pipeline
+        blocks.push(chart
+          ? {
+              id: `block-${blocks.length + 1}`,
+              type: "chart",
+              text: chart.series.map((series) => `${series.name}: ${series.values.join(", ")}`).join("\n"),
+              chart,
+              source: { file: sourcePath, endLine: lineNo },
+            }
+          : pipeline
           ? {
               id: `block-${blocks.length + 1}`,
               type: "diagram",
@@ -459,4 +468,45 @@ function createPipelineDiagram(labels: string[]) {
   }
 
   return { kind: "pipeline" as const, nodes, edges };
+}
+
+function parseFencedChart(language: string, lines: string[]): ChartIR | undefined {
+  if (!["chart", "bar", "bar-chart", "barchart"].includes(language.toLowerCase())) return undefined;
+  const cleaned = lines.map((line) => normalizeInlineSpacing(line)).filter(Boolean);
+  if (cleaned.length < 2) return undefined;
+
+  const labelsLineIndex = cleaned.findIndex((line) => /^labels?\s*:/i.test(line));
+  if (labelsLineIndex >= 0) {
+    const labels = splitChartValues(cleaned[labelsLineIndex]!.replace(/^labels?\s*:/i, ""));
+    const series = cleaned
+      .filter((_, index) => index !== labelsLineIndex)
+      .map(parseNamedChartSeries)
+      .filter((item): item is ChartIR["series"][number] => Boolean(item))
+      .filter((item) => item.values.length === labels.length);
+    if (labels.length && series.length) return { kind: "bar", labels, series };
+  }
+
+  const rows = cleaned.map((line) => line.split(",").map((part) => normalizeInlineSpacing(part))).filter((row) => row.length >= 2);
+  const numericRows = rows.map((row) => ({ label: row[0]!, value: Number(row[1]!.replace(/,/g, "")) })).filter((row) => Number.isFinite(row.value));
+  if (numericRows.length) {
+    return {
+      kind: "bar",
+      labels: numericRows.map((row) => row.label),
+      series: [{ name: "Value", values: numericRows.map((row) => row.value) }],
+    };
+  }
+
+  return undefined;
+}
+
+function parseNamedChartSeries(line: string): ChartIR["series"][number] | undefined {
+  const match = /^([^:：]+)[:：]\s*(.+)$/.exec(line);
+  if (!match) return undefined;
+  const values = splitChartValues(match[2]!).map((value) => Number(value.replace(/,/g, "")));
+  if (!values.length || values.some((value) => !Number.isFinite(value))) return undefined;
+  return { name: normalizeInlineSpacing(match[1]!), values };
+}
+
+function splitChartValues(text: string): string[] {
+  return text.split(/[,|]/g).map((part) => normalizeInlineSpacing(part)).filter(Boolean);
 }

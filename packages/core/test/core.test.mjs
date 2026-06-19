@@ -249,6 +249,32 @@ test("parseMarkdown converts arrow pipelines into diagram blocks", () => {
   ]);
 });
 
+test("parseMarkdown converts fenced chart data into chart blocks", () => {
+  const doc = parseMarkdown([
+    "# Deck",
+    "",
+    "## Source Shape Summary",
+    "",
+    "```chart",
+    "labels: Docs, Examples, Root",
+    "Headings: 192, 28, 7",
+    "Tables: 12, 3, 1",
+    "```",
+  ].join("\n"));
+
+  const chart = doc.blocks.find((block) => block.type === "chart");
+
+  assert.deepEqual(chart.chart, {
+    kind: "bar",
+    labels: ["Docs", "Examples", "Root"],
+    series: [
+      { name: "Headings", values: [192, 28, 7] },
+      { name: "Tables", values: [12, 3, 1] },
+    ],
+  });
+  assert.equal(chart.text, "Headings: 192, 28, 7\nTables: 12, 3, 1");
+});
+
 test("parsePandocJson normalizes Pandoc AST blocks into MDPR semantic blocks", () => {
   const doc = parsePandocJson({
     "pandoc-api-version": [1, 23, 1],

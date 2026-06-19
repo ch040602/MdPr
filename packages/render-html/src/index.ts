@@ -50,6 +50,12 @@ strong { color: var(--primary); }
 .pipeline-connectors { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 3; }
 .pipeline-connector { fill: none; stroke: var(--primary); stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .pipeline-node { position: absolute; z-index: 2; min-width: 0; border: 1px solid var(--surface-line); background: var(--surface); padding: .12in; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: .12in; font-weight: 700; line-height: 1.18; }
+.chart { width: 100%; height: 100%; display: flex; flex-direction: column; gap: .12in; justify-content: center; }
+.chart-row { display: grid; grid-template-columns: 1.1in 1fr .45in; gap: .1in; align-items: center; font-size: .13in; }
+.chart-label { color: var(--text); font-weight: 700; }
+.chart-track { height: .18in; background: color-mix(in srgb, var(--surface-line) 60%, transparent); border-radius: 999px; overflow: hidden; }
+.chart-bar { height: 100%; background: var(--primary); border-radius: 999px; }
+.chart-value { color: var(--muted); text-align: right; }
 `;
 
   const slides = layout.slides.map((slide) => {
@@ -145,6 +151,7 @@ function renderBlock(block: BlockIR): string {
   if (block.type === "diagram" && block.diagram?.kind === "pipeline") {
     return renderPipelineDiagram(block.diagram);
   }
+  if (block.type === "chart" && block.chart?.kind === "bar") return renderBarChart(block.chart);
   if (block.type === "paragraph" && block.inlineRuns?.length) return `<p>${renderInlineRuns(block.inlineRuns)}</p>`;
   if (block.type === "paragraph" && block.sentences?.length) return `<p>${block.sentences.map(escapeHtml).join("<br />")}</p>`;
   if (block.type === "paragraph" && block.lines?.length) return `<p>${block.lines.map(escapeHtml).join("<br />")}</p>`;
@@ -153,6 +160,25 @@ function renderBlock(block: BlockIR): string {
   if (block.inlineRuns?.length) return `<p>${renderInlineRuns(block.inlineRuns)}</p>`;
   if (block.text) return `<p>${escapeHtml(block.text)}</p>`;
   return "";
+}
+
+function renderBarChart(chart: NonNullable<BlockIR["chart"]>): string {
+  const values = chart.series.flatMap((series) => series.values);
+  const max = Math.max(1, ...values);
+  const primary = chart.series[0];
+  if (!primary) return "";
+  const rows = chart.labels.map((label, index) => {
+    const value = primary.values[index] ?? 0;
+    const width = Math.max(2, Math.min(100, (value / max) * 100));
+    return [
+      `<div class="chart-row">`,
+      `<span class="chart-label">${escapeHtml(label)}</span>`,
+      `<span class="chart-track"><span class="chart-bar" style="width:${width.toFixed(1)}%"></span></span>`,
+      `<span class="chart-value">${escapeHtml(String(value))}</span>`,
+      `</div>`,
+    ].join("");
+  }).join("");
+  return `<div class="chart" aria-label="${escapeHtml(primary.name)}">${rows}</div>`;
 }
 
 function renderList(items: ListItemIR[]): string {

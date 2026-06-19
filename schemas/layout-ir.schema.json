@@ -203,8 +203,10 @@
             "item",
             "image",
             "table",
+            "chart",
             "code",
             "diagram",
+            "icon",
             "footer",
             "pageNumber"
           ]
@@ -331,6 +333,7 @@
         "toc",
         "section-divider",
         "title-body",
+        "text-icon-aside",
         "key-message",
         "comparison",
         "vertical-list",
@@ -338,6 +341,7 @@
         "pentagon",
         "timeline",
         "table-focus",
+        "chart-table",
         "image-focus",
         "image-left",
         "image-right",

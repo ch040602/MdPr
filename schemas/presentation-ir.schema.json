@@ -171,7 +171,8 @@
             "code",
             "quote",
             "summary",
-            "diagram"
+            "diagram",
+            "chart"
           ]
         },
         "tags": {
@@ -212,7 +213,8 @@
             "quote",
             "html",
             "slideBreak",
-            "diagram"
+            "diagram",
+            "chart"
           ]
         },
         "text": {
@@ -262,6 +264,9 @@
         },
         "diagram": {
           "$ref": "#/$defs/diagram"
+        },
+        "chart": {
+          "$ref": "#/$defs/chart"
         },
         "rows": {
           "type": "array",
@@ -398,6 +403,48 @@
               },
               "label": {
                 "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "chart": {
+      "type": "object",
+      "required": [
+        "kind",
+        "labels",
+        "series"
+      ],
+      "properties": {
+        "kind": {
+          "const": "bar"
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "series": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "values"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
               }
             },
             "additionalProperties": false

@@ -30,6 +30,7 @@ export function chooseLayout(slide: SlideIR, config: Config): LayoutSpec {
   if (slide.role === "cover") return { preset: "cover" };
   if (slide.role === "toc") return { preset: "toc" };
   if (slide.intent === "comparison") return { preset: "comparison", direction: "horizontal", columns: 2 };
+  if (slide.intent === "chart") return { preset: "chart-table", direction: "horizontal" };
   if (slide.intent === "table") return { preset: "table-focus" };
   if (slide.intent === "image") return { preset: "image-focus" };
   if (slide.intent === "code") return { preset: "code-focus" };
@@ -40,6 +41,7 @@ export function chooseLayout(slide: SlideIR, config: Config): LayoutSpec {
   if (slide.intent === "timeline") return { preset: "timeline", direction: "horizontal" };
   if (slide.intent === "diagram") return { preset: "pipeline", direction: "horizontal" };
   if (isTwoParagraphOpenLayout(slide)) return { preset: "comparison", direction: "horizontal", columns: 2 };
+  if (isTextOnlyReliefCandidate(slide)) return { preset: "text-icon-aside" };
 
   const itemCount = slide.primaryItemCount ?? 0;
   if (itemCount > 0) return chooseItemLayout(itemCount);
@@ -52,6 +54,14 @@ function isTwoParagraphOpenLayout(slide: SlideIR): boolean {
   if (!slide.blocks.every((block) => block.type === "paragraph")) return false;
   const totalLength = slide.blocks.reduce((sum, block) => sum + (block.text?.length ?? 0), 0);
   return totalLength > 180;
+}
+
+function isTextOnlyReliefCandidate(slide: SlideIR): boolean {
+  if (slide.intent !== "standard") return false;
+  if (!slide.blocks.length) return false;
+  if (slide.blocks.some((block) => ["table", "chart", "image", "code", "diagram", "quote"].includes(block.type))) return false;
+  const textLength = slide.blocks.reduce((sum, block) => sum + (block.text?.length ?? 0), 0);
+  return textLength >= 120;
 }
 
 function planSlideLayout(slide: SlideIR, config: Config): LayoutSlide {
@@ -147,6 +157,14 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
     ];
   }
 
+  if (layout.preset === "text-icon-aside") {
+    return [
+      titleRegion,
+      { id: "body-panel", role: "body", blockIds: slide.blocks.filter((block) => block.type !== "slideBreak").map((block) => block.id), x: 0.9, y: 1.72, w: 7.25, h: 3.62, zIndex: 10, typography: bodyTypography(config) },
+      { id: "icon-aside", role: "icon", blockIds: [], x: 8.7, y: 2.18, w: 2.34, h: 2.34, zIndex: 8 },
+    ];
+  }
+
   if (layout.preset === "pentagon") {
     return [
       titleRegion,
@@ -165,6 +183,10 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
     ];
   }
 
+  if (layout.preset === "chart-table") {
+    return createChartTableRegions(slide, titleRegion, config);
+  }
+
   if (layout.preset === "code-focus") {
     return [
       titleRegion,
@@ -175,6 +197,29 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   return [
     titleRegion,
     { id: "body", role: "body", blockIds: slide.blocks.map((b) => b.id), ...bodyRect, zIndex: 10, typography: bodyTypography(config) },
+  ];
+}
+
+function createChartTableRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
+  const chartBlockIds = slide.blocks.filter((block) => block.type === "chart").map((block) => block.id);
+  const tableBlockIds = slide.blocks.filter((block) => block.type === "table").map((block) => block.id);
+  const bodyBlockIds = slide.blocks
+    .filter((block) => !["chart", "table", "slideBreak"].includes(block.type))
+    .map((block) => block.id);
+
+  if (tableBlockIds.length) {
+    return [
+      titleRegion,
+      { id: "chart", role: "chart", blockIds: chartBlockIds, x: 0.82, y: 1.65, w: 5.05, h: 3.75, zIndex: 10, typography: compactBodyTypography(config) },
+      { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 6.1, y: 1.72, w: 6.05, h: 3.28, zIndex: 10, typography: compactBodyTypography(config) },
+      ...(bodyBlockIds.length ? [{ id: "body", role: "body" as const, blockIds: bodyBlockIds, x: 6.1, y: 5.25, w: 6.05, h: 0.9, zIndex: 10, typography: compactBodyTypography(config) }] : []),
+    ];
+  }
+
+  return [
+    titleRegion,
+    { id: "chart", role: "chart", blockIds: chartBlockIds, x: 1.0, y: 1.55, w: 11.2, h: 4.75, zIndex: 10, typography: bodyTypography(config) },
+    ...(bodyBlockIds.length ? [{ id: "body", role: "body" as const, blockIds: bodyBlockIds, x: 1.0, y: 6.05, w: 11.2, h: 0.58, zIndex: 10, typography: compactBodyTypography(config) }] : []),
   ];
 }
 
@@ -267,6 +312,16 @@ function bodyTypography(config: Config) {
     fontWeight: "normal" as const,
     lineHeight: config.typography.lineHeight,
     minFontSize: Math.max(config.typography.minFontSize, 16),
+  };
+}
+
+function compactBodyTypography(config: Config) {
+  return {
+    fontFamily: config.typography.fontFamily,
+    fontSize: Math.max(14, config.typography.bodyFontSize - 5),
+    fontWeight: "normal" as const,
+    lineHeight: config.typography.lineHeight,
+    minFontSize: Math.max(12, Math.min(config.typography.minFontSize, 14)),
   };
 }
 

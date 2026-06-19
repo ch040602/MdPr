@@ -33,6 +33,7 @@ export function detectSlideIntent(slide: Omit<SlideIR, "intent" | "tags">): Slid
     (beforeAfterPattern.test(text) && afterPattern.test(text)) ||
     (prosPattern.test(text) && consPattern.test(text))
   ) return "comparison";
+  if (slide.blocks.some((b) => b.type === "chart")) return "chart";
   if (slide.blocks.some((b) => b.type === "diagram")) return "diagram";
   if (slide.blocks.some((b) => b.type === "quote")) return "quote";
   if (slide.blocks.some((b) => b.type === "table")) return "table";
