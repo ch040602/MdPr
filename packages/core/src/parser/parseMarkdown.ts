@@ -17,13 +17,14 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
 
   const flushParagraph = (lineNo: number) => {
     if (!paragraph.length) return;
-    const text = paragraph.join(" ").trim();
-    const richText = paragraph.join("\n").trim();
+    const lines = paragraph.map(normalizeInlineSpacing).filter(Boolean);
+    const text = normalizeInlineSpacing(stripInlineMarkdown(lines.join(" ")));
+    const richText = lines.join("\n").trim();
     blocks.push({
       id: `block-${blocks.length + 1}`,
       type: "paragraph",
       text,
-      lines: [...paragraph],
+      lines,
       sentences: splitSentences(text),
       inlineRuns: parseInlineRuns(richText),
       source: { file: sourcePath, startLine: Math.max(1, lineNo - paragraph.length), endLine: lineNo },
@@ -58,12 +59,13 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
 
   const flushQuote = (lineNo: number) => {
     if (!quote.length) return;
-    const text = quote.join(" ").trim();
+    const lines = quote.map(normalizeInlineSpacing).filter(Boolean);
+    const text = normalizeInlineSpacing(lines.join(" "));
     blocks.push({
       id: `block-${blocks.length + 1}`,
       type: "quote",
       text,
-      lines: [...quote],
+      lines,
       sentences: splitSentences(text),
       inlineRuns: parseInlineRuns(text),
       source: { file: sourcePath, startLine: Math.max(1, lineNo - quote.length), endLine: lineNo },
@@ -73,10 +75,12 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
 
   const flushTable = (lineNo: number) => {
     if (!table.length) return;
+    const rows = table.map((row) => row.map(normalizeInlineSpacing));
     blocks.push({
       id: `block-${blocks.length + 1}`,
       type: "table",
-      rows: table,
+      rows,
+      text: rows.map((row) => row.join(" | ")).join("\n"),
       source: { file: sourcePath, startLine: Math.max(1, lineNo - table.length), endLine: lineNo },
     });
     table = [];
@@ -149,7 +153,7 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
         id: `block-${blocks.length + 1}`,
         type: "heading",
         level: headingMatch[1]!.length as HeadingLevel,
-        text: headingMatch[2]!.trim(),
+        text: normalizeInlineSpacing(headingMatch[2]!.trim()),
         source: { file: sourcePath, startLine: lineNo, endLine: lineNo },
       });
       continue;
@@ -175,7 +179,7 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
       flushParagraph(lineNo);
       flushList(lineNo);
       flushTable(lineNo);
-      quote.push(quoteMatch[1]!.trim());
+      quote.push(normalizeInlineSpacing(quoteMatch[1]!.trim()));
       continue;
     }
 
@@ -216,7 +220,7 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
 
     flushTable(lineNo);
     flushQuote(lineNo);
-    paragraph.push(line.trim());
+    paragraph.push(normalizeInlineSpacing(line.trim()));
   }
 
   flushInlineBlocks(lines.length);
@@ -237,7 +241,7 @@ function parseTableRow(line: string): string[] {
     .replace(/^\|/, "")
     .replace(/\|$/, "")
     .split("|")
-    .map((cell) => cell.trim());
+    .map((cell) => normalizeInlineSpacing(cell));
 }
 
 function isTableDelimiterRow(cells: string[]): boolean {
@@ -264,7 +268,7 @@ function parseListItem(raw: string): ListItemIR | undefined {
   if (!match) return undefined;
 
   const marker = match[2] ? `${match[2]}.` : raw.trim().slice(0, 1);
-  const text = (match[3] ?? "").trim();
+  const text = normalizeInlineSpacing((match[3] ?? "").trim());
   const level = Math.floor((match[1] ?? "").replace(/\t/g, "    ").length / 2);
   const number = match[2] ? Number(match[2]) : undefined;
   const cleanText = normalizeStructuredText(stripInlineMarkdown(text));
@@ -310,18 +314,18 @@ export function parseInlineRuns(text: string): InlineRunIR[] {
 
   for (const match of text.matchAll(pattern)) {
     const index = match.index ?? 0;
-    if (index > cursor) runs.push({ text: stripInlineMarkdown(text.slice(cursor, index)) });
+    if (index > cursor) runs.push({ text: normalizeRunText(stripInlineMarkdown(text.slice(cursor, index))) });
 
     if (match[2] !== undefined) {
-      runs.push({ text: stripInlineMarkdown(match[2]), bold: true });
+      runs.push({ text: normalizeRunText(stripInlineMarkdown(match[2])), bold: true });
     } else if (match[4] !== undefined) {
-      runs.push({ text: stripInlineMarkdown(match[4]), italic: true });
+      runs.push({ text: normalizeRunText(stripInlineMarkdown(match[4])), italic: true });
     }
 
     cursor = index + match[0].length;
   }
 
-  if (cursor < text.length) runs.push({ text: stripInlineMarkdown(text.slice(cursor)) });
+  if (cursor < text.length) runs.push({ text: normalizeRunText(stripInlineMarkdown(text.slice(cursor))) });
   return runs.filter((run) => run.text.length > 0);
 }
 
@@ -337,10 +341,21 @@ function stripInlineMarkdown(text: string): string {
 function normalizeStructuredText(text: string): string {
   return text
     .split(/\r?\n/)
-    .map((line) => line.trim())
+    .map((line) => normalizeInlineSpacing(line))
     .filter(Boolean)
     .join("\n")
     .trim();
+}
+
+function normalizeInlineSpacing(text: string): string {
+  return text.replace(/[ \t\f\v]+/g, " ").trim();
+}
+
+function normalizeRunText(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.replace(/[ \t\f\v]+/g, " "))
+    .join("\n");
 }
 
 function deriveListItemStructure(rawText: string, runs: InlineRunIR[]): Partial<ListItemIR> {

@@ -1,4 +1,4 @@
-import type { DesignPresetName, Diagnostic } from "@mdpresent/core";
+import type { ColorCombinationName, DesignPresetName, Diagnostic } from "@mdpresent/core";
 
 export type LayoutPreset =
   | "cover"
@@ -64,6 +64,7 @@ export type OverflowPolicy = {
 export type ThemeTokens = {
   fontFamily: string;
   designPreset?: DesignPresetName;
+  colorCombination?: ColorCombinationName;
   backgroundColor: string;
   textColor: string;
   primaryColor: string;

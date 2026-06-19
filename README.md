@@ -82,6 +82,8 @@ The parser preserves presentation-relevant Markdown structure and avoids flatten
 
 `--design` and `theme.designPreset` use one shared catalog across PPTX and HTML. Current presets include `plain`, `clean`, `executive`, `editorial`, `technical`, `dark`, `nord`, `solarized`, `dracula`, `tableau`, `gruvbox`, `monokai`, `material`, and `tokyo-night`.
 
+`theme.colorCombination` can derive Adobe Color Wheel-style palettes from `theme.primaryColor` on top of a preset. Supported values are `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic`. Derived colors feed element accents, table borders, chart color tokens, and the generated PowerPoint document theme colors (`accent1` through `accent6`).
+
 For visual QA, `--theme-gallery executive,nord,dracula,solarized` repeats the planned slides under multiple design presets in one PPTX.
 
 Separated key messages, ordered item cards, and label/detail list items inherit the active preset's accent colors. PPTX output keeps these as editable text, shapes, one-sided accent lines, and number badges rather than flattened images.
@@ -89,6 +91,12 @@ Separated key messages, ordered item cards, and label/detail list items inherit 
 When `--template example.pptx` is provided, PPTX output reads the template's theme colors and non-text decorative shapes. Decorations from example slides are reused only on generated slides with the same inferred layout family, while body placeholders and arbitrary content positions are still recalculated by mdpresent.
 
 Cover/title slides use preset-specific editable templates. Theme-gallery output shows multiple title candidates, while `--design <preset>` renders only that preset's title treatment.
+
+## Text and Table Coherence
+
+Markdown text is normalized before layout validation and rendering. Repeated spaces and tabs collapse to a single space in paragraphs, inline emphasis runs, list text, and table cells, while meaningful Markdown lines remain available for slide splitting and readable PPTX text boxes.
+
+Simple Markdown tables now carry validation text in addition to row data, matching the Pandoc table path. This lets the overflow resolver measure table content instead of treating dense tables as empty regions. PPTX tables use middle vertical alignment, coherent cell margins, preset-derived header fills and borders, and never shrink below the configured readable minimum font size.
 
 ## Implementation Priorities
 

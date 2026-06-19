@@ -15,6 +15,13 @@ export type DesignPresetName =
   | "monokai"
   | "material"
   | "tokyo-night";
+export type ColorCombinationName =
+  | "preset"
+  | "monochromatic"
+  | "analogous"
+  | "complementary"
+  | "split-complementary"
+  | "triadic";
 
 export type SlideRole = "cover" | "toc" | "section" | "content" | "appendix";
 export type SlideIntent =
@@ -221,6 +228,7 @@ export type Config = {
   };
   theme: {
     designPreset?: DesignPresetName;
+    colorCombination?: ColorCombinationName;
     backgroundColor: string;
     textColor: string;
     primaryColor: string;

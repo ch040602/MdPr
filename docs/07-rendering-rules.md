@@ -82,6 +82,10 @@ tokyo-night Tokyo Night-inspired deep technical palette
 
 The shared preset catalog lives in `@mdpresent/core`. `theme.designPreset` is the format-independent config location and is consumed by PPTX and HTML. `pptx.designPreset` remains supported as a PPTX-specific compatibility override.
 
+`theme.colorCombination` extends the selected preset with Adobe Color Wheel-style harmony. `preset` preserves the catalog colors. `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic` derive secondary, rule, chart, and PowerPoint theme accent colors from `theme.primaryColor`.
+
+PPTX output writes the active color tokens into `ppt/theme/theme*.xml` (`dk1`, `lt1`, `accent1` through `accent6`, hyperlink colors) after generation so charts and user-edited objects can inherit the same document theme as the rendered shapes.
+
 Template/master import baseline:
 
 ```text

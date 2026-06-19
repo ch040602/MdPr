@@ -25,6 +25,15 @@ async function patchTemplateTheme(templatePath, colors) {
   writeFileSync(templatePath, await zip.generateAsync({ type: "nodebuffer" }));
 }
 
+async function readPptxThemeXml(pptxPath) {
+  const zip = await JSZip.loadAsync(readFileSync(pptxPath));
+  const themePath = Object.keys(zip.files).find((path) => /^ppt\/theme\/theme\d+\.xml$/.test(path));
+  assert.ok(themePath);
+  const themeFile = zip.file(themePath);
+  assert.ok(themeFile);
+  return themeFile.async("string");
+}
+
 const sampleDeck = {
   presentation: {
     version: "1.0",
@@ -399,6 +408,28 @@ test("renderPptx can emit one multi-theme gallery PPTX for visual comparison", a
     assert.equal(slideCount, sampleDeck.layout.slides.length * 2);
     assert.match(xml, /val="2E3440"/);
     assert.match(xml, /Theme: nord/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx writes active color combination into PowerPoint document theme", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-theme-colors-"));
+  const outPath = join(outDir, "theme-colors.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.layout.theme.primaryColor = "#2563EB";
+  deck.layout.theme.colorCombination = "complementary";
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "clean" });
+    const xml = await readPptxThemeXml(outPath);
+
+    assert.match(xml, /<a:lt1><a:srgbClr val="F8FAFC"\/><\/a:lt1>/);
+    assert.match(xml, /<a:dk1><a:srgbClr val="111827"\/><\/a:dk1>/);
+    assert.match(xml, /<a:accent1><a:srgbClr val="2563EB"\/><\/a:accent1>/);
+    assert.match(xml, /<a:accent2><a:srgbClr val="EBAD25"\/><\/a:accent2>/);
+    assert.match(xml, /<a:accent3><a:srgbClr val="25B2EB"\/><\/a:accent3>/);
+    assert.match(xml, /<a:accent6><a:srgbClr val="D3DDF0"\/><\/a:accent6>/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

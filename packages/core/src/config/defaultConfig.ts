@@ -49,6 +49,7 @@ export const defaultConfig: Config = {
   },
   theme: {
     designPreset: "clean",
+    colorCombination: "preset",
     backgroundColor: "#FFFFFF",
     textColor: "#111827",
     primaryColor: "#2563EB",

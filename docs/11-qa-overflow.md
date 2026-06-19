@@ -63,6 +63,10 @@ Safe-area and slot-bound checks use the same bounds rule in the MVP: a region mu
 
 Min font size validation compares the effective region font size against `region.typography.minFontSize`, then `overflowPolicy.minFontSize`, then the theme minimum.
 
+Markdown normalization happens before overflow validation and rendering. Repeated spaces and tabs collapse inside paragraph lines, inline emphasis runs, list text, and table cells so measured text matches rendered text.
+
+Simple Markdown table blocks carry both `rows` and validation `text`, matching Pandoc tables. PPTX table rendering clamps its compact table font to the same readable minimum rather than shrinking to an independent floor.
+
 ## Title regions
 
 Title regions are validated with the same overflow path as body regions. The layout planner adds a stable pseudo block id for each slide title, and the CLI validation content index maps that pseudo block to the `Presentation IR` slide title. This prevents renderers from injecting a long title that was never checked by `validate`.

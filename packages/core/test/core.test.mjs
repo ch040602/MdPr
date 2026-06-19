@@ -94,6 +94,40 @@ test("parseMarkdown extracts tables, block quotes, and explicit slide breaks", (
   ]);
 });
 
+test("parseMarkdown canonicalizes long spaces before validation and rendering", () => {
+  const doc = parseMarkdown([
+    "# Deck",
+    "",
+    "## Spacing",
+    "",
+    "Alpha     beta\t\tgamma.",
+    "Text with **Bold    phrase** and plain     text.",
+    "",
+    "| Metric | Long     Value |",
+    "|---|---:|",
+    "| Speed\t\tScore | 2x      faster |",
+  ].join("\n"));
+
+  const paragraph = doc.blocks.find((block) => block.type === "paragraph");
+  const table = doc.blocks.find((block) => block.type === "table");
+
+  assert.equal(paragraph.text, "Alpha beta gamma. Text with Bold phrase and plain text.");
+  assert.deepEqual(paragraph.lines, [
+    "Alpha beta gamma.",
+    "Text with **Bold phrase** and plain text.",
+  ]);
+  assert.deepEqual(paragraph.inlineRuns, [
+    { text: "Alpha beta gamma.\nText with " },
+    { text: "Bold phrase", bold: true },
+    { text: " and plain text." },
+  ]);
+  assert.deepEqual(table.rows, [
+    ["Metric", "Long Value"],
+    ["Speed Score", "2x faster"],
+  ]);
+  assert.equal(table.text, "Metric | Long Value\nSpeed Score | 2x faster");
+});
+
 test("parseMarkdown preserves ordered and nested list structure while removing decorative bullets", () => {
   const doc = parseMarkdown([
     "# Deck",
@@ -844,6 +878,20 @@ test("design preset catalog exposes named presentation palettes as shared tokens
   assert.equal(nord.primaryColor, "88C0D0");
   assert.equal(nord.surfaceFill, "3B4252");
   assert.equal(nord.ruleColor, "81A1C1");
+});
+
+test("design tokens can derive Adobe-style color combinations for PPT and charts", () => {
+  const tokens = resolveDesignTokens("clean", {
+    ...defaultConfig.theme,
+    primaryColor: "#2563EB",
+    colorCombination: "complementary",
+  });
+
+  assert.equal(tokens.colorCombination, "complementary");
+  assert.equal(tokens.themeColors.accent1, "2563EB");
+  assert.equal(tokens.themeColors.accent2, "EBAD25");
+  assert.deepEqual(tokens.chartColors.slice(0, 3), ["2563EB", "EBAD25", "25B2EB"]);
+  assert.equal(tokens.surfaceLine, "D3DDF0");
 });
 
 function contentSlideIdsByTitle(presentation) {

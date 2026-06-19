@@ -172,6 +172,9 @@
         "designPreset": {
           "$ref": "#/$defs/designPreset"
         },
+        "colorCombination": {
+          "$ref": "#/$defs/colorCombination"
+        },
         "backgroundColor": {
           "type": "string"
         },
@@ -247,6 +250,16 @@
         "monokai",
         "material",
         "tokyo-night"
+      ]
+    },
+    "colorCombination": {
+      "enum": [
+        "preset",
+        "monochromatic",
+        "analogous",
+        "complementary",
+        "split-complementary",
+        "triadic"
       ]
     },
     "layoutPreset": {

@@ -66,6 +66,16 @@
         "designPreset": {
           "type": "string"
         },
+        "colorCombination": {
+          "enum": [
+            "preset",
+            "monochromatic",
+            "analogous",
+            "complementary",
+            "split-complementary",
+            "triadic"
+          ]
+        },
         "backgroundColor": {
           "type": "string"
         },

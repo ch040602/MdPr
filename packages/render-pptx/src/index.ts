@@ -1,7 +1,9 @@
 import type { BlockIR, DesignTokens, DiagramIR, InlineRunIR, ListItemIR, PresentationIR, SlideIR } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
+import { readFile, writeFile } from "node:fs/promises";
 import PptxGenJSExport from "pptxgenjs";
 import type PptxGenJS from "pptxgenjs";
+import JSZip from "jszip";
 import { addPresetBackground, addRegionSurface, type DesignPresetName, resolveDesignPreset } from "./designPresets.js";
 import { extractTemplateDesignAssets, type TemplateShapeAsset, type TemplateTheme } from "./templateImport.js";
 
@@ -32,6 +34,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
     ? options.themeGalleryPresets.map((preset) => resolveDesignPreset(preset, layout.theme))
     : [resolveDesignPreset(options.designPreset ?? layout.theme.designPreset, layout.theme)];
   const templateAssets = await extractTemplateDesignAssets(options.templatePath);
+  let documentDesignPreset: DesignTokens | undefined;
 
   pptx.author = "mdpresent";
   pptx.company = "mdpresent";
@@ -50,6 +53,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
 
   for (const baseDesignPreset of designPresets) {
     const designPreset = applyTemplateTheme(baseDesignPreset, templateAssets.theme);
+    documentDesignPreset ??= designPreset;
     for (const layoutSlide of layout.slides) {
       const slide = pptx.addSlide();
       const sourceSlide = presentation?.slides.find((candidate) => candidate.id === layoutSlide.sourceSlideId);
@@ -110,13 +114,14 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
         } else if (blocks.length === 1 && blocks[0].type === "diagram" && blocks[0].diagram) {
           renderDiagramRegion(slide, blocks[0].diagram, region, designPreset, common);
         } else if (blocks.length === 1 && blocks[0].type === "table" && blocks[0].rows?.length) {
+          const minTableFontSize = region.typography?.minFontSize ?? layoutSlide.overflowPolicy.minFontSize ?? layout.theme.minFontSize;
           slide.addTable(buildAlignedTableRows(blocks[0].rows, region, common, designPreset), {
             x: region.x,
             y: region.y,
             w: region.w,
             h: region.h,
             fontFace: common.fontFace,
-            fontSize: tableFontSize(blocks[0].rows, region, fontSize),
+            fontSize: tableFontSize(blocks[0].rows, region, fontSize, minTableFontSize),
             color: common.color,
             margin: [0.04, 0.06, 0.04, 0.06],
             breakLine: false,
@@ -124,7 +129,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
             autoPage: false,
             autoPageCharWeight: 0.25,
             autoPageLineWeight: 0.25,
-            border: { color: "D1D5DB", type: "solid", pt: 1 },
+            border: { color: designPreset.surfaceLine, type: "solid", pt: 1 },
           });
         } else if (blocks.length === 1 && blocks[0].type === "image" && blocks[0].src) {
           slide.addImage({ path: blocks[0].src, x: region.x, y: region.y, w: region.w, h: region.h });
@@ -137,6 +142,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
   }
 
   await pptx.writeFile({ fileName: options.outPath, compression: false });
+  if (documentDesignPreset) await writePptxThemeColors(options.outPath, documentDesignPreset);
 }
 
 function textFitForRegion(
@@ -150,11 +156,11 @@ function textFitForRegion(
 
 function buildAlignedTableRows(
   rows: string[][],
-  region: { w: number; h: number },
+  region: { w: number; h: number; typography?: { minFontSize?: number } },
   common: PptxGenJS.TextPropsOptions,
   preset: DesignTokens,
 ): PptxGenJS.TableRow[] {
-  const size = tableFontSize(rows, region, common.fontSize ?? 12);
+  const size = tableFontSize(rows, region, common.fontSize ?? 12, region.typography?.minFontSize);
 
   return rows.map((row, rowIndex) => row.map((value, columnIndex) => {
     const isHeader = rowIndex === 0;
@@ -170,7 +176,7 @@ function buildAlignedTableRows(
         valign: "middle",
         margin: [0.04, 0.06, 0.04, 0.06],
         breakLine: false,
-        border: { color: "D1D5DB", type: "solid", pt: 1 },
+        border: { color: preset.surfaceLine, type: "solid", pt: 1 },
         autoPageCharWeight: 0.25,
         autoPageLineWeight: 0.25,
       },
@@ -178,7 +184,7 @@ function buildAlignedTableRows(
   }));
 }
 
-function tableFontSize(rows: string[][], region: { w: number; h: number }, baseFontSize: number): number {
+function tableFontSize(rows: string[][], region: { w: number; h: number }, baseFontSize: number, minFontSize = 8): number {
   const rowCount = Math.max(1, rows.length);
   const columnCount = Math.max(1, ...rows.map((row) => row.length));
   const maxChars = Math.max(0, ...rows.flat().map((cell) => normalizeTableCellText(cell).length));
@@ -192,7 +198,7 @@ function tableFontSize(rows: string[][], region: { w: number; h: number }, baseF
   else if (maxChars > columnWidth * 13) size -= 1;
   if (rowCount > 7) size -= 1;
 
-  return Math.max(8, Math.min(baseFontSize, Math.round(size)));
+  return Math.max(minFontSize, Math.min(baseFontSize, Math.round(size)));
 }
 
 function tableCellAlign(value: string, columnIndex: number): PptxGenJS.HAlign {
@@ -204,10 +210,39 @@ function normalizeTableCellText(value: string): string {
   return value.replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
 }
 
+async function writePptxThemeColors(outPath: string, preset: DesignTokens): Promise<void> {
+  const zip = await JSZip.loadAsync(await readFile(outPath));
+  const themePath = Object.keys(zip.files).find((path) => /^ppt\/theme\/theme\d+\.xml$/.test(path));
+  const themeFile = themePath ? zip.file(themePath) : undefined;
+  if (!themePath || !themeFile) return;
+
+  const colors = preset.themeColors;
+  const replacements: Record<string, string> = {
+    dk1: colors.dark1,
+    lt1: colors.light1,
+    dk2: colors.dark2,
+    lt2: colors.light2,
+    accent1: colors.accent1,
+    accent2: colors.accent2,
+    accent3: colors.accent3,
+    accent4: colors.accent4,
+    accent5: colors.accent5,
+    accent6: colors.accent6,
+    hlink: colors.hyperlink,
+    folHlink: colors.followedHyperlink,
+  };
+  let xml = await themeFile.async("string");
+  for (const [name, color] of Object.entries(replacements)) {
+    xml = xml.replace(new RegExp(`<a:${name}>[\\s\\S]*?<\\/a:${name}>`), `<a:${name}><a:srgbClr val="${color}"/></a:${name}>`);
+  }
+  zip.file(themePath, xml);
+  await writeFile(outPath, await zip.generateAsync({ type: "nodebuffer" }));
+}
+
 function applyTemplateTheme(preset: DesignTokens, theme: TemplateTheme): DesignTokens {
   if (!Object.values(theme).some(Boolean)) return preset;
 
-  return {
+  const themed = {
     ...preset,
     backgroundColor: theme.backgroundColor ?? preset.backgroundColor,
     textColor: theme.textColor ?? preset.textColor,
@@ -216,6 +251,36 @@ function applyTemplateTheme(preset: DesignTokens, theme: TemplateTheme): DesignT
     surfaceFill: theme.surfaceFill ?? theme.backgroundColor ?? preset.surfaceFill,
     surfaceLine: theme.surfaceLine ?? theme.secondaryColor ?? preset.surfaceLine,
     ruleColor: theme.ruleColor ?? theme.primaryColor ?? preset.ruleColor,
+  };
+  return withResolvedThemeColors(themed);
+}
+
+function withResolvedThemeColors(preset: DesignTokens): DesignTokens {
+  const chartColors = [
+    preset.primaryColor,
+    preset.secondaryColor,
+    preset.ruleColor,
+    preset.mutedTextColor,
+    preset.surfaceLine,
+    preset.textColor,
+  ];
+  return {
+    ...preset,
+    chartColors,
+    themeColors: {
+      dark1: preset.textColor,
+      light1: preset.backgroundColor,
+      dark2: preset.mutedTextColor,
+      light2: preset.surfaceFill,
+      accent1: preset.primaryColor,
+      accent2: preset.secondaryColor,
+      accent3: preset.ruleColor,
+      accent4: preset.mutedTextColor,
+      accent5: preset.surfaceFill,
+      accent6: preset.surfaceLine,
+      hyperlink: preset.primaryColor,
+      followedHyperlink: preset.secondaryColor,
+    },
   };
 }
 
@@ -323,11 +388,11 @@ function renderRichRegionContent(
         runs.push(...renderInlineRuns(block.inlineRuns, runs.length > 0, "", preset?.primaryColor));
       } else {
         for (const unit of paragraphUnits(block)) {
-          runs.push({ text: unit, options: { breakLine: runs.length > 0 } });
+          runs.push({ text: normalizeRenderableText(unit), options: { breakLine: runs.length > 0 } });
         }
       }
     } else {
-      const text = block.text ?? block.alt ?? "";
+      const text = normalizeRenderableText(block.text ?? block.alt ?? "");
       if (text) runs.push({ text, options: { breakLine: runs.length > 0 } });
     }
   }
@@ -367,7 +432,7 @@ function renderPlainRegionContent(
     .filter(Boolean)
     .join("\n");
 
-  return text || "";
+  return normalizeRenderableText(text || "");
 }
 
 function paragraphUnits(block: BlockIR): string[] {
@@ -401,7 +466,7 @@ function renderInlineRuns(inlineRuns: InlineRunIR[], breakLine: boolean, prefix 
   for (const run of inlineRuns) {
     const parts = run.text.split(/\r?\n/);
     for (const [index, part] of parts.entries()) {
-      const text = `${needsPrefix ? prefix : ""}${part}`;
+      const text = `${needsPrefix ? prefix : ""}${normalizeRenderableRunText(part)}`;
       if (text || index === 0) {
         rendered.push({
           text,
@@ -419,6 +484,14 @@ function renderInlineRuns(inlineRuns: InlineRunIR[], breakLine: boolean, prefix 
   }
 
   return rendered;
+}
+
+function normalizeRenderableText(value: string): string {
+  return value.replace(/[ \t\f\v]+/g, " ").trim();
+}
+
+function normalizeRenderableRunText(value: string): string {
+  return value.replace(/[ \t\f\v]+/g, " ");
 }
 
 function formatListItemText(item: ListItemIR): string {

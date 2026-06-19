@@ -97,6 +97,7 @@ Current build behavior:
 - html writes dist/deck.html through @mdpresent/render-html
 - pptx writes dist/deck.pptx through @mdpresent/render-pptx
 - `--design` and `theme.designPreset` use the shared design preset catalog for PPTX and HTML
+- `theme.colorCombination` derives `monochromatic`, `analogous`, `complementary`, `split-complementary`, or `triadic` palettes from `theme.primaryColor`; `preset` keeps the catalog colors unchanged
 - built-in presets: plain, clean, executive, editorial, technical, dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, tokyo-night
 - pptx can reuse positioned image assets from a template/master PPTX as a background layer
 - config files are loaded from YAML or JSON; `pptx.template` paths are resolved relative to the config file
