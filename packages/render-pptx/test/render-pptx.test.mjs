@@ -140,6 +140,7 @@ test("renderPptx writes editable text boxes with stable coordinates and centered
     assert.match(xml, /<a:off x="731520" y="411480"\/><a:ext cx="10698480" cy="731520"\/>/);
     assert.match(xml, /<a:off x="1042416" y="1602943"\/><a:ext cx="4608576" cy="1274674"\/>/);
     assert.match(xml, /<a:bodyPr[^>]*wrap="square"/);
+    assert.match(xml, /<a:normAutofit\/>/);
     assert.match(xml, /<a:bodyPr[^>]*anchor="ctr"/);
     assert.match(xml, /lIns="0" tIns="25400" rIns="25400" bIns="0"/);
     assert.match(xml, /<a:pPr[^>]*algn="ctr"/);
@@ -174,6 +175,60 @@ test("renderPptx renders item text when a bullet list only contains structured l
     assert.match(xml, /Structured item alpha/);
     assert.match(xml, /Structured item beta/);
     assert.equal((xml.match(/Structured item/g) ?? []).length, 2);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx aligns and fits text inside table cells", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-table-fit-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  const rows = [
+    ["Metric", "Value"],
+    ["Very long retained label that should stay readable inside one cell", "123"],
+    ["Quality", "98%"],
+    ["Coverage", "87%"],
+    ["Warnings", "2"],
+    ["Build", "Pass"],
+    ["Visual QA", "OK"],
+    ["Export", "Done"],
+    ["Review", "Ready"],
+  ];
+  deck.presentation.slides[0].title = "Table Fit";
+  deck.presentation.slides[0].intent = "table";
+  deck.presentation.slides[0].blocks = [{ id: "table-1", type: "table", rows }];
+  deck.layout.slides[0].layout = { preset: "table-focus" };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "table",
+      role: "table",
+      blockIds: ["table-1"],
+      x: 1.0,
+      y: 1.55,
+      w: 11.2,
+      h: 2.2,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "executive" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+
+    assert.match(xml, /Metric/);
+    assert.match(xml, /Very long retained label that should stay readable inside one cell/);
+    assert.match(xml, /<a:pPr[^>]*algn="ctr"[\s\S]*?<a:t>Metric<\/a:t>/);
+    assert.match(xml, /<a:pPr[^>]*algn="l"[\s\S]*?<a:t>Very long retained label/);
+    assert.match(xml, /<a:pPr[^>]*algn="r"[\s\S]*?<a:t>123<\/a:t>/);
+    assert.match(xml, /<a:tcPr[^>]*marL="54864"[^>]*marR="54864"[^>]*marT="36576"[^>]*marB="36576"[^>]*anchor="ctr"/);
+    assert.match(xml, /sz="1[0-9]00"/);
+    assert.doesNotMatch(xml, /<a:br\/>/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

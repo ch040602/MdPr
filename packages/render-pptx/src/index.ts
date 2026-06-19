@@ -85,7 +85,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           fontSize,
           color: isCover && region.role === "title" ? readableTextColor(designPreset.primaryColor) : designPreset.textColor,
           margin: textPlacement.margin,
-          fit: layoutSlide.overflowPolicy.action === "shrink" ? "shrink" as const : "none" as const,
+          fit: textFitForRegion(region, layoutSlide.overflowPolicy.action),
           wrap: true,
           breakLine: false,
           valign: textPlacement.valign,
@@ -110,14 +110,20 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
         } else if (blocks.length === 1 && blocks[0].type === "diagram" && blocks[0].diagram) {
           renderDiagramRegion(slide, blocks[0].diagram, region, designPreset, common);
         } else if (blocks.length === 1 && blocks[0].type === "table" && blocks[0].rows?.length) {
-          slide.addTable(blocks[0].rows.map((row) => row.map((text) => ({ text }))), {
+          slide.addTable(buildAlignedTableRows(blocks[0].rows, region, common, designPreset), {
             x: region.x,
             y: region.y,
             w: region.w,
             h: region.h,
             fontFace: common.fontFace,
-            fontSize,
+            fontSize: tableFontSize(blocks[0].rows, region, fontSize),
             color: common.color,
+            margin: [0.04, 0.06, 0.04, 0.06],
+            breakLine: false,
+            valign: "middle",
+            autoPage: false,
+            autoPageCharWeight: 0.25,
+            autoPageLineWeight: 0.25,
             border: { color: "D1D5DB", type: "solid", pt: 1 },
           });
         } else if (blocks.length === 1 && blocks[0].type === "image" && blocks[0].src) {
@@ -131,6 +137,71 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
   }
 
   await pptx.writeFile({ fileName: options.outPath, compression: false });
+}
+
+function textFitForRegion(
+  region: { role: string },
+  overflowAction: LayoutIR["slides"][number]["overflowPolicy"]["action"],
+): "none" | "shrink" {
+  if (region.role === "image" || region.role === "diagram") return "none";
+  if (overflowAction === "fail") return "none";
+  return "shrink";
+}
+
+function buildAlignedTableRows(
+  rows: string[][],
+  region: { w: number; h: number },
+  common: PptxGenJS.TextPropsOptions,
+  preset: DesignTokens,
+): PptxGenJS.TableRow[] {
+  const size = tableFontSize(rows, region, common.fontSize ?? 12);
+
+  return rows.map((row, rowIndex) => row.map((value, columnIndex) => {
+    const isHeader = rowIndex === 0;
+    return {
+      text: normalizeTableCellText(value),
+      options: {
+        fontFace: common.fontFace,
+        fontSize: isHeader ? Math.min(size + 1, common.fontSize ?? size) : size,
+        bold: isHeader,
+        color: isHeader ? readableTextColor(preset.primaryColor) : common.color,
+        fill: isHeader ? { color: preset.primaryColor, transparency: 0 } : undefined,
+        align: isHeader ? "center" : tableCellAlign(value, columnIndex),
+        valign: "middle",
+        margin: [0.04, 0.06, 0.04, 0.06],
+        breakLine: false,
+        border: { color: "D1D5DB", type: "solid", pt: 1 },
+        autoPageCharWeight: 0.25,
+        autoPageLineWeight: 0.25,
+      },
+    };
+  }));
+}
+
+function tableFontSize(rows: string[][], region: { w: number; h: number }, baseFontSize: number): number {
+  const rowCount = Math.max(1, rows.length);
+  const columnCount = Math.max(1, ...rows.map((row) => row.length));
+  const maxChars = Math.max(0, ...rows.flat().map((cell) => normalizeTableCellText(cell).length));
+  const rowHeight = region.h / rowCount;
+  const columnWidth = region.w / columnCount;
+  let size = baseFontSize;
+
+  if (rowHeight < 0.36) size -= 3;
+  else if (rowHeight < 0.48) size -= 2;
+  if (maxChars > columnWidth * 18) size -= 2;
+  else if (maxChars > columnWidth * 13) size -= 1;
+  if (rowCount > 7) size -= 1;
+
+  return Math.max(8, Math.min(baseFontSize, Math.round(size)));
+}
+
+function tableCellAlign(value: string, columnIndex: number): PptxGenJS.HAlign {
+  if (columnIndex > 0 && /^[-+]?[$€₩¥]?\s*\d[\d,]*(?:\.\d+)?%?$/.test(value.trim())) return "right";
+  return "left";
+}
+
+function normalizeTableCellText(value: string): string {
+  return value.replace(/\s*\n+\s*/g, " ").replace(/\s{2,}/g, " ").trim();
 }
 
 function applyTemplateTheme(preset: DesignTokens, theme: TemplateTheme): DesignTokens {
