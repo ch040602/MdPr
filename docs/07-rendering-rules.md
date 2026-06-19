@@ -144,6 +144,8 @@ diagram + detail blocks in one section split into diagram slide first, detail co
 body and item regions keep a readable minimum font size during automatic overflow resolution
 decorative lines and badges are drawn as editable shapes and text is inset away from those shapes
 PPTX text boxes use role-aware inner margins and vertical anchors so titles, item cards, proof points, code blocks, and body text align consistently inside their shape bounds
+chart slides with short prose and no table use a parallel body-plus-chart layout rather than pushing interpretation below the graph
+chart slides with a table reserve separate chart and table regions so numeric evidence and table details remain visible on the same page
 ```
 
 Planned behavior:

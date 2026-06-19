@@ -216,6 +216,14 @@ function createChartTableRegions(slide: SlideIR, titleRegion: LayoutRegion, conf
     ];
   }
 
+  if (bodyBlockIds.length) {
+    return [
+      titleRegion,
+      { id: "body", role: "body", blockIds: bodyBlockIds, x: 0.92, y: 1.66, w: 4.18, h: 4.62, zIndex: 10, typography: bodyTypography(config) },
+      { id: "chart", role: "chart", blockIds: chartBlockIds, x: 5.42, y: 1.56, w: 6.78, h: 4.82, zIndex: 10, typography: compactBodyTypography(config) },
+    ];
+  }
+
   return [
     titleRegion,
     { id: "chart", role: "chart", blockIds: chartBlockIds, x: 1.0, y: 1.55, w: 11.2, h: 4.75, zIndex: 10, typography: bodyTypography(config) },

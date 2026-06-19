@@ -77,6 +77,7 @@ The parser preserves presentation-relevant Markdown structure and avoids flatten
 - Line breaks: paragraph line breaks and sentence units are kept for safer slide splitting
 - Diagrams: standalone pipeline lines such as `Draft => Review => Render` become semantic diagram blocks with adaptive horizontal, vertical, U-shaped, reverse-U, or cycle-like placement
 - Diagram integrity: one graph or diagram block stays on a single slide; MDPR does not split a diagram across continuation pages
+- Numeric storytelling: chart slides can keep a short prose explanation beside the chart, while chart-plus-table slides keep the graph and table in parallel regions
 
 ## Design Presets
 
@@ -85,6 +86,8 @@ The parser preserves presentation-relevant Markdown structure and avoids flatten
 `theme.colorCombination` can derive Adobe Color Wheel-style palettes from `theme.primaryColor` on top of a preset. Supported values are `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic`. Derived colors feed element accents, table borders, chart color tokens, and the generated PowerPoint document theme colors (`accent1` through `accent6`).
 
 Chart fences support native PowerPoint bar charts and editable chart proof objects. Use `chart` or `bar` for native bar charts, `arc-ring` for progress/ratio rings, `gauge` for score/readiness gauges, and `connected-strip` for small-multiple flow metrics. Generic `chart` fences may also declare `kind: arc-ring`, `kind: gauge`, or `kind: connected-strip`.
+
+When a chart slide contains prose but no table, MDPR reserves a left explanation region and a wider right chart region so interpretation and evidence are read together. When the same slide contains a table, MDPR preserves the chart-plus-table parallel layout and keeps table text vertically centered with readable margins.
 
 For visual QA, `--theme-gallery executive,nord,dracula,solarized` repeats the planned slides under multiple design presets in one PPTX.
 
@@ -128,3 +131,4 @@ examples/   Example Markdown, config, and override files
 3. Keep generated body and item text above the readable font floor during overflow resolution.
 4. Keep `schemas/*.json` stable unless a schema-contract TODO explicitly changes them.
 5. Implement in this order: `packages/core`, `packages/layout`, `packages/override`, then renderers.
+6. Build requests for multiple independent formats run through the shared plan once and render requested outputs such as HTML and PPTX as parallel jobs.

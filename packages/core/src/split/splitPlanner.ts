@@ -37,6 +37,7 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
   }
 
   if (config.toc.enabled && config.toc.position === "after-cover") {
+    const tocTitle = tocTitleForLanguage(config.deck.language);
     const tocBlocks = candidates.map((n, i) => ({
       id: `toc-item-${i + 1}`,
       type: "listItem" as const,
@@ -46,8 +47,8 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
       id: createStableId(["toc"], "toc"),
       index: slides.length + 1,
       role: "toc",
-      title: "목차",
-      headingPath: ["목차"],
+      title: tocTitle,
+      headingPath: [tocTitle],
       source: {},
       blocks: tocBlocks,
       intent: "list",
@@ -105,6 +106,12 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
     assets: [],
     diagnostics: [],
   };
+}
+
+function tocTitleForLanguage(language?: string): string {
+  const normalized = (language ?? "").toLowerCase();
+  if (normalized.startsWith("en")) return "Agenda";
+  return "목차";
 }
 
 function createContentSlide(node: OutlineNode, index: number, section?: string, continuation?: string): SlideIR {

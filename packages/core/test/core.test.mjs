@@ -544,6 +544,24 @@ test("planPresentation creates cover, toc, and h2 content slides", () => {
   );
 });
 
+test("planPresentation localizes the generated toc slide from deck language", () => {
+  const doc = parseMarkdown([
+    "# Product",
+    "",
+    "## Why it matters",
+    "",
+    "A short explanation.",
+  ].join("\n"));
+  const config = structuredClone(defaultConfig);
+  config.deck.language = "en";
+
+  const presentation = planPresentation(doc, config);
+  const toc = presentation.slides.find((slide) => slide.role === "toc");
+
+  assert.equal(toc?.title, "Agenda");
+  assert.deepEqual(toc?.headingPath, ["Agenda"]);
+});
+
 test("planPresentation autosplits dense h2 content by h3 subsections", () => {
   const denseItems = Array.from({ length: 10 }, (_, index) => `- Item ${index + 1}`).join("\n");
   const doc = parseMarkdown([

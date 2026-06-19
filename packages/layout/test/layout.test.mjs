@@ -263,6 +263,32 @@ test("chart-table slides reserve enough width for native tables beside charts", 
   assert.equal(table.x > chart.x + chart.w, true);
 });
 
+test("chart slides with prose keep the graph and explanation in parallel", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Numeric Signal",
+    "",
+    "The score improved after layout constraints were applied. The prose should remain beside the graph so the numeric evidence and interpretation are read together.",
+    "",
+    "```chart",
+    "labels: Parser, Layout, PPTX",
+    "Score: 72, 84, 91",
+    "```",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "chart-table");
+  const body = slide.regions.find((region) => region.id === "body");
+  const chart = slide.regions.find((region) => region.id === "chart");
+
+  assert.ok(body);
+  assert.ok(chart);
+  assert.equal(body.x < chart.x, true);
+  assert.equal(chart.x > body.x + body.w, true);
+  assert.equal(Math.abs(body.y - chart.y) <= 0.25, true);
+  assert.equal(body.h >= 3.9, true);
+  assert.equal(chart.w > body.w, true);
+});
+
 test("text-only relief slides use a body panel and separate icon aside", () => {
   const layout = layoutFor([
     "# Demo",

@@ -99,22 +99,24 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
   const deck = createDeckPlan(inputPath, options);
   const formats = options.formats ?? ["html"];
   const outDir = options.outDir ?? "dist";
-  const writtenFiles: string[] = [];
+  const renderJobs: Promise<string>[] = [];
 
   mkdirSync(outDir, { recursive: true });
 
   if (formats.includes("html")) {
-    const html = renderHtml(
-      { presentation: deck.presentation, layout: deck.layout },
-      {
-        title: deck.presentation.meta.title,
-        designPreset: options.designPreset ?? deck.config.theme.designPreset ?? deck.config.pptx.designPreset,
-      },
-    );
     const outPath = join(outDir, "deck.html");
-    mkdirSync(dirname(outPath), { recursive: true });
-    writeFileSync(outPath, html, "utf-8");
-    writtenFiles.push(outPath);
+    renderJobs.push(Promise.resolve().then(() => {
+      const html = renderHtml(
+        { presentation: deck.presentation, layout: deck.layout },
+        {
+          title: deck.presentation.meta.title,
+          designPreset: options.designPreset ?? deck.config.theme.designPreset ?? deck.config.pptx.designPreset,
+        },
+      );
+      mkdirSync(dirname(outPath), { recursive: true });
+      writeFileSync(outPath, html, "utf-8");
+      return outPath;
+    }));
   }
 
   if (formats.includes("pdf")) {
@@ -122,19 +124,23 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
   }
   if (formats.includes("pptx")) {
     const outPath = join(outDir, "deck.pptx");
-    mkdirSync(dirname(outPath), { recursive: true });
-    await renderPptx(
-      { presentation: deck.presentation, layout: deck.layout },
-      {
-        outPath,
-        templatePath: options.templatePath ?? deck.config.pptx.template,
-        designPreset: options.designPreset ?? deck.config.theme.designPreset ?? deck.config.pptx.designPreset,
-        themeGalleryPresets: options.themeGalleryPresets,
-        lockBackgroundToMaster: deck.config.pptx.lockBackgroundToMaster,
-      },
-    );
-    writtenFiles.push(outPath);
+    renderJobs.push((async () => {
+      mkdirSync(dirname(outPath), { recursive: true });
+      await renderPptx(
+        { presentation: deck.presentation, layout: deck.layout },
+        {
+          outPath,
+          templatePath: options.templatePath ?? deck.config.pptx.template,
+          designPreset: options.designPreset ?? deck.config.theme.designPreset ?? deck.config.pptx.designPreset,
+          themeGalleryPresets: options.themeGalleryPresets,
+          lockBackgroundToMaster: deck.config.pptx.lockBackgroundToMaster,
+        },
+      );
+      return outPath;
+    })());
   }
+
+  const writtenFiles = await Promise.all(renderJobs);
 
   return { ...deck, writtenFiles };
 }
