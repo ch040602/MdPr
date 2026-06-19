@@ -105,8 +105,10 @@ export type DiagramIR = {
   }>;
 };
 
+export type ChartKind = "bar" | "arc-ring" | "gauge" | "connected-strip";
+
 export type ChartIR = {
-  kind: "bar";
+  kind: ChartKind;
   labels: string[];
   series: Array<{
     name: string;

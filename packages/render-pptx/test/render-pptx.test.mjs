@@ -148,7 +148,7 @@ test("renderPptx writes editable text boxes with stable coordinates, centered ti
     assert.equal((xml.match(/txBox="1"/g) ?? []).length, 3);
     assert.match(xml, /<a:off x="731520" y="411480"\/><a:ext cx="10698480" cy="731520"\/>/);
     assert.match(xml, /<a:off x="976122" y="1947672"\/><a:ext cx="585216" cy="585216"\/>/);
-    assert.match(xml, /<a:off x="1689354" y="1602943"\/><a:ext cx="3961638" cy="1274674"\/>/);
+    assert.match(xml, /<a:off x="1689354" y="2051304"\/><a:ext cx="3961638" cy="377952"\/>/);
     assert.match(xml, /<a:bodyPr[^>]*wrap="square"/);
     assert.match(xml, /<a:normAutofit\/>/);
     assert.match(xml, /<a:bodyPr[^>]*anchor="ctr"/);
@@ -185,6 +185,50 @@ test("renderPptx renders item text when a bullet list only contains structured l
     assert.match(xml, /Structured item alpha/);
     assert.match(xml, /Structured item beta/);
     assert.equal((xml.match(/Structured item/g) ?? []).length, 2);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx renders plain lists as separate editable text boxes to avoid collapsed line breaks", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-plain-list-lines-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].title = "목차";
+  deck.presentation.slides[0].blocks = [
+    { id: "toc-item-1", type: "listItem", text: "Validation Ring" },
+    { id: "toc-item-2", type: "listItem", text: "Readiness Gauge" },
+    { id: "toc-item-3", type: "listItem", text: "Connected Strip" },
+    { id: "toc-item-4", type: "listItem", text: "Native Bar Baseline" },
+  ];
+  deck.layout.slides[0].layout = { preset: "title-body" };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "body",
+      role: "body",
+      blockIds: ["toc-item-1", "toc-item-2", "toc-item-3", "toc-item-4"],
+      x: 0.9,
+      y: 1.6,
+      w: 8.4,
+      h: 3.4,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 22, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "editorial" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+
+    assert.match(xml, /Validation Ring/);
+    assert.match(xml, /Readiness Gauge/);
+    assert.equal((xml.match(/txBox="1"/g) ?? []).length >= 5, true);
+    assert.equal((xml.match(/sz="2200"/g) ?? []).length >= 4, true);
+    assert.match(xml, /Validation Ring[\s\S]*?<\/p:sp><p:sp>[\s\S]*?Readiness Gauge/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -541,6 +585,62 @@ test("renderPptx renders chart blocks as native PowerPoint charts with theme col
     const chartXml = await zip.file(chartPaths[0]).async("string");
     assert.match(chartXml, /<c:barChart>/);
     assert.match(chartXml, /<a:srgbClr val="1D4ED8"\/>/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx renders chart proof objects as editable shapes without native chart parts", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-chart-proof-"));
+  const outPath = join(outDir, "chart-proof.pptx");
+  const deck = makeChartProofDeck([
+    {
+      title: "Validation Ring",
+      chart: {
+        kind: "arc-ring",
+        labels: ["Validated", "Remaining"],
+        series: [{ name: "Coverage", values: [72, 28] }],
+      },
+    },
+    {
+      title: "Readiness Gauge",
+      chart: {
+        kind: "gauge",
+        labels: ["Readiness"],
+        series: [{ name: "Score", values: [83] }],
+      },
+    },
+    {
+      title: "Connected Strip",
+      chart: {
+        kind: "connected-strip",
+        labels: ["Draft", "Render", "Validate"],
+        series: [{ name: "Confidence", values: [20, 68, 92] }],
+      },
+    },
+  ]);
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "editorial" });
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const chartPaths = Object.keys(zip.files).filter((path) => /^ppt\/charts\/chart\d+\.xml$/.test(path));
+    assert.equal(chartPaths.length, 0);
+
+    const slideXml = await Promise.all([1, 2, 3].map(async (index) => zip.file(`ppt/slides/slide${index}.xml`).async("string")));
+    const combinedXml = slideXml.join("\n");
+
+    assert.match(slideXml[0], /Validation Ring/);
+    assert.match(slideXml[0], /Coverage/);
+    assert.match(slideXml[0], /72%/);
+    assert.match(slideXml[1], /Readiness Gauge/);
+    assert.match(slideXml[1], /83%/);
+    assert.match(slideXml[2], /Connected Strip/);
+    assert.match(slideXml[2], /Draft/);
+    assert.match(slideXml[2], /Validate/);
+    assert.equal((combinedXml.match(/prst="ellipse"/g) ?? []).length >= 5, true);
+    assert.equal((combinedXml.match(/prst="roundRect"/g) ?? []).length >= 6, true);
+    assert.equal((combinedXml.match(/prst="line"/g) ?? []).length >= 4, true);
+    assert.equal((combinedXml.match(/sz="1[4-9]00"|sz="2[0-9]00"|sz="3[0-9]00"/g) ?? []).length >= 8, true);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -1181,6 +1281,74 @@ function makeDiagramDeck(slides) {
             y: 1.65,
             w: 11.2,
             h: 4.9,
+            zIndex: 10,
+            typography: { fontFamily: "Arial", fontSize: 18, lineHeight: 1.2, minFontSize: 14 },
+          },
+        ],
+      })),
+    },
+  };
+}
+
+function makeChartProofDeck(slides) {
+  return {
+    presentation: {
+      version: "1.0",
+      meta: { title: "Chart Proof Objects", language: "en" },
+      outline: [],
+      assets: [],
+      diagnostics: [],
+      slides: slides.map((slide, index) => ({
+        id: `slide-chart-proof-${index + 1}`,
+        index,
+        role: "content",
+        title: slide.title,
+        headingPath: [slide.title],
+        source: {},
+        intent: "chart",
+        tags: [],
+        blocks: [
+          {
+            id: `chart-proof-${index + 1}`,
+            type: "chart",
+            text: slide.chart.series.map((series) => `${series.name}: ${series.values.join(", ")}`).join("\n"),
+            chart: slide.chart,
+          },
+        ],
+      })),
+    },
+    layout: {
+      version: "1.0",
+      slideSize: sampleDeck.layout.slideSize,
+      theme: sampleDeck.layout.theme,
+      diagnostics: [],
+      slides: slides.map((slide, index) => ({
+        id: `layout-chart-proof-${index + 1}`,
+        sourceSlideId: `slide-chart-proof-${index + 1}`,
+        index,
+        layout: { preset: "chart-table", direction: "horizontal" },
+        background: { color: "#FFFFFF" },
+        overflowPolicy: { action: "shrink", minFontSize: 14, maxShrinkSteps: 3 },
+        regions: [
+          {
+            id: "title",
+            role: "title",
+            blockIds: [`__title:slide-chart-proof-${index + 1}`],
+            x: 0.8,
+            y: 0.45,
+            w: 11.7,
+            h: 0.8,
+            zIndex: 10,
+            typography: { fontFamily: "Arial", fontSize: 30, fontWeight: "bold", lineHeight: 1.2, minFontSize: 14 },
+          },
+          {
+            id: "chart",
+            role: "chart",
+            blockIds: [`chart-proof-${index + 1}`],
+            x: 1.05,
+            y: 1.55,
+            w: 11.15,
+            h: 4.95,
             zIndex: 10,
             typography: { fontFamily: "Arial", fontSize: 18, lineHeight: 1.2, minFontSize: 14 },
           },

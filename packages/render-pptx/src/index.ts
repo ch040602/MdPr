@@ -136,9 +136,12 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           });
         } else if (blocks.length === 1 && blocks[0].type === "image" && blocks[0].src) {
           slide.addImage({ path: blocks[0].src, x: region.x, y: region.y, w: region.w, h: region.h });
+        } else if (shouldRenderAsPlainMultiline(blocks)) {
+          renderPlainListRegion(slide, blocks, region.role, textCommon);
         } else {
           const richText = renderRichRegionContent(region.blockIds, blockIndex, sourceSlide, region.role, designPreset);
-          slide.addText(hasVisibleRichText(richText) ? richText : renderPlainRegionContent(region.role, region.blockIds, blockIndex, sourceSlide), textCommon);
+          const plainText = renderPlainRegionContent(region.role, region.blockIds, blockIndex, sourceSlide);
+          slide.addText(hasVisibleRichText(richText) ? richText : plainText, textCommon);
         }
       }
     }
@@ -391,6 +394,12 @@ function renderRichRegionContent(
         ? block.listItems
         : (block.items ?? []).map((item) => ({ text: item, ordered: false, level: 0 }) satisfies ListItemIR);
 
+      if (isPlainList(items)) {
+        const text = items.map((item) => formatListItemTextForRole(item, role)).join("\n");
+        if (text) runs.push({ text, options: { breakLine: runs.length > 0 } });
+        continue;
+      }
+
       for (const item of items) {
         runs.push(...renderListItemRuns(item, runs.length > 0, role, preset));
       }
@@ -457,6 +466,55 @@ function paragraphUnits(block: BlockIR): string[] {
   return block.text ? [block.text] : [];
 }
 
+function shouldRenderAsPlainMultiline(blocks: BlockIR[]): boolean {
+  return blocks.length > 0 && blocks.every((block) => {
+    if (block.type === "listItem") return Boolean(block.text) && !block.inlineRuns?.some((run) => run.bold || run.italic);
+    if (block.type !== "bulletList") return false;
+    const items = block.listItems?.length
+      ? block.listItems
+      : (block.items ?? []).map((item) => ({ text: item, ordered: false, level: 0 }) satisfies ListItemIR);
+    return isPlainList(items);
+  });
+}
+
+function renderPlainListRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: string, common: PptxGenJS.TextPropsOptions): void {
+  const items = blocks.flatMap((block) => {
+    if (block.type === "listItem") return [{ text: normalizeRenderableText(block.text ?? ""), level: 0 }];
+    if (block.type !== "bulletList") return [];
+    if (block.listItems?.length) return block.listItems.map((item) => ({ text: formatListItemTextForRole(item, role), level: item.level }));
+    return (block.items ?? []).map((item) => ({ text: normalizeRenderableText(item), level: 0 }));
+  }).filter((item) => item.text);
+  if (!items.length) return;
+
+  const baseFontSize = Math.max(14, Number(common.fontSize ?? 16));
+  const lineHeightMultiple = Number(common.lineSpacingMultiple ?? 1.2);
+  const rowH = Math.max(0.28, Math.min(0.52, (baseFontSize * lineHeightMultiple) / 72 + 0.08));
+  const totalH = rowH * items.length;
+  const baseX = Number(common.x ?? 0);
+  const baseY = Number(common.y ?? 0);
+  const baseW = Number(common.w ?? 1);
+  const baseH = Number(common.h ?? totalH);
+  const startY = baseY + Math.max(0, (baseH - totalH) / 2);
+
+  for (const [index, item] of items.entries()) {
+    const indent = Math.min(0.55, Math.max(0, item.level) * 0.22);
+    slide.addText(item.text, {
+      ...common,
+      x: baseX + indent,
+      y: startY + index * rowH,
+      w: Math.max(0.3, baseW - indent),
+      h: rowH,
+      fontSize: baseFontSize,
+      margin: common.margin ?? [0, 0, 0, 0],
+      align: "left",
+      valign: "middle",
+      fit: "shrink",
+      breakLine: false,
+      isTextBox: true,
+    });
+  }
+}
+
 function renderListItemRuns(item: ListItemIR, breakLine: boolean, role: string, preset?: DesignTokens): PptxGenJS.TextProps[] {
   if (item.label && item.description) {
     const prefix = `${"  ".repeat(item.level)}${listPrefix(item, role)}`;
@@ -511,10 +569,22 @@ function normalizeRenderableRunText(value: string): string {
 }
 
 function formatListItemText(item: ListItemIR): string {
+  return formatListItemTextForRole(item, "body");
+}
+
+function formatListItemTextForRole(item: ListItemIR, role: string): string {
   if (item.label && item.description) {
-    return `${"  ".repeat(item.level)}${listPrefix(item, "body")}${item.label}\n${listDescriptionPrefix(item.level)}${item.description}`;
+    return `${"  ".repeat(item.level)}${listPrefix(item, role)}${item.label}\n${listDescriptionPrefix(item.level)}${item.description}`;
   }
-  return `${"  ".repeat(item.level)}${listPrefix(item, "body")}${item.text}`;
+  return `${"  ".repeat(item.level)}${listPrefix(item, role)}${item.text}`;
+}
+
+function isPlainList(items: ListItemIR[]): boolean {
+  return items.every((item) =>
+    !item.label &&
+    !item.description &&
+    !(item.runs ?? []).some((run) => run.bold || run.italic),
+  );
 }
 
 function listDescriptionPrefix(level: number): string {
@@ -727,7 +797,22 @@ function renderChartRegion(
   preset: DesignTokens,
   common: PptxGenJS.TextPropsOptions,
 ): void {
-  if (chart.kind !== "bar" || !chart.labels.length || !chart.series.length) return;
+  if (!chart.labels.length || !chart.series.length) return;
+
+  if (chart.kind === "arc-ring") {
+    renderArcRingChart(slide, chart, region, preset, common);
+    return;
+  }
+
+  if (chart.kind === "gauge") {
+    renderGaugeChart(slide, chart, region, preset, common);
+    return;
+  }
+
+  if (chart.kind === "connected-strip") {
+    renderConnectedStripChart(slide, chart, region, preset, common);
+    return;
+  }
 
   const fontFace = region.typography?.fontFamily ?? common.fontFace ?? "Arial";
   const labelFontSize = Math.max(8, Math.min(11, (region.typography?.fontSize ?? common.fontSize ?? 14) - 5));
@@ -764,6 +849,357 @@ function renderChartRegion(
     chartLineSize: 0.5,
     showLeaderLines: false,
   } as never);
+}
+
+function renderArcRingChart(
+  slide: PptxGenJS.Slide,
+  chart: ChartIR,
+  region: { x: number; y: number; w: number; h: number; typography?: { fontFamily?: string; fontSize?: number } },
+  preset: DesignTokens,
+  common: PptxGenJS.TextPropsOptions,
+): void {
+  const fontFace = region.typography?.fontFamily ?? common.fontFace ?? "Arial";
+  const bodySize = Math.max(14, region.typography?.fontSize ?? common.fontSize ?? 16);
+  const values = chart.series[0]?.values ?? [];
+  const primary = values[0] ?? 0;
+  const total = values.reduce((sum, value) => sum + Math.max(0, value), 0);
+  const percent = clamp(total > 0 && values.length > 1 ? (primary / total) * 100 : primary, 0, 100);
+  const ringSize = Math.min(region.h * 0.78, region.w * 0.42);
+  const ringX = region.x + Math.max(0.28, region.w * 0.08);
+  const ringY = region.y + (region.h - ringSize) / 2;
+  const inner = ringSize * 0.62;
+  const innerX = ringX + (ringSize - inner) / 2;
+  const innerY = ringY + (ringSize - inner) / 2;
+  const accent = preset.chartColors[0] ?? preset.primaryColor;
+  const secondary = preset.chartColors[1] ?? preset.secondaryColor;
+  const centerX = ringX + ringSize / 2;
+  const centerY = ringY + ringSize / 2;
+
+  slide.addShape("ellipse", {
+    x: ringX,
+    y: ringY,
+    w: ringSize,
+    h: ringSize,
+    fill: { color: preset.surfaceLine, transparency: 18 },
+    line: { color: preset.surfaceLine, transparency: 100 },
+  });
+  slide.addShape("ellipse", {
+    x: ringX + ringSize * 0.06,
+    y: ringY + ringSize * 0.06,
+    w: ringSize * 0.88,
+    h: ringSize * 0.88,
+    fill: { color: accent, transparency: 8 },
+    line: { color: accent, transparency: 100 },
+  });
+  slide.addShape("ellipse", {
+    x: innerX,
+    y: innerY,
+    w: inner,
+    h: inner,
+    fill: { color: preset.backgroundColor },
+    line: { color: preset.backgroundColor, transparency: 100 },
+  });
+  for (const segment of ringSegments(percent, ringX, ringY, ringSize)) {
+    slide.addShape("roundRect", {
+      ...segment,
+      rectRadius: 0.04,
+      rotate: segment.rotate,
+      fill: { color: secondary, transparency: 0 },
+      line: { color: secondary, transparency: 100 },
+    } as never);
+  }
+
+  slide.addText(`${Math.round(percent)}%`, {
+    ...common,
+    x: centerX - ringSize * 0.28,
+    y: centerY - ringSize * 0.17,
+    w: ringSize * 0.56,
+    h: ringSize * 0.24,
+    fontFace,
+    fontSize: Math.max(22, Math.min(34, bodySize + 12)),
+    bold: true,
+    color: preset.textColor,
+    align: "center",
+    valign: "middle",
+    margin: [0, 0, 0, 0],
+    fit: "shrink",
+  });
+  slide.addText(chart.series[0]?.name ?? "Value", {
+    ...common,
+    x: centerX - ringSize * 0.32,
+    y: centerY + ringSize * 0.08,
+    w: ringSize * 0.64,
+    h: ringSize * 0.18,
+    fontFace,
+    fontSize: Math.max(14, Math.min(16, bodySize - 1)),
+    color: preset.mutedTextColor,
+    align: "center",
+    valign: "middle",
+    margin: [0, 0, 0, 0],
+  });
+
+  const legendX = ringX + ringSize + Math.max(0.45, region.w * 0.07);
+  const legendW = Math.max(2.4, region.x + region.w - legendX - 0.3);
+  renderChartLegend(slide, chart, legendX, region.y + region.h * 0.23, legendW, Math.min(region.h * 0.5, 2.1), preset, common, bodySize);
+}
+
+function renderGaugeChart(
+  slide: PptxGenJS.Slide,
+  chart: ChartIR,
+  region: { x: number; y: number; w: number; h: number; typography?: { fontFamily?: string; fontSize?: number } },
+  preset: DesignTokens,
+  common: PptxGenJS.TextPropsOptions,
+): void {
+  const fontFace = region.typography?.fontFamily ?? common.fontFace ?? "Arial";
+  const bodySize = Math.max(14, region.typography?.fontSize ?? common.fontSize ?? 16);
+  const value = clamp(chart.series[0]?.values[0] ?? 0, 0, 100);
+  const gaugeW = Math.min(region.w * 0.82, 8.6);
+  const gaugeH = Math.min(region.h * 0.52, 2.25);
+  const x = region.x + (region.w - gaugeW) / 2;
+  const y = region.y + region.h * 0.34;
+  const trackY = y + gaugeH * 0.52;
+  const fillW = gaugeW * value / 100;
+  const accent = preset.chartColors[0] ?? preset.primaryColor;
+  const markerX = x + fillW;
+
+  slide.addShape("roundRect", {
+    x,
+    y: trackY - 0.14,
+    w: gaugeW,
+    h: 0.28,
+    rectRadius: 0.08,
+    fill: { color: preset.surfaceLine, transparency: 15 },
+    line: { color: preset.surfaceLine, transparency: 100 },
+  } as never);
+  slide.addShape("roundRect", {
+    x,
+    y: trackY - 0.14,
+    w: Math.max(0.12, fillW),
+    h: 0.28,
+    rectRadius: 0.08,
+    fill: { color: accent, transparency: 0 },
+    line: { color: accent, transparency: 100 },
+  } as never);
+  addNormalizedLine(slide, { x: markerX, y: trackY - 0.58 }, { x: markerX, y: trackY + 0.48 }, preset.textColor, false, { pt: 1.6 });
+  slide.addShape("ellipse", {
+    x: markerX - 0.16,
+    y: trackY - 0.16,
+    w: 0.32,
+    h: 0.32,
+    fill: { color: preset.backgroundColor },
+    line: { color: accent, pt: 2 },
+  });
+  addNormalizedLine(slide, { x, y: trackY - 0.24 }, { x, y: trackY + 0.24 }, preset.surfaceLine, false, { pt: 1.1, transparency: 5 });
+  addNormalizedLine(slide, { x: x + gaugeW, y: trackY - 0.24 }, { x: x + gaugeW, y: trackY + 0.24 }, preset.surfaceLine, false, { pt: 1.1, transparency: 5 });
+  slide.addText(`${Math.round(value)}%`, {
+    ...common,
+    x: x + gaugeW * 0.32,
+    y: y - 0.74,
+    w: gaugeW * 0.36,
+    h: 0.62,
+    fontFace,
+    fontSize: Math.max(26, Math.min(36, bodySize + 14)),
+    bold: true,
+    color: preset.textColor,
+    align: "center",
+    valign: "middle",
+    margin: [0, 0, 0, 0],
+    fit: "shrink",
+  });
+  slide.addText(`${chart.series[0]?.name ?? "Score"} · ${chart.labels[0] ?? "Readiness"}`, {
+    ...common,
+    x,
+    y: trackY + 0.62,
+    w: gaugeW,
+    h: 0.38,
+    fontFace,
+    fontSize: Math.max(14, Math.min(17, bodySize)),
+    color: preset.mutedTextColor,
+    align: "center",
+    valign: "middle",
+    margin: [0, 0, 0, 0],
+  });
+  slide.addText("0", {
+    ...common,
+    x,
+    y: trackY + 0.19,
+    w: 0.6,
+    h: 0.26,
+    fontFace,
+    fontSize: 14,
+    color: preset.mutedTextColor,
+    margin: [0, 0, 0, 0],
+  });
+  slide.addText("100", {
+    ...common,
+    x: x + gaugeW - 0.6,
+    y: trackY + 0.19,
+    w: 0.6,
+    h: 0.26,
+    fontFace,
+    fontSize: 14,
+    color: preset.mutedTextColor,
+    align: "right",
+    margin: [0, 0, 0, 0],
+  });
+}
+
+function renderConnectedStripChart(
+  slide: PptxGenJS.Slide,
+  chart: ChartIR,
+  region: { x: number; y: number; w: number; h: number; typography?: { fontFamily?: string; fontSize?: number } },
+  preset: DesignTokens,
+  common: PptxGenJS.TextPropsOptions,
+): void {
+  const fontFace = region.typography?.fontFamily ?? common.fontFace ?? "Arial";
+  const bodySize = Math.max(14, region.typography?.fontSize ?? common.fontSize ?? 16);
+  const values = chart.series[0]?.values ?? [];
+  const count = Math.max(1, Math.min(chart.labels.length, values.length));
+  const gap = Math.min(0.38, Math.max(0.22, region.w * 0.035));
+  const cardW = (region.w - gap * (count - 1) - 0.35) / count;
+  const cardH = Math.min(2.5, Math.max(1.5, region.h * 0.58));
+  const startX = region.x + 0.18;
+  const startY = region.y + (region.h - cardH) / 2;
+  const maxValue = Math.max(1, ...values.slice(0, count).map((value) => Math.abs(value)));
+  const boxes: Array<{ x: number; y: number; w: number; h: number }> = [];
+
+  for (let index = 0; index < count; index++) {
+    const x = startX + index * (cardW + gap);
+    const value = values[index] ?? 0;
+    const normalized = clamp(Math.abs(value) / maxValue, 0, 1);
+    const accent = preset.chartColors[index % Math.max(1, Math.min(3, preset.chartColors.length))] ?? preset.primaryColor;
+    boxes.push({ x, y: startY, w: cardW, h: cardH });
+    slide.addShape("roundRect", {
+      x,
+      y: startY,
+      w: cardW,
+      h: cardH,
+      rectRadius: 0.05,
+      fill: { color: preset.surfaceFill, transparency: 0 },
+      line: { color: preset.surfaceLine, pt: 1 },
+    } as never);
+    slide.addShape("rect", {
+      x: x + 0.22,
+      y: startY + cardH - 0.48,
+      w: Math.max(0.2, (cardW - 0.44) * normalized),
+      h: 0.14,
+      fill: { color: accent, transparency: 0 },
+      line: { color: accent, transparency: 100 },
+    });
+    slide.addText(chart.labels[index] ?? `Step ${index + 1}`, {
+      ...common,
+      x: x + 0.2,
+      y: startY + 0.2,
+      w: cardW - 0.4,
+      h: cardH * 0.38,
+      fontFace,
+      fontSize: Math.max(14, Math.min(18, bodySize)),
+      bold: true,
+      color: preset.textColor,
+      align: "center",
+      valign: "middle",
+      margin: [0.03, 0.04, 0.03, 0.04],
+      fit: "shrink",
+    });
+    slide.addText(formatChartValue(value), {
+      ...common,
+      x: x + 0.2,
+      y: startY + cardH * 0.48,
+      w: cardW - 0.4,
+      h: 0.46,
+      fontFace,
+      fontSize: Math.max(20, Math.min(28, bodySize + 8)),
+      bold: true,
+      color: accent,
+      align: "center",
+      valign: "middle",
+      margin: [0, 0, 0, 0],
+      fit: "shrink",
+    });
+  }
+
+  for (let index = 0; index < boxes.length - 1; index++) {
+    const from = boxes[index]!;
+    const to = boxes[index + 1]!;
+    addNormalizedLine(
+      slide,
+      { x: from.x + from.w - 0.02, y: from.y + from.h / 2 },
+      { x: to.x + 0.02, y: to.y + to.h / 2 },
+      preset.ruleColor,
+      true,
+      { pt: 1.45, transparency: 8 },
+    );
+  }
+}
+
+function renderChartLegend(
+  slide: PptxGenJS.Slide,
+  chart: ChartIR,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  preset: DesignTokens,
+  common: PptxGenJS.TextPropsOptions,
+  bodySize: number,
+): void {
+  const values = chart.series[0]?.values ?? [];
+  const rowH = Math.max(0.32, Math.min(0.48, h / Math.max(1, chart.labels.length)));
+  for (let index = 0; index < chart.labels.length; index++) {
+    const rowY = y + index * rowH;
+    const color = preset.chartColors[index % Math.max(1, preset.chartColors.length)] ?? preset.primaryColor;
+    slide.addShape("ellipse", {
+      x,
+      y: rowY + (rowH - 0.15) / 2,
+      w: 0.15,
+      h: 0.15,
+      fill: { color },
+      line: { color, transparency: 100 },
+    });
+    slide.addText(`${chart.labels[index]} ${formatChartValue(values[index] ?? 0)}`, {
+      ...common,
+      x: x + 0.25,
+      y: rowY,
+      w: Math.max(0.5, w - 0.25),
+      h: rowH,
+      fontSize: Math.max(14, Math.min(16, bodySize - 1)),
+      bold: index === 0,
+      color: index === 0 ? preset.textColor : preset.mutedTextColor,
+      align: "left",
+      valign: "middle",
+      margin: [0, 0, 0, 0],
+      fit: "shrink",
+    });
+  }
+}
+
+function ringSegments(percent: number, ringX: number, ringY: number, ringSize: number): Array<{ x: number; y: number; w: number; h: number; rotate: number }> {
+  const segmentCount = Math.max(1, Math.min(4, Math.ceil(percent / 25)));
+  const width = ringSize * 0.23;
+  const height = ringSize * 0.085;
+  const centerX = ringX + ringSize / 2;
+  const centerY = ringY + ringSize / 2;
+  const radius = ringSize * 0.39;
+  return Array.from({ length: segmentCount }, (_, index) => {
+    const angle = -70 + index * 36;
+    const radians = angle * Math.PI / 180;
+    return {
+      x: centerX + Math.cos(radians) * radius - width / 2,
+      y: centerY + Math.sin(radians) * radius - height / 2,
+      w: width,
+      h: height,
+      rotate: angle + 90,
+    };
+  });
+}
+
+function formatChartValue(value: number): string {
+  if (Math.abs(value) <= 100 && Number.isFinite(value)) return `${Math.round(value)}%`;
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 
 function renderDiagramRegion(

@@ -275,6 +275,50 @@ test("parseMarkdown converts fenced chart data into chart blocks", () => {
   assert.equal(chart.text, "Headings: 192, 28, 7\nTables: 12, 3, 1");
 });
 
+test("parseMarkdown supports editable chart proof object variants", () => {
+  const doc = parseMarkdown([
+    "# Deck",
+    "",
+    "## Proof Objects",
+    "",
+    "```arc-ring",
+    "labels: Validated, Remaining",
+    "Coverage: 72, 28",
+    "```",
+    "",
+    "```chart",
+    "kind: gauge",
+    "labels: Readiness",
+    "Score: 83",
+    "```",
+    "",
+    "```connected-strip",
+    "Draft, 20",
+    "Render, 68",
+    "Validate, 92",
+    "```",
+  ].join("\n"));
+
+  const charts = doc.blocks.filter((block) => block.type === "chart").map((block) => block.chart);
+
+  assert.deepEqual(charts.map((chart) => chart.kind), ["arc-ring", "gauge", "connected-strip"]);
+  assert.deepEqual(charts[0], {
+    kind: "arc-ring",
+    labels: ["Validated", "Remaining"],
+    series: [{ name: "Coverage", values: [72, 28] }],
+  });
+  assert.deepEqual(charts[1], {
+    kind: "gauge",
+    labels: ["Readiness"],
+    series: [{ name: "Score", values: [83] }],
+  });
+  assert.deepEqual(charts[2], {
+    kind: "connected-strip",
+    labels: ["Draft", "Render", "Validate"],
+    series: [{ name: "Value", values: [20, 68, 92] }],
+  });
+});
+
 test("parsePandocJson normalizes Pandoc AST blocks into MDPR semantic blocks", () => {
   const doc = parsePandocJson({
     "pandoc-api-version": [1, 23, 1],

@@ -471,8 +471,13 @@ function createPipelineDiagram(labels: string[]) {
 }
 
 function parseFencedChart(language: string, lines: string[]): ChartIR | undefined {
-  if (!["chart", "bar", "bar-chart", "barchart"].includes(language.toLowerCase())) return undefined;
-  const cleaned = lines.map((line) => normalizeInlineSpacing(line)).filter(Boolean);
+  const chartKind = chartKindFromLanguage(language);
+  if (!chartKind) return undefined;
+  let cleaned = lines.map((line) => normalizeInlineSpacing(line)).filter(Boolean);
+  if (cleaned.length < 2) return undefined;
+  const explicitKind = chartKindFromMetadata(cleaned);
+  const kind = explicitKind ?? chartKind;
+  cleaned = cleaned.filter((line) => !/^(?:kind|variant|type)\s*[:=]/i.test(line));
   if (cleaned.length < 2) return undefined;
 
   const labelsLineIndex = cleaned.findIndex((line) => /^labels?\s*:/i.test(line));
@@ -483,20 +488,35 @@ function parseFencedChart(language: string, lines: string[]): ChartIR | undefine
       .map(parseNamedChartSeries)
       .filter((item): item is ChartIR["series"][number] => Boolean(item))
       .filter((item) => item.values.length === labels.length);
-    if (labels.length && series.length) return { kind: "bar", labels, series };
+    if (labels.length && series.length) return { kind, labels, series };
   }
 
   const rows = cleaned.map((line) => line.split(",").map((part) => normalizeInlineSpacing(part))).filter((row) => row.length >= 2);
   const numericRows = rows.map((row) => ({ label: row[0]!, value: Number(row[1]!.replace(/,/g, "")) })).filter((row) => Number.isFinite(row.value));
   if (numericRows.length) {
     return {
-      kind: "bar",
+      kind,
       labels: numericRows.map((row) => row.label),
       series: [{ name: "Value", values: numericRows.map((row) => row.value) }],
     };
   }
 
   return undefined;
+}
+
+function chartKindFromLanguage(language: string): ChartIR["kind"] | undefined {
+  const normalized = language.toLowerCase().trim();
+  if (["chart", "bar", "bar-chart", "barchart"].includes(normalized)) return "bar";
+  if (["arc-ring", "arc-ring-chart", "ring", "ring-chart", "donut", "donut-chart"].includes(normalized)) return "arc-ring";
+  if (["gauge", "gauge-chart", "gauge-dial", "dial"].includes(normalized)) return "gauge";
+  if (["connected-strip", "chart-strip", "strip", "strip-chart", "sequence-strip"].includes(normalized)) return "connected-strip";
+  return undefined;
+}
+
+function chartKindFromMetadata(lines: string[]): ChartIR["kind"] | undefined {
+  const kindLine = lines.find((line) => /^(?:kind|variant|type)\s*[:=]/i.test(line));
+  if (!kindLine) return undefined;
+  return chartKindFromLanguage(kindLine.replace(/^(?:kind|variant|type)\s*[:=]/i, ""));
 }
 
 function parseNamedChartSeries(line: string): ChartIR["series"][number] | undefined {

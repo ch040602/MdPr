@@ -420,7 +420,12 @@
       ],
       "properties": {
         "kind": {
-          "const": "bar"
+          "enum": [
+            "bar",
+            "arc-ring",
+            "gauge",
+            "connected-strip"
+          ]
         },
         "labels": {
           "type": "array",
