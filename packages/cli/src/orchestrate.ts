@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
-import type { Config, Diagnostic, OutputFormat, PresentationIR, SlideIR } from "@mdpresent/core";
-import { defaultConfig, parseMarkdown, planPresentation } from "@mdpresent/core";
+import type { Config, Diagnostic, OutputFormat, ParserMode, PresentationIR, SlideIR } from "@mdpresent/core";
+import { defaultConfig, parseMarkdown, parseMarkdownWithPandoc, planPresentation } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 import { planLayout, validateLayoutOverflow } from "@mdpresent/layout";
 import { renderHtml } from "@mdpresent/render-html";
@@ -22,6 +22,7 @@ export type OrchestrationOptions = {
   configPath?: string;
   overridePath?: string;
   cliConfig?: Partial<Config>;
+  parser?: ParserMode;
 };
 
 export type DeckPlan = {
@@ -53,7 +54,9 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
   const configDiagnostics: Diagnostic[] = [];
   const config = resolveEffectiveConfig(options, configDiagnostics);
   const markdown = readFileSync(inputPath, "utf-8");
-  const doc = parseMarkdown(markdown, inputPath);
+  const doc = options.parser === "pandoc"
+    ? parseMarkdownWithPandoc(markdown, { sourcePath: inputPath })
+    : parseMarkdown(markdown, inputPath);
   const presentation = planPresentation(doc, config);
   const layout = resolveLayoutTextOverflow(planLayout(presentation, config), presentation);
   const diagnostics: Diagnostic[] = [

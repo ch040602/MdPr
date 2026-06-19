@@ -12,7 +12,9 @@
 ## 기본 절차
 
 ```text
-1. Markdown AST 생성
+1. Markdown 구조 생성
+   - 기본값: built-in simple parser
+   - 선택값: `--parser pandoc`으로 Pandoc JSON AST 생성 후 `BlockIR`로 정규화
 2. heading tree 생성
 3. h2 기준 slide candidate 생성
 4. candidate별 density 계산
@@ -105,6 +107,29 @@ code       fenced code with language
 image      Markdown image references
 slideBreak explicit `---` separator
 ```
+
+## Pandoc Parser Mode
+
+Pandoc mode is selected explicitly:
+
+```bash
+mdpresent build deck.md --parser pandoc --to pptx,html --out dist
+```
+
+In this mode, MDPR runs Pandoc with `--to json`, converts Pandoc blocks into MDPR `BlockIR`, and then uses the same outline builder, split planner, density rules, intent detector, layout planner, and renderers as the default parser.
+
+Pandoc mode is responsible for richer Markdown normalization only:
+
+```text
+Markdown
+  -> Pandoc JSON AST
+  -> MDPR BlockIR
+  -> Outline Tree
+  -> Split Planner
+  -> Presentation IR
+```
+
+It must not choose slide coordinates, colors, decorations, component variants, visual emphasis, or z-order. Those decisions belong to layout/rendering or to an optional design layer after `Presentation IR`.
 
 ## Structured Lists And Inline Emphasis
 

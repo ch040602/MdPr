@@ -5,7 +5,7 @@
 ```text
 Markdown
   ↓
-Parser
+Parser(simple Markdown or Pandoc JSON)
   ↓
 Outline Builder
   ↓
@@ -31,7 +31,7 @@ Renderer
 
 ```text
 packages/core
-  Markdown parse, outline tree, split, density, intent detection, Presentation IR
+  Markdown parse, Pandoc JSON normalization, outline tree, split, density, intent detection, Presentation IR
 
 packages/layout
   layout preset, layout rule, safe area, typography, overflow, Layout IR
@@ -58,6 +58,8 @@ packages/cli
 
 `core`는 PPTX/PDF/HTML에 대한 지식 없이 `Presentation IR`만 만든다.
 
+`core` also owns the Markdown-to-structure boundary. The default parser keeps the lightweight built-in Markdown path, while `--parser pandoc` runs Pandoc and normalizes Pandoc JSON into the same `BlockIR` structure. Layout, renderer, and external design layers should consume `Presentation IR`; they should not parse Markdown again.
+
 ### 2. Layout은 좌표와 슬롯을 다룬다
 
 HTML/CSS 중심 레이아웃이 아니라, 포맷 공통으로 쓸 수 있는 `slot / region / constraint` 구조를 사용한다.
@@ -73,4 +75,3 @@ PPTX 렌더러는 text box, table, image, shape 등 editable object를 만든다
 ### 5. PPT 템플릿은 배경과 브랜드만 제공한다
 
 템플릿의 placeholder 배치를 그대로 쓰지 않는다. 본문 배치는 CLI의 Layout Planner가 다시 계산한다.
-

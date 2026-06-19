@@ -37,6 +37,14 @@ export type SourceRange = {
   endLine?: number;
 };
 
+export type ParserMode = "simple" | "pandoc";
+
+export type PandocAttr = {
+  identifier?: string;
+  classes?: string[];
+  attributes?: Record<string, string>;
+};
+
 export type Diagnostic = {
   level: "info" | "warning" | "error";
   code?: string;
@@ -105,6 +113,7 @@ export type BlockIR = {
   alt?: string;
   language?: string;
   source?: SourceRange;
+  pandocAttr?: PandocAttr;
 };
 
 export type OutlineNode = {
@@ -157,6 +166,7 @@ export type PresentationIR = {
 export type MarkdownDocument = {
   sourcePath?: string;
   title?: string;
+  parser?: ParserMode;
   blocks: BlockIR[];
   headings: BlockIR[];
 };

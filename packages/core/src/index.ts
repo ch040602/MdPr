@@ -1,6 +1,7 @@
 export * from "./ir/types.js";
 export * from "./config/defaultConfig.js";
 export * from "./parser/parseMarkdown.js";
+export * from "./parser/parsePandoc.js";
 export * from "./outline/buildOutlineTree.js";
 export * from "./split/density.js";
 export * from "./split/splitPlanner.js";

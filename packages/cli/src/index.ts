@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { buildDeck, inspectDeck, planDeck, validateDeck } from "./orchestrate.js";
-import { isDesignPresetName as isKnownDesignPresetName, type DesignPresetName, type OutputFormat } from "@mdpresent/core";
+import { isDesignPresetName as isKnownDesignPresetName, type DesignPresetName, type OutputFormat, type ParserMode } from "@mdpresent/core";
 
 const args = process.argv.slice(2);
 const exitCode = await runCli(args);
@@ -74,6 +74,7 @@ function readCommonOptions(args: string[]) {
   return {
     configPath: readOption(args, "--config"),
     overridePath: readOption(args, "--override"),
+    parser: readParserMode(args),
   };
 }
 
@@ -85,6 +86,13 @@ function readFormats(args: string[]): OutputFormat[] {
 function readOption(args: string[], name: string): string | undefined {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : undefined;
+}
+
+function readParserMode(args: string[]): ParserMode | undefined {
+  const value = readOption(args, "--parser");
+  if (!value) return undefined;
+  if (value === "simple" || value === "pandoc") return value;
+  throw new Error(`Unknown parser mode: ${value}`);
 }
 
 function readDesignPreset(args: string[]): DesignPresetName | undefined {
@@ -112,10 +120,10 @@ function printHelp() {
   console.log(`mdpresent scaffold CLI
 
 Usage:
-  mdpresent inspect <deck.md> [--json]
-  mdpresent plan <deck.md> [--json]
-  mdpresent validate <deck.md> [--override deck.override.yaml] [--json]
-  mdpresent build <deck.md> --to pptx,html --out dist [--design executive] [--theme-gallery executive,nord] [--template master.pptx]
+  mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
+  mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
+  mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--json]
+  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--design executive] [--theme-gallery executive,nord] [--template master.pptx]
 
 Config and override file loading are still scaffold diagnostics. HTML and PPTX rendering are wired through the shared orchestration path.
 `);

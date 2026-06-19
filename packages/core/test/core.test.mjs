@@ -9,6 +9,7 @@ import {
   detectSlideIntent,
   DESIGN_PRESET_NAMES,
   parseMarkdown,
+  parsePandocJson,
   planPresentation,
   resolveDesignTokens,
 } from "../dist/index.js";
@@ -212,6 +213,82 @@ test("parseMarkdown converts arrow pipelines into diagram blocks", () => {
     ["node-2", "node-3"],
     ["node-3", "node-4"],
   ]);
+});
+
+test("parsePandocJson normalizes Pandoc AST blocks into MDPR semantic blocks", () => {
+  const doc = parsePandocJson({
+    "pandoc-api-version": [1, 23, 1],
+    meta: {},
+    blocks: [
+      { t: "Header", c: [1, ["deck", ["title"], []], [{ t: "Str", c: "Deck" }, { t: "Space" }, { t: "Str", c: "Title" }]] },
+      { t: "Header", c: [2, ["workflow", [], []], [{ t: "Str", c: "Workflow" }]] },
+      {
+        t: "Para",
+        c: [
+          { t: "Str", c: "Use" },
+          { t: "Space" },
+          { t: "Strong", c: [{ t: "Str", c: "Pandoc" }] },
+          { t: "Space" },
+          { t: "Emph", c: [{ t: "Str", c: "AST" }] },
+          { t: "Str", c: "." },
+        ],
+      },
+      { t: "BulletList", c: [[{ t: "Plain", c: [{ t: "Str", c: "Parse" }] }], [{ t: "Plain", c: [{ t: "Str", c: "Split" }] }]] },
+      { t: "OrderedList", c: [[1, { t: "Decimal" }, { t: "Period" }], [[{ t: "Plain", c: [{ t: "Str", c: "Render" }] }]]] },
+      { t: "Para", c: [{ t: "Image", c: [["diagram", ["wide"], [["role", "teaser"]]], [{ t: "Str", c: "Diagram" }], ["assets/diagram.png", ""]] }] },
+      { t: "CodeBlock", c: [["example", ["ts"], []], "const slide = true;"] },
+      { t: "HorizontalRule" },
+    ],
+  }, "deck.md");
+
+  assert.equal(doc.parser, "pandoc");
+  assert.equal(doc.title, "Deck Title");
+  assert.deepEqual(doc.headings.map((heading) => [heading.level, heading.text, heading.pandocAttr?.identifier]), [
+    [1, "Deck Title", "deck"],
+    [2, "Workflow", "workflow"],
+  ]);
+  assert.deepEqual(doc.blocks.find((block) => block.type === "paragraph")?.inlineRuns, [
+    { text: "Use " },
+    { text: "Pandoc", bold: true },
+    { text: " " },
+    { text: "AST", italic: true },
+    { text: "." },
+  ]);
+  assert.deepEqual(doc.blocks.find((block) => block.listKind === "unordered")?.items, ["Parse", "Split"]);
+  assert.deepEqual(doc.blocks.find((block) => block.listKind === "ordered")?.listItems?.map((item) => [item.text, item.ordered, item.number]), [
+    ["Render", true, 1],
+  ]);
+  assert.equal(doc.blocks.find((block) => block.type === "image")?.src, "assets/diagram.png");
+  assert.equal(doc.blocks.find((block) => block.type === "code")?.language, "ts");
+  assert.equal(doc.blocks.some((block) => block.type === "slideBreak"), true);
+});
+
+test("planPresentation consumes Pandoc-normalized documents through the existing split pipeline", () => {
+  const doc = parsePandocJson({
+    blocks: [
+      { t: "Header", c: [1, ["deck", [], []], [{ t: "Str", c: "Deck" }]] },
+      { t: "Header", c: [2, ["capabilities", [], []], [{ t: "Str", c: "Capabilities" }]] },
+      {
+        t: "BulletList",
+        c: [
+          [{ t: "Plain", c: [{ t: "Str", c: "Parse" }] }],
+          [{ t: "Plain", c: [{ t: "Str", c: "Plan" }] }],
+          [{ t: "Plain", c: [{ t: "Str", c: "Render" }] }],
+        ],
+      },
+    ],
+  });
+
+  const presentation = planPresentation(doc, defaultConfig);
+
+  assert.deepEqual(
+    presentation.slides.map((slide) => [slide.role, slide.title, slide.intent]),
+    [
+      ["cover", "Deck", "title"],
+      ["toc", "목차", "list"],
+      ["content", "Capabilities", "list"],
+    ],
+  );
 });
 
 test("parseMarkdown treats pipelines returning to the first label as cycle edges", () => {
