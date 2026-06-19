@@ -635,7 +635,7 @@ test("planPresentation splits long shell code blocks into continuation slides", 
   assert.deepEqual(contentSlides.map((slide) => slide.blocks[0].text.split(/\r?\n/).length), [4, 2]);
 });
 
-test("planPresentation separates graph slides from supporting detail content", () => {
+test("planPresentation keeps one diagram and its supporting content on the same slide", () => {
   const doc = parseMarkdown([
     "# Product",
     "",
@@ -651,12 +651,8 @@ test("planPresentation separates graph slides from supporting detail content", (
   const presentation = planPresentation(doc, defaultConfig);
   const contentSlides = presentation.slides.filter((slide) => slide.role === "content");
 
-  assert.deepEqual(contentSlides.map((slide) => slide.title), [
-    "Pipeline",
-    "Pipeline (Cont. 2/2)",
-  ]);
-  assert.deepEqual(contentSlides[0].blocks.map((block) => block.type), ["diagram"]);
-  assert.deepEqual(contentSlides[1].blocks.map((block) => block.type), ["bulletList"]);
+  assert.deepEqual(contentSlides.map((slide) => slide.title), ["Pipeline"]);
+  assert.deepEqual(contentSlides[0].blocks.map((block) => block.type), ["diagram", "bulletList"]);
 });
 
 test("planPresentation treats horizontal rules as explicit slide separators", () => {

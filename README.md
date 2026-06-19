@@ -76,7 +76,7 @@ The parser preserves presentation-relevant Markdown structure and avoids flatten
 - Key messages: block quotes such as `> Important sentence` become separated callout regions with accent styling
 - Line breaks: paragraph line breaks and sentence units are kept for safer slide splitting
 - Diagrams: standalone pipeline lines such as `Draft => Review => Render` become semantic diagram blocks with adaptive horizontal, vertical, U-shaped, reverse-U, or cycle-like placement
-- Diagram details: when a diagram and explanatory blocks share one section, the diagram stays on the title slide and details move to the continuation slide
+- Diagram integrity: one graph or diagram block stays on a single slide; MDPR does not split a diagram across continuation pages
 
 ## Design Presets
 

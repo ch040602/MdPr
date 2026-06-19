@@ -151,12 +151,6 @@ function splitBlocksIntoChunks(blocks: SlideIR["blocks"], maxDensity: number): S
 }
 
 function splitForcedContinuationBlocks(blocks: SlideIR["blocks"]): SlideIR["blocks"][] {
-  const diagramBlocks = blocks.filter((block) => block.type === "diagram");
-  const detailBlocks = blocks.filter((block) => block.type !== "diagram" && block.type !== "slideBreak");
-  if (diagramBlocks.length && detailBlocks.length) {
-    return [diagramBlocks, detailBlocks];
-  }
-
   if (shouldSplitParagraphSequence(blocks)) {
     return splitParagraphSequence(blocks);
   }
