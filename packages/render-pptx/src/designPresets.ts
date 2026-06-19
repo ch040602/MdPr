@@ -50,6 +50,7 @@ export function addRegionSurface(slide: PptxGenJS.Slide, preset: DesignPreset, r
   if (!preset.cards || !["item", "table", "code"].includes(region.role) && region.id !== "key-message") return;
 
   if (region.id === "key-message") {
+    const stripe = keyMessageStripe(region);
     slide.addShape("roundRect", {
       x: region.x,
       y: region.y,
@@ -59,11 +60,12 @@ export function addRegionSurface(slide: PptxGenJS.Slide, preset: DesignPreset, r
       fill: { color: preset.surfaceFill },
       line: { color: preset.surfaceLine, transparency: 18, pt: 1 },
     });
-    slide.addShape("rect", {
-      x: region.x,
-      y: region.y,
-      w: 0.1,
-      h: region.h,
+    slide.addShape("roundRect", {
+      x: stripe.x,
+      y: stripe.y,
+      w: stripe.w,
+      h: stripe.h,
+      rectRadius: 0.02,
       fill: { color: preset.primaryColor },
       line: { color: preset.primaryColor, transparency: 100 },
     });
@@ -79,4 +81,14 @@ export function addRegionSurface(slide: PptxGenJS.Slide, preset: DesignPreset, r
     fill: { color: preset.surfaceFill },
     line: { color: preset.surfaceLine, transparency: 10, pt: 1 },
   });
+}
+
+function keyMessageStripe(region: LayoutRegion): { x: number; y: number; w: number; h: number } {
+  const inset = Math.min(0.16, Math.max(0.08, region.h * 0.1));
+  return {
+    x: region.x + inset,
+    y: region.y + inset,
+    w: 0.08,
+    h: Math.max(0.08, region.h - inset * 2),
+  };
 }

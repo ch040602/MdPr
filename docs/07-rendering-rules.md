@@ -44,14 +44,16 @@ Current implemented baseline:
 - emits PowerPoint table objects for table blocks
 - emits image objects for image blocks with local paths
 - centers title, subtitle, and item regions according to the fixed region box
+- applies role-aware text box insets so text aligns inside its own PowerPoint box, not only to the outer region rectangle
 - preserves region coordinates; it does not choose a new layout or recompute font sizes
 - applies PowerPoint shrink behavior only when the slide overflow policy is `shrink`
 - renders paragraph sentence units and Markdown lines as explicit PowerPoint line breaks
 - renders ordered list numbers, nested list prefixes, and inline bold/italic runs as editable text
 - renders block quotes as separated key-message regions when the layout planner assigns `quote` or `key-message`
 - renders ordered item cards with editable colored number badges and accent-colored bold/label text
-- renders key-message surfaces with a one-sided accent line instead of a full decorative frame
+- renders key-message surfaces with an inset one-sided accent line that aligns with the box padding instead of protruding from the rounded surface
 - renders pipeline diagram blocks as editable rounded node boxes and line connectors
+- keeps same-role pipeline nodes on one coherent decoration style so a start node does not visually break from sibling nodes unless the content expresses a different role
 - chooses pipeline graph arrangements from content shape: horizontal for short flows, vertical for long labels, U-shaped and reverse-U for denser multi-step flows, and cycle-like placement when an edge returns to the first node
 - sizes diagram nodes and shrinks wrapped node labels before connector drawing to reduce text clipping outside shapes
 - places diagram labels below decorative strips/badges so text does not overlap node decoration
@@ -137,6 +139,7 @@ Overflow and split behavior:
 diagram + detail blocks in one section split into diagram slide first, detail continuation slide second
 body and item regions keep a readable minimum font size during automatic overflow resolution
 decorative lines and badges are drawn as editable shapes and text is inset away from those shapes
+PPTX text boxes use role-aware inner margins and vertical anchors so titles, item cards, proof points, code blocks, and body text align consistently inside their shape bounds
 ```
 
 Planned behavior:

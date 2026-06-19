@@ -75,6 +75,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
       for (const region of [...layoutSlide.regions].sort((left, right) => left.zIndex - right.zIndex)) {
         if (region.role !== "title" && region.blockIds.length === 0) continue;
         const fontSize = roleFontSizes.get(region.role) ?? region.typography?.fontSize ?? layout.theme.bodyFontSize;
+        const textPlacement = textPlacementForRegion(region);
         const common = {
           x: region.x,
           y: region.y,
@@ -83,12 +84,12 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           fontFace: region.typography?.fontFamily ?? layout.theme.fontFamily,
           fontSize,
           color: isCover && region.role === "title" ? readableTextColor(designPreset.primaryColor) : designPreset.textColor,
-          margin: [4, 8, 4, 8] as [number, number, number, number],
+          margin: textPlacement.margin,
           fit: layoutSlide.overflowPolicy.action === "shrink" ? "shrink" as const : "none" as const,
           wrap: true,
           breakLine: false,
-          valign: verticalAlignForRole(region.role),
-          align: horizontalAlignForRole(region.role),
+          valign: textPlacement.valign,
+          align: textPlacement.align,
           bold: region.typography?.fontWeight === "bold" || region.role === "title",
           lineSpacingMultiple: region.typography?.lineHeight ?? layout.theme.lineHeight,
           isTextBox: true,
@@ -99,13 +100,13 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           .map((blockId) => blockIndex.get(blockId))
           .filter((block): block is BlockIR => Boolean(block));
         const orderedItemNumber = region.role === "item" ? orderedListItemNumber(blocks) : undefined;
-        if (orderedItemNumber !== undefined) renderItemNumberBadge(slide, region, orderedItemNumber, designPreset, common);
+        const badge = orderedItemNumber !== undefined ? renderItemNumberBadge(slide, region, orderedItemNumber, designPreset, common) : undefined;
         const textCommon = orderedItemNumber !== undefined
-          ? { ...common, x: region.x + 0.62, w: Math.max(0.2, region.w - 0.72), align: "left" as const }
+          ? textBoxForRegion(region, common, badge ? { reservedLeft: badge.right - region.x + 0.14 } : undefined)
           : textBoxForRegion(region, common);
 
         if (region.role === "title" && sourceSlide?.title) {
-          slide.addText(sourceSlide.title, common);
+          slide.addText(sourceSlide.title, textCommon);
         } else if (blocks.length === 1 && blocks[0].type === "diagram" && blocks[0].diagram) {
           renderDiagramRegion(slide, blocks[0].diagram, region, designPreset, common);
         } else if (blocks.length === 1 && blocks[0].type === "table" && blocks[0].rows?.length) {
@@ -369,16 +370,78 @@ function orderedListItemNumber(blocks: BlockIR[]): number | undefined {
   return item.number ?? 1;
 }
 
+type TextPlacement = {
+  inset: { top: number; right: number; bottom: number; left: number };
+  margin: [number, number, number, number];
+  align: PptxGenJS.HAlign;
+  valign: PptxGenJS.VAlign;
+};
+
+function textPlacementForRegion(region: { id: string; role: string; h: number; w: number }): TextPlacement {
+  if (region.id === "key-message") {
+    return {
+      inset: { top: 0.14, right: 0.24, bottom: 0.14, left: 0.42 },
+      margin: [0, 0, 0, 0],
+      align: "left",
+      valign: "middle",
+    };
+  }
+
+  if (region.role === "title") {
+    return {
+      inset: { top: 0, right: 0, bottom: 0, left: 0 },
+      margin: [0, 0, 0, 0],
+      align: "center",
+      valign: "middle",
+    };
+  }
+
+  if (region.role === "item") {
+    const vertical = Math.min(0.18, Math.max(0.1, region.h * 0.09));
+    return {
+      inset: { top: vertical, right: 0.22, bottom: vertical, left: 0.24 },
+      margin: [0, 2, 0, 2],
+      align: "center",
+      valign: "middle",
+    };
+  }
+
+  if (region.role === "code") {
+    return {
+      inset: { top: 0.16, right: 0.18, bottom: 0.16, left: 0.18 },
+      margin: [0, 2, 0, 2],
+      align: "left",
+      valign: "top",
+    };
+  }
+
+  if (region.role === "diagram") {
+    return {
+      inset: { top: 0, right: 0, bottom: 0, left: 0 },
+      margin: [0, 0, 0, 0],
+      align: "center",
+      valign: "middle",
+    };
+  }
+
+  return {
+    inset: { top: 0.12, right: 0.08, bottom: 0.12, left: 0.08 },
+    margin: [0, 2, 0, 2],
+    align: "left",
+    valign: "top",
+  };
+}
+
 function renderItemNumberBadge(
   slide: PptxGenJS.Slide,
   region: { x: number; y: number; w: number; h: number; typography?: { fontSize?: number } },
   number: number,
   preset: DesignTokens,
   common: PptxGenJS.TextPropsOptions,
-): void {
+): { x: number; y: number; size: number; right: number } {
   const size = Math.min(0.42, Math.max(0.28, region.h * 0.34));
-  const x = region.x + 0.16;
-  const y = region.y + Math.max(0.12, (region.h - size) / 2);
+  const x = region.x + Math.min(0.24, Math.max(0.14, region.w * 0.04));
+  const y = region.y + (region.h - size) / 2;
   const shape = number % 2 === 0 ? "roundRect" : "ellipse";
   slide.addShape(shape as never, {
     x,
@@ -392,9 +455,9 @@ function renderItemNumberBadge(
   slide.addText(String(number), {
     ...common,
     x,
-    y: y + 0.01,
+    y,
     w: size,
-    h: size - 0.02,
+    h: size,
     margin: [0, 0, 0, 0],
     fontSize: Math.max(8, Math.min(13, (region.typography?.fontSize ?? 18) - 5)),
     color: readableTextColor(preset.primaryColor),
@@ -402,29 +465,43 @@ function renderItemNumberBadge(
     align: "center",
     valign: "middle",
   });
+  return { x, y, size, right: x + size };
 }
 
 function textBoxForRegion(
   region: { id: string; role: string; x: number; y: number; w: number; h: number },
   common: PptxGenJS.TextPropsOptions,
+  options: { reservedLeft?: number } = {},
 ): PptxGenJS.TextPropsOptions {
+  const placement = textPlacementForRegion(region);
+  const leftInset = Math.max(placement.inset.left, options.reservedLeft ?? 0);
+  const rightInset = placement.inset.right;
+  const topInset = placement.inset.top;
+  const bottomInset = placement.inset.bottom;
+
   if (region.id === "key-message") {
     return {
       ...common,
-      x: region.x + 0.22,
-      w: Math.max(0.2, region.w - 0.28),
+      x: region.x + leftInset,
+      y: region.y + topInset,
+      w: Math.max(0.2, region.w - leftInset - rightInset),
+      h: Math.max(0.2, region.h - topInset - bottomInset),
+      margin: placement.margin,
+      align: placement.align,
+      valign: placement.valign,
     };
   }
 
-  if (["body", "code", "table"].includes(region.role)) {
-    return {
-      ...common,
-      y: region.y + 0.12,
-      h: Math.max(0.2, region.h - 0.16),
-    };
-  }
-
-  return common;
+  return {
+    ...common,
+    x: region.x + leftInset,
+    y: region.y + topInset,
+    w: Math.max(0.2, region.w - leftInset - rightInset),
+    h: Math.max(0.2, region.h - topInset - bottomInset),
+    margin: placement.margin,
+    align: options.reservedLeft !== undefined ? "left" : placement.align,
+    valign: placement.valign,
+  };
 }
 
 function renderDiagramRegion(
@@ -442,7 +519,12 @@ function renderDiagramRegion(
 
   for (const [index, box] of arrangement.boxes.entries()) {
     const { node, x, y, w, h } = box;
-    const accentColor = index % 2 === 0 ? preset.primaryColor : preset.secondaryColor;
+    const accentColor = preset.primaryColor;
+    const badgeSize = Math.min(0.34, Math.max(0.24, h * 0.28));
+    const badgeX = x + Math.min(0.18, Math.max(0.1, w * 0.06));
+    const badgeY = y + (h - badgeSize) / 2;
+    const labelX = badgeX + badgeSize + 0.16;
+    const labelRightPadding = 0.18;
     slide.addShape("roundRect", {
       x,
       y,
@@ -455,20 +537,19 @@ function renderDiagramRegion(
     });
     decorateDiagramNode(slide, box, index, arrangement.kind, accentColor, preset);
     slide.addShape("ellipse", {
-      x: x + 0.12,
-      y: y + 0.18,
-      w: Math.min(0.32, h * 0.32),
-      h: Math.min(0.32, h * 0.32),
+      x: badgeX,
+      y: badgeY,
+      w: badgeSize,
+      h: badgeSize,
       fill: { color: accentColor },
       line: { color: accentColor, transparency: 100 },
     });
-    const badgeSize = Math.min(0.32, h * 0.32);
     slide.addText(String(index + 1), {
       ...common,
-      x: x + 0.12,
-      y: y + 0.185,
+      x: badgeX,
+      y: badgeY,
       w: badgeSize,
-      h: badgeSize - 0.02,
+      h: badgeSize,
       fontSize: Math.max(7, Math.min(11, (region.typography?.fontSize ?? common.fontSize ?? 14) - 8)),
       color: preset.backgroundColor,
       bold: true,
@@ -478,15 +559,15 @@ function renderDiagramRegion(
     });
     slide.addText(node.label, {
       ...common,
-      x: x + 0.3,
-      y: y + 0.48,
-      w: Math.max(0.35, w - 0.6),
-      h: Math.max(0.28, h - 0.6),
+      x: labelX,
+      y: y + 0.14,
+      w: Math.max(0.35, x + w - labelX - labelRightPadding),
+      h: Math.max(0.28, h - 0.28),
       fontSize: labelFontSize,
       color: preset.textColor,
-      align: "center",
+      align: "left",
       valign: "middle",
-      margin: [2, 4, 2, 4],
+      margin: [0, 2, 0, 2],
       breakLine: false,
       fit: "shrink",
       lineSpacingMultiple: 0.92,
@@ -770,10 +851,9 @@ function decorateDiagramNode(
 }
 
 function diagramDecorationVariant(index: number, kind: DiagramArrangementKind): "top-bar" | "left-rail" | "bottom-rule" | "corner-chip" {
-  const variants: Array<"top-bar" | "left-rail" | "bottom-rule" | "corner-chip"> = kind === "cycle"
-    ? ["corner-chip", "top-bar", "left-rail", "bottom-rule"]
-    : ["top-bar", "left-rail", "bottom-rule", "corner-chip"];
-  return variants[index % variants.length]!;
+  void index;
+  if (kind === "cycle") return "corner-chip";
+  return "top-bar";
 }
 
 function diagramLabelFontSize(label: string, width: number, height: number, baseFontSize: number): number {
@@ -947,16 +1027,6 @@ function addThemeGalleryLabel(
     align: "right",
     margin: [0, 0, 0, 0],
   });
-}
-
-function horizontalAlignForRole(role: string): PptxGenJS.HAlign {
-  if (role === "title" || role === "subtitle" || role === "item") return "center";
-  return "left";
-}
-
-function verticalAlignForRole(role: string): PptxGenJS.VAlign {
-  if (role === "title" || role === "subtitle" || role === "item") return "middle";
-  return "top";
 }
 
 function normalizeHex(color: string): string {

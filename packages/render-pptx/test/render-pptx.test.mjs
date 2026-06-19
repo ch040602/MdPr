@@ -138,8 +138,10 @@ test("renderPptx writes editable text boxes with stable coordinates and centered
     assert.match(xml, /Markdown은 원본 문서다\./);
     assert.equal((xml.match(/txBox="1"/g) ?? []).length, 3);
     assert.match(xml, /<a:off x="731520" y="411480"\/><a:ext cx="10698480" cy="731520"\/>/);
-    assert.match(xml, /<a:off x="822960" y="1463040"\/><a:ext cx="5029200" cy="1554480"\/>/);
+    assert.match(xml, /<a:off x="1042416" y="1602943"\/><a:ext cx="4608576" cy="1274674"\/>/);
     assert.match(xml, /<a:bodyPr[^>]*wrap="square"/);
+    assert.match(xml, /<a:bodyPr[^>]*anchor="ctr"/);
+    assert.match(xml, /lIns="0" tIns="25400" rIns="25400" bIns="0"/);
     assert.match(xml, /<a:pPr[^>]*algn="ctr"/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
@@ -703,7 +705,9 @@ test("renderPptx separates key quote text into a surfaced region with a one-side
     assert.match(xml, /authoritative/);
     assert.match(xml, /Supporting detail stays below/);
     assert.match(xml, /<a:off x="914400" y="1417320"\/><a:ext cx="10241280" cy="1325880"\/>/);
-    assert.match(xml, /<a:ext cx="91440" cy="1325880"\/>/);
+    assert.match(xml, /<a:off x="1046988" y="1549908"\/><a:ext cx="73152" cy="1060704"\/>/);
+    assert.match(xml, /<a:off x="1298448" y="1545336"\/><a:ext cx="9637776" cy="1069848"\/>/);
+    assert.match(xml, /<a:bodyPr[^>]*lIns="0"[^>]*rIns="0"[^>]*anchor="ctr"/);
     assert.match(xml, /val="1D4ED8"/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
