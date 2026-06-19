@@ -23,6 +23,12 @@ The same Markdown source can produce editable PPTX slides with responsive struct
 | --- |
 | <img src="docs/assets/readme-slides/semantics.png" alt="Generated Markdown semantics slide preview" width="100%"> |
 
+## Runtime Pipeline
+
+MDPR keeps the runtime deterministic. Optional agent hints may suggest compact semantic tags before design selection, but MDPR owns parsing, slide/object splitting, graph preservation, layout, theme color derivation, editable proof objects, icon slots, z-order, overflow checks, and renderer output.
+
+<img src="docs/assets/readme-slides/design-components-pipeline.png" alt="MDPR deterministic design components pipeline" width="100%">
+
 ## Core Philosophy
 
 > A Markdown file stays the source of truth; the deck is a rendered view of that structure.
