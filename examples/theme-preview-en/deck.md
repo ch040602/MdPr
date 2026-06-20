@@ -18,7 +18,7 @@
 
 ## Style Families
 
-- Plain / clean: low-decoration baselines.
+- Clean / minimalism: restrained structural baselines.
 - Executive / technical: structured operational hierarchy.
 - Editorial / magazine: warmer page rhythm.
 - Minimalism / newmorphism: sparse or softly raised surfaces.

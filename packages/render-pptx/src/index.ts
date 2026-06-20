@@ -74,6 +74,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
 
       for (const region of [...layoutSlide.regions].sort((left, right) => left.zIndex - right.zIndex)) {
         if (region.role !== "title" && region.blockIds.length === 0) continue;
+        if (layoutSlide.layout.preset === "toc" && region.role === "item") continue;
         addRegionSurface(slide, designPreset, region);
       }
 
@@ -105,9 +106,11 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           .map((blockId) => blockIndex.get(blockId))
           .filter((block): block is BlockIR => Boolean(block));
         const orderedItemNumber = region.role === "item" ? orderedListItemNumber(blocks) : undefined;
-        const badge = orderedItemNumber !== undefined ? renderItemNumberBadge(slide, region, orderedItemNumber, designPreset, common) : undefined;
-        const iconBadge = orderedItemNumber === undefined && region.role === "item" ? renderItemIconBadge(slide, region, designPreset, common) : undefined;
-        const textCommon = orderedItemNumber !== undefined || iconBadge
+        const tocItemNumber = region.role === "item" && layoutSlide.layout.preset === "toc" ? itemIndexFromRegionId(region.id) : undefined;
+        const badgeNumber = orderedItemNumber;
+        const badge = badgeNumber !== undefined ? renderItemNumberBadge(slide, region, badgeNumber, designPreset, common) : undefined;
+        const iconBadge = badgeNumber === undefined && tocItemNumber === undefined && region.role === "item" ? renderItemIconBadge(slide, region, designPreset, common) : undefined;
+        const textCommon = badgeNumber !== undefined || iconBadge
           ? textBoxForRegion(region, common, badge ? { reservedLeft: badge.right - region.x + 0.14 } : iconBadge ? { reservedLeft: iconBadge.right - region.x + 0.14 } : undefined)
           : textBoxForRegion(region, common);
 
@@ -139,6 +142,9 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           });
         } else if (blocks.length === 1 && blocks[0].type === "image" && blocks[0].src) {
           slide.addImage({ path: blocks[0].src, x: region.x, y: region.y, w: region.w, h: region.h });
+        } else if (tocItemNumber !== undefined) {
+          const plainText = renderPlainRegionContent(region.role, region.blockIds, blockIndex, sourceSlide);
+          slide.addText(`${String(tocItemNumber).padStart(2, "0")}  ${plainText}`, textCommon);
         } else if (shouldRenderAsPlainMultiline(blocks)) {
           renderPlainListRegion(slide, blocks, region.role, textCommon);
         } else {
@@ -704,6 +710,11 @@ function orderedListItemNumber(blocks: BlockIR[]): number | undefined {
   const item = blocks[0].listItems?.[0];
   if (!item?.ordered) return undefined;
   return item.number ?? 1;
+}
+
+function itemIndexFromRegionId(id: string): number | undefined {
+  const match = /(\d+)$/.exec(id);
+  return match ? Number(match[1]) : undefined;
 }
 
 type TextPlacement = {
@@ -1941,6 +1952,8 @@ function uniformDiagramLabelFontSize(boxes: DiagramNodeBox[], baseFontSize: numb
 }
 
 function addLayoutDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
+  addTocDecorations(slide, layoutSlide, preset);
+  addVerticalListDecorations(slide, layoutSlide, preset);
   addRegionAccents(slide, layoutSlide, preset);
   addTextIconAsideDecoration(slide, layoutSlide, preset);
   if (layoutSlide.layout.preset !== "pentagon") return;
@@ -1956,6 +1969,85 @@ function addLayoutDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["sli
     const to = { x: next.x + next.w / 2, y: next.y + next.h / 2 };
     addNormalizedLine(slide, from, to, preset.secondaryColor, false, { pt: 1.2, transparency: 12 });
   }
+}
+
+function addTocDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
+  if (layoutSlide.layout.preset !== "toc") return;
+  const itemRegions = layoutSlide.regions.filter((region) => region.role === "item");
+  if (!itemRegions.length) return;
+  const minX = Math.min(...itemRegions.map((region) => region.x));
+  const maxX = Math.max(...itemRegions.map((region) => region.x + region.w));
+  const minY = Math.min(...itemRegions.map((region) => region.y));
+  const maxY = Math.max(...itemRegions.map((region) => region.y + region.h));
+
+  slide.addShape("rect", {
+    x: minX,
+    y: Math.max(1.18, minY - 0.22),
+    w: maxX - minX,
+    h: 0.05,
+    fill: { color: preset.primaryColor, transparency: 0 },
+    line: { color: preset.primaryColor, transparency: 100 },
+  });
+  slide.addShape("rect", {
+    x: minX,
+    y: maxY + 0.16,
+    w: Math.min(2.2, maxX - minX),
+    h: 0.05,
+    fill: { color: preset.secondaryColor, transparency: 0 },
+    line: { color: preset.secondaryColor, transparency: 100 },
+  });
+
+  const columns = uniqueRounded(itemRegions.map((region) => region.x));
+  if (columns.length > 1) {
+    const separatorX = (columns[0]! + itemRegions.find((region) => Math.abs(region.x - columns[0]!) < 0.03)!.w + columns[1]!) / 2;
+    slide.addShape("rect", {
+      x: separatorX,
+      y: minY,
+      w: 0.025,
+      h: maxY - minY,
+      fill: { color: preset.surfaceLine, transparency: 10 },
+      line: { color: preset.surfaceLine, transparency: 100 },
+    });
+  }
+}
+
+function addVerticalListDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
+  if (layoutSlide.layout.preset !== "vertical-list") return;
+  const itemRegions = layoutSlide.regions.filter((region) => region.role === "item");
+  if (itemRegions.length < 2) return;
+  const columns = uniqueRounded(itemRegions.map((region) => region.x));
+  const minY = Math.min(...itemRegions.map((region) => region.y));
+  const maxY = Math.max(...itemRegions.map((region) => region.y + region.h));
+
+  for (const columnX of columns) {
+    const regions = itemRegions.filter((region) => Math.abs(region.x - columnX) < 0.03);
+    if (regions.length < 2) continue;
+    const railX = Math.max(0, columnX - 0.14);
+    slide.addShape("rect", {
+      x: railX,
+      y: Math.min(...regions.map((region) => region.y)) + 0.1,
+      w: 0.035,
+      h: Math.max(0.1, Math.max(...regions.map((region) => region.y + region.h)) - Math.min(...regions.map((region) => region.y)) - 0.2),
+      fill: { color: preset.secondaryColor, transparency: 20 },
+      line: { color: preset.secondaryColor, transparency: 100 },
+    });
+  }
+
+  if (columns.length > 1) {
+    const separatorX = (columns[0]! + itemRegions.find((region) => Math.abs(region.x - columns[0]!) < 0.03)!.w + columns[1]!) / 2;
+    slide.addShape("rect", {
+      x: separatorX,
+      y: minY,
+      w: 0.025,
+      h: maxY - minY,
+      fill: { color: preset.surfaceLine, transparency: 25 },
+      line: { color: preset.surfaceLine, transparency: 100 },
+    });
+  }
+}
+
+function uniqueRounded(values: number[]): number[] {
+  return [...new Set(values.map((value) => Number(value.toFixed(2))))].sort((left, right) => left - right);
 }
 
 function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {

@@ -75,8 +75,6 @@ export const DESIGN_PRESET_NAMES = [
 ] as const satisfies readonly DesignPresetName[];
 
 export const DECORATION_STYLE_NAMES = [
-  "plain",
-  "simple",
   "clean",
   "executive",
   "editorial",

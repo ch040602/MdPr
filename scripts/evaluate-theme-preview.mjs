@@ -7,8 +7,6 @@ const outDir = resolve(repoRoot, process.argv[2] ?? "docs/theme-preview");
 const pptxDir = join(outDir, "pptx");
 const slidesDir = join(outDir, "slides");
 const expectedStyles = [
-  "plain",
-  "simple",
   "clean",
   "executive",
   "editorial",

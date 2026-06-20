@@ -68,8 +68,6 @@ Current implemented baseline:
 Built-in decoration styles:
 
 ```text
-plain      minimal editable output using the configured theme
-simple     low-decoration card surfaces and title rule
 clean      light background, card surfaces, simple title rule
 executive  light business deck with blue accent, title rule, card surfaces, corner accent
 editorial  warmer editorial palette with card surfaces and accent bars
@@ -82,11 +80,11 @@ data       dark data-journalism grammar with source/data rails and dense proof s
 magazine   editorial magazine rhythm with issue label, rules, column rail, and warm page surfaces
 ```
 
-Legacy color-only presets such as `nord`, `solarized`, `dracula`, `tableau`, `gruvbox`, `monokai`, `material`, and `tokyo-night` remain supported through `--design` and `theme.designPreset` for compatibility. They are not listed in the Actions theme-style preview because they mainly change color rather than layout or surface grammar.
+Legacy baseline presets such as `plain` and `simple`, and legacy color-only presets such as `nord`, `solarized`, `dracula`, `tableau`, `gruvbox`, `monokai`, `material`, and `tokyo-night`, remain supported through `--design` and `theme.designPreset` for compatibility. They are not listed in the Actions theme-style preview because they do not add enough distinct layout, surface, or page grammar.
 
 The shared preset catalog lives in `@mdpresent/core`. `theme.designPreset` is the format-independent compatibility config location and is consumed by PPTX and HTML. `pptx.designPreset` remains supported as a PPTX-specific compatibility override.
 
-`theme.decorationStyle` selects the decoration grammar separately from color. Examples include `simple` for minimal surfaces, `glass` for translucent fixed-radius surfaces with native PPT shadow/glow effects, `grid` for modular Swiss-style structure, `data` for dense publication-grade proof pages, and `magazine` for editorial cover/page rhythm. `theme.colorSeed` provides the main color, while `theme.primaryColor` remains a compatibility fallback.
+`theme.decorationStyle` selects the decoration grammar separately from color. Examples include `clean` for a neutral card deck, `glass` for translucent fixed-radius surfaces with native PPT shadow/glow effects, `grid` for modular Swiss-style structure, `data` for dense publication-grade proof pages, and `magazine` for editorial cover/page rhythm. `theme.colorSeed` provides the main color, while `theme.primaryColor` remains a compatibility fallback.
 
 `theme.colorCombination` extends the selected decoration style with Adobe Color Wheel-style harmony. `preset` preserves the catalog colors. `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic` derive secondary, rule, chart, and PowerPoint theme accent colors from `theme.colorSeed` first, then `theme.primaryColor`.
 

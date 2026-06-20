@@ -116,6 +116,10 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
     return [titleRegion];
   }
 
+  if (layout.preset === "toc") {
+    return createTocRegions(slide, titleRegion, config);
+  }
+
   if (layout.preset === "quote" || layout.preset === "key-message") {
     return createKeyMessageRegions(slide, titleRegion, config);
   }
@@ -168,20 +172,7 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   }
 
   if (layout.preset === "vertical-list") {
-    return [
-      titleRegion,
-      ...itemBlockIds.slice(0, 4).map((blockId, index) => ({
-        id: `item-${index + 1}`,
-        role: "item" as const,
-        blockIds: [blockId],
-        x: 1.0,
-        y: Number((1.55 + index * 1.25).toFixed(2)),
-        w: 11.2,
-        h: 0.95,
-        zIndex: 10,
-        typography: bodyTypography(config),
-      })),
-    ];
+    return createVerticalListRegions(itemBlockIds, titleRegion, config);
   }
 
   if (layout.preset === "text-icon-aside") {
@@ -224,6 +215,102 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   return [
     titleRegion,
     { id: "body", role: "body", blockIds: slide.blocks.map((b) => b.id), ...bodyRect, zIndex: 10, typography: bodyTypography(config) },
+  ];
+}
+
+function createTocRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
+  const blockIds = slide.blocks.filter((block) => block.type !== "slideBreak").map((block) => block.id);
+  const count = blockIds.length;
+  if (!count) return [titleRegion];
+
+  const columns = count > 5 ? 2 : 1;
+  const rows = Math.ceil(count / columns);
+  const bodyTop = 1.52;
+  const bodyHeight = 5.1;
+  const gapX = 0.42;
+  const gapY = rows > 4 ? 0.16 : 0.22;
+  const x = 0.9;
+  const w = 11.5;
+  const cellW = columns === 1 ? w : (w - gapX) / 2;
+  const cellH = Math.max(0.62, Math.min(0.92, (bodyHeight - gapY * (rows - 1)) / rows));
+  const totalH = cellH * rows + gapY * (rows - 1);
+  const startY = bodyTop + Math.max(0, (bodyHeight - totalH) / 2);
+  const typography = count > 6 ? compactBodyTypography(config) : bodyTypography(config);
+
+  return [
+    titleRegion,
+    ...blockIds.map((blockId, index) => {
+      const column = columns === 1 ? 0 : Math.floor(index / rows);
+      const row = columns === 1 ? index : index % rows;
+      return {
+        id: `toc-item-${index + 1}`,
+        role: "item" as const,
+        blockIds: [blockId],
+        x: Number((x + column * (cellW + gapX)).toFixed(2)),
+        y: Number((startY + row * (cellH + gapY)).toFixed(2)),
+        w: Number(cellW.toFixed(2)),
+        h: Number(cellH.toFixed(2)),
+        zIndex: 10,
+        typography,
+      };
+    }),
+  ];
+}
+
+function createVerticalListRegions(itemBlockIds: string[], titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
+  const count = itemBlockIds.length;
+  if (!count) return [titleRegion];
+
+  if (count <= 4) {
+    const bodyTop = 1.52;
+    const bodyHeight = 5.05;
+    const gap = count >= 4 ? 0.24 : 0.32;
+    const rowH = Math.max(0.88, Math.min(1.12, (bodyHeight - gap * (count - 1)) / count));
+    const totalH = rowH * count + gap * (count - 1);
+    const startY = bodyTop + Math.max(0, (bodyHeight - totalH) / 2);
+    return [
+      titleRegion,
+      ...itemBlockIds.map((blockId, index) => ({
+        id: `item-${index + 1}`,
+        role: "item" as const,
+        blockIds: [blockId],
+        x: 1.0,
+        y: Number((startY + index * (rowH + gap)).toFixed(2)),
+        w: 11.2,
+        h: Number(rowH.toFixed(2)),
+        zIndex: 10,
+        typography: bodyTypography(config),
+      })),
+    ];
+  }
+
+  const columns = 2;
+  const rows = Math.ceil(count / columns);
+  const bodyTop = 1.5;
+  const bodyHeight = 5.15;
+  const gapX = 0.42;
+  const gapY = rows > 4 ? 0.16 : 0.24;
+  const x = 0.9;
+  const cellW = (11.5 - gapX) / columns;
+  const cellH = Math.max(0.68, Math.min(0.96, (bodyHeight - gapY * (rows - 1)) / rows));
+
+  return [
+    titleRegion,
+    ...itemBlockIds.map((blockId, index) => {
+      const column = Math.floor(index / rows);
+      const row = index % rows;
+      return {
+        id: `item-${index + 1}`,
+        role: "item" as const,
+        blockIds: [blockId],
+        x: Number((x + column * (cellW + gapX)).toFixed(2)),
+        y: Number((bodyTop + row * (cellH + gapY)).toFixed(2)),
+        w: Number(cellW.toFixed(2)),
+        h: Number(cellH.toFixed(2)),
+        zIndex: 10,
+        typography: compactBodyTypography(config),
+      };
+    }),
   ];
 }
 
@@ -351,12 +438,13 @@ function bodyTypography(config: Config) {
 }
 
 function compactBodyTypography(config: Config) {
+  const minFontSize = Math.max(config.typography.minFontSize, 14);
   return {
     fontFamily: config.typography.fontFamily,
-    fontSize: Math.max(14, config.typography.bodyFontSize - 5),
+    fontSize: Math.max(minFontSize, config.typography.bodyFontSize - 5),
     fontWeight: "normal" as const,
     lineHeight: config.typography.lineHeight,
-    minFontSize: Math.max(12, Math.min(config.typography.minFontSize, 14)),
+    minFontSize,
   };
 }
 

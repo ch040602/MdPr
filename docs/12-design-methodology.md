@@ -20,7 +20,7 @@ The parser preserves presentation-relevant Markdown structure:
 `theme.designPreset` is the compatibility entry point for a named preset. `theme.decorationStyle` selects the visual grammar separately from color:
 
 ```text
-simple, clean, executive, editorial, technical,
+clean, executive, editorial, technical,
 minimalism, newmorphism, glass, grid, data, magazine
 ```
 

@@ -1129,8 +1129,6 @@ test("design tokens expose minimalism and newmorphism decoration styles", () => 
 
 test("decoration style catalog omits legacy color-only design presets", () => {
   assert.deepEqual(DECORATION_STYLE_NAMES, [
-    "plain",
-    "simple",
     "clean",
     "executive",
     "editorial",
@@ -1142,6 +1140,8 @@ test("decoration style catalog omits legacy color-only design presets", () => {
     "data",
     "magazine",
   ]);
+  assert.equal(DECORATION_STYLE_NAMES.includes("plain"), false);
+  assert.equal(DECORATION_STYLE_NAMES.includes("simple"), false);
   assert.equal(DESIGN_PRESET_NAMES.includes("nord"), true);
   assert.equal(DECORATION_STYLE_NAMES.includes("nord"), false);
   assert.equal(resolveDesignTokens("nord", defaultConfig.theme).decorationStyle, "nord");

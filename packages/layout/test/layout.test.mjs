@@ -81,6 +81,111 @@ test("five primary items use pentagon regions", () => {
   assert.deepEqual(slide.regions.map((region) => region.id), ["title", "item-1", "item-2", "item-3", "item-4", "item-5"]);
 });
 
+test("toc slides allocate each entry as a numbered item region", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## First",
+    "",
+    "Body.",
+    "",
+    "## Second",
+    "",
+    "Body.",
+    "",
+    "## Third",
+    "",
+    "Body.",
+    "",
+    "## Fourth",
+    "",
+    "Body.",
+    "",
+    "## Fifth",
+    "",
+    "Body.",
+    "",
+    "## Sixth",
+    "",
+    "Body.",
+    "",
+    "## Seventh",
+    "",
+    "Body.",
+  ].join("\n")), defaultConfig);
+  const layout = planLayout(presentation, defaultConfig);
+  const toc = layout.slides.find((candidate) => candidate.layout.preset === "toc");
+  const items = toc.regions.filter((region) => region.role === "item");
+
+  assert.ok(toc);
+  assert.equal(items.length, 7);
+  assert.equal(new Set(items.map((region) => region.x.toFixed(2))).size, 2);
+  assert.deepEqual(items.map((region) => region.id), [
+    "toc-item-1",
+    "toc-item-2",
+    "toc-item-3",
+    "toc-item-4",
+    "toc-item-5",
+    "toc-item-6",
+    "toc-item-7",
+  ]);
+  assert.equal(items.every((region) => region.typography.fontSize >= defaultConfig.typography.minFontSize), true);
+});
+
+test("dense vertical lists keep all items and distribute them across columns", () => {
+  const layout = planLayout({
+    version: "1.0",
+    meta: { title: "Demo" },
+    outline: [],
+    assets: [],
+    diagnostics: [],
+    slides: [
+      {
+        id: "review-checklist",
+        index: 1,
+        role: "content",
+        title: "Review Checklist",
+        headingPath: ["Review Checklist"],
+        intent: "list",
+        tags: [],
+        primaryItemCount: 7,
+        density: 7,
+        source: { startLine: 1 },
+        blocks: [
+          {
+            id: "block-1",
+            type: "bulletList",
+            items: [
+              "Source parsing",
+              "Slide splitting",
+              "Layout planning",
+              "Theme grammar",
+              "Chart pairing",
+              "Icon slotting",
+              "Overflow checks",
+            ],
+          },
+        ],
+      },
+    ],
+  }, defaultConfig);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "vertical-list");
+  const items = slide.regions.filter((region) => region.role === "item");
+
+  assert.ok(slide);
+  assert.equal(items.length, 7);
+  assert.equal(new Set(items.map((region) => region.x.toFixed(2))).size, 2);
+  assert.deepEqual(items.map((region) => region.blockIds[0]), [
+    "block-1#0",
+    "block-1#1",
+    "block-1#2",
+    "block-1#3",
+    "block-1#4",
+    "block-1#5",
+    "block-1#6",
+  ]);
+});
+
 test("cover slides only allocate a title region", () => {
   const layout = layoutFor([
     "# Demo",

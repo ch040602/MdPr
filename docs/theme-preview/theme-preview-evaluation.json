@@ -1,7 +1,7 @@
 {
   "ok": true,
   "outDir": "docs/theme-preview",
-  "styleCount": 12,
+  "styleCount": 10,
   "styleNames": [
     "clean",
     "data",
@@ -12,8 +12,6 @@
     "magazine",
     "minimalism",
     "newmorphism",
-    "plain",
-    "simple",
     "technical"
   ],
   "missingStyles": [],
