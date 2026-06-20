@@ -390,12 +390,12 @@ def export_pngs() -> None:
 
     TMP_DIR.mkdir(parents=True, exist_ok=True)
     pptx_path = TMP_DIR / "readme-previews.pptx"
-    app = win32com.client.Dispatch("PowerPoint.Application")
+    app = win32com.client.DispatchEx("PowerPoint.Application")
     app.Visible = True
-    prs = app.Presentations.Add()
-    prs.PageSetup.SlideWidth = PPT_W * 72
-    prs.PageSetup.SlideHeight = PPT_H * 72
+    prs = app.Presentations.Add(WithWindow=False)
     try:
+        prs.PageSetup.SlideWidth = PPT_W * 72
+        prs.PageSetup.SlideHeight = PPT_H * 72
         builders = [("cover", build_cover), ("pipeline", build_pipeline), ("semantics", build_semantics), ("decorations", build_decorations)]
         for _, builder in builders:
             builder(prepare_slide(prs))
@@ -409,6 +409,15 @@ def export_pngs() -> None:
     shutil.rmtree(TMP_DIR, ignore_errors=True)
 
 
+def sync_pipeline_preview_from_teaser() -> None:
+    teaser_png = OUT_DIR / "mdpr-pipeline-teaser.png"
+    teaser_svg = OUT_DIR / "mdpr-pipeline-teaser.svg"
+    if teaser_png.exists():
+        shutil.copyfile(teaser_png, OUT_DIR / "pipeline.png")
+    if teaser_svg.exists():
+        shutil.copyfile(teaser_svg, OUT_DIR / "pipeline.svg")
+
+
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     write_svg("cover", "mdpresent cover slide preview", "A generated cover slide preview for MDPR.")
@@ -416,6 +425,7 @@ def main() -> None:
     write_svg("semantics", "Markdown semantics slide preview", "A generated Markdown semantics preview slide.")
     write_svg("decorations", "Decoration patterns slide preview", "A generated decoration pattern preview slide.")
     export_pngs()
+    sync_pipeline_preview_from_teaser()
     report = {
         "assets": ["cover", "pipeline", "semantics", "decorations"],
         "pngSize": [SLIDE_W, SLIDE_H],
@@ -424,6 +434,7 @@ def main() -> None:
             "badge text boxes set margin to zero",
             "badge text is horizontally centered and vertically middle anchored",
             "card text keeps minimum left and right padding",
+            "pipeline preview is synchronized from the validated README teaser",
         ],
     }
     (OUT_DIR / "readme-slide-assets-report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
