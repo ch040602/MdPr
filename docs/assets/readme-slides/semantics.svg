@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">Markdown semantics slide preview</title>
-  <desc id="desc">A generated Markdown semantics preview slide.</desc>
+  <title id="title">PPTX semantic blocks export</title>
+  <desc id="desc">A PPTX semantic-blocks slide exported to PNG.</desc>
   <rect width="1600" height="900" fill="#F7F2EA"/>
 
   <g fill="#FFFDF8" stroke="#D8D1C6" stroke-width="3"><rect x="120" y="272" width="610" height="185" rx="20"/><rect x="860" y="272" width="610" height="185" rx="20"/><rect x="120" y="535" width="610" height="185" rx="20"/><rect x="860" y="535" width="610" height="185" rx="20"/></g>

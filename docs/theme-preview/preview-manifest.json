@@ -1,7 +1,7 @@
 {
   "kind": "pptx-png-theme-preview",
   "source": "examples/theme-preview-en/deck.md",
-  "generatedAt": "2026-06-20T12:47:21.672Z",
+  "generatedAt": "2026-06-20T13:08:41.631Z",
   "pngSize": {
     "width": 1600,
     "height": 900
@@ -84,7 +84,7 @@
         {
           "index": 8,
           "file": "slides/plain/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -211,7 +211,7 @@
         {
           "index": 8,
           "file": "slides/simple/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -338,7 +338,7 @@
         {
           "index": 8,
           "file": "slides/clean/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -465,7 +465,7 @@
         {
           "index": 8,
           "file": "slides/executive/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -592,7 +592,7 @@
         {
           "index": 8,
           "file": "slides/editorial/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -719,7 +719,7 @@
         {
           "index": 8,
           "file": "slides/technical/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -846,7 +846,7 @@
         {
           "index": 8,
           "file": "slides/minimalism/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -973,7 +973,7 @@
         {
           "index": 8,
           "file": "slides/newmorphism/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -1100,7 +1100,7 @@
         {
           "index": 8,
           "file": "slides/glass/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -1227,7 +1227,7 @@
         {
           "index": 8,
           "file": "slides/grid/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -1354,7 +1354,7 @@
         {
           "index": 8,
           "file": "slides/data/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {
@@ -1481,7 +1481,7 @@
         {
           "index": 8,
           "file": "slides/magazine/slide-08.png",
-          "title": "Markdown Semantics",
+          "title": "Semantic Blocks",
           "composition": "grid"
         },
         {

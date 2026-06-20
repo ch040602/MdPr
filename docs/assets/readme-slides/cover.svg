@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">mdpresent cover slide preview</title>
-  <desc id="desc">A generated cover slide preview for MDPR.</desc>
+  <title id="title">PPTX cover export</title>
+  <desc id="desc">A PPTX cover slide exported to PNG for MDPR.</desc>
   <rect width="1600" height="900" fill="#F7F2EA"/>
 
   <text x="96" y="170" font-family="Aptos, Arial" font-size="76" font-weight="800" fill="#111827">mdpresent</text>

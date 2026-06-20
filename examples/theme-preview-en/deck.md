@@ -24,7 +24,7 @@
 - Minimalism / newmorphism: sparse or softly raised surfaces.
 - Glass / grid / data: distinct surface and background grammar.
 
-## Markdown Semantics
+## Semantic Blocks
 
 - **Headings**: stable slide boundaries.
 - **Lists**: ordered and unordered structure.

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">Decoration patterns slide preview</title>
-  <desc id="desc">A generated decoration pattern preview slide.</desc>
+  <title id="title">PPTX object grammar export</title>
+  <desc id="desc">A PPTX object-grammar slide exported to PNG.</desc>
   <rect width="1600" height="900" fill="#F7F2EA"/>
 
   <text x="92" y="120" font-family="Aptos, Arial" font-size="64" font-weight="800" fill="#111827">Decoration Patterns</text>

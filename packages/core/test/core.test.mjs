@@ -186,7 +186,7 @@ test("parseMarkdown keeps inline arrow examples inside normal lists", () => {
   const doc = parseMarkdown([
     "# Deck",
     "",
-    "## Markdown Semantics",
+    "## Semantic Blocks",
     "",
     "- Lists: ordered and unordered lists keep numbering.",
     "- Diagrams: pipeline lines such as `Draft => Review => Render` become semantic diagram blocks.",
@@ -758,7 +758,7 @@ test("planPresentation splits long structured five-item lists before cramped dia
   const doc = parseMarkdown([
     "# Product",
     "",
-    "## Markdown Semantics",
+    "## Semantic Blocks",
     "",
     "The parser preserves presentation-relevant Markdown structure.",
     "",
@@ -773,8 +773,8 @@ test("planPresentation splits long structured five-item lists before cramped dia
   const contentSlides = presentation.slides.filter((slide) => slide.role === "content");
 
   assert.deepEqual(contentSlides.map((slide) => slide.title), [
-    "Markdown Semantics",
-    "Markdown Semantics (Cont. 2/2)",
+    "Semantic Blocks",
+    "Semantic Blocks (Cont. 2/2)",
   ]);
   assert.deepEqual(contentSlides.map((slide) => slide.blocks.find((block) => block.type === "bulletList")?.items.length), [3, 2]);
 });

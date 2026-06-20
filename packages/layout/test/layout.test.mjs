@@ -101,7 +101,7 @@ test("item layouts use primary list items when prose precedes the list", () => {
   const layout = layoutFor([
     "# Demo",
     "",
-    "## Markdown Semantics",
+    "## Semantic Blocks",
     "",
     "The parser preserves presentation-relevant Markdown structure.",
     "",

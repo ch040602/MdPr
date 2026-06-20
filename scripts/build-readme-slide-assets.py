@@ -241,7 +241,7 @@ def build_pipeline(slide: Any) -> None:
 
 def build_semantics(slide: Any) -> None:
     add_shape(slide, 1, 0, 0, SLIDE_W, SLIDE_H, PALETTE["bg"], PALETTE["bg"])
-    add_text(slide, 92, 76, 760, 70, "Markdown Semantics", 54, PALETTE["ink"], True, margin=0)
+    add_text(slide, 92, 76, 760, 70, "Semantic Blocks", 54, PALETTE["ink"], True, margin=0)
     add_text(slide, 96, 150, 900, 42, "Plain Markdown remains source-of-truth while MDPR maps intent into layout-safe objects.", 23, PALETTE["muted"], margin=0)
     cards = [
         (120, 272, 610, 185, "Lists", "Bullets become aligned groups with consistent badge placement and readable line breaks.", "sage", "A"),
@@ -420,10 +420,10 @@ def sync_pipeline_preview_from_teaser() -> None:
 
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_svg("cover", "mdpresent cover slide preview", "A generated cover slide preview for MDPR.")
-    write_svg("pipeline", "Pipeline diagram slide preview", "A generated pipeline diagram slide preview with aligned badges.")
-    write_svg("semantics", "Markdown semantics slide preview", "A generated Markdown semantics preview slide.")
-    write_svg("decorations", "Decoration patterns slide preview", "A generated decoration pattern preview slide.")
+    write_svg("cover", "PPTX cover export", "A PPTX cover slide exported to PNG for MDPR.")
+    write_svg("pipeline", "PPTX pipeline export", "A PPTX pipeline diagram exported to PNG with aligned badges.")
+    write_svg("semantics", "PPTX semantic blocks export", "A PPTX semantic-blocks slide exported to PNG.")
+    write_svg("decorations", "PPTX object grammar export", "A PPTX object-grammar slide exported to PNG.")
     export_pngs()
     sync_pipeline_preview_from_teaser()
     report = {
