@@ -40,6 +40,15 @@
     "two-corner-right"
   ],
   "missingSurfaces": [],
+  "renderedSurfaceVariants": [
+    "flag-drop",
+    "notched-corner",
+    "rounded",
+    "ticket",
+    "two-corner-left",
+    "two-corner-right"
+  ],
+  "missingRenderedSurfaces": [],
   "proofKinds": [
     "arc-ring",
     "bar",

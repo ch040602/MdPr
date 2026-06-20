@@ -225,7 +225,7 @@ test("renderHtml renders table blocks as bounded HTML tables", () => {
   ].join("\n"));
 
   assert.match(html, /<table class="mdpr-table">/);
-  assert.match(html, /class="region body surface ticket/);
+  assert.match(html, /class="region table surface ticket/);
   assert.match(html, /<th>Coverage<\/th>/);
   assert.match(html, /<td class="numeric">92<\/td>/);
   assert.match(html, /vertical-align: middle/);

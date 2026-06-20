@@ -48,6 +48,9 @@ jobs:
       - name: Generate theme preview gallery
         run: corepack pnpm preview:themes
 
+      - name: Verify committed preview metadata
+        run: git diff --exit-code docs/theme-preview/index.html docs/theme-preview/preview-manifest.json docs/theme-preview/theme-preview-evaluation.json
+
       - name: Configure Pages
         if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5

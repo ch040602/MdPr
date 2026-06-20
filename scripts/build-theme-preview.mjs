@@ -13,6 +13,7 @@ const pptxDir = join(outDir, "pptx");
 const slidesDir = join(outDir, "slides");
 const pngSize = { width: 1600, height: 900 };
 const sourceMarkdown = readFileSync(inputPath, "utf-8");
+const generatedAt = "source-controlled";
 
 assertEnglishOnlyText(sourceMarkdown, inputPath);
 
@@ -73,7 +74,7 @@ for (const name of DECORATION_STYLE_NAMES) {
 const manifest = {
   kind: "pptx-png-theme-preview",
   source: relative(repoRoot, inputPath).replaceAll("\\", "/"),
-  generatedAt: new Date().toISOString(),
+  generatedAt,
   pngSize,
   styleCount: themeEntries.length,
   slideCount: themeEntries[0]?.slides.length ?? 0,
@@ -421,7 +422,11 @@ function sortedUnique(values) {
 }
 
 function assertEnglishOnlyText(text, label) {
-  const match = /[가-힣]/.exec(text);
+  const match = disallowedLanguageScriptMatch(text);
   if (!match) return;
-  throw new Error(`Actions theme preview source must be English-only: ${relative(repoRoot, label).replaceAll("\\", "/")} contains Korean text "${match[0]}".`);
+  throw new Error(`Actions theme preview source must be English-only: ${relative(repoRoot, label).replaceAll("\\", "/")} contains non-English visible text "${match[0]}".`);
+}
+
+function disallowedLanguageScriptMatch(value) {
+  return /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Cyrillic}]/u.exec(String(value));
 }

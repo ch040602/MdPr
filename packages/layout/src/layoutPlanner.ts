@@ -205,6 +205,10 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
     return createChartTableRegions(slide, titleRegion, config);
   }
 
+  if (layout.preset === "table-focus") {
+    return createTableFocusRegions(slide, titleRegion, config);
+  }
+
   if (layout.preset === "code-focus") {
     return [
       titleRegion,
@@ -215,6 +219,19 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   return [
     titleRegion,
     { id: "body", role: "body", blockIds: slide.blocks.map((b) => b.id), ...bodyRect, zIndex: 10, typography: bodyTypography(config) },
+  ];
+}
+
+function createTableFocusRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
+  const tableBlockIds = slide.blocks.filter((block) => block.type === "table").map((block) => block.id);
+  if (!tableBlockIds.length) return [
+    titleRegion,
+    { id: "body", role: "body", blockIds: slide.blocks.map((block) => block.id), x: 0.95, y: 1.56, w: 11.35, h: 4.95, zIndex: 10, typography: bodyTypography(config) },
+  ];
+
+  return [
+    titleRegion,
+    { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 1.0, y: 1.55, w: 11.2, h: 4.95, zIndex: 10, typography: compactBodyTypography(config) },
   ];
 }
 

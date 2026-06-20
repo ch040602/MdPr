@@ -390,6 +390,28 @@ test("chart-table slides reserve enough width for native tables beside charts", 
   assert.equal(table.x > chart.x + chart.w, true);
 });
 
+test("table-focus slides expose a table role region for native table rendering and decoration", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Table Coherence",
+    "",
+    "| Object | Signal |",
+    "| --- | --- |",
+    "| Text box | bounded |",
+    "| Table | padded |",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "table-focus");
+  const table = slide.regions.find((region) => region.role === "table");
+
+  assert.ok(table);
+  assert.equal(table.id, "table");
+  assert.equal(table.blockIds.length, 1);
+  assert.match(table.blockIds[0], /^block-\d+$/);
+  assert.equal(table.w >= 10.8, true);
+  assert.equal(table.h >= 4.5, true);
+});
+
 test("chart slides with prose keep the graph and explanation in parallel", () => {
   const layout = layoutFor([
     "# Demo",
