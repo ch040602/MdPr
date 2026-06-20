@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDeckPlan } from "../packages/cli/dist/orchestrate.js";
@@ -12,12 +12,21 @@ const outDir = resolve(repoRoot, process.argv[3] ?? "docs/theme-preview");
 const pptxDir = join(outDir, "pptx");
 const slidesDir = join(outDir, "slides");
 const pngSize = { width: 1600, height: 900 };
+const sourceMarkdown = readFileSync(inputPath, "utf-8");
+
+assertEnglishOnlyText(sourceMarkdown, inputPath);
 
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(pptxDir, { recursive: true });
 mkdirSync(slidesDir, { recursive: true });
 
-const deck = createDeckPlan(inputPath);
+const deck = createDeckPlan(inputPath, {
+  cliConfig: {
+    deck: {
+      language: "en",
+    },
+  },
+});
 const compositionClasses = sortedUnique(deck.layout.slides.map((slide) => slide.layout.preset));
 const proofKinds = sortedUnique(deck.presentation.slides.flatMap((slide) =>
   slide.blocks
@@ -73,6 +82,8 @@ const manifest = {
   proofKinds,
   themes: themeEntries,
 };
+
+assertEnglishOnlyText(JSON.stringify(manifest), join(outDir, "preview-manifest.json"));
 
 writeFileSync(join(outDir, "preview-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
 writeFileSync(join(outDir, "index.html"), renderPreviewShell({
@@ -407,4 +418,10 @@ function escapeHtml(value) {
 
 function sortedUnique(values) {
   return [...new Set(values.filter(Boolean))].sort();
+}
+
+function assertEnglishOnlyText(text, label) {
+  const match = /[가-힣]/.exec(text);
+  if (!match) return;
+  throw new Error(`Actions theme preview source must be English-only: ${relative(repoRoot, label).replaceAll("\\", "/")} contains Korean text "${match[0]}".`);
 }

@@ -53,9 +53,12 @@ function evaluateThemePreview() {
   const glassIssues = [];
   const pptxIssues = [];
   const pngIssues = [];
+  const languageIssues = [];
 
   if (!/data-gallery-kind="pptx-png"/.test(indexHtml)) missingMarkers.push("index:pptx-png-gallery-marker");
   if (/iframe|themes\/[^"']+\.html/.test(indexHtml)) missingMarkers.push("index:legacy-html-deck-preview");
+  if (containsKorean(indexHtml)) languageIssues.push("index:contains-korean");
+  if (containsKorean(JSON.stringify(previewSource))) languageIssues.push("preview-manifest:contains-korean");
 
   for (const style of styleNames) {
     const pptxPath = join(pptxDir, `${style}.pptx`);
@@ -92,6 +95,7 @@ function evaluateThemePreview() {
     && !glassIssues.length
     && !pptxIssues.length
     && !pngIssues.length
+    && !languageIssues.length
     && !missingCompositions.length
     && !missingSurfaces.length
     && slideCount >= 10
@@ -118,6 +122,7 @@ function evaluateThemePreview() {
     glassIssues,
     pptxIssues,
     pngIssues,
+    languageIssues,
     overflowCount: overflow.length,
     overflow: overflow.slice(0, 10),
   };
@@ -136,4 +141,8 @@ function readPngSize(path) {
 
 function sortedUnique(values) {
   return [...new Set(values.filter(Boolean))].sort();
+}
+
+function containsKorean(value) {
+  return /[가-힣]/.test(String(value));
 }
