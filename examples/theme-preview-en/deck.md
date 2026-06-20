@@ -2,55 +2,58 @@
 
 ## Preview Purpose
 
-> A generated deck should show hierarchy, evidence, and object grammar before it shows decorative variation.
+> Generated decks must prove hierarchy, evidence, and object grammar before decoration.
 
-This Actions/Pages fixture renders the same semantic Markdown through every built-in decoration style.
-The target is not color variety alone; the target is bounded, readable, composition-aware slide output.
+- Fixture type: Actions theme preview source.
+- Source shape: short bullets, bounded tables, and one-slide diagrams.
+- Review target: readable, coherent, composition-aware output.
 
 ## Composition Contract
 
-- Cover signal: title scale and first-viewport object identity.
-- Evidence rhythm: chart, table, and proof objects stay visually connected.
-- Object grammar: cards, tickets, flags, and vines vary without breaking alignment.
-- Connector clarity: pipeline arrows attach to object boundaries.
-- Bounds discipline: no region may exceed the slide or hide essential text.
+- Cover signal: title scale and first-viewport identity.
+- Evidence rhythm: chart, table, and proof objects stay connected.
+- Object grammar: cards, tickets, flags, and panels vary coherently.
+- Connector clarity: arrows attach to object boundaries.
+- Bounds discipline: no region exceeds the slide.
 
 ## Style Families
 
-- Plain and clean: low-decoration baselines for dense source material.
-- Executive and technical: structured operational layouts with visible hierarchy.
-- Editorial and magazine-like: warmer page rhythm without losing bounded text.
-- Minimalism and newmorphism: sparse composition or soft raised surfaces.
-- Glass, grid, and data: visibly different background and surface grammar.
+- Plain / clean: low-decoration baselines.
+- Executive / technical: structured operational hierarchy.
+- Editorial / magazine: warmer page rhythm.
+- Minimalism / newmorphism: sparse or softly raised surfaces.
+- Glass / grid / data: distinct surface and background grammar.
 
 ## Markdown Semantics
 
-- **Headings**: slide boundaries and title regions are stable.
-- **Lists**: ordered and unordered items remain structured.
-- **Constraint**: renderer rules stay deterministic.
-  The description line must be indented under the bold label.
-- **Emphasis**: **bold** and *italic* runs remain editable text styling.
+- **Headings**: stable slide boundaries.
+- **Lists**: ordered and unordered structure.
+- **Constraint**:
+  Indented description lines stay under the bold label.
+- **Emphasis**: **bold** and *italic* remain editable.
 
 ## Pipeline Diagram
 
 Markdown source => Parse blocks => Split slides => Layout objects => Validate overflow => Render PPTX HTML PDF
 
-- One diagram block stays on one slide.
-- Connectors attach to node boundaries.
-- Straight or elbow routing remains clear across styles.
+- Diagram rule: one graph stays on one slide.
+- Connector rule: line segments overlap node edges slightly.
+- Routing rule: straight and elbow paths remain legible.
 
 ## Table Coherence
 
 | Object | Renderer expectation | QA signal |
 | --- | --- | --- |
-| Text box | editable, vertically aligned | readable at minimum size |
+| Text box | editable, middle aligned | readable minimum size |
 | Table | native table object | header fill and cell padding |
 | Diagram | nodes and connectors | no clipped labels |
-| Chart | style-colored data object | contrast and legend clarity |
+| Chart | theme-colored data object | contrast and value clarity |
 
 ## Chart and Table Pair
 
-Numeric evidence should sit beside the table when both are needed for interpretation.
+- Numeric evidence: chart and table stay side by side.
+- Data density: values remain readable without shrinking below floor.
+- Comparison goal: coverage and defects are visible together.
 
 ```chart
 labels: Parser, Layout, PPTX
@@ -87,23 +90,26 @@ Review, 94
 
 - Method flag: short high-level step.
 - Ticket panel: document-like evidence.
-- Circle vine: compact relationship marker.
 - Two-corner panel: linear grouping.
+- Notched panel: technical constraint or code-like object.
+- Rounded panel: neutral fallback surface.
 
 ## Icon and Text Aside
 
-MDPR may add a restrained monotone icon only when the slide would otherwise be plain text.
-The icon is a quiet anchor, not a substitute for layout structure.
+- Icon role: quiet monochrome anchor.
+- Icon scale: secondary to title and body text.
+- Placement rule: icon never fills empty space alone.
+- Fit rule: icon and text share a stable center line.
 
 ## Overflow Guard
 
 - Text fit: region bounds are validated before output.
 - Tables: cell text uses middle alignment and coherent margins.
-- Continuation slides: dense content splits before text becomes unreadable.
+- Continuation slides: dense content splits before unreadable shrink.
 - Cleanup: decorative-only bullets and empty artifacts are removed.
 
 ## Actions Output Review
 
-- The `Theme Preview` workflow builds this source across built-in decoration styles.
-- The Pages gallery lets reviewers inspect each styled deck and each object-check slide.
-- `mdpr-skill` may prepare reasoning hints, but MDPR owns final rendering.
+- Workflow: `Theme Preview` builds this source across decoration styles.
+- Gallery: Pages shows each styled deck and object-check slide.
+- Ownership: MDPR owns rendering; `mdpr-skill` may prepare hints.

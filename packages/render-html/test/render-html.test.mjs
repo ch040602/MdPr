@@ -172,6 +172,8 @@ test("renderHtml marks pipeline diagrams with selected graph arrangements", () =
   assert.match(reverseU, /class="pipeline-connectors"/);
   assert.equal((reverseU.match(/class="pipeline-connector"/g) ?? []).length >= 7, true);
   assert.match(reverseU, /marker-end="url\(#pipeline-arrow-/);
+  assert.doesNotMatch(reverseU, /NaN|Infinity/);
+  assert.match(reverseU, /points="[0-9.,\s]+"/);
   assert.doesNotMatch(reverseU, /class="pipeline-edge"/);
 });
 
@@ -205,6 +207,9 @@ test("renderHtml separates decoration style from theme color seed", () => {
   assert.equal(layout.theme.colorSeed, "#8A4FFF");
   assert.match(html, /--primary: #8A4FFF;/);
   assert.match(html, /--surface: #10182C;/);
+  assert.match(html, /-webkit-backdrop-filter: blur\(18px\) saturate\(140%\)/);
+  assert.match(html, /backdrop-filter: blur\(18px\) saturate\(140%\)/);
+  assert.match(html, /linear-gradient\(135deg, rgba\(255,255,255,.2\)/);
 });
 
 test("renderHtml renders table blocks as bounded HTML tables", () => {
@@ -238,8 +243,10 @@ test("renderHtml applies theme surface grammar in Actions previews", () => {
 
   assert.match(html, /body data-theme-style="magazine"/);
   assert.match(html, /class="region item surface flag-drop/);
-  assert.match(html, /class="region item surface ticket/);
+  assert.match(html, /class="region item surface two-corner-right/);
+  assert.match(html, /class="region item surface notched-corner/);
   assert.match(html, /body\[data-theme-style="magazine"\] \.slide::before/);
+  assert.doesNotMatch(html, /circle-vine/);
 });
 
 test("renderHtml exposes composition classes for stronger Actions previews", () => {

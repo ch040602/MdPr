@@ -162,7 +162,7 @@ decorative lines and badges are drawn as editable shapes and text is inset away 
 PPTX text boxes use role-aware inner margins and vertical anchors so titles, item cards, proof points, code blocks, and body text align consistently inside their shape bounds
 chart slides with short prose and no table use a parallel body-plus-chart layout rather than pushing interpretation below the graph
 chart slides with a table reserve separate chart and table regions so numeric evidence and table details remain visible on the same page
-Actions theme preview is regenerated and checked by `scripts/evaluate-theme-preview.mjs`; the evaluator verifies style-page count, legacy color-only page removal, composition markers, proof object markers, table rendering, and slide-bound coordinates.
+Actions theme preview is regenerated and checked by `scripts/evaluate-theme-preview.mjs`; the evaluator verifies style-page count, legacy color-only page removal, composition markers, proof object markers, table rendering, slide-bound coordinates, region font floors, pipeline connector coordinates, glassmorphism surface markers, and singleton decorative-dot regressions.
 editable chart proof objects include segmented arc rings, gauges, connected strips, ranked bars, and metric dots
 generated monochrome SVG icons follow a centered 24px icon box and remain secondary to slide text; icon selection prefers Tabler-style concept icons, Simple Icons-style brand glyphs for explicit brand terms, and SVG Repo-style generic object icons for infrastructure/fallback cases
 color-combination palettes feed PPT theme accent1-accent6 with contrast-aware saturation and lightness variants rather than surface-line duplicates

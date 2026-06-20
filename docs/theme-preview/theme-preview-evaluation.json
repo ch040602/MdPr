@@ -19,7 +19,7 @@
   "missingStyles": [],
   "extraStyles": [],
   "legacyPages": [],
-  "slideCount": 17,
+  "slideCount": 19,
   "compositionClasses": [
     "chart-table",
     "comparison",
@@ -28,7 +28,6 @@
     "key-message",
     "pipeline",
     "table-focus",
-    "text-icon-aside",
     "timeline",
     "toc",
     "vertical-list"
@@ -48,6 +47,10 @@
     "gauge"
   ],
   "missingMarkers": [],
+  "coherenceViolations": [],
+  "connectorIssues": [],
+  "typographyIssues": [],
+  "glassIssues": [],
   "overflowCount": 0,
   "overflow": []
 }

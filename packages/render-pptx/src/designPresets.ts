@@ -412,15 +412,15 @@ function surfaceVariant(preset: DesignPreset, region: LayoutRegion): SurfaceVari
 
   const index = Number(/\d+$/.exec(region.id)?.[0] ?? 0);
   const variantsByStyle: Record<string, SurfaceVariant[]> = {
-    glass: ["circle-vine", "two-corner-right", "rounded", "flag-drop"],
-    newmorphism: ["rounded", "two-corner-left", "circle-vine", "ticket"],
+    glass: ["rounded", "two-corner-right", "notched-corner", "flag-drop"],
+    newmorphism: ["rounded", "two-corner-left", "rounded", "two-corner-right"],
     minimalism: ["rounded", "two-corner-left", "rounded", "notched-corner"],
     grid: ["two-corner-left", "notched-corner", "two-corner-right", "rounded"],
-    data: ["notched-corner", "flag-drop", "two-corner-left", "ticket"],
-    magazine: ["flag-drop", "ticket", "circle-vine", "two-corner-left"],
-    editorial: ["ticket", "flag-drop", "two-corner-left", "circle-vine"],
+    data: ["notched-corner", "flag-drop", "two-corner-left", "rounded"],
+    magazine: ["flag-drop", "two-corner-right", "notched-corner", "two-corner-left"],
+    editorial: ["rounded", "flag-drop", "two-corner-left", "notched-corner"],
     executive: ["two-corner-left", "rounded", "flag-drop", "notched-corner"],
-    technical: ["two-corner-right", "circle-vine", "rounded", "notched-corner"],
+    technical: ["two-corner-right", "rounded", "notched-corner", "two-corner-left"],
   };
   const variants = variantsByStyle[preset.decorationStyle] ?? ["rounded", "two-corner-left", "flag-drop", "notched-corner"];
   return variants[Math.abs(index - 1) % variants.length] ?? "rounded";

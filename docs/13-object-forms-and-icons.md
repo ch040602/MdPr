@@ -51,15 +51,15 @@ Current SVG surface families:
 - `two-corner-left`: only the left two corners are rounded, useful for linear list rows and left-to-right grouping.
 - `two-corner-right`: only the right two corners are rounded, useful for closing panels or mirrored rows.
 - `flag-drop`: a small flag descends from the top edge for method, step, or emphasis cards.
-- `circle-vine`: a small circle plus curved connector line marks related semantic content without becoming a large icon.
 - `notched-corner`: a clipped/folded corner for code, data, warning, or proof-like panels.
-- `ticket`: side punch marks for document, evidence, checklist, or ticket-like panels.
+- `ticket`: side punch marks for document, evidence, table, or checklist panels; it is not used in automatic item-card rotation because isolated punch marks can read as stray dots.
 
 Coherence guards:
 
 - Do not change region coordinates or text margins when changing the surface family.
 - Use one surface grammar per same-role group unless the slide content expresses a different role.
 - Keep decorative accents inside the surface bounds.
+- Avoid singleton marker accents in automatic style rotation; decorative dots, punch holes, or relation marks must appear as part of an intentional repeated group, not on only one card.
 - Use fixed absolute corner radii so shape size does not change the perceived roundness style.
 - Fall back to `rounded` for dense text, crowded tables, or already visually rich slides.
 

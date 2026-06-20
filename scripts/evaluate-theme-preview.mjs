@@ -45,6 +45,10 @@ function evaluateThemePreview() {
   const proofKinds = sortedUnique([...firstHtml.matchAll(/data-proof-kind="([^"]+)"/g)].map((match) => match[1]));
   const overflow = [];
   const missingMarkers = [];
+  const coherenceViolations = [];
+  const connectorIssues = [];
+  const typographyIssues = [];
+  const glassIssues = [];
 
   for (const [file, html] of htmlByFile) {
     if (!/<table class="mdpr-table">/.test(html)) missingMarkers.push(`${file}:mdpr-table`);
@@ -53,6 +57,11 @@ function evaluateThemePreview() {
     if (!/data-proof-kind="arc-ring"/.test(html)) missingMarkers.push(`${file}:arc-ring-proof`);
     if (!/data-proof-kind="gauge"/.test(html)) missingMarkers.push(`${file}:gauge-proof`);
     if (!/data-proof-kind="connected-strip"/.test(html)) missingMarkers.push(`${file}:connected-strip-proof`);
+    if (/circle-vine/.test(html)) coherenceViolations.push(`${file}:singleton-dot-surface`);
+    if (/class="region item surface ticket/.test(html)) coherenceViolations.push(`${file}:item-ticket-punch-surface`);
+    connectorIssues.push(...pipelineConnectorIssues(file, html));
+    typographyIssues.push(...regionTypographyIssues(file, html));
+    if (file === "glass.html") glassIssues.push(...glassStyleIssues(file, html));
     overflow.push(...regionOverflow(file, html));
   }
 
@@ -66,6 +75,10 @@ function evaluateThemePreview() {
     && !legacyPages.length
     && !overflow.length
     && !missingMarkers.length
+    && !coherenceViolations.length
+    && !connectorIssues.length
+    && !typographyIssues.length
+    && !glassIssues.length
     && !missingCompositions.length
     && !missingSurfaces.length
     && slideCount >= 10
@@ -86,9 +99,56 @@ function evaluateThemePreview() {
     missingSurfaces,
     proofKinds,
     missingMarkers,
+    coherenceViolations,
+    connectorIssues,
+    typographyIssues,
+    glassIssues,
     overflowCount: overflow.length,
     overflow: overflow.slice(0, 10),
   };
+}
+
+function pipelineConnectorIssues(file, html) {
+  const issues = [];
+  for (const slide of html.matchAll(/<section class="slide[^>]*data-composition="pipeline"[\s\S]*?<\/section>/g)) {
+    const source = slide[0];
+    const nodes = (source.match(/class="pipeline-node"/g) ?? []).length;
+    const connectors = (source.match(/class="pipeline-connector"/g) ?? []).length;
+    if (nodes > 1 && connectors < nodes - 1) issues.push(`${file}:pipeline-connectors:${connectors}/${nodes - 1}`);
+    if (/NaN|Infinity/.test(source)) issues.push(`${file}:pipeline-numeric`);
+    for (const points of source.matchAll(/points="([^"]+)"/g)) {
+      const values = points[1].split(/[,\s]+/).filter(Boolean).map(Number);
+      if (values.length < 4 || values.some((value) => !Number.isFinite(value))) {
+        issues.push(`${file}:pipeline-points`);
+        continue;
+      }
+      if (values.some((value) => value < -0.01 || value > 100.01)) issues.push(`${file}:pipeline-point-bounds`);
+    }
+  }
+  return sortedUnique(issues);
+}
+
+function regionTypographyIssues(file, html) {
+  const issues = [];
+  for (const match of html.matchAll(/class="region ([^"]*)" style="([^"]*)"/g)) {
+    const classes = match[1];
+    const style = match[2];
+    const fontSize = readPt(style, "font-size");
+    if (fontSize === undefined || classes.includes("title")) continue;
+    if (fontSize < 14) issues.push(`${file}:region-font:${fontSize}`);
+  }
+  return sortedUnique(issues);
+}
+
+function glassStyleIssues(file, html) {
+  const issues = [];
+  if (!/body data-theme-style="glass"/.test(html)) issues.push(`${file}:theme-marker`);
+  if (!/body\[data-theme-style="glass"\] \.surface \{[^}]*backdrop-filter: blur\(18px\) saturate\(140%\)/s.test(html)) {
+    issues.push(`${file}:glass-backdrop-filter`);
+  }
+  if (!/-webkit-backdrop-filter: blur\(18px\) saturate\(140%\)/.test(html)) issues.push(`${file}:glass-webkit-filter`);
+  if (!/linear-gradient\(135deg, rgba\(255,255,255,.2\)/.test(html)) issues.push(`${file}:glass-frosted-fill`);
+  return issues;
 }
 
 function regionOverflow(file, html) {
@@ -109,6 +169,11 @@ function regionOverflow(file, html) {
 
 function readInches(style, key) {
   const match = new RegExp(`${key}:([0-9.]+)in`).exec(style);
+  return match ? Number(match[1]) : undefined;
+}
+
+function readPt(style, key) {
+  const match = new RegExp(`${key}:([0-9.]+)pt`).exec(style);
   return match ? Number(match[1]) : undefined;
 }
 

@@ -125,6 +125,10 @@ The manifest records source/config hashes, rendered outputs, diagnostics, overfl
 - tables render as structured HTML tables
 - proof objects render as `arc-ring`, `gauge`, and `connected-strip` objects
 - all absolutely positioned regions stay inside the slide rectangle
+- body and item regions stay at or above the readable font floor
+- pipeline connector coordinates are finite, in bounds, and present for each graph
+- glass preview pages include frosted fill and browser glassmorphism filters
+- singleton decorative-dot surface variants are rejected in generated preview pages
 
 This evaluator is deterministic and complements manual visual review.
 
