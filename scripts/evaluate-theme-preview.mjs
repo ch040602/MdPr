@@ -8,9 +8,7 @@ const pptxDir = join(outDir, "pptx");
 const slidesDir = join(outDir, "slides");
 const expectedStyles = [
   "clean",
-  "executive",
   "editorial",
-  "technical",
   "minimalism",
   "newmorphism",
   "glass",
@@ -20,6 +18,8 @@ const expectedStyles = [
 ].sort();
 const legacyColorOnly = ["dark", "nord", "solarized", "dracula", "tableau", "gruvbox", "monokai", "material", "tokyo-night"];
 const expectedPngSize = { w: 1600, h: 900 };
+const EMU_PER_INCH = 914400;
+const MIN_IMAGE_SAFE_INSET_EMU = Math.round(0.08 * EMU_PER_INCH);
 const JSZip = await loadWorkspaceJsZip();
 const report = await evaluateThemePreview();
 writeFileSync(join(outDir, "theme-preview-evaluation.json"), `${JSON.stringify(report, null, 2)}\n`, "utf-8");
@@ -45,6 +45,7 @@ async function evaluateThemePreview() {
   const slideCount = firstTheme?.slides?.length ?? 0;
   const compositionClasses = sortedUnique(previewSource.compositionClasses ?? []);
   const surfaceVariants = sortedUnique(previewSource.surfaceVariants ?? []);
+  const previewSlideTitles = sortedUnique(firstTheme?.slides?.map((slide) => slide.title) ?? []);
   const renderedSurfaceVariants = new Set();
   const proofKinds = sortedUnique(previewSource.proofKinds ?? []);
   const overflow = [];
@@ -53,6 +54,7 @@ async function evaluateThemePreview() {
   const connectorIssues = [];
   const typographyIssues = [];
   const glassIssues = [];
+  const imageSafeFrameIssues = [];
   const pptxIssues = [];
   const pngIssues = [];
   const languageIssues = [];
@@ -66,8 +68,13 @@ async function evaluateThemePreview() {
     const pptxPath = join(pptxDir, `${style}.pptx`);
     if (!existsSync(pptxPath) || statSync(pptxPath).size < 5000) pptxIssues.push(`${style}:pptx-missing-or-empty`);
     else {
-      const pptxInspection = await inspectPptx(pptxPath, style);
+      const manifestTheme = previewSource.themes?.find((theme) => theme.name === style);
+      const imageSafeFrameSlideIndexes = (manifestTheme?.slides ?? [])
+        .filter((slide) => slide.title === "Image Safe Frame")
+        .map((slide) => slide.index);
+      const pptxInspection = await inspectPptx(pptxPath, style, imageSafeFrameSlideIndexes);
       languageIssues.push(...pptxInspection.languageIssues);
+      imageSafeFrameIssues.push(...pptxInspection.imageSafeFrameIssues);
       pptxInspection.surfaceVariants.forEach((variant) => renderedSurfaceVariants.add(variant));
       if (pptxInspection.slideCount !== slideCount) pptxIssues.push(`${style}:pptx-slide-count:${pptxInspection.slideCount}:expected:${slideCount}`);
     }
@@ -91,6 +98,8 @@ async function evaluateThemePreview() {
 
   const requiredCompositions = ["cover", "toc", "vertical-list", "grid", "pipeline", "chart-table"];
   const missingCompositions = requiredCompositions.filter((name) => !compositionClasses.includes(name));
+  const requiredSlideTitles = ["Decoration Pattern Catalog", "Image Safe Frame", "Mixed Object Packing"];
+  const missingSlideTitles = requiredSlideTitles.filter((title) => !previewSlideTitles.includes(title));
   const requiredSurfaces = ["rounded", "two-corner-left", "flag-drop", "ticket"];
   const missingSurfaces = requiredSurfaces.filter((name) => !surfaceVariants.includes(name));
   const renderedSurfaceVariantList = sortedUnique([...renderedSurfaceVariants]);
@@ -105,10 +114,12 @@ async function evaluateThemePreview() {
     && !connectorIssues.length
     && !typographyIssues.length
     && !glassIssues.length
+    && !imageSafeFrameIssues.length
     && !pptxIssues.length
     && !pngIssues.length
     && !languageIssues.length
     && !missingCompositions.length
+    && !missingSlideTitles.length
     && !missingSurfaces.length
     && !missingRenderedSurfaces.length
     && slideCount >= 10
@@ -125,6 +136,7 @@ async function evaluateThemePreview() {
     slideCount,
     compositionClasses,
     missingCompositions,
+    missingSlideTitles,
     surfaceVariants,
     missingSurfaces,
     renderedSurfaceVariants: renderedSurfaceVariantList,
@@ -135,6 +147,7 @@ async function evaluateThemePreview() {
     connectorIssues,
     typographyIssues,
     glassIssues,
+    imageSafeFrameIssues,
     pptxIssues,
     pngIssues,
     languageIssues,
@@ -166,8 +179,9 @@ function disallowedLanguageScriptMatch(value) {
   return /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Cyrillic}]/u.exec(String(value));
 }
 
-async function inspectPptx(pptxPath, style) {
+async function inspectPptx(pptxPath, style, imageSafeFrameSlideIndexes = []) {
   const languageIssues = [];
+  const imageSafeFrameIssues = [];
   const surfaceVariants = new Set();
   const zip = await JSZip.loadAsync(readFileSync(pptxPath));
   const slidePaths = Object.keys(zip.files).filter((path) => /^ppt\/slides\/slide\d+\.xml$/.test(path)).sort();
@@ -176,6 +190,10 @@ async function inspectPptx(pptxPath, style) {
     for (const text of extractPptxTextRuns(slideXml)) {
       const match = disallowedLanguageScriptMatch(text);
       if (match) languageIssues.push(`${style}:${slidePath}:visible-slide-non-english-script:${match[0]}`);
+    }
+    const slideIndex = Number(/slide(\d+)\.xml$/.exec(slidePath)?.[1] ?? 0);
+    if (imageSafeFrameSlideIndexes.includes(slideIndex)) {
+      imageSafeFrameIssues.push(...inspectImageSafeFrameSlide(slideXml, style, slidePath));
     }
   }
   const svgPaths = Object.keys(zip.files).filter((path) => /^ppt\/media\/.*\.svg$/.test(path)).sort();
@@ -188,8 +206,72 @@ async function inspectPptx(pptxPath, style) {
 
   return {
     languageIssues,
+    imageSafeFrameIssues,
     slideCount: slidePaths.length,
     surfaceVariants: [...surfaceVariants],
+  };
+}
+
+function inspectImageSafeFrameSlide(slideXml, style, slidePath) {
+  const issues = [];
+  const pictures = extractPictures(slideXml);
+  const markdownPictures = pictures.filter((picture) => picture.descr && picture.descr !== "preencoded.png");
+  const surfacePictures = pictures.filter((picture) => picture.descr === "preencoded.png");
+
+  if (!markdownPictures.length) {
+    return [`${style}:${slidePath}:image-safe-frame:no-markdown-picture`];
+  }
+  if (!surfacePictures.length) {
+    return [`${style}:${slidePath}:image-safe-frame:no-surface-picture`];
+  }
+
+  for (const picture of markdownPictures) {
+    const containingSurface = surfacePictures.find((surface) => containsRect(surface, picture));
+    if (!containingSurface) {
+      issues.push(`${style}:${slidePath}:image-safe-frame:${picture.descr}:not-inside-surface`);
+      continue;
+    }
+    const insets = rectInsets(containingSurface, picture);
+    const minInset = Math.min(insets.left, insets.top, insets.right, insets.bottom);
+    if (minInset < MIN_IMAGE_SAFE_INSET_EMU) {
+      issues.push(`${style}:${slidePath}:image-safe-frame:${picture.descr}:inset-too-small:${Math.round(minInset / EMU_PER_INCH * 1000) / 1000}in`);
+    }
+  }
+
+  return issues;
+}
+
+function extractPictures(slideXml) {
+  return [...String(slideXml).matchAll(/<p:pic\b[\s\S]*?<\/p:pic>/g)]
+    .map((match) => {
+      const xml = match[0];
+      const xfrm = /<a:off x="(-?\d+)" y="(-?\d+)"\/>\s*<a:ext cx="(-?\d+)" cy="(-?\d+)"\/>/.exec(xml);
+      if (!xfrm) return undefined;
+      return {
+        name: decodeXmlText(/name="([^"]+)"/.exec(xml)?.[1] ?? ""),
+        descr: decodeXmlText(/descr="([^"]*)"/.exec(xml)?.[1] ?? ""),
+        x: Number(xfrm[1]),
+        y: Number(xfrm[2]),
+        w: Math.max(0, Number(xfrm[3])),
+        h: Math.max(0, Number(xfrm[4])),
+      };
+    })
+    .filter(Boolean);
+}
+
+function containsRect(outer, inner) {
+  return inner.x >= outer.x
+    && inner.y >= outer.y
+    && inner.x + inner.w <= outer.x + outer.w
+    && inner.y + inner.h <= outer.y + outer.h;
+}
+
+function rectInsets(outer, inner) {
+  return {
+    left: inner.x - outer.x,
+    top: inner.y - outer.y,
+    right: outer.x + outer.w - (inner.x + inner.w),
+    bottom: outer.y + outer.h - (inner.y + inner.h),
   };
 }
 

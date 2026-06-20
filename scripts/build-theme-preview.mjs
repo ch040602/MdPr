@@ -14,6 +14,16 @@ const slidesDir = join(outDir, "slides");
 const pngSize = { width: 1600, height: 900 };
 const sourceMarkdown = readFileSync(inputPath, "utf-8");
 const generatedAt = "source-controlled";
+const previewStyleNames = [
+  "clean",
+  "editorial",
+  "minimalism",
+  "newmorphism",
+  "glass",
+  "grid",
+  "data",
+  "magazine",
+].filter((name) => DECORATION_STYLE_NAMES.includes(name));
 
 assertEnglishOnlyText(sourceMarkdown, inputPath);
 
@@ -37,7 +47,7 @@ const proofKinds = sortedUnique(deck.presentation.slides.flatMap((slide) =>
 const surfaceVariants = ["flag-drop", "notched-corner", "rounded", "ticket", "two-corner-left", "two-corner-right"];
 const themeEntries = [];
 
-for (const name of DECORATION_STYLE_NAMES) {
+for (const name of previewStyleNames) {
   const tokens = resolveDesignTokens(name, deck.config.theme);
   const pptxPath = join(pptxDir, `${name}.pptx`);
   await renderPptx(
@@ -77,6 +87,7 @@ const manifest = {
   generatedAt,
   pngSize,
   styleCount: themeEntries.length,
+  styleNames: sortedUnique(themeEntries.map((theme) => theme.name)),
   slideCount: themeEntries[0]?.slides.length ?? 0,
   compositionClasses,
   surfaceVariants,
@@ -117,7 +128,7 @@ function slideTitle(index) {
 
 function renderPreviewShell({ title, source, generatedAt, themes }) {
   const themesJson = JSON.stringify(themes);
-  const defaultTheme = themes.find((theme) => theme.name === "technical") ?? themes[0];
+  const defaultTheme = themes.find((theme) => theme.name === "magazine") ?? themes[0];
   return `<!doctype html>
 <html lang="en">
 <head>

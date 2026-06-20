@@ -1,12 +1,26 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import re
 import struct
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT_DIR = ROOT / "docs" / "assets" / "readme-slides"
+THEME_PREVIEW_DIR = ROOT / "docs" / "theme-preview"
+EXPECTED_MAIN_IMAGE = "docs/theme-preview/slides/magazine/slide-04.png"
+EXPECTED_PIPELINE_IMAGE = "docs/theme-preview/slides/grid/slide-10.png"
+REQUIRED_PREVIEW_IMAGES = [
+    EXPECTED_MAIN_IMAGE,
+    EXPECTED_PIPELINE_IMAGE,
+    "docs/theme-preview/slides/grid/slide-09.png",
+    "docs/theme-preview/slides/magazine/slide-11.png",
+    "docs/theme-preview/slides/data/slide-16.png",
+    "docs/theme-preview/slides/glass/slide-22.png",
+    "docs/theme-preview/slides/grid/slide-23.png",
+    "docs/theme-preview/slides/magazine/slide-15.png",
+]
 
 
 def png_size(path: Path) -> tuple[int, int] | None:
@@ -19,83 +33,75 @@ def png_size(path: Path) -> tuple[int, int] | None:
     return struct.unpack(">II", header[16:24])
 
 
+def read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def visual_fingerprints(images: list[str]) -> dict[str, dict[str, object]]:
+    fingerprints: dict[str, dict[str, object]] = {}
+    for image in images:
+        path = ROOT / image
+        data = path.read_bytes()
+        fingerprints[image] = {
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "bytes": len(data),
+            "size": list(png_size(path) or (0, 0)),
+        }
+    return fingerprints
+
+
 def main() -> None:
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    manifest = json.loads((ROOT / "docs" / "theme-preview" / "preview-manifest.json").read_text(encoding="utf-8"))
-    evaluation = json.loads((ROOT / "docs" / "theme-preview" / "theme-preview-evaluation.json").read_text(encoding="utf-8"))
-    report_path = OUT_DIR / "readme-slide-assets-report.json"
-    report = json.loads(report_path.read_text(encoding="utf-8"))
+    readmes = {
+        "README.md": read_text(ROOT / "README.md"),
+        "README.ko.md": read_text(ROOT / "README.ko.md"),
+        "README.zh.md": read_text(ROOT / "README.zh.md"),
+    }
+    manifest = json.loads((THEME_PREVIEW_DIR / "preview-manifest.json").read_text(encoding="utf-8"))
+    evaluation = json.loads((THEME_PREVIEW_DIR / "theme-preview-evaluation.json").read_text(encoding="utf-8"))
     issues: list[str] = []
 
-    if "docs/assets/readme-slides/mdpr-showcase-teaser.png" not in readme:
-        issues.append("README.md:main-image-not-showcase")
-    if readme.find("mdpr-showcase-teaser.png") > readme.find("mdpr-pipeline-teaser.png"):
-        issues.append("README.md:showcase-must-precede-pipeline")
+    if manifest.get("source") != "examples/theme-preview-en/deck.md":
+        issues.append("theme-preview:source-not-shared-md")
+    if int(manifest.get("styleCount", 0) or 0) < 8:
+        issues.append("theme-preview:too-few-styles")
+    if int(manifest.get("slideCount", 0) or 0) < 12:
+        issues.append("theme-preview:too-few-slides")
+    if evaluation.get("ok") is not True:
+        issues.append("theme-preview:evaluation-not-ok")
 
-    required_assets = [
-        ("mdpr-showcase-teaser.png", (1600, 900)),
-        ("mdpr-showcase-teaser.pptx", None),
-        ("mdpr-pipeline-teaser.png", (2600, 1414)),
-        ("mdpr-pipeline-teaser.pptx", None),
-        ("pipeline.png", (2600, 1414)),
-        ("cover.png", (1600, 900)),
-        ("semantics.png", (1600, 900)),
-        ("decorations.png", (1600, 900)),
-    ]
-    for name, expected_size in required_assets:
-        path = OUT_DIR / name
+    for readme_name, content in readmes.items():
+        if "docs/assets/readme-slides" in content:
+            issues.append(f"{readme_name}:uses-retired-readme-assets")
+        if EXPECTED_MAIN_IMAGE not in content:
+            issues.append(f"{readme_name}:missing-main-preview")
+        if EXPECTED_PIPELINE_IMAGE not in content:
+            issues.append(f"{readme_name}:missing-pipeline-preview")
+        if re.search(r"build-readme-slide-assets|readme-slide-assets-report|mdpr-showcase-teaser|mdpr-pipeline-teaser", content):
+            issues.append(f"{readme_name}:mentions-retired-readme-teaser")
+
+    for image in REQUIRED_PREVIEW_IMAGES:
+        path = ROOT / image
         if not path.exists() or path.stat().st_size < 5000:
-            issues.append(f"{name}:missing-or-too-small")
+            issues.append(f"{image}:missing-or-too-small")
             continue
-        if expected_size:
-            actual_size = png_size(path)
-            if actual_size != expected_size:
-                issues.append(f"{name}:size:{actual_size}:expected:{expected_size}")
-
-    showcase = report.get("showcase", {})
-    for source in showcase.get("sources", []):
-        source_path = ROOT / source
-        if not source_path.exists() or source_path.stat().st_size < 5000:
-            issues.append(f"showcase-source:{source}:missing-or-too-small")
-
-    expected_sources = {
-        "styleCount": manifest.get("styleCount"),
-        "slideCount": manifest.get("slideCount"),
-        "compositionCount": len(manifest.get("compositionClasses", [])),
-        "surfaceCount": len(evaluation.get("renderedSurfaceVariants") or manifest.get("surfaceVariants", [])),
-        "proofCount": len(manifest.get("proofKinds", [])),
-    }
-    if report.get("showcase", {}).get("metrics") != expected_sources:
-        issues.append("showcase:metrics-drift")
-
-    teaser_layout = report.get("teaserLayoutValidation", {})
-    if teaser_layout.get("ok") is not True:
-        issues.append("showcase:teaser-layout-validation")
-    for key in [
-        "boundsViolationCount",
-        "textFitViolationCount",
-        "circlePictureViolationCount",
-        "pictureFrameViolationCount",
-    ]:
-        if int(teaser_layout.get(key, 0) or 0) != 0:
-            issues.append(f"showcase:{key}")
-
-    pipeline_report = json.loads((OUT_DIR / "mdpr-pipeline-teaser-report.json").read_text(encoding="utf-8"))
-    if pipeline_report.get("layoutValidation", {}).get("overflowCount") != 0:
-        issues.append("pipeline:overflow-count")
+        if png_size(path) != (1600, 900):
+            issues.append(f"{image}:unexpected-size:{png_size(path)}")
 
     output = {
         "ok": not issues,
         "issues": issues,
-        "showcaseMetrics": expected_sources,
-        "teaserLayoutValidation": teaser_layout,
-        "mainImage": "docs/assets/readme-slides/mdpr-showcase-teaser.png",
-        "pipelineImage": "docs/assets/readme-slides/mdpr-pipeline-teaser.png",
+        "source": manifest.get("source"),
+        "mainImage": EXPECTED_MAIN_IMAGE,
+        "pipelineImage": EXPECTED_PIPELINE_IMAGE,
+        "checkedImages": REQUIRED_PREVIEW_IMAGES,
+        "visualFingerprints": visual_fingerprints(REQUIRED_PREVIEW_IMAGES),
+        "styleCount": manifest.get("styleCount"),
+        "slideCount": manifest.get("slideCount"),
     }
-    (OUT_DIR / "readme-assets-evaluation.json").write_text(f"{json.dumps(output, indent=2)}\n", encoding="utf-8")
+    (THEME_PREVIEW_DIR / "readme-preview-evaluation.json").write_text(f"{json.dumps(output, indent=2)}\n", encoding="utf-8")
     if issues:
-        raise SystemExit(f"README asset evaluation failed: {issues}")
-    print(f"README asset evaluation passed: {expected_sources}")
+        raise SystemExit(f"README preview evaluation failed: {issues}")
+    print(f"README preview evaluation passed: {output}")
 
 
 if __name__ == "__main__":

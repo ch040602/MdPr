@@ -842,6 +842,36 @@ test("planPresentation keeps one diagram and its supporting content on the same 
   assert.deepEqual(contentSlides[0].blocks.map((block) => block.type), ["diagram", "bulletList"]);
 });
 
+test("planPresentation keeps compact chart table image evidence bundles on one slide", () => {
+  const doc = parseMarkdown([
+    "# Demo",
+    "",
+    "## Mixed Evidence",
+    "",
+    "- Reading order: chart and table first",
+    "- Image role: bounded visual evidence",
+    "",
+    "```chart",
+    "labels: Parse, Plan, Render",
+    "Score: 78, 86, 93",
+    "```",
+    "",
+    "| Object | Signal |",
+    "| --- | --- |",
+    "| Chart | trend |",
+    "| Image | bounded |",
+    "",
+    "![Safe frame diagram](examples/theme-preview-en/assets/safe-frame.svg)",
+  ].join("\n"));
+
+  const presentation = planPresentation(doc, defaultConfig);
+  const contentSlides = presentation.slides.filter((slide) => slide.role === "content");
+  const mixedSlides = contentSlides.filter((slide) => slide.title.startsWith("Mixed Evidence"));
+
+  assert.equal(mixedSlides.length, 1);
+  assert.deepEqual(mixedSlides[0].blocks.map((block) => block.type), ["bulletList", "chart", "table", "image"]);
+});
+
 test("planPresentation treats horizontal rules as explicit slide separators", () => {
   const config = structuredClone(defaultConfig);
   config.toc.enabled = false;

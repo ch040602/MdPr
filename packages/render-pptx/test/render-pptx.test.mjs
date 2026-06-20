@@ -37,6 +37,23 @@ async function assertPptxObjectsInsideSlide(pptxPath, widthIn = 13.333, heightIn
   }
 }
 
+function shapeXmlContainingText(xml, text) {
+  const shapes = [...xml.matchAll(/<p:sp\b[\s\S]*?<\/p:sp>/g)].map((match) => match[0]);
+  const escaped = text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return shapes.find((shape) => new RegExp(`<a:t>${escaped}</a:t>`).test(shape));
+}
+
+function shapeTransform(shapeXml) {
+  const xfrm = /<a:off x="(-?\d+)" y="(-?\d+)"\/><a:ext cx="(-?\d+)" cy="(-?\d+)"\/>/.exec(shapeXml ?? "");
+  assert.ok(xfrm, `missing transform for shape: ${shapeXml?.slice(0, 180)}`);
+  return {
+    x: Number(xfrm[1]) / EMU_PER_INCH,
+    y: Number(xfrm[2]) / EMU_PER_INCH,
+    w: Number(xfrm[3]) / EMU_PER_INCH,
+    h: Number(xfrm[4]) / EMU_PER_INCH,
+  };
+}
+
 test("icon catalog searches keyword candidates before choosing a semantic icon", () => {
   assert.equal(iconKindForText("GitHub repository pull request workflow"), "github");
   assert.equal(iconKindForText("PowerPoint theme color harmony and palette coherence"), "palette");
@@ -1384,6 +1401,90 @@ test("template import reuses positioned image assets from a PPTX template", asyn
   }
 });
 
+test("renderPptx keeps Markdown images inside their surfaced region safe frame", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-image-safe-"));
+  const imagePath = join(outDir, "preview.png");
+  const outPath = join(outDir, "deck.pptx");
+  const region = { id: "image-1", role: "image", blockIds: ["image-1"], x: 1.0, y: 1.65, w: 4.0, h: 2.0, zIndex: 10 };
+  const inset = 0.07;
+  const deck = {
+    presentation: {
+      version: "1.0",
+      meta: { title: "Image Safe Frame" },
+      outline: [],
+      assets: [],
+      diagnostics: [],
+      slides: [{
+        id: "slide-image",
+        index: 0,
+        role: "content",
+        title: "Image Safe Frame",
+        headingPath: ["Image Safe Frame"],
+        source: {},
+        intent: "image",
+        tags: [],
+        blocks: [{ id: "image-1", type: "image", src: imagePath, alt: "safe image" }],
+      }],
+    },
+    layout: {
+      version: "1.0",
+      slideSize: { width: 13.333, height: 7.5, unit: "in" },
+      theme: {
+        fontFamily: "Arial",
+        backgroundColor: "#FFFFFF",
+        textColor: "#111827",
+        primaryColor: "#2563EB",
+        titleFontSize: 30,
+        bodyFontSize: 20,
+        captionFontSize: 12,
+        minFontSize: 14,
+        lineHeight: 1.2,
+      },
+      diagnostics: [],
+      slides: [{
+        id: "layout-image",
+        sourceSlideId: "slide-image",
+        index: 0,
+        layout: { preset: "image-focus" },
+        background: { color: "#FFFFFF" },
+        overflowPolicy: { action: "shrink", minFontSize: 14, maxShrinkSteps: 3 },
+        regions: [
+          { id: "title", role: "title", blockIds: ["__title:slide-image"], x: 0.8, y: 0.45, w: 11.7, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 30, fontWeight: "bold", lineHeight: 1.2, minFontSize: 14 } },
+          region,
+        ],
+      }],
+    },
+  };
+
+  try {
+    writeFileSync(imagePath, Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAABQAAAAMCAYAAABiDJ37AAAAI0lEQVR42mP8z8Dwn4GKgImBjoEJRh1MDRgYGBgAAJ1CDxN5CHiFAAAAAElFTkSuQmCC",
+      "base64",
+    ));
+
+    await renderPptx(deck, { outPath, designPreset: "glass" });
+    await assertPptxObjectsInsideSlide(outPath);
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const expectedX = Math.round((region.x + inset) * EMU_PER_INCH);
+    const expectedY = Math.round((region.y + inset) * EMU_PER_INCH);
+    const expectedW = Math.round((region.w - inset * 2) * EMU_PER_INCH);
+    const expectedH = Math.round((region.h - inset * 2) * EMU_PER_INCH);
+    const pictureTransforms = [...xml.matchAll(/<p:pic\b[\s\S]*?<a:off x="(-?\d+)" y="(-?\d+)"\/>\s*<a:ext cx="(-?\d+)" cy="(-?\d+)"\/>[\s\S]*?<\/p:pic>/g)]
+      .map((match) => match.slice(1, 5).map(Number));
+
+    assert.equal(pictureTransforms.some(([x, y, w, h]) =>
+      Math.abs(x - expectedX) <= 3
+      && Math.abs(y - expectedY) <= 3
+      && Math.abs(w - expectedW) <= 3
+      && Math.abs(h - expectedH) <= 3
+    ), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("template import reuses decorative shapes for matching layout types and preserves theme colors", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-template-style-"));
   const templatePath = join(outDir, "template.pptx");
@@ -1639,6 +1740,13 @@ test("renderPptx adds editable number badges and accent-colored key text for ite
     assert.equal((xml.match(/anchor="ctr"/g) ?? []).length >= 2, true);
     assert.equal((xml.match(/<a:pPr[^>]*algn="ctr"/g) ?? []).length >= 2, true);
     assert.doesNotMatch(xml, /1\. Prepare/);
+
+    const marker = shapeTransform(shapeXmlContainingText(xml, "1"));
+    const itemText = shapeTransform(shapeXmlContainingText(xml, "Prepare "));
+    const markerCenterY = marker.y + marker.h / 2;
+    const itemCenterY = itemText.y + itemText.h / 2;
+    assert.equal(Math.abs(markerCenterY - itemCenterY) < 0.01, true);
+    assert.equal(itemText.h < 0.75, true, `item text box should be compact and centered, got ${itemText.h}`);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

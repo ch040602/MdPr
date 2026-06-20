@@ -44,6 +44,11 @@ Implemented baseline:
 - preserves Markdown line breaks, sentence units, ordered list numbers, nested list prefixes, bold, and italic runs
 - renders block quotes as separated key-message regions when planned
 - renders ordered item cards with editable badges and accent text
+- centers item-card text boxes from the leading badge/icon center and keeps
+  single-line rows compact so marker shapes and labels share the same horizontal
+  visual axis
+- uses smaller, marker-specific glyph sizing and optical vertical compensation
+  for compact circular badges
 - renders pipeline diagrams as editable rounded nodes and line connectors
 - chooses horizontal, vertical, U-shaped, reverse-U, or cycle-like pipeline arrangements from graph shape
 - renders SVG-backed surfaces with fixed corner radii before applying PPT border and shadow geometry
@@ -147,4 +152,4 @@ mdpresent build deck.md --to html,pdf --background "#111827" --font Aptos
 
 ## Generated Preview QA
 
-Actions theme preview is regenerated from PPTX output and checked by `scripts/evaluate-theme-preview.mjs`. The evaluator checks style count, legacy deck removal, exported PNG count and size, manifest composition markers, proof object markers, rendered surface variants, visible text language, and the absence of legacy iframe-based previews.
+Actions theme preview is regenerated from PPTX output and checked by `scripts/evaluate-theme-preview.mjs`. The evaluator checks the 8-style pruned preview set, legacy deck removal, exported PNG count and size, manifest composition markers, proof object markers, rendered surface variants, required catalog slides, visible text language, and the absence of legacy iframe-based previews.

@@ -260,7 +260,7 @@ function boundedBox(slideSize: SlideSize, box: { x: number; y: number; w: number
 
 export function addRegionSurface(slide: PptxGenJS.Slide, preset: DesignPreset, region: LayoutRegion): void {
   if (!region.blockIds.length) return;
-  if (!preset.cards || !["item", "table", "chart", "code"].includes(region.role) && !["key-message", "body-panel"].includes(region.id)) return;
+  if (!preset.cards || !["item", "table", "chart", "code", "image"].includes(region.role) && !["key-message", "body-panel"].includes(region.id)) return;
 
   if (region.id === "key-message") {
     const stripe = keyMessageStripe(region);

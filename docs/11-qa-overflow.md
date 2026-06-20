@@ -119,13 +119,27 @@ The evaluator verifies:
 
 - only distinct decoration-style PPTX decks are present
 - legacy color-only preset decks are absent from the Actions gallery
+- palette-only or background-only preview styles are pruned from the generated
+  gallery, while compatibility presets may remain available through the CLI
 - every expected style has a non-empty PPTX file
 - every style has a complete set of exported PNG slides at the expected `1600x900` size
 - PNG files are large enough to reject blank or failed rasterization output
 - the manifest maps each style to its PPTX and slide PNG files
 - required composition classes, proof-object kinds, and surface variants are represented in the manifest
+- the generated deck includes the `Decoration Pattern Catalog` slide with the
+  36+ named pattern source used by README teaser imagery
 - generated PPTX media includes required surface markers
+- image-focused preview slides include Markdown pictures inside surfaced safe
+  frames with a minimum inset, preventing pictures from touching rounded or SVG
+  surface boundaries
+- mixed object preview slides keep chart, table, body text, and image regions on
+  one slide when the source bundle is compact enough to remain readable
 - the gallery has the `pptx-png` marker and does not fall back to legacy iframe-based HTML deck previews
+
+`scripts/evaluate-readme-assets.py` is a documentation-preview contract check,
+not a renderer. It verifies that README pages reference PNGs exported from the
+shared `examples/theme-preview-en/deck.md` preview deck and records SHA-256
+fingerprints for the selected documentation preview images.
 
 ## Future Improvements
 

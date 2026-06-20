@@ -26,6 +26,17 @@ minimalism, newmorphism, glass, grid, data, magazine
 
 Legacy color-only presets remain available through `theme.designPreset` and `--design` for existing decks, but Actions previews only enumerate decoration styles that alter layout, surfaces, or page grammar.
 
+The generated Actions/README preview is intentionally pruned to these distinct
+style grammars:
+
+```text
+clean, editorial, minimalism, newmorphism, glass, grid, data, magazine
+```
+
+`executive` and `technical` remain valid CLI styles for compatibility and
+specific deck use, but they are not part of the generated preview gallery when
+their output would read as a palette or background variation of another style.
+
 `theme.colorSeed` provides the main color. `theme.colorCombination` derives the supporting palette using Adobe Color Wheel-style harmony rules:
 
 ```text

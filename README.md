@@ -1,17 +1,17 @@
 # mdpresent
 
-`mdpresent` turns Markdown into structured, editable presentation outputs. It is not a direct Markdown-to-PowerPoint converter; it parses the document into `Presentation IR`, plans `Layout IR`, and renders `PPTX`, `HTML`, or `PDF`.
+![MDPR generated teaser summary slide preview](docs/theme-preview/slides/magazine/slide-04.png)
 
-`mdpresent` is the deterministic runtime. Parsing, splitting, layout, validation, theme selection, editable object rendering, and PowerPoint output are rule-based and do not require LLM calls. [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) is a separate reasoning companion that may suggest compact semantic hints, but MDPR owns the final structure and rendering.
+`mdpresent` is a deterministic Markdown presentation runtime.
 
-![MDPR theme and object showcase teaser](docs/assets/readme-slides/mdpr-showcase-teaser.png)
+- **Input**: Markdown documents.
+- **Intermediate model**: `Presentation IR` and `Layout IR`.
+- **Outputs**: editable `PPTX`, plus `HTML` and `PDF`.
+- **Runtime**: rule-based parsing, splitting, layout, validation, theme selection, and rendering.
+- **Agent boundary**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) may suggest compact semantic hints, but MDPR owns final structure and output.
+- **README assets**: exported from the shared `examples/theme-preview-en/deck.md` PPTX preview deck, with no README-only renderer.
 
-This README showcase is generated as `docs/assets/readme-slides/mdpr-showcase-teaser.pptx`, exported to `docs/assets/readme-slides/mdpr-showcase-teaser.png`, and built from real `docs/theme-preview/slides/` PPTX PNG exports.
-
-Language variants:
-
-- [Korean README](README.ko.md)
-- [Chinese README](README.zh.md)
+Language variants: [Korean](README.ko.md), [Chinese](README.zh.md)
 
 ## What It Does
 
@@ -24,25 +24,29 @@ Language variants:
 
 ## Preview Gallery
 
-[Open the PPT-generated theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between built-in styles, download each generated PPTX deck, and inspect PNG slides extracted from PowerPoint output.
+- [Open the PPT-generated theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/)
+- Preview scope: 8 pruned decoration styles, excluding palette-only or background-only swaps.
+- Gallery artifacts: generated PPTX decks plus PNG slides extracted from PowerPoint output.
 
-| Cover / Title | Pipeline Diagram |
+| Teaser Summary | Pipeline Diagram |
 | --- | --- |
-| <img src="docs/theme-preview/slides/technical/slide-01.png" alt="PPTX cover slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-09.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
+| <img src="docs/theme-preview/slides/magazine/slide-04.png" alt="PPTX teaser summary slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-10.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
 
-| Markdown Semantics | Editable Proof Objects |
+| Markdown Semantics | Decoration Patterns |
 | --- | --- |
-| <img src="docs/theme-preview/slides/grid/slide-08.png" alt="PPTX semantic blocks slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-13.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> |
+| <img src="docs/theme-preview/slides/grid/slide-09.png" alt="PPTX semantic blocks slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/magazine/slide-11.png" alt="PPTX decoration pattern catalog slide exported to PNG" width="100%"> |
+
+| Editable Proof Objects | Mixed Object Packing |
+| --- | --- |
+| <img src="docs/theme-preview/slides/data/slide-16.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-23.png" alt="PPTX mixed object packing slide exported to PNG" width="100%"> |
 
 ## Runtime Pipeline
-
-MDPR keeps the runtime deterministic:
 
 - Optional agent hints may suggest semantic tags or icon-search keywords.
 - MDPR owns parsing, splitting, graph preservation, layout, theme color derivation, icon search, z-order, overflow checks, and renderer output.
 - A single graph or diagram block stays on one slide.
 
-<img src="docs/assets/readme-slides/mdpr-pipeline-teaser.png" alt="MDPR deterministic presentation pipeline" width="100%">
+<img src="docs/theme-preview/slides/grid/slide-10.png" alt="MDPR deterministic presentation pipeline slide exported to PNG" width="100%">
 
 ```text
 Markdown
@@ -68,7 +72,7 @@ mdpresent validate examples/basic/deck.md --override examples/basic/deck.overrid
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
 mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
-mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery executive,editorial,technical,clean
+mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery clean,editorial,glass,grid,data,magazine
 ```
 
 ## Design Controls
@@ -77,7 +81,7 @@ mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery exe
 - `--theme-color`: main color seed such as `#8A4FFF`
 - `--theme-harmony`: `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, `triadic`
 - `--design`: compatibility alias for legacy/shared preset selection
-- `--theme-gallery`: repeats the same source deck under multiple style presets for visual comparison
+- `--theme-gallery`: repeats the same source deck under multiple style presets for visual comparison; README/Actions previews use the pruned distinct-style subset
 
 ## Coherence Rules
 
@@ -95,7 +99,7 @@ docs/       Design, rendering, QA, and methodology notes
 schemas/    Config, Override, Presentation IR, and Layout IR schemas
 packages/   Core, layout, override, CLI, and renderers
 examples/   Example Markdown decks and configs
-scripts/    Theme preview, README asset, and evaluation utilities
+scripts/    Shared theme preview export and evaluation utilities
 ```
 
 Implementation order:
@@ -117,13 +121,9 @@ These checks must pass without an LLM or external API key.
 
 ## Acknowledgements
 
-README assets:
-
-- `docs/assets/readme-slides/mdpr-showcase-teaser.pptx`
-- `docs/assets/readme-slides/mdpr-showcase-teaser.png`
-- `docs/assets/readme-slides/mdpr-pipeline-teaser.pptx`
-- `docs/assets/readme-slides/mdpr-pipeline-teaser.png`
-- `docs/assets/readme-slides/mdpr-pipeline-teaser.svg`
+- README preview source: `examples/theme-preview-en/deck.md`
+- Main teaser image: `docs/theme-preview/slides/magazine/slide-04.png`
+- Pipeline image: `docs/theme-preview/slides/grid/slide-10.png`
 
 References:
 

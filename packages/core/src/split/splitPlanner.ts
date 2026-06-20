@@ -77,6 +77,8 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
       for (const [chunkIndex, blocks] of explicitChunks.entries()) {
         slides.push(createContentSlide({ ...node, blocks }, slides.length + 1, undefined, `${chunkIndex + 1}/${explicitChunks.length}`));
       }
+    } else if (shouldKeepCompactMixedEvidence(normalizedNode.blocks)) {
+      slides.push(createContentSlide(normalizedNode, slides.length + 1));
     } else if (config.split.autosplit.enabled && density > config.split.autosplit.maxDensity && node.children.length > 1) {
       for (const child of node.children) {
         slides.push(createContentSlide(child, slides.length + 1, node.title));
@@ -173,6 +175,24 @@ function splitBlocksIntoChunks(blocks: SlideIR["blocks"], maxDensity: number): S
 
   if (current.length) chunks.push(current);
   return chunks;
+}
+
+function shouldKeepCompactMixedEvidence(blocks: SlideIR["blocks"]): boolean {
+  const hasChart = blocks.some((block) => block.type === "chart");
+  const hasTable = blocks.some((block) => block.type === "table");
+  const hasImage = blocks.some((block) => block.type === "image");
+  if (!hasChart || !hasTable || !hasImage) return false;
+
+  const tableRows = Math.max(0, ...blocks.filter((block) => block.type === "table").map((block) => block.rows?.length ?? 0));
+  const chartLabels = Math.max(0, ...blocks.filter((block) => block.type === "chart").map((block) => block.chart?.labels.length ?? 0));
+  const listItems = blocks
+    .filter((block) => block.type === "bulletList")
+    .reduce((count, block) => count + (block.listItems?.length ?? block.items?.length ?? 0), 0);
+  const paragraphText = blocks
+    .filter((block) => block.type === "paragraph" || block.type === "quote")
+    .reduce((length, block) => length + (block.text?.length ?? 0), 0);
+
+  return tableRows <= 4 && chartLabels <= 4 && listItems <= 2 && paragraphText <= 120;
 }
 
 function splitForcedContinuationBlocks(blocks: SlideIR["blocks"]): SlideIR["blocks"][] {

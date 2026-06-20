@@ -405,6 +405,44 @@ test("chart-table slides reserve enough width for native tables beside charts", 
   assert.equal(table.x > chart.x + chart.w, true);
 });
 
+test("chart-table slides with images keep chart table body and image in separate bounded regions", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Mixed Evidence",
+    "",
+    "- Reading order: chart and table first",
+    "- Image role: bounded visual evidence",
+    "",
+    "```chart",
+    "labels: Parse, Plan, Render",
+    "Score: 78, 86, 93",
+    "```",
+    "",
+    "| Object | Signal |",
+    "| --- | --- |",
+    "| Chart | trend |",
+    "| Image | bounded |",
+    "",
+    "![Safe frame diagram](examples/theme-preview-en/assets/safe-frame.svg)",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "chart-table");
+  const chart = slide.regions.find((region) => region.id === "chart");
+  const table = slide.regions.find((region) => region.id === "table");
+  const body = slide.regions.find((region) => region.id === "body");
+  const image = slide.regions.find((region) => region.id === "image-1");
+
+  assert.ok(chart);
+  assert.ok(table);
+  assert.ok(body);
+  assert.ok(image);
+  assert.equal(image.role, "image");
+  assert.equal(image.blockIds.length, 1);
+  assert.equal(body.blockIds.every((blockId) => !image.blockIds.includes(blockId)), true);
+  assert.equal(image.x > body.x + body.w, true);
+  assert.equal(image.y > table.y + table.h, true);
+});
+
 test("table-focus slides expose a table role region for native table rendering and decoration", () => {
   const layout = layoutFor([
     "# Demo",

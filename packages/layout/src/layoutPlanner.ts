@@ -124,7 +124,7 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
     return createKeyMessageRegions(slide, titleRegion, config);
   }
 
-  if (imageBlockIds.length) {
+  if (layout.preset === "image-focus" && imageBlockIds.length) {
     return createImageAwareRegions(titleRegion, textBlockIds, imageBlockIds, config);
   }
 
@@ -224,10 +224,19 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
 
 function createTableFocusRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
   const tableBlockIds = slide.blocks.filter((block) => block.type === "table").map((block) => block.id);
+  const imageBlockIds = slide.blocks.filter((block) => block.type === "image").map((block) => block.id);
   if (!tableBlockIds.length) return [
     titleRegion,
     { id: "body", role: "body", blockIds: slide.blocks.map((block) => block.id), x: 0.95, y: 1.56, w: 11.35, h: 4.95, zIndex: 10, typography: bodyTypography(config) },
   ];
+
+  if (imageBlockIds.length) {
+    return [
+      titleRegion,
+      { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 0.9, y: 1.55, w: 6.15, h: 4.95, zIndex: 10, typography: compactBodyTypography(config) },
+      { id: "image-1", role: "image", blockIds: imageBlockIds.slice(0, 1), x: 7.45, y: 1.6, w: 4.85, h: 4.95, zIndex: 10 },
+    ];
+  }
 
   return [
     titleRegion,
@@ -334,9 +343,20 @@ function createVerticalListRegions(itemBlockIds: string[], titleRegion: LayoutRe
 function createChartTableRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
   const chartBlockIds = slide.blocks.filter((block) => block.type === "chart").map((block) => block.id);
   const tableBlockIds = slide.blocks.filter((block) => block.type === "table").map((block) => block.id);
+  const imageBlockIds = slide.blocks.filter((block) => block.type === "image").map((block) => block.id);
   const bodyBlockIds = slide.blocks
-    .filter((block) => !["chart", "table", "slideBreak"].includes(block.type))
+    .filter((block) => !["chart", "table", "image", "slideBreak"].includes(block.type))
     .map((block) => block.id);
+
+  if (chartBlockIds.length && tableBlockIds.length && imageBlockIds.length) {
+    return [
+      titleRegion,
+      { id: "chart", role: "chart", blockIds: chartBlockIds, x: 0.82, y: 1.58, w: 5.05, h: 2.58, zIndex: 10, typography: compactBodyTypography(config) },
+      { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 6.1, y: 1.62, w: 6.05, h: 2.42, zIndex: 10, typography: compactBodyTypography(config) },
+      ...(bodyBlockIds.length ? [{ id: "body", role: "body" as const, blockIds: bodyBlockIds, x: 0.92, y: 4.42, w: 5.0, h: 1.88, zIndex: 10, typography: compactBodyTypography(config) }] : []),
+      { id: "image-1", role: "image", blockIds: imageBlockIds.slice(0, 1), x: 6.1, y: 4.28, w: 6.05, h: 2.2, zIndex: 10 },
+    ];
+  }
 
   if (tableBlockIds.length) {
     return [

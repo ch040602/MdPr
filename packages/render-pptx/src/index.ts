@@ -113,8 +113,13 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           ? iconKindForText(blocks.map(blockSearchText).join(" "))
           : iconKindForIndex(Number(/\d+$/.exec(region.id)?.[0] ?? 0));
         const iconBadge = badgeNumber === undefined && tocItemNumber === undefined && region.role === "item" ? renderItemIconBadge(slide, region, itemIconKind, designPreset, common) : undefined;
+        const plainRegionText = renderPlainRegionContent(region.role, region.blockIds, blockIndex, sourceSlide);
         const textCommon = badgeNumber !== undefined || iconBadge
-          ? textBoxForRegion(region, common, badge ? { reservedLeft: badge.right - region.x + 0.14 } : iconBadge ? { reservedLeft: iconBadge.right - region.x + 0.14 } : undefined)
+          ? textBoxForRegion(region, common, {
+            reservedLeft: badge ? badge.right - region.x + 0.14 : iconBadge ? iconBadge.right - region.x + 0.14 : undefined,
+            centerWithLeadingMarker: true,
+            text: plainRegionText,
+          })
           : textBoxForRegion(region, common);
 
         if (region.role === "title" && sourceSlide?.title) {
@@ -144,16 +149,14 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
             border: { color: designPreset.surfaceLine, type: "solid", pt: 1 },
           });
         } else if (blocks.length === 1 && blocks[0].type === "image" && blocks[0].src) {
-          slide.addImage({ path: blocks[0].src, x: region.x, y: region.y, w: region.w, h: region.h });
+          renderImageRegion(slide, blocks[0], region);
         } else if (tocItemNumber !== undefined) {
-          const plainText = renderPlainRegionContent(region.role, region.blockIds, blockIndex, sourceSlide);
-          slide.addText(`${String(tocItemNumber).padStart(2, "0")}  ${plainText}`, textCommon);
+          slide.addText(`${String(tocItemNumber).padStart(2, "0")}  ${plainRegionText}`, textCommon);
         } else if (shouldRenderAsPlainMultiline(blocks)) {
           renderPlainListRegion(slide, blocks, region.role, textCommon);
         } else {
           const richText = renderRichRegionContent(region.blockIds, blockIndex, sourceSlide, region.role, designPreset);
-          const plainText = renderPlainRegionContent(region.role, region.blockIds, blockIndex, sourceSlide);
-          slide.addText(hasVisibleRichText(richText) ? richText : plainText, textCommon);
+          slide.addText(hasVisibleRichText(richText) ? richText : plainRegionText, textCommon);
         }
       }
     }
@@ -164,6 +167,33 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
     await writePptxThemeColors(options.outPath, documentDesignPreset);
     if (documentDesignPreset.surfacePolicy.shadow === "glass") await addPptxGlowEffects(options.outPath, documentDesignPreset.primaryColor);
   }
+}
+
+function renderImageRegion(slide: PptxGenJS.Slide, block: BlockIR, region: LayoutIR["slides"][number]["regions"][number]): void {
+  if (!block.src) return;
+  const frame = insetRect(region, imageSafeInset(region));
+  slide.addImage({
+    path: block.src,
+    x: frame.x,
+    y: frame.y,
+    w: frame.w,
+    h: frame.h,
+    altText: block.alt ?? block.text ?? "Markdown image",
+  } as never);
+}
+
+function imageSafeInset(region: { w: number; h: number }): number {
+  return Number(Math.min(0.14, Math.max(0.06, Math.min(region.w, region.h) * 0.035)).toFixed(3));
+}
+
+function insetRect<T extends { x: number; y: number; w: number; h: number }>(rect: T, inset: number): { x: number; y: number; w: number; h: number } {
+  const safeInset = Math.min(inset, Math.max(0, rect.w / 2 - 0.01), Math.max(0, rect.h / 2 - 0.01));
+  return {
+    x: Number((rect.x + safeInset).toFixed(3)),
+    y: Number((rect.y + safeInset).toFixed(3)),
+    w: Number(Math.max(0.01, rect.w - safeInset * 2).toFixed(3)),
+    h: Number(Math.max(0.01, rect.h - safeInset * 2).toFixed(3)),
+  };
 }
 
 function coverBackgroundColor(preset: DesignTokens): string {
@@ -843,7 +873,7 @@ function renderItemNumberBadge(
     line: { color: preset.primaryColor, transparency: 100 },
   } as never);
   slide.addText(String(number), {
-    ...centeredMarkerTextOptions(common, x, y, size, Math.max(8, Math.min(13, (region.typography?.fontSize ?? 18) - 5)), readableTextColor(preset.primaryColor)),
+    ...centeredMarkerTextOptions(common, x, y, size, Math.max(7.2, Math.min(10.5, (region.typography?.fontSize ?? 18) - 7)), readableTextColor(preset.primaryColor)),
   });
   return { x, y, size, right: x + size };
 }
@@ -881,7 +911,7 @@ function renderItemIconBadge(
 function textBoxForRegion(
   region: { id: string; role: string; x: number; y: number; w: number; h: number },
   common: PptxGenJS.TextPropsOptions,
-  options: { reservedLeft?: number } = {},
+  options: { reservedLeft?: number; centerWithLeadingMarker?: boolean; text?: string } = {},
 ): PptxGenJS.TextPropsOptions {
   const placement = textPlacementForRegion(region);
   const minW = textBoxMinimumExtent(region.w, MIN_TEXT_BOX_WIDTH_IN);
@@ -891,19 +921,32 @@ function textBoxForRegion(
   const topInset = boundedLeadingInset(placement.inset.top, placement.inset.bottom, region.h, minH);
   const bottomInset = boundedTrailingInset(placement.inset.bottom, topInset, region.h, minH);
   const w = Math.max(minW, region.w - leftInset - rightInset);
-  const h = Math.max(minH, region.h - topInset - bottomInset);
+  let h = Math.max(minH, region.h - topInset - bottomInset);
+  let y = region.y + topInset;
+  if (options.centerWithLeadingMarker && region.role === "item") {
+    const fontSize = numericTextOption(common.fontSize, 18);
+    const lineHeight = numericTextOption(common.lineSpacingMultiple, 1.2);
+    const lineCount = estimateWrappedLineCount(options.text ?? "", w, fontSize);
+    const contentH = Math.max(minH, (fontSize * lineHeight * lineCount) / 72 + 0.12);
+    h = Math.min(h, contentH);
+    y = region.y + (region.h - h) / 2;
+  }
   const margin = fittedTextMargin(placement.margin, w, h);
 
   return {
     ...common,
     x: region.x + leftInset,
-    y: region.y + topInset,
+    y,
     w,
     h,
     margin,
     align: region.id !== "key-message" && options.reservedLeft !== undefined ? "left" : placement.align,
     valign: placement.valign,
   };
+}
+
+function numericTextOption(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 function textBoxMinimumExtent(extent: number, preferredMinimum: number): number {

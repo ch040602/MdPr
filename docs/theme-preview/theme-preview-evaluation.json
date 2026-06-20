@@ -1,28 +1,27 @@
 {
   "ok": true,
   "outDir": "docs/theme-preview",
-  "styleCount": 10,
+  "styleCount": 8,
   "styleNames": [
     "clean",
     "data",
     "editorial",
-    "executive",
     "glass",
     "grid",
     "magazine",
     "minimalism",
-    "newmorphism",
-    "technical"
+    "newmorphism"
   ],
   "missingStyles": [],
   "extraStyles": [],
   "legacyPages": [],
-  "slideCount": 19,
+  "slideCount": 24,
   "compositionClasses": [
     "chart-table",
     "comparison",
     "cover",
     "grid",
+    "image-focus",
     "key-message",
     "pipeline",
     "table-focus",
@@ -31,6 +30,7 @@
     "vertical-list"
   ],
   "missingCompositions": [],
+  "missingSlideTitles": [],
   "surfaceVariants": [
     "flag-drop",
     "notched-corner",
@@ -60,6 +60,7 @@
   "connectorIssues": [],
   "typographyIssues": [],
   "glassIssues": [],
+  "imageSafeFrameIssues": [],
   "pptxIssues": [],
   "pngIssues": [],
   "languageIssues": [],

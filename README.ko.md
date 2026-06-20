@@ -1,17 +1,17 @@
 # mdpresent
 
-`mdpresent`는 Markdown 문서를 발표 구조로 바꾸고, 그 구조를 editable `PPTX`, `HTML`, `PDF`로 렌더링하는 CLI 도구입니다. 단순 Markdown-to-PowerPoint 변환기가 아니라 `Presentation IR`과 `Layout IR`을 거치는 구조화 엔진입니다.
+![MDPR generated teaser summary slide preview](docs/theme-preview/slides/magazine/slide-04.png)
 
-`mdpresent`의 런타임은 deterministic rule-based 방식입니다. 파싱, 슬라이드 분할, 레이아웃, 검증, 테마 선택, PowerPoint 렌더링은 LLM 호출이나 외부 API 없이 동작합니다. 별도 프로젝트인 [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)은 reasoning companion이며, 최종 구조와 렌더링 결정은 MDPR이 담당합니다.
+`mdpresent`는 deterministic Markdown presentation runtime입니다.
 
-![MDPR theme and object showcase teaser](docs/assets/readme-slides/mdpr-showcase-teaser.png)
+- **입력**: Markdown 문서
+- **중간 모델**: `Presentation IR`, `Layout IR`
+- **출력**: editable `PPTX`, `HTML`, `PDF`
+- **런타임**: 파싱, 분할, 레이아웃, 검증, 테마 선택, 렌더링 모두 rule-based
+- **Agent 경계**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)은 compact semantic hint만 제안할 수 있고, 최종 구조와 출력은 MDPR이 결정합니다.
+- **README asset**: 공통 `examples/theme-preview-en/deck.md` PPTX preview deck에서 추출하며 README 전용 renderer를 쓰지 않습니다.
 
-위 이미지는 실제 MDPR theme-preview PPTX 출력물을 PNG로 추출한 뒤, 이를 기반으로 다시 만든 README showcase입니다.
-
-언어별 문서:
-
-- [English README](README.md)
-- [Chinese README](README.zh.md)
+언어별 문서: [English](README.md), [Chinese](README.zh.md)
 
 ## 핵심 기능
 
@@ -24,15 +24,21 @@
 
 ## 미리보기
 
-[PPT 생성 기반 theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/)에서 built-in style을 전환하고, 각 style별 PPTX와 PNG 슬라이드를 확인할 수 있습니다.
+- [PPT 생성 기반 theme preview gallery 열기](https://ch040602.github.io/MdPr/theme-preview/)
+- Preview 범위: palette-only 또는 background-only swap을 제외한 8개 pruned decoration style
+- Gallery 산출물: generated PPTX deck과 PowerPoint에서 추출한 PNG slide
 
-| Cover / Title | Pipeline Diagram |
+| Teaser Summary | Pipeline Diagram |
 | --- | --- |
-| <img src="docs/theme-preview/slides/technical/slide-01.png" alt="PPTX cover slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-09.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
+| <img src="docs/theme-preview/slides/magazine/slide-04.png" alt="PPTX teaser summary slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-10.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
 
-| Markdown Semantics | Editable Proof Objects |
+| Markdown Semantics | Decoration Patterns |
 | --- | --- |
-| <img src="docs/theme-preview/slides/grid/slide-08.png" alt="PPTX semantic blocks slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-13.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> |
+| <img src="docs/theme-preview/slides/grid/slide-09.png" alt="PPTX semantic blocks slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/magazine/slide-11.png" alt="PPTX decoration pattern catalog slide exported to PNG" width="100%"> |
+
+| Editable Proof Objects | Mixed Object Packing |
+| --- | --- |
+| <img src="docs/theme-preview/slides/data/slide-16.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-23.png" alt="PPTX mixed object packing slide exported to PNG" width="100%"> |
 
 ## 런타임 파이프라인
 
@@ -40,7 +46,7 @@
 - MDPR은 parsing, splitting, graph preservation, layout, theme color, icon search, z-order, overflow check, renderer output을 직접 결정합니다.
 - 하나의 graph 또는 diagram block은 두 페이지 이상으로 쪼개지지 않습니다.
 
-<img src="docs/assets/readme-slides/mdpr-pipeline-teaser.png" alt="MDPR deterministic presentation pipeline" width="100%">
+<img src="docs/theme-preview/slides/grid/slide-10.png" alt="MDPR deterministic presentation pipeline slide exported to PNG" width="100%">
 
 ```text
 Markdown
@@ -73,7 +79,7 @@ mdpresent build examples/basic/deck.md --to pptx --out dist --template company-m
 - `--theme-style`: `clean`, `executive`, `editorial`, `technical`, `minimalism`, `newmorphism`, `glass`, `grid`, `data`, `magazine`
 - `--theme-color`: `#8A4FFF` 같은 main color seed
 - `--theme-harmony`: `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, `triadic`
-- `--theme-gallery`: 같은 Markdown을 여러 style로 반복 렌더링하여 비교
+- `--theme-gallery`: 같은 Markdown을 여러 style로 반복 렌더링하여 비교합니다. README/Actions preview는 distinct style subset만 사용합니다.
 - `--design`: 기존 shared preset 선택과의 호환 옵션
 
 ## Coherence 규칙
@@ -91,7 +97,7 @@ docs/       설계, 렌더링, QA, 방법론 문서
 schemas/    Config, Override, Presentation IR, Layout IR schema
 packages/   core, layout, override, CLI, renderer
 examples/   예시 Markdown deck과 config
-scripts/    theme preview, README asset, evaluation utility
+scripts/    shared theme preview export and evaluation utility
 ```
 
 ## GitHub Actions

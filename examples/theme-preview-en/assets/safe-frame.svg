@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Safe image frame diagram">
+  <rect width="640" height="360" rx="28" fill="#F8FAFC"/>
+  <rect x="44" y="40" width="552" height="280" rx="22" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="4"/>
+  <rect x="82" y="78" width="476" height="204" rx="18" fill="#E0F2FE"/>
+  <path d="M108 244 220 144l78 66 58-50 176 84" fill="none" stroke="#0F766E" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="462" cy="122" r="34" fill="#F59E0B"/>
+  <rect x="108" y="292" width="424" height="8" rx="4" fill="#14B8A6"/>
+</svg>

@@ -1,12 +1,13 @@
-# MDPR Composition Grammar QA
+# MDPR Design Grammar
 
-## Preview Purpose
+## Teaser Summary
 
-> Generated decks must prove hierarchy, evidence, and object grammar before decoration.
+> Generated PPTX slides should show design range without sacrificing coherence.
 
-- Fixture type: Actions theme preview source.
-- Source shape: short bullets, bounded tables, and one-slide diagrams.
-- Review target: readable, coherent, composition-aware output.
+- Preview styles: 8 pruned decoration grammars, not palette-only swaps.
+- Pattern range: 36+ decoration and layout patterns selected by content role.
+- Object support: native tables, charts, proof objects, diagrams, images, and icon slots.
+- QA contract: readable text, bounded objects, aligned connectors, and editable PPTX output.
 
 ## Composition Contract
 
@@ -16,13 +17,13 @@
 - Connector clarity: arrows attach to object boundaries.
 - Bounds discipline: no region exceeds the slide.
 
-## Style Families
+## Pruned Style Families
 
-- Clean / minimalism: restrained structural baselines.
-- Executive / technical: structured operational hierarchy.
-- Editorial / magazine: warmer page rhythm.
-- Minimalism / newmorphism: sparse or softly raised surfaces.
-- Glass / grid / data: distinct surface and background grammar.
+- Clean: restrained default structure.
+- Editorial / magazine: asymmetric rhythm and publication-like accents.
+- Minimalism / newmorphism: sparse rules or soft raised surfaces.
+- Glass / grid / data: translucent surfaces, construction lines, or metric rails.
+- Pruning rule: preview excludes styles that only change palette or background.
 
 ## Semantic Blocks
 
@@ -39,6 +40,15 @@ Markdown source => Parse blocks => Split slides => Layout objects => Validate ov
 - Diagram rule: one graph stays on one slide.
 - Connector rule: line segments overlap node edges slightly.
 - Routing rule: straight and elbow paths remain legible.
+
+## Decoration Pattern Catalog
+
+- Surfaces: `rounded-card`, `two-corner-card`, `flag-drop`, `ticket-panel`, `notched-panel`, `circle-vine`.
+- Layouts: `toc-strips`, `two-column-compare`, `three-card-grid`, `six-tile-grid`, `timeline-rail`, `pipeline-chain`.
+- Evidence: `chart-table-pair`, `metric-proof`, `arc-ring-proof`, `gauge-proof`, `connected-strip`, `mixed-object-pack`.
+- Connectors: `straight-arrow`, `elbow-arrow`, `boundary-attach`, `overlap-joint`, `parallel-flow`, `contrast-flow`.
+- Icons: `number-badge`, `mono-icon-slot`, `letter-disc`, `quiet-aside`, `image-safe-frame`, `brand-glyph`.
+- Page grammar: `magazine-rail`, `grid-baseline`, `glass-surface`, `newmorphic-panel`, `data-rail`, `minimal-rule`.
 
 ## Table Coherence
 
@@ -107,6 +117,31 @@ Review, 94
 - Tables: cell text uses middle alignment and coherent margins.
 - Continuation slides: dense content splits before unreadable shrink.
 - Cleanup: decorative-only bullets and empty artifacts are removed.
+
+## Image Safe Frame
+
+- Image role: picture content uses an internal safe frame.
+- Surface rule: background decoration stays outside the picture bounds.
+- Bounds rule: child images never exceed their owning image region.
+
+![Safe frame diagram](examples/theme-preview-en/assets/safe-frame.svg)
+
+## Mixed Object Packing
+
+- Reading order: chart and table remain the primary evidence.
+- Image role: visual evidence stays bounded in a separate safe frame.
+
+```chart
+labels: Parse, Plan, Render
+Score: 78, 86, 93
+```
+
+| Object | Signal |
+| --- | --- |
+| Chart | trend |
+| Image | bounded |
+
+![Safe frame diagram](examples/theme-preview-en/assets/safe-frame.svg)
 
 ## Actions Output Review
 
