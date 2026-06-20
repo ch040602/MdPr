@@ -13,17 +13,17 @@ Language variants:
 - [Korean README](README.ko.md)
 - [Chinese README](README.zh.md)
 
-## Example PPT Slides
+## PPTX-First Example Slides
 
 The same Markdown source produces editable PPTX decks first. The preview gallery is built by rendering those PPTX files, exporting each slide to PNG, and using HTML only as the navigation shell.
 
 [Open the PPT-generated theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between built-in decoration styles, download the generated PPTX deck for each style, and inspect PNG slide images extracted from PowerPoint output.
 
-| Cover / Title | Pipeline Diagram |
+| PPTX Cover / Title | PPTX Pipeline Diagram |
 | --- | --- |
 | <img src="docs/theme-preview/slides/technical/slide-01.png" alt="Generated PPTX cover slide preview" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-09.png" alt="Generated PPTX pipeline diagram slide preview" width="100%"> |
 
-| Markdown Semantics | Editable Proof Objects |
+| PPTX Markdown Semantics | PPTX Editable Proof Objects |
 | --- | --- |
 | <img src="docs/theme-preview/slides/grid/slide-08.png" alt="Generated PPTX Markdown semantics slide preview" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-13.png" alt="Generated PPTX editable proof object slide preview" width="100%"> |
 
