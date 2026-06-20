@@ -29,7 +29,10 @@ The same Markdown source produces editable PPTX decks first. The preview gallery
 
 ## Runtime Pipeline
 
-MDPR keeps the runtime deterministic. Optional agent hints may suggest compact semantic tags before design selection, but MDPR owns parsing, slide/object splitting, graph preservation, layout, theme color derivation, editable proof objects, icon slots, z-order, overflow checks, and renderer output.
+MDPR keeps the runtime deterministic:
+
+- Optional agent hints may suggest compact semantic tags before design selection.
+- MDPR owns parsing, slide/object splitting, graph preservation, layout, theme color derivation, editable proof objects, icon slots, z-order, overflow checks, and renderer output.
 
 <img src="docs/assets/readme-slides/mdpr-pipeline-teaser.png" alt="MDPR deterministic presentation pipeline" width="100%">
 

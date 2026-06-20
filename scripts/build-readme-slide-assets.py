@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -420,6 +422,7 @@ def sync_pipeline_preview_from_teaser() -> None:
 
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "build-readme-pipeline-teaser.py")], check=True)
     write_svg("cover", "PPTX cover export", "A PPTX cover slide exported to PNG for MDPR.")
     write_svg("pipeline", "PPTX pipeline export", "A PPTX pipeline diagram exported to PNG with aligned badges.")
     write_svg("semantics", "PPTX semantic blocks export", "A PPTX semantic-blocks slide exported to PNG.")
