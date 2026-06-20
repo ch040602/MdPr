@@ -296,18 +296,18 @@ select {
       <div id="slideList" class="slide-list" aria-label="Slides"></div>
     </div>
     <div class="control-group">
-      <label>Generated PPTX Styles</label>
+      <label>PPTX Styles</label>
       <div id="themeGrid" class="theme-grid"></div>
     </div>
   </aside>
   <main class="stage">
     <div class="toolbar">
       <div><strong id="activeTheme">${escapeHtml(defaultTheme.name)}</strong> <span id="slideCounter" class="meta"></span></div>
-      <a id="openTheme" href="${escapeHtml(defaultTheme.pptx)}" target="_blank" rel="noreferrer">Download Generated PPTX</a>
+      <a id="openTheme" href="${escapeHtml(defaultTheme.pptx)}" target="_blank" rel="noreferrer">Download PPTX</a>
     </div>
     <div class="viewport">
       <figure class="slide-shell">
-        <img id="slideImage" class="slide-image" alt="Generated PPTX slide preview" src="${escapeHtml(defaultTheme.slides[0]?.file ?? "")}" />
+        <img id="slideImage" class="slide-image" alt="PPTX slide exported to PNG" src="${escapeHtml(defaultTheme.slides[0]?.file ?? "")}" />
       </figure>
     </div>
   </main>

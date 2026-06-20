@@ -21,11 +21,11 @@ The same Markdown source produces editable PPTX decks first. The preview gallery
 
 | PPTX Cover / Title | PPTX Pipeline Diagram |
 | --- | --- |
-| <img src="docs/theme-preview/slides/technical/slide-01.png" alt="Generated PPTX cover slide preview" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-09.png" alt="Generated PPTX pipeline diagram slide preview" width="100%"> |
+| <img src="docs/theme-preview/slides/technical/slide-01.png" alt="PPTX cover slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-09.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
 
 | PPTX Markdown Semantics | PPTX Editable Proof Objects |
 | --- | --- |
-| <img src="docs/theme-preview/slides/grid/slide-08.png" alt="Generated PPTX Markdown semantics slide preview" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-13.png" alt="Generated PPTX editable proof object slide preview" width="100%"> |
+| <img src="docs/theme-preview/slides/grid/slide-08.png" alt="PPTX Markdown semantics slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-13.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> |
 
 ## Runtime Pipeline
 
