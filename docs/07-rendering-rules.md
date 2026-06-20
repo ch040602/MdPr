@@ -55,8 +55,8 @@ Current implemented baseline:
 - renders pipeline diagram blocks as editable rounded node boxes and line connectors
 - keeps same-role pipeline nodes on one coherent decoration style so a start node does not visually break from sibling nodes unless the content expresses a different role
 - chooses pipeline graph arrangements from content shape: horizontal for short flows, vertical for long labels, U-shaped and reverse-U for denser multi-step flows, and cycle-like placement when an edge returns to the first node
-- adds layout-derived composition classes in HTML preview output so Actions Pages can show cover scale, chart-table evidence pairing, pipeline emphasis, and proof-object hierarchy without changing Layout IR coordinates
-- renders proof chart variants (`arc-ring`, `gauge`, `connected-strip`) as bounded HTML objects instead of text fallbacks in preview output
+- adds layout-derived composition metadata so Actions Pages can show cover scale, chart-table evidence pairing, pipeline emphasis, and proof-object hierarchy without changing Layout IR coordinates
+- renders proof chart variants (`arc-ring`, `gauge`, `connected-strip`) as bounded PPTX objects instead of text fallbacks in preview output
 - sizes diagram nodes and shrinks wrapped node labels before connector drawing to reduce text clipping outside shapes
 - places diagram labels below decorative strips/badges so text does not overlap node decoration
 - renders card/table/chart/code background surfaces through the active surface policy; SVG-backed policies create a fixed-radius SVG surface first, then apply PPT border and shadow geometry without letting native rounded-rectangle geometry drift by shape size
@@ -162,7 +162,7 @@ decorative lines and badges are drawn as editable shapes and text is inset away 
 PPTX text boxes use role-aware inner margins and vertical anchors so titles, item cards, proof points, code blocks, and body text align consistently inside their shape bounds
 chart slides with short prose and no table use a parallel body-plus-chart layout rather than pushing interpretation below the graph
 chart slides with a table reserve separate chart and table regions so numeric evidence and table details remain visible on the same page
-Actions theme preview is regenerated and checked by `scripts/evaluate-theme-preview.mjs`; the evaluator verifies style-page count, legacy color-only page removal, composition markers, proof object markers, table rendering, slide-bound coordinates, region font floors, pipeline connector coordinates, glassmorphism surface markers, and singleton decorative-dot regressions.
+Actions theme preview is regenerated from PPTX output and checked by `scripts/evaluate-theme-preview.mjs`; the evaluator verifies style PPTX count, legacy color-only deck removal, exported PNG slide count and size, manifest composition markers, proof object markers, surface variants, and the absence of legacy iframe-based HTML deck previews.
 editable chart proof objects include segmented arc rings, gauges, connected strips, ranked bars, and metric dots
 generated monochrome SVG icons follow a centered 24px icon box and remain secondary to slide text; icon selection prefers Tabler-style concept icons, Simple Icons-style brand glyphs for explicit brand terms, and SVG Repo-style generic object icons for infrastructure/fallback cases
 color-combination palettes feed PPT theme accent1-accent6 with contrast-aware saturation and lightness variants rather than surface-line duplicates

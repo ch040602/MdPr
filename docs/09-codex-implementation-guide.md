@@ -68,10 +68,10 @@ mdpresent validate examples/basic/deck.md --override examples/basic/deck.overrid
 ## 네 번째 구현 목표
 
 ```text
-mdpresent build examples/basic/deck.md --to html --out dist
+mdpresent build examples/basic/deck.md --to pptx --out dist
 ```
 
-HTML 출력부터 완성한다.
+Editable PPTX 출력을 주 렌더러로 완성한다. HTML은 브라우저 미리보기와 Pages gallery shell로 유지한다.
 
 ## 테스트 권장사항
 
@@ -95,4 +95,3 @@ HTML 출력부터 완성한다.
 - video/audio
 - Marp CSS 1:1 compatibility
 ```
-

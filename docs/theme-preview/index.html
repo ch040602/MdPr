@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MDPR Composition Grammar QA Theme Preview</title>
+<title>MDPR Composition Grammar QA PPTX Preview</title>
 <style>
 :root {
   color-scheme: light;
@@ -33,13 +33,6 @@ button, select, input { font: inherit; }
   padding: 18px;
   overflow: auto;
   max-height: 100vh;
-}
-.brand {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 16px;
 }
 h1 {
   margin: 0;
@@ -78,7 +71,7 @@ select {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
-.button-row button, .theme-card {
+.button-row button, .theme-card, .slide-list button {
   border: 1px solid var(--line);
   background: #fff;
   color: var(--text);
@@ -86,7 +79,7 @@ select {
   padding: 9px 10px;
   cursor: pointer;
 }
-.button-row button:hover, .theme-card:hover { border-color: var(--active); }
+.button-row button:hover, .theme-card:hover, .slide-list button:hover { border-color: var(--active); }
 .theme-grid {
   display: grid;
   gap: 9px;
@@ -97,7 +90,7 @@ select {
   gap: 8px;
   text-align: left;
 }
-.theme-card[aria-current="true"] {
+.theme-card[aria-current="true"], .slide-list button[aria-current="true"] {
   border-color: var(--active);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--active) 20%, transparent);
 }
@@ -107,6 +100,7 @@ select {
   align-items: center;
   gap: 8px;
   font-weight: 800;
+  text-transform: capitalize;
 }
 .swatches {
   display: grid;
@@ -128,7 +122,7 @@ select {
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
-  background: rgba(255,255,255,.86);
+  background: rgba(255,255,255,.9);
   backdrop-filter: blur(12px);
 }
 .toolbar strong { text-transform: capitalize; }
@@ -136,22 +130,21 @@ select {
 .viewport {
   min-height: 0;
   padding: 18px;
+  overflow: auto;
 }
-.frame-shell {
-  width: 100%;
-  height: 100%;
-  min-height: 680px;
+.slide-shell {
+  margin: 0 auto;
+  width: min(100%, 1600px);
   border: 1px solid var(--line);
   border-radius: 10px;
   overflow: hidden;
   background: #111;
+  box-shadow: 0 12px 32px rgba(16,24,40,.18);
 }
-iframe {
+.slide-image {
   display: block;
   width: 100%;
-  height: 100%;
-  min-height: 680px;
-  border: 0;
+  height: auto;
   background: #111;
 }
 .slide-list {
@@ -161,18 +154,8 @@ iframe {
   gap: 6px;
 }
 .slide-list button {
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: #fff;
-  color: var(--text);
-  padding: 7px 8px;
   text-align: left;
-  cursor: pointer;
-}
-.slide-list button[aria-current="true"] {
-  border-color: var(--active);
-  color: var(--active);
-  font-weight: 800;
+  padding: 7px 8px;
 }
 @media (max-width: 980px) {
   .app { grid-template-columns: 1fr; }
@@ -184,29 +167,20 @@ iframe {
   .theme-grid {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
-  .frame-shell, iframe { min-height: 520px; }
 }
 </style>
 </head>
-<body>
+<body data-gallery-kind="pptx-png">
 <div class="app">
   <aside class="sidebar">
-    <div class="brand">
-      <div>
-        <h1>Style and Object QA</h1>
-        <p class="meta">Source: examples/theme-preview-en/deck.md<br />Generated: 2026-06-20T11:52:44.435Z<br />Each style renders the same element-check deck. Color-only legacy presets are kept for CLI compatibility, not listed here.</p>
-      </div>
-    </div>
+    <h1>PPTX Theme QA Gallery</h1>
+    <p class="meta">Source: examples/theme-preview-en/deck.md<br />Generated: 2026-06-20T12:47:21.672Z<br />Each image is exported from a generated PPTX deck. HTML is only the gallery shell.</p>
     <div class="control-group">
-      <label for="themeSelect">Selected Theme Style</label>
+      <label for="themeSelect">Selected PPT Theme Style</label>
       <select id="themeSelect"></select>
     </div>
     <div class="control-group">
-      <label for="zoomRange">Preview Zoom <span id="zoomValue">100%</span></label>
-      <input id="zoomRange" type="range" min="45" max="120" value="80" />
-    </div>
-    <div class="control-group">
-      <label>QA Slide Navigation</label>
+      <label>Slide Navigation</label>
       <div class="button-row">
         <button id="prevSlide" type="button">Previous</button>
         <button id="nextSlide" type="button">Next</button>
@@ -214,37 +188,33 @@ iframe {
       <div id="slideList" class="slide-list" aria-label="Slides"></div>
     </div>
     <div class="control-group">
-      <label>Theme Styles</label>
+      <label>Generated PPTX Styles</label>
       <div id="themeGrid" class="theme-grid"></div>
     </div>
   </aside>
   <main class="stage">
     <div class="toolbar">
       <div><strong id="activeTheme">technical</strong> <span id="slideCounter" class="meta"></span></div>
-      <a id="openTheme" href="themes/technical.html" target="_blank" rel="noreferrer">Open Selected Deck</a>
+      <a id="openTheme" href="pptx/technical.pptx" target="_blank" rel="noreferrer">Download Generated PPTX</a>
     </div>
     <div class="viewport">
-      <div class="frame-shell">
-        <iframe id="previewFrame" title="Selected theme deck preview" src="themes/technical.html"></iframe>
-      </div>
+      <figure class="slide-shell">
+        <img id="slideImage" class="slide-image" alt="Generated PPTX slide preview" src="slides/technical/slide-01.png" />
+      </figure>
     </div>
   </main>
 </div>
 <script>
-const themes = [{"name":"plain","file":"themes/plain.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#93C5FD","surface":"#FFFFFF"}},{"name":"simple","file":"themes/simple.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"clean","file":"themes/clean.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#2563EB","secondary":"#DBEAFE","surface":"#FFFFFF"}},{"name":"executive","file":"themes/executive.html","colors":{"background":"#F8FAFC","text":"#0F172A","primary":"#1D4ED8","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"editorial","file":"themes/editorial.html","colors":{"background":"#F7F3EF","text":"#1F2937","primary":"#B45309","secondary":"#FCD34D","surface":"#FFFBF5"}},{"name":"technical","file":"themes/technical.html","colors":{"background":"#F9FAFB","text":"#111827","primary":"#047857","secondary":"#A7F3D0","surface":"#FFFFFF"}},{"name":"minimalism","file":"themes/minimalism.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#111827","secondary":"#E5E7EB","surface":"#FFFFFF"}},{"name":"newmorphism","file":"themes/newmorphism.html","colors":{"background":"#E9EEF5","text":"#243041","primary":"#4F6F8F","secondary":"#CBD5E1","surface":"#E9EEF5"}},{"name":"glass","file":"themes/glass.html","colors":{"background":"#0B1020","text":"#F8FAFC","primary":"#8A4FFF","secondary":"#22D3EE","surface":"#17213A"}},{"name":"grid","file":"themes/grid.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#DC2626","secondary":"#111827","surface":"#FFFFFF"}},{"name":"data","file":"themes/data.html","colors":{"background":"#101820","text":"#F8FAFC","primary":"#F59E0B","secondary":"#38BDF8","surface":"#162331"}},{"name":"magazine","file":"themes/magazine.html","colors":{"background":"#F8F4EF","text":"#18181B","primary":"#C2410C","secondary":"#111827","surface":"#FFFCF7"}}];
+const themes = [{"name":"plain","pptx":"pptx/plain.pptx","slides":[{"index":1,"file":"slides/plain/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/plain/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/plain/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/plain/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/plain/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/plain/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/plain/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/plain/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/plain/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/plain/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/plain/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/plain/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/plain/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/plain/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/plain/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/plain/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/plain/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/plain/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/plain/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#93C5FD","surface":"#FFFFFF"}},{"name":"simple","pptx":"pptx/simple.pptx","slides":[{"index":1,"file":"slides/simple/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/simple/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/simple/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/simple/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/simple/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/simple/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/simple/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/simple/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/simple/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/simple/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/simple/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/simple/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/simple/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/simple/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/simple/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/simple/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/simple/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/simple/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/simple/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"clean","pptx":"pptx/clean.pptx","slides":[{"index":1,"file":"slides/clean/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/clean/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/clean/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/clean/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/clean/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/clean/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/clean/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/clean/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/clean/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/clean/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/clean/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/clean/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/clean/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/clean/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/clean/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/clean/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/clean/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/clean/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/clean/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#F8FAFC","text":"#111827","primary":"#2563EB","secondary":"#DBEAFE","surface":"#FFFFFF"}},{"name":"executive","pptx":"pptx/executive.pptx","slides":[{"index":1,"file":"slides/executive/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/executive/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/executive/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/executive/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/executive/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/executive/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/executive/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/executive/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/executive/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/executive/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/executive/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/executive/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/executive/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/executive/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/executive/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/executive/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/executive/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/executive/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/executive/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#F8FAFC","text":"#0F172A","primary":"#1D4ED8","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"editorial","pptx":"pptx/editorial.pptx","slides":[{"index":1,"file":"slides/editorial/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/editorial/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/editorial/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/editorial/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/editorial/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/editorial/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/editorial/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/editorial/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/editorial/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/editorial/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/editorial/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/editorial/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/editorial/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/editorial/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/editorial/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/editorial/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/editorial/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/editorial/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/editorial/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#F7F3EF","text":"#1F2937","primary":"#B45309","secondary":"#FCD34D","surface":"#FFFBF5"}},{"name":"technical","pptx":"pptx/technical.pptx","slides":[{"index":1,"file":"slides/technical/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/technical/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/technical/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/technical/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/technical/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/technical/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/technical/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/technical/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/technical/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/technical/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/technical/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/technical/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/technical/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/technical/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/technical/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/technical/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/technical/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/technical/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/technical/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#F9FAFB","text":"#111827","primary":"#047857","secondary":"#A7F3D0","surface":"#FFFFFF"}},{"name":"minimalism","pptx":"pptx/minimalism.pptx","slides":[{"index":1,"file":"slides/minimalism/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/minimalism/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/minimalism/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/minimalism/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/minimalism/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/minimalism/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/minimalism/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/minimalism/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/minimalism/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/minimalism/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/minimalism/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/minimalism/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/minimalism/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/minimalism/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/minimalism/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/minimalism/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/minimalism/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/minimalism/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/minimalism/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#FFFFFF","text":"#111827","primary":"#111827","secondary":"#E5E7EB","surface":"#FFFFFF"}},{"name":"newmorphism","pptx":"pptx/newmorphism.pptx","slides":[{"index":1,"file":"slides/newmorphism/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/newmorphism/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/newmorphism/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/newmorphism/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/newmorphism/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/newmorphism/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/newmorphism/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/newmorphism/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/newmorphism/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/newmorphism/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/newmorphism/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/newmorphism/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/newmorphism/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/newmorphism/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/newmorphism/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/newmorphism/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/newmorphism/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/newmorphism/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/newmorphism/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#E9EEF5","text":"#243041","primary":"#4F6F8F","secondary":"#CBD5E1","surface":"#E9EEF5"}},{"name":"glass","pptx":"pptx/glass.pptx","slides":[{"index":1,"file":"slides/glass/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/glass/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/glass/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/glass/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/glass/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/glass/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/glass/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/glass/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/glass/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/glass/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/glass/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/glass/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/glass/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/glass/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/glass/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/glass/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/glass/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/glass/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/glass/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#0B1020","text":"#F8FAFC","primary":"#8A4FFF","secondary":"#22D3EE","surface":"#17213A"}},{"name":"grid","pptx":"pptx/grid.pptx","slides":[{"index":1,"file":"slides/grid/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/grid/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/grid/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/grid/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/grid/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/grid/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/grid/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/grid/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/grid/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/grid/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/grid/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/grid/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/grid/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/grid/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/grid/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/grid/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/grid/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/grid/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/grid/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#F8FAFC","text":"#111827","primary":"#DC2626","secondary":"#111827","surface":"#FFFFFF"}},{"name":"data","pptx":"pptx/data.pptx","slides":[{"index":1,"file":"slides/data/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/data/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/data/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/data/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/data/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/data/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/data/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/data/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/data/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/data/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/data/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/data/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/data/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/data/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/data/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/data/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/data/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/data/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/data/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#101820","text":"#F8FAFC","primary":"#F59E0B","secondary":"#38BDF8","surface":"#162331"}},{"name":"magazine","pptx":"pptx/magazine.pptx","slides":[{"index":1,"file":"slides/magazine/slide-01.png","title":"MDPR Composition Grammar QA","composition":"cover"},{"index":2,"file":"slides/magazine/slide-02.png","title":"목차","composition":"toc"},{"index":3,"file":"slides/magazine/slide-03.png","title":"Preview Purpose","composition":"key-message"},{"index":4,"file":"slides/magazine/slide-04.png","title":"Composition Contract","composition":"vertical-list"},{"index":5,"file":"slides/magazine/slide-05.png","title":"Composition Contract (Cont. 2/2)","composition":"comparison"},{"index":6,"file":"slides/magazine/slide-06.png","title":"Style Families","composition":"vertical-list"},{"index":7,"file":"slides/magazine/slide-07.png","title":"Style Families (Cont. 2/2)","composition":"comparison"},{"index":8,"file":"slides/magazine/slide-08.png","title":"Markdown Semantics","composition":"grid"},{"index":9,"file":"slides/magazine/slide-09.png","title":"Pipeline Diagram","composition":"pipeline"},{"index":10,"file":"slides/magazine/slide-10.png","title":"Table Coherence","composition":"table-focus"},{"index":11,"file":"slides/magazine/slide-11.png","title":"Chart and Table Pair","composition":"chart-table"},{"index":12,"file":"slides/magazine/slide-12.png","title":"Chart and Table Pair (Cont. 2/2)","composition":"table-focus"},{"index":13,"file":"slides/magazine/slide-13.png","title":"Editable Proof Objects","composition":"chart-table"},{"index":14,"file":"slides/magazine/slide-14.png","title":"Editable Proof Objects (Cont. 2/2)","composition":"chart-table"},{"index":15,"file":"slides/magazine/slide-15.png","title":"Object Shape Grammar","composition":"timeline"},{"index":16,"file":"slides/magazine/slide-16.png","title":"Object Shape Grammar (Cont. 2/2)","composition":"comparison"},{"index":17,"file":"slides/magazine/slide-17.png","title":"Icon and Text Aside","composition":"grid"},{"index":18,"file":"slides/magazine/slide-18.png","title":"Overflow Guard","composition":"grid"},{"index":19,"file":"slides/magazine/slide-19.png","title":"Actions Output Review","composition":"vertical-list"}],"colors":{"background":"#F8F4EF","text":"#18181B","primary":"#C2410C","secondary":"#111827","surface":"#FFFCF7"}}];
 const select = document.querySelector("#themeSelect");
 const grid = document.querySelector("#themeGrid");
-const frame = document.querySelector("#previewFrame");
+const slideImage = document.querySelector("#slideImage");
 const activeTheme = document.querySelector("#activeTheme");
 const openTheme = document.querySelector("#openTheme");
-const zoomRange = document.querySelector("#zoomRange");
-const zoomValue = document.querySelector("#zoomValue");
 const slideList = document.querySelector("#slideList");
 const slideCounter = document.querySelector("#slideCounter");
 let currentTheme = "technical";
 let currentSlide = 0;
-let slides = [];
-let userZoom = false;
 
 for (const theme of themes) {
   const option = document.createElement("option");
@@ -257,7 +227,7 @@ for (const theme of themes) {
   card.className = "theme-card";
   card.dataset.theme = theme.name;
   card.innerHTML = `
-    <span class="theme-card-title"><span>${theme.name}</span><span aria-hidden="true">↗</span></span>
+    <span class="theme-card-title"><span>${theme.name}</span><span>${theme.slides.length} slides</span></span>
     <span class="swatches">${Object.values(theme.colors).map((color) => `<span style="background:${color}"></span>`).join("")}</span>
   `;
   card.addEventListener("click", () => setTheme(theme.name));
@@ -265,82 +235,51 @@ for (const theme of themes) {
 }
 
 select.addEventListener("change", () => setTheme(select.value));
-zoomRange.addEventListener("input", () => {
-  userZoom = true;
-  applyZoom();
-});
-window.addEventListener("resize", () => {
-  if (!userZoom) fitZoomToFrame();
-});
-document.querySelector("#prevSlide").addEventListener("click", () => goToSlide(Math.max(0, currentSlide - 1)));
-document.querySelector("#nextSlide").addEventListener("click", () => goToSlide(Math.min(slides.length - 1, currentSlide + 1)));
-frame.addEventListener("load", () => {
-  const doc = frame.contentDocument;
-  slides = [...doc.querySelectorAll(".slide")];
-  currentSlide = 0;
-  if (!userZoom) fitZoomToFrame();
-  else applyZoom();
-  renderSlideList();
-  goToSlide(0);
-});
+document.querySelector("#prevSlide").addEventListener("click", () => goToSlide(currentSlide - 1));
+document.querySelector("#nextSlide").addEventListener("click", () => goToSlide(currentSlide + 1));
 
 setTheme(currentTheme);
 
 function setTheme(name) {
   const theme = themes.find((candidate) => candidate.name === name) ?? themes[0];
   currentTheme = theme.name;
+  currentSlide = 0;
   select.value = theme.name;
-  frame.src = theme.file;
   activeTheme.textContent = theme.name;
-  openTheme.href = theme.file;
+  openTheme.href = theme.pptx;
   for (const card of grid.querySelectorAll(".theme-card")) {
     card.setAttribute("aria-current", String(card.dataset.theme === theme.name));
   }
+  renderSlideList(theme);
+  updateSlide(theme);
 }
 
-function applyZoom() {
-  zoomValue.textContent = `${zoomRange.value}%`;
-  const doc = frame.contentDocument;
-  if (!doc) return;
-  const deck = doc.querySelector(".deck");
-  if (!deck) return;
-  const scale = Number(zoomRange.value) / 100;
-  deck.style.transform = `scale(${scale})`;
-  deck.style.transformOrigin = "top left";
-  deck.style.width = `${100 / scale}%`;
-}
-
-function fitZoomToFrame() {
-  const doc = frame.contentDocument;
-  if (!doc) return;
-  const firstSlide = doc.querySelector(".slide");
-  if (!firstSlide) return;
-  const slideWidth = firstSlide.offsetWidth || 1280;
-  const slideHeight = firstSlide.offsetHeight || 720;
-  const widthScale = Math.max(0.45, Math.min(1, (frame.clientWidth - 48) / slideWidth));
-  const heightScale = Math.max(0.45, Math.min(1, (frame.clientHeight - 48) / slideHeight));
-  const scale = Math.min(widthScale, heightScale, 0.92);
-  zoomRange.value = String(Math.round(scale * 100));
-  applyZoom();
-}
-
-function renderSlideList() {
+function renderSlideList(theme) {
   slideList.replaceChildren();
-  slides.forEach((slide, index) => {
-    const title = slide.querySelector(".title")?.textContent?.trim() || `Slide ${index + 1}`;
+  theme.slides.forEach((slide, index) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = `${index + 1}. ${title}`;
-    button.addEventListener("click", () => goToSlide(index));
+    button.textContent = `${slide.index}. ${slide.title}`;
+    button.addEventListener("click", () => {
+      currentSlide = index;
+      updateSlide(theme);
+    });
     slideList.append(button);
   });
 }
 
 function goToSlide(index) {
-  if (!slides.length) return;
-  currentSlide = Math.max(0, Math.min(index, slides.length - 1));
-  slides[currentSlide].scrollIntoView({ block: "start", behavior: "smooth" });
-  slideCounter.textContent = `Slide ${currentSlide + 1} / ${slides.length}`;
+  const theme = themes.find((candidate) => candidate.name === currentTheme) ?? themes[0];
+  currentSlide = Math.max(0, Math.min(index, theme.slides.length - 1));
+  updateSlide(theme);
+}
+
+function updateSlide(theme) {
+  const slide = theme.slides[currentSlide] ?? theme.slides[0];
+  if (!slide) return;
+  slideImage.src = slide.file;
+  slideImage.alt = `${theme.name} generated PPTX slide ${slide.index}: ${slide.title}`;
+  slideCounter.textContent = `Slide ${slide.index} / ${theme.slides.length} · ${slide.composition}`;
   [...slideList.children].forEach((button, buttonIndex) => {
     button.setAttribute("aria-current", String(buttonIndex === currentSlide));
   });

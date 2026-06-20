@@ -3,6 +3,8 @@ name: Theme Preview
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -35,6 +37,11 @@ jobs:
       - name: Install dependencies
         run: corepack pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Install PPTX preview rasterizer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice poppler-utils
+
       - name: Build packages
         run: corepack pnpm build
 
@@ -42,14 +49,17 @@ jobs:
         run: corepack pnpm preview:themes
 
       - name: Configure Pages
+        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

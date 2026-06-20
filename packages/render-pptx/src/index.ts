@@ -115,6 +115,8 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           slide.addText(sourceSlide.title, textCommon);
         } else if (blocks.length === 1 && blocks[0].type === "chart" && blocks[0].chart) {
           renderChartRegion(slide, blocks[0].chart, region, designPreset, common);
+        } else if (blocks.length > 1 && blocks.every((block) => block.type === "chart" && block.chart)) {
+          renderChartGridRegion(slide, blocks.map((block) => block.chart!), region, designPreset, common);
         } else if (blocks.length === 1 && blocks[0].type === "diagram" && blocks[0].diagram) {
           renderDiagramRegion(slide, blocks[0].diagram, region, designPreset, common);
         } else if (blocks.length === 1 && blocks[0].type === "table" && blocks[0].rows?.length) {
@@ -196,8 +198,7 @@ function textFitForRegion(
   overflowAction: LayoutIR["slides"][number]["overflowPolicy"]["action"],
 ): "none" | "shrink" {
   if (region.role === "image" || region.role === "diagram") return "none";
-  if (overflowAction === "fail") return "none";
-  return "shrink";
+  return overflowAction === "shrink" ? "shrink" : "none";
 }
 
 function buildAlignedTableRows(
@@ -558,13 +559,16 @@ function renderPlainListRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: 
   });
   const totalH = rowHeights.reduce((sum, height) => sum + height, 0);
   const baseH = Number(common.h ?? totalH);
-  const startY = baseY + Math.max(0, (baseH - totalH) / 2);
+  const heightScale = totalH > baseH ? baseH / totalH : 1;
+  const fittedRowHeights = rowHeights.map((height) => height * heightScale);
+  const fittedTotalH = fittedRowHeights.reduce((sum, height) => sum + height, 0);
+  const startY = baseY + Math.max(0, (baseH - fittedTotalH) / 2);
   const rowFit = totalH <= baseH ? "none" : common.fit;
   let cursorY = startY;
 
   for (const [index, item] of items.entries()) {
     const indent = Math.min(0.55, Math.max(0, item.level) * 0.22);
-    const rowH = rowHeights[index] ?? 0.32;
+    const rowH = fittedRowHeights[index] ?? 0.32;
     slide.addText(item.text, {
       ...common,
       x: baseX + indent,
@@ -971,6 +975,45 @@ function renderChartRegion(
   } as never);
 }
 
+function renderChartGridRegion(
+  slide: PptxGenJS.Slide,
+  charts: ChartIR[],
+  region: { x: number; y: number; w: number; h: number; typography?: { fontFamily?: string; fontSize?: number } },
+  preset: DesignTokens,
+  common: PptxGenJS.TextPropsOptions,
+): void {
+  const count = charts.length;
+  const columns = count <= 2 ? count : 2;
+  const rows = Math.ceil(count / columns);
+  const gapX = Math.min(0.42, Math.max(0.24, region.w * 0.035));
+  const gapY = Math.min(0.32, Math.max(0.2, region.h * 0.05));
+  const cellW = Math.max(1.4, (region.w - gapX * (columns - 1)) / columns);
+  const cellH = Math.max(1.15, (region.h - gapY * (rows - 1)) / rows);
+  const inheritedSize = typeof common.fontSize === "number" ? common.fontSize : region.typography?.fontSize ?? 16;
+  const childFontSize = Math.max(14, Math.min(inheritedSize, cellH > 2.2 ? 18 : 16));
+
+  charts.forEach((chart, index) => {
+    const row = Math.floor(index / columns);
+    const column = index % columns;
+    renderChartRegion(
+      slide,
+      chart,
+      {
+        x: region.x + column * (cellW + gapX),
+        y: region.y + row * (cellH + gapY),
+        w: cellW,
+        h: cellH,
+        typography: {
+          ...region.typography,
+          fontSize: childFontSize,
+        },
+      },
+      preset,
+      common,
+    );
+  });
+}
+
 function renderArcRingChart(
   slide: PptxGenJS.Slide,
   chart: ChartIR,
@@ -1184,23 +1227,35 @@ function renderConnectedStripChart(
   const bodySize = Math.max(14, region.typography?.fontSize ?? common.fontSize ?? 16);
   const values = chart.series[0]?.values ?? [];
   const count = Math.max(1, Math.min(chart.labels.length, values.length));
-  const gap = Math.min(0.38, Math.max(0.22, region.w * 0.035));
-  const cardW = (region.w - gap * (count - 1) - 0.35) / count;
-  const cardH = Math.min(2.5, Math.max(1.5, region.h * 0.58));
-  const startX = region.x + 0.18;
-  const startY = region.y + (region.h - cardH) / 2;
+  const columns = count <= 4 ? count : Math.min(4, Math.ceil(Math.sqrt(count)));
+  const rows = Math.ceil(count / columns);
+  const gapX = Math.min(0.38, Math.max(0.18, region.w * 0.028));
+  const gapY = Math.min(0.34, Math.max(0.16, region.h * 0.045));
+  const innerX = region.x + 0.18;
+  const innerY = region.y + 0.18;
+  const innerW = Math.max(1.2, region.w - 0.36);
+  const innerH = Math.max(1.1, region.h - 0.36);
+  const cardW = Math.max(1.12, (innerW - gapX * (columns - 1)) / columns);
+  const cardH = Math.max(0.9, Math.min(2.5, (innerH - gapY * (rows - 1)) / rows));
+  const totalW = cardW * columns + gapX * (columns - 1);
+  const totalH = cardH * rows + gapY * (rows - 1);
+  const startX = innerX + Math.max(0, (innerW - totalW) / 2);
+  const startY = innerY + Math.max(0, (innerH - totalH) / 2);
   const maxValue = Math.max(1, ...values.slice(0, count).map((value) => Math.abs(value)));
   const boxes: Array<{ x: number; y: number; w: number; h: number }> = [];
 
   for (let index = 0; index < count; index++) {
-    const x = startX + index * (cardW + gap);
+    const row = Math.floor(index / columns);
+    const column = index % columns;
+    const x = startX + column * (cardW + gapX);
+    const y = startY + row * (cardH + gapY);
     const value = values[index] ?? 0;
     const normalized = clamp(Math.abs(value) / maxValue, 0, 1);
     const accent = preset.chartColors[index % Math.max(1, Math.min(3, preset.chartColors.length))] ?? preset.primaryColor;
-    boxes.push({ x, y: startY, w: cardW, h: cardH });
+    boxes.push({ x, y, w: cardW, h: cardH });
     slide.addShape("roundRect", {
       x,
-      y: startY,
+      y,
       w: cardW,
       h: cardH,
       rectRadius: 0.05,
@@ -1209,7 +1264,7 @@ function renderConnectedStripChart(
     } as never);
     slide.addShape("rect", {
       x: x + 0.22,
-      y: startY + cardH - 0.48,
+      y: y + cardH - 0.42,
       w: Math.max(0.2, (cardW - 0.44) * normalized),
       h: 0.14,
       fill: { color: accent, transparency: 0 },
@@ -1218,9 +1273,9 @@ function renderConnectedStripChart(
     slide.addText(chart.labels[index] ?? `Step ${index + 1}`, {
       ...common,
       x: x + 0.2,
-      y: startY + 0.2,
+      y: y + 0.14,
       w: cardW - 0.4,
-      h: cardH * 0.38,
+      h: Math.max(0.34, cardH * 0.4),
       fontFace,
       fontSize: Math.max(14, Math.min(18, bodySize)),
       bold: true,
@@ -1233,9 +1288,9 @@ function renderConnectedStripChart(
     slide.addText(formatChartValue(value), {
       ...common,
       x: x + 0.2,
-      y: startY + cardH * 0.48,
+      y: y + cardH * 0.48,
       w: cardW - 0.4,
-      h: 0.46,
+      h: Math.max(0.34, Math.min(0.46, cardH * 0.24)),
       fontFace,
       fontSize: Math.max(20, Math.min(28, bodySize + 8)),
       bold: true,
@@ -1250,14 +1305,11 @@ function renderConnectedStripChart(
   for (let index = 0; index < boxes.length - 1; index++) {
     const from = boxes[index]!;
     const to = boxes[index + 1]!;
-    addNormalizedLine(
-      slide,
-      { x: from.x + from.w - 0.02, y: from.y + from.h / 2 },
-      { x: to.x + 0.02, y: to.y + to.h / 2 },
-      preset.ruleColor,
-      true,
-      { pt: 1.45, transparency: 8 },
+    const { start, end } = connectorEndpoints(
+      { ...from, node: { id: `strip-${index}`, label: "" } },
+      { ...to, node: { id: `strip-${index + 1}`, label: "" } },
     );
+    renderConnector(slide, start, end, preset.ruleColor);
   }
 }
 

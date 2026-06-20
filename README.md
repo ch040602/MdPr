@@ -15,17 +15,17 @@ Language variants:
 
 ## Example PPT Slides
 
-The same Markdown source can produce editable PPTX slides with responsive structure, adaptive diagrams, and reusable design presets.
+The same Markdown source produces editable PPTX decks first. The preview gallery is built by rendering those PPTX files, exporting each slide to PNG, and using HTML only as the navigation shell.
 
-[Open the interactive theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between all built-in themes, browse per-theme visual QA slides, and inspect element-check slides for tables, charts, diagrams, proof objects, icon slots, typography, and overflow behavior.
+[Open the PPT-generated theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between built-in decoration styles, download the generated PPTX deck for each style, and inspect PNG slide images extracted from PowerPoint output.
 
 | Cover / Title | Pipeline Diagram |
 | --- | --- |
-| <img src="docs/assets/readme-slides/cover.png" alt="Generated mdpresent cover slide preview" width="100%"> | <img src="docs/assets/readme-slides/pipeline.png" alt="Generated pipeline diagram slide preview" width="100%"> |
+| <img src="docs/theme-preview/slides/technical/slide-01.png" alt="Generated PPTX cover slide preview" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-09.png" alt="Generated PPTX pipeline diagram slide preview" width="100%"> |
 
-| Markdown Semantics | Decoration Patterns |
+| Markdown Semantics | Editable Proof Objects |
 | --- | --- |
-| <img src="docs/assets/readme-slides/semantics.png" alt="Generated Markdown semantics slide preview" width="100%"> | <img src="docs/assets/readme-slides/decorations.png" alt="Generated decoration patterns slide preview" width="100%"> |
+| <img src="docs/theme-preview/slides/grid/slide-08.png" alt="Generated PPTX Markdown semantics slide preview" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-13.png" alt="Generated PPTX editable proof object slide preview" width="100%"> |
 
 ## Runtime Pipeline
 
@@ -85,7 +85,7 @@ The parser preserves presentation-relevant Markdown structure: lists, emphasis, 
 
 Detailed rules are split out of this README: [methodology](docs/12-design-methodology.md), [object forms and icon paths](docs/13-object-forms-and-icons.md), [renderer rules](docs/07-rendering-rules.md), and [QA/overflow rules](docs/11-qa-overflow.md).
 
-For visual QA, `--theme-gallery executive,editorial,technical,clean` repeats the planned slides under multiple design presets in one PPTX. The Actions preview page lists decoration styles whose layout, scale hierarchy, proof objects, and surface grammar differ; legacy color-only presets remain available through `--design` for compatibility. `pnpm preview:themes` regenerates the Pages fixture and runs `scripts/evaluate-theme-preview.mjs` against the generated HTML. Every `build` writes a deterministic `mdpresent-design-lock.json` and `mdpresent-manifest.json`; use `--visual` to add structural visual-validation summaries.
+For visual QA, `--theme-gallery executive,editorial,technical,clean` repeats the planned slides under multiple design presets in one PPTX. The Actions preview page lists decoration styles whose layout, scale hierarchy, proof objects, and surface grammar differ; legacy color-only presets remain available through `--design` for compatibility. `pnpm preview:themes` regenerates PPTX decks under `docs/theme-preview/pptx/`, exports PNG slides under `docs/theme-preview/slides/`, and runs `scripts/evaluate-theme-preview.mjs` against those PPT-derived artifacts. Every `build` writes a deterministic `mdpresent-design-lock.json` and `mdpresent-manifest.json`; use `--visual` to add structural visual-validation summaries.
 
 ## Text and Table Coherence
 
@@ -101,9 +101,9 @@ Simple Markdown tables now carry validation text in addition to row data, matchi
 2. Core: build Markdown-to-`Presentation IR` in `packages/core`.
 3. Layout: build `Presentation IR`-to-`Layout IR` in `packages/layout`.
 4. Overrides: apply structured override manifests in `packages/override`.
-5. HTML: implement `packages/render-html` first to provide preview output.
-6. PDF: start `packages/render-pdf` from the HTML renderer.
-7. PPTX: implement `packages/render-pptx` around editable slide objects.
+5. PPTX: keep `packages/render-pptx` as the primary editable-object renderer.
+6. HTML: keep `packages/render-html` as a lightweight browser preview and gallery shell.
+7. PDF: keep `packages/render-pdf` as a document export path.
 
 ## Directory Summary
 
@@ -128,7 +128,7 @@ examples/   Example Markdown, config, and override files
 The repository runs two Actions workflows:
 
 - `CI` installs the pnpm workspace, runs typecheck, builds all packages, and runs tests on push, pull request, and manual dispatch.
-- `Theme Preview` builds the package workspace, regenerates the theme preview gallery from the theme/object QA deck, and publishes it to GitHub Pages.
+- `Theme Preview` builds the package workspace, regenerates PPTX decks from the theme/object QA Markdown, rasterizes those PPTX slides to PNG, verifies the generated artifact set, and publishes the PNG gallery to GitHub Pages. Pull requests run the same build and rasterization checks without deploying Pages.
 
 These checks protect the deterministic MDPR runtime. The optional [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) repository may prepare semantic hints and review artifacts, but MDPR's Actions must pass without an LLM or external API key.
 

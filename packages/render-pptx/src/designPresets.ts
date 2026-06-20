@@ -93,33 +93,28 @@ function addMinimalismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, s
 }
 
 function addGlassBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
-  const glowA = boundedBox(slideSize, { x: slideSize.width * 0.08, y: slideSize.height * 0.1, w: slideSize.width * 0.42, h: slideSize.height * 0.38 });
-  const glowB = boundedBox(slideSize, { x: slideSize.width * 0.56, y: slideSize.height * 0.5, w: slideSize.width * 0.32, h: slideSize.height * 0.28 });
-  const glowC = boundedBox(slideSize, { x: slideSize.width * 0.34, y: slideSize.height * 0.68, w: slideSize.width * 0.24, h: slideSize.height * 0.18 });
-  slide.addShape("ellipse", {
-    ...glowA,
-    fill: { color: preset.primaryColor, transparency: 68 },
-    line: { color: preset.primaryColor, transparency: 100 },
-    shadow: { type: "outer", color: preset.primaryColor, opacity: 0.24, blur: 3.5, angle: 45 },
-  } as never);
-  slide.addShape("ellipse", {
-    ...glowB,
-    fill: { color: preset.secondaryColor, transparency: 72 },
-    line: { color: preset.secondaryColor, transparency: 100 },
-    shadow: { type: "outer", color: preset.secondaryColor, opacity: 0.2, blur: 3, angle: 45 },
-  } as never);
-  slide.addShape("ellipse", {
-    ...glowC,
-    fill: { color: preset.ruleColor, transparency: 80 },
-    line: { color: preset.ruleColor, transparency: 100 },
-    shadow: { type: "outer", color: preset.ruleColor, opacity: 0.16, blur: 2.4, angle: 45 },
-  } as never);
   slide.addShape("roundRect", {
     ...boundedBox(slideSize, { x: 0.62, y: 0.52, w: slideSize.width - 1.24, h: slideSize.height - 1.04 }),
     rectRadius: 0.14,
     fill: { color: preset.surfaceFill, transparency: 100 },
     line: { color: "FFFFFF", transparency: 72, pt: 0.75 },
+    shadow: { type: "outer", color: preset.primaryColor, opacity: 0.12, blur: 1.2, angle: 45, distance: 0.35 },
   } as never);
+  slide.addShape("rect", {
+    ...boundedBox(slideSize, { x: 0.78, y: 1.32, w: 1.45, h: 0.07 }),
+    fill: { color: preset.primaryColor, transparency: 12 },
+    line: { color: preset.primaryColor, transparency: 100 },
+  });
+  slide.addShape("rect", {
+    ...boundedBox(slideSize, { x: slideSize.width - 1.45, y: 0.0, w: 1.45, h: 0.28 }),
+    fill: { color: preset.primaryColor, transparency: 10 },
+    line: { color: preset.primaryColor, transparency: 100 },
+  });
+  slide.addShape("rect", {
+    ...boundedBox(slideSize, { x: slideSize.width - 1.0, y: 0.28, w: 1.0, h: 0.07 }),
+    fill: { color: preset.secondaryColor, transparency: 8 },
+    line: { color: preset.secondaryColor, transparency: 100 },
+  });
   slide.addShape("line" as never, {
     x: 0.82,
     y: 0.82,

@@ -1,0 +1,1563 @@
+{
+  "kind": "pptx-png-theme-preview",
+  "source": "examples/theme-preview-en/deck.md",
+  "generatedAt": "2026-06-20T12:47:21.672Z",
+  "pngSize": {
+    "width": 1600,
+    "height": 900
+  },
+  "styleCount": 12,
+  "slideCount": 19,
+  "compositionClasses": [
+    "chart-table",
+    "comparison",
+    "cover",
+    "grid",
+    "key-message",
+    "pipeline",
+    "table-focus",
+    "timeline",
+    "toc",
+    "vertical-list"
+  ],
+  "surfaceVariants": [
+    "flag-drop",
+    "notched-corner",
+    "rounded",
+    "ticket",
+    "two-corner-left",
+    "two-corner-right"
+  ],
+  "proofKinds": [
+    "arc-ring",
+    "bar",
+    "connected-strip",
+    "gauge"
+  ],
+  "themes": [
+    {
+      "name": "plain",
+      "pptx": "pptx/plain.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/plain/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/plain/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/plain/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/plain/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/plain/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/plain/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/plain/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/plain/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/plain/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/plain/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/plain/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/plain/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/plain/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/plain/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/plain/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/plain/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/plain/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/plain/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/plain/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#FFFFFF",
+        "text": "#111827",
+        "primary": "#2563EB",
+        "secondary": "#93C5FD",
+        "surface": "#FFFFFF"
+      }
+    },
+    {
+      "name": "simple",
+      "pptx": "pptx/simple.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/simple/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/simple/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/simple/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/simple/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/simple/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/simple/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/simple/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/simple/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/simple/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/simple/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/simple/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/simple/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/simple/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/simple/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/simple/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/simple/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/simple/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/simple/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/simple/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#FFFFFF",
+        "text": "#111827",
+        "primary": "#2563EB",
+        "secondary": "#BFDBFE",
+        "surface": "#FFFFFF"
+      }
+    },
+    {
+      "name": "clean",
+      "pptx": "pptx/clean.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/clean/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/clean/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/clean/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/clean/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/clean/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/clean/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/clean/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/clean/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/clean/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/clean/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/clean/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/clean/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/clean/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/clean/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/clean/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/clean/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/clean/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/clean/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/clean/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#F8FAFC",
+        "text": "#111827",
+        "primary": "#2563EB",
+        "secondary": "#DBEAFE",
+        "surface": "#FFFFFF"
+      }
+    },
+    {
+      "name": "executive",
+      "pptx": "pptx/executive.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/executive/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/executive/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/executive/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/executive/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/executive/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/executive/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/executive/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/executive/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/executive/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/executive/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/executive/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/executive/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/executive/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/executive/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/executive/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/executive/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/executive/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/executive/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/executive/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#F8FAFC",
+        "text": "#0F172A",
+        "primary": "#1D4ED8",
+        "secondary": "#BFDBFE",
+        "surface": "#FFFFFF"
+      }
+    },
+    {
+      "name": "editorial",
+      "pptx": "pptx/editorial.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/editorial/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/editorial/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/editorial/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/editorial/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/editorial/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/editorial/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/editorial/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/editorial/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/editorial/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/editorial/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/editorial/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/editorial/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/editorial/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/editorial/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/editorial/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/editorial/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/editorial/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/editorial/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/editorial/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#F7F3EF",
+        "text": "#1F2937",
+        "primary": "#B45309",
+        "secondary": "#FCD34D",
+        "surface": "#FFFBF5"
+      }
+    },
+    {
+      "name": "technical",
+      "pptx": "pptx/technical.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/technical/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/technical/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/technical/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/technical/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/technical/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/technical/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/technical/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/technical/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/technical/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/technical/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/technical/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/technical/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/technical/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/technical/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/technical/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/technical/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/technical/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/technical/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/technical/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#F9FAFB",
+        "text": "#111827",
+        "primary": "#047857",
+        "secondary": "#A7F3D0",
+        "surface": "#FFFFFF"
+      }
+    },
+    {
+      "name": "minimalism",
+      "pptx": "pptx/minimalism.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/minimalism/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/minimalism/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/minimalism/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/minimalism/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/minimalism/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/minimalism/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/minimalism/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/minimalism/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/minimalism/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/minimalism/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/minimalism/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/minimalism/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/minimalism/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/minimalism/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/minimalism/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/minimalism/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/minimalism/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/minimalism/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/minimalism/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#FFFFFF",
+        "text": "#111827",
+        "primary": "#111827",
+        "secondary": "#E5E7EB",
+        "surface": "#FFFFFF"
+      }
+    },
+    {
+      "name": "newmorphism",
+      "pptx": "pptx/newmorphism.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/newmorphism/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/newmorphism/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/newmorphism/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/newmorphism/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/newmorphism/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/newmorphism/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/newmorphism/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/newmorphism/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/newmorphism/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/newmorphism/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/newmorphism/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/newmorphism/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/newmorphism/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/newmorphism/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/newmorphism/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/newmorphism/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/newmorphism/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/newmorphism/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/newmorphism/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#E9EEF5",
+        "text": "#243041",
+        "primary": "#4F6F8F",
+        "secondary": "#CBD5E1",
+        "surface": "#E9EEF5"
+      }
+    },
+    {
+      "name": "glass",
+      "pptx": "pptx/glass.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/glass/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/glass/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/glass/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/glass/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/glass/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/glass/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/glass/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/glass/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/glass/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/glass/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/glass/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/glass/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/glass/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/glass/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/glass/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/glass/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/glass/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/glass/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/glass/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#0B1020",
+        "text": "#F8FAFC",
+        "primary": "#8A4FFF",
+        "secondary": "#22D3EE",
+        "surface": "#17213A"
+      }
+    },
+    {
+      "name": "grid",
+      "pptx": "pptx/grid.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/grid/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/grid/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/grid/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/grid/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/grid/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/grid/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/grid/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/grid/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/grid/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/grid/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/grid/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/grid/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/grid/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/grid/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/grid/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/grid/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/grid/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/grid/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/grid/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#F8FAFC",
+        "text": "#111827",
+        "primary": "#DC2626",
+        "secondary": "#111827",
+        "surface": "#FFFFFF"
+      }
+    },
+    {
+      "name": "data",
+      "pptx": "pptx/data.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/data/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/data/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/data/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/data/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/data/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/data/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/data/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/data/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/data/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/data/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/data/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/data/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/data/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/data/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/data/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/data/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/data/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/data/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/data/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#101820",
+        "text": "#F8FAFC",
+        "primary": "#F59E0B",
+        "secondary": "#38BDF8",
+        "surface": "#162331"
+      }
+    },
+    {
+      "name": "magazine",
+      "pptx": "pptx/magazine.pptx",
+      "slides": [
+        {
+          "index": 1,
+          "file": "slides/magazine/slide-01.png",
+          "title": "MDPR Composition Grammar QA",
+          "composition": "cover"
+        },
+        {
+          "index": 2,
+          "file": "slides/magazine/slide-02.png",
+          "title": "목차",
+          "composition": "toc"
+        },
+        {
+          "index": 3,
+          "file": "slides/magazine/slide-03.png",
+          "title": "Preview Purpose",
+          "composition": "key-message"
+        },
+        {
+          "index": 4,
+          "file": "slides/magazine/slide-04.png",
+          "title": "Composition Contract",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 5,
+          "file": "slides/magazine/slide-05.png",
+          "title": "Composition Contract (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 6,
+          "file": "slides/magazine/slide-06.png",
+          "title": "Style Families",
+          "composition": "vertical-list"
+        },
+        {
+          "index": 7,
+          "file": "slides/magazine/slide-07.png",
+          "title": "Style Families (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 8,
+          "file": "slides/magazine/slide-08.png",
+          "title": "Markdown Semantics",
+          "composition": "grid"
+        },
+        {
+          "index": 9,
+          "file": "slides/magazine/slide-09.png",
+          "title": "Pipeline Diagram",
+          "composition": "pipeline"
+        },
+        {
+          "index": 10,
+          "file": "slides/magazine/slide-10.png",
+          "title": "Table Coherence",
+          "composition": "table-focus"
+        },
+        {
+          "index": 11,
+          "file": "slides/magazine/slide-11.png",
+          "title": "Chart and Table Pair",
+          "composition": "chart-table"
+        },
+        {
+          "index": 12,
+          "file": "slides/magazine/slide-12.png",
+          "title": "Chart and Table Pair (Cont. 2/2)",
+          "composition": "table-focus"
+        },
+        {
+          "index": 13,
+          "file": "slides/magazine/slide-13.png",
+          "title": "Editable Proof Objects",
+          "composition": "chart-table"
+        },
+        {
+          "index": 14,
+          "file": "slides/magazine/slide-14.png",
+          "title": "Editable Proof Objects (Cont. 2/2)",
+          "composition": "chart-table"
+        },
+        {
+          "index": 15,
+          "file": "slides/magazine/slide-15.png",
+          "title": "Object Shape Grammar",
+          "composition": "timeline"
+        },
+        {
+          "index": 16,
+          "file": "slides/magazine/slide-16.png",
+          "title": "Object Shape Grammar (Cont. 2/2)",
+          "composition": "comparison"
+        },
+        {
+          "index": 17,
+          "file": "slides/magazine/slide-17.png",
+          "title": "Icon and Text Aside",
+          "composition": "grid"
+        },
+        {
+          "index": 18,
+          "file": "slides/magazine/slide-18.png",
+          "title": "Overflow Guard",
+          "composition": "grid"
+        },
+        {
+          "index": 19,
+          "file": "slides/magazine/slide-19.png",
+          "title": "Actions Output Review",
+          "composition": "vertical-list"
+        }
+      ],
+      "colors": {
+        "background": "#F8F4EF",
+        "text": "#18181B",
+        "primary": "#C2410C",
+        "secondary": "#111827",
+        "surface": "#FFFCF7"
+      }
+    }
+  ]
+}

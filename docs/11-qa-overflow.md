@@ -117,18 +117,16 @@ The manifest records source/config hashes, rendered outputs, diagnostics, overfl
 
 ## Actions preview evaluation
 
-`scripts/evaluate-theme-preview.mjs` checks the generated `docs/theme-preview` HTML after `scripts/build-theme-preview.mjs` runs. It verifies:
+`scripts/evaluate-theme-preview.mjs` checks the generated `docs/theme-preview` artifacts after `scripts/build-theme-preview.mjs` runs. The builder renders PPTX decks first, exports each slide to PNG, and then writes an HTML gallery shell. The evaluator verifies:
 
-- only distinct decoration-style pages are present
-- legacy color-only preset pages are absent from the Actions gallery
-- each generated deck contains required composition markers
-- tables render as structured HTML tables
-- proof objects render as `arc-ring`, `gauge`, and `connected-strip` objects
-- all absolutely positioned regions stay inside the slide rectangle
-- body and item regions stay at or above the readable font floor
-- pipeline connector coordinates are finite, in bounds, and present for each graph
-- glass preview pages include frosted fill and browser glassmorphism filters
-- singleton decorative-dot surface variants are rejected in generated preview pages
+- only distinct decoration-style PPTX decks are present
+- legacy color-only preset decks are absent from the Actions gallery
+- every expected style has a non-empty PPTX file
+- every style has a complete set of exported PNG slides at the expected `1600x900` size
+- PNG files are large enough to reject blank or failed rasterization output
+- the manifest maps each style to its PPTX and slide PNG files
+- required composition classes, proof-object kinds, and surface variants are represented in the manifest
+- the gallery has the `pptx-png` marker and does not fall back to legacy iframe-based HTML deck previews
 
 This evaluator is deterministic and complements manual visual review.
 

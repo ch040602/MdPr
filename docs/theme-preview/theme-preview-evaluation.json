@@ -38,11 +38,13 @@
     "notched-corner",
     "rounded",
     "ticket",
-    "two-corner-left"
+    "two-corner-left",
+    "two-corner-right"
   ],
   "missingSurfaces": [],
   "proofKinds": [
     "arc-ring",
+    "bar",
     "connected-strip",
     "gauge"
   ],
@@ -51,6 +53,8 @@
   "connectorIssues": [],
   "typographyIssues": [],
   "glassIssues": [],
+  "pptxIssues": [],
+  "pngIssues": [],
   "overflowCount": 0,
   "overflow": []
 }

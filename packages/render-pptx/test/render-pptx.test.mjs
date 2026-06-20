@@ -204,6 +204,51 @@ test("renderPptx gives wrapped item text enough height to avoid PowerPoint overl
   }
 });
 
+test("renderPptx only enables PowerPoint autofit for shrink overflow policy", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-autofit-policy-"));
+
+  try {
+    for (const action of ["shrink", "reflow", "split", "warn", "fail"]) {
+      const outPath = join(outDir, `${action}.pptx`);
+      const deck = structuredClone(sampleDeck);
+      deck.presentation.slides[0].blocks = [
+        {
+          id: "body-1",
+          type: "paragraph",
+          text: "This text box should expose whether PowerPoint native autofit is enabled.",
+        },
+      ];
+      deck.layout.slides[0].overflowPolicy = { action, minFontSize: 14, maxShrinkSteps: 3 };
+      deck.layout.slides[0].regions = [
+        deck.layout.slides[0].regions[0],
+        {
+          id: "body",
+          role: "body",
+          blockIds: ["body-1"],
+          x: 1,
+          y: 1.8,
+          w: 5.6,
+          h: 1,
+          zIndex: 10,
+          typography: { fontFamily: "Arial", fontSize: 22, lineHeight: 1.2, minFontSize: 14 },
+        },
+      ];
+
+      await renderPptx(deck, { outPath, designPreset: "technical" });
+      const zip = await JSZip.loadAsync(readFileSync(outPath));
+      const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+      const textShape = [...xml.matchAll(/<p:sp>[\s\S]*?<\/p:sp>/g)]
+        .map((match) => match[0])
+        .find((shape) => shape.includes("This text box should expose")) ?? "";
+      assert.ok(textShape);
+      if (action === "shrink") assert.match(textShape, /<a:normAutofit\/>/);
+      else assert.doesNotMatch(textShape, /<a:normAutofit\/>/);
+    }
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx renders item text when a bullet list only contains structured listItems", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-listitems-only-"));
   const outPath = join(outDir, "deck.pptx");
@@ -368,6 +413,52 @@ test("renderPptx aligns and fits text inside table cells", async () => {
     assert.match(xml, /<a:tcPr[^>]*marL="54864"[^>]*marR="54864"[^>]*marT="36576"[^>]*marB="36576"[^>]*anchor="ctr"/);
     assert.match(xml, /sz="1[4-9]00"/);
     assert.doesNotMatch(xml, /<a:br\/>/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx keeps stressed plain-list row text boxes inside the source region", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-plain-list-bounds-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  const items = Array.from({ length: 10 }, (_, index) => `Compact row ${index + 1}`);
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "list-1",
+      type: "bulletList",
+      items,
+    },
+  ];
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "body",
+      role: "body",
+      blockIds: ["list-1"],
+      x: 1,
+      y: 1.7,
+      w: 4.5,
+      h: 1.2,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 18, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "technical" });
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const regionBottomEmu = Math.round((1.7 + 1.2) * 914400);
+    const rowShapes = [...xml.matchAll(/<p:sp>[\s\S]*?<a:off x="(\d+)" y="(\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/>[\s\S]*?<a:t>Compact row \d+<\/a:t>[\s\S]*?<\/p:sp>/g)];
+
+    assert.equal(rowShapes.length, 10);
+    for (const match of rowShapes) {
+      const y = Number(match[2]);
+      const h = Number(match[4]);
+      assert.equal(y + h <= regionBottomEmu + 2, true);
+    }
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -957,6 +1048,95 @@ test("renderPptx renders chart proof objects as editable shapes without native c
     assert.equal(surfaceSvgs.some((svg) => /viewBox="0 0 \d+ \d+"[\s\S]*(?:rx="\d+"|data-mdpr-surface="(?:flag-drop|ticket|circle-vine|notched-corner|two-corner-left|two-corner-right)")/.test(svg)), true);
     assert.equal((combinedXml.match(/prst="line"/g) ?? []).length >= 4, true);
     assert.equal((combinedXml.match(/sz="1[4-9]00"|sz="2[0-9]00"|sz="3[0-9]00"/g) ?? []).length >= 8, true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx keeps dense connected-strip proof chart text inside the chart region", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-dense-connected-strip-"));
+  const outPath = join(outDir, "dense-connected-strip.pptx");
+  const labels = ["Source", "Parse", "Split", "Plan", "Theme", "Render", "Export", "Review"];
+  const deck = makeChartProofDeck([
+    {
+      title: "Dense Connected Strip",
+      chart: {
+        kind: "connected-strip",
+        labels,
+        series: [{ name: "Progress", values: [11, 24, 38, 52, 66, 78, 89, 97] }],
+      },
+    },
+  ]);
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "technical" });
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const region = { x: 1.05, y: 1.55, w: 11.15, h: 4.95 };
+    const left = Math.round(region.x * 914400);
+    const top = Math.round(region.y * 914400);
+    const right = Math.round((region.x + region.w) * 914400);
+    const bottom = Math.round((region.y + region.h) * 914400);
+
+    for (const label of labels) {
+      const shape = [...xml.matchAll(/<p:sp>[\s\S]*?<\/p:sp>/g)]
+        .map((match) => match[0])
+        .find((candidate) => candidate.includes(`<a:t>${label}</a:t>`));
+      assert.ok(shape, `missing label shape for ${label}`);
+      const xfrm = /<a:off x="(\d+)" y="(\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/>/.exec(shape);
+      assert.ok(xfrm, `missing shape bounds for ${label}`);
+      const x = Number(xfrm[1]);
+      const y = Number(xfrm[2]);
+      const w = Number(xfrm[3]);
+      const h = Number(xfrm[4]);
+      assert.equal(x >= left, true, `${label} x underflow`);
+      assert.equal(y >= top, true, `${label} y underflow`);
+      assert.equal(x + w <= right, true, `${label} x overflow`);
+      assert.equal(y + h <= bottom, true, `${label} y overflow`);
+    }
+    assert.equal((xml.match(/prst="line"/g) ?? []).length >= labels.length - 1, true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx renders multiple chart proof blocks in one region instead of text fallback", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-multi-chart-proof-region-"));
+  const outPath = join(outDir, "multi-chart-proof-region.pptx");
+  const deck = makeChartProofDeck([
+    {
+      title: "Editable Proof Objects",
+      chart: {
+        kind: "arc-ring",
+        labels: ["Validated", "Remaining"],
+        series: [{ name: "Coverage", values: [84, 16] }],
+      },
+    },
+  ]);
+  deck.presentation.slides[0].blocks.push({
+    id: "chart-proof-extra",
+    type: "chart",
+    text: "Score: 91",
+    chart: {
+      kind: "gauge",
+      labels: ["Readiness"],
+      series: [{ name: "Score", values: [91] }],
+    },
+  });
+  deck.layout.slides[0].regions[1].blockIds.push("chart-proof-extra");
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "technical" });
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+
+    assert.match(xml, /Coverage/);
+    assert.match(xml, /84%/);
+    assert.match(xml, /Score/);
+    assert.match(xml, /91%/);
+    assert.equal((xml.match(/prst="blockArc"/g) ?? []).length >= 2, true);
+    assert.match(xml, /prst="roundRect"/);
+    assert.doesNotMatch(xml, /Coverage: 84, 16Score: 91/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

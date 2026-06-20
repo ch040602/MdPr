@@ -1,31 +1,56 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDeckPlan } from "../packages/cli/dist/orchestrate.js";
 import { DECORATION_STYLE_NAMES, resolveDesignTokens } from "../packages/core/dist/index.js";
-import { renderHtml } from "../packages/render-html/dist/index.js";
+import { renderPptx } from "../packages/render-pptx/dist/index.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const inputPath = resolve(repoRoot, process.argv[2] ?? "examples/theme-preview-en/deck.md");
 const outDir = resolve(repoRoot, process.argv[3] ?? "docs/theme-preview");
-const themesDir = join(outDir, "themes");
+const pptxDir = join(outDir, "pptx");
+const slidesDir = join(outDir, "slides");
+const pngSize = { width: 1600, height: 900 };
 
-rmSync(themesDir, { recursive: true, force: true });
-mkdirSync(themesDir, { recursive: true });
+rmSync(outDir, { recursive: true, force: true });
+mkdirSync(pptxDir, { recursive: true });
+mkdirSync(slidesDir, { recursive: true });
 
 const deck = createDeckPlan(inputPath);
-const themeEntries = DECORATION_STYLE_NAMES.map((name) => {
-  const tokens = resolveDesignTokens(name, deck.config.theme);
-  const fileName = `${name}.html`;
-  const html = withPreviewMetadata(renderHtml(
-    { presentation: deck.presentation, layout: deck.layout },
-    { title: `${deck.presentation.meta.title} - ${name}`, decorationStyle: name },
-  ), name);
-  writeFileSync(join(themesDir, fileName), html, "utf-8");
+const compositionClasses = sortedUnique(deck.layout.slides.map((slide) => slide.layout.preset));
+const proofKinds = sortedUnique(deck.presentation.slides.flatMap((slide) =>
+  slide.blocks
+    .filter((block) => block.type === "chart" && block.chart?.kind)
+    .map((block) => block.chart.kind),
+));
+const surfaceVariants = ["flag-drop", "notched-corner", "rounded", "ticket", "two-corner-left", "two-corner-right"];
+const themeEntries = [];
 
-  return {
+for (const name of DECORATION_STYLE_NAMES) {
+  const tokens = resolveDesignTokens(name, deck.config.theme);
+  const pptxPath = join(pptxDir, `${name}.pptx`);
+  await renderPptx(
+    { presentation: deck.presentation, layout: deck.layout },
+    { outPath: pptxPath, designPreset: name },
+  );
+
+  const themeSlideDir = join(slidesDir, name);
+  exportPptxSlides(pptxPath, themeSlideDir);
+  const slides = readdirSync(themeSlideDir)
+    .filter((file) => /^slide-\d+\.png$/.test(file))
+    .sort()
+    .map((file, index) => ({
+      index: index + 1,
+      file: `slides/${name}/${file}`,
+      title: slideTitle(index),
+      composition: deck.layout.slides[index]?.layout.preset ?? "unknown",
+    }));
+
+  themeEntries.push({
     name,
-    file: `themes/${fileName}`,
+    pptx: `pptx/${name}.pptx`,
+    slides,
     colors: {
       background: `#${tokens.backgroundColor}`,
       text: `#${tokens.textColor}`,
@@ -33,23 +58,49 @@ const themeEntries = DECORATION_STYLE_NAMES.map((name) => {
       secondary: `#${tokens.secondaryColor}`,
       surface: `#${tokens.surfaceFill}`,
     },
-  };
-});
+  });
+}
 
-writeFileSync(join(outDir, "index.html"), renderPreviewShell({
-  title: deck.presentation.meta.title,
+const manifest = {
+  kind: "pptx-png-theme-preview",
   source: relative(repoRoot, inputPath).replaceAll("\\", "/"),
   generatedAt: new Date().toISOString(),
+  pngSize,
+  styleCount: themeEntries.length,
+  slideCount: themeEntries[0]?.slides.length ?? 0,
+  compositionClasses,
+  surfaceVariants,
+  proofKinds,
+  themes: themeEntries,
+};
+
+writeFileSync(join(outDir, "preview-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
+writeFileSync(join(outDir, "index.html"), renderPreviewShell({
+  title: deck.presentation.meta.title,
+  source: manifest.source,
+  generatedAt: manifest.generatedAt,
   themes: themeEntries,
 }), "utf-8");
 
 console.log(`Wrote ${relative(repoRoot, outDir).replaceAll("\\", "/")}/index.html`);
 
-function withPreviewMetadata(html, themeName) {
-  return html.replace(
-    "<main class=\"deck\">",
-    `<main class="deck" data-preview-theme="${escapeHtml(themeName)}">`,
-  );
+function exportPptxSlides(pptxPath, themeSlideDir) {
+  const python = process.platform === "win32" ? "python" : "python3";
+  execFileSync(python, [
+    resolve(repoRoot, "scripts/export-pptx-pngs.py"),
+    pptxPath,
+    themeSlideDir,
+    "--width",
+    String(pngSize.width),
+    "--height",
+    String(pngSize.height),
+  ], { stdio: "inherit" });
+}
+
+function slideTitle(index) {
+  const sourceSlideId = deck.layout.slides[index]?.sourceSlideId;
+  const sourceSlide = deck.presentation.slides.find((slide) => slide.id === sourceSlideId);
+  return sourceSlide?.title ?? `Slide ${index + 1}`;
 }
 
 function renderPreviewShell({ title, source, generatedAt, themes }) {
@@ -60,7 +111,7 @@ function renderPreviewShell({ title, source, generatedAt, themes }) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(title)} Theme Preview</title>
+<title>${escapeHtml(title)} PPTX Preview</title>
 <style>
 :root {
   color-scheme: light;
@@ -90,13 +141,6 @@ button, select, input { font: inherit; }
   padding: 18px;
   overflow: auto;
   max-height: 100vh;
-}
-.brand {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 16px;
 }
 h1 {
   margin: 0;
@@ -135,7 +179,7 @@ select {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
-.button-row button, .theme-card {
+.button-row button, .theme-card, .slide-list button {
   border: 1px solid var(--line);
   background: #fff;
   color: var(--text);
@@ -143,7 +187,7 @@ select {
   padding: 9px 10px;
   cursor: pointer;
 }
-.button-row button:hover, .theme-card:hover { border-color: var(--active); }
+.button-row button:hover, .theme-card:hover, .slide-list button:hover { border-color: var(--active); }
 .theme-grid {
   display: grid;
   gap: 9px;
@@ -154,7 +198,7 @@ select {
   gap: 8px;
   text-align: left;
 }
-.theme-card[aria-current="true"] {
+.theme-card[aria-current="true"], .slide-list button[aria-current="true"] {
   border-color: var(--active);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--active) 20%, transparent);
 }
@@ -164,6 +208,7 @@ select {
   align-items: center;
   gap: 8px;
   font-weight: 800;
+  text-transform: capitalize;
 }
 .swatches {
   display: grid;
@@ -185,7 +230,7 @@ select {
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
-  background: rgba(255,255,255,.86);
+  background: rgba(255,255,255,.9);
   backdrop-filter: blur(12px);
 }
 .toolbar strong { text-transform: capitalize; }
@@ -193,22 +238,21 @@ select {
 .viewport {
   min-height: 0;
   padding: 18px;
+  overflow: auto;
 }
-.frame-shell {
-  width: 100%;
-  height: 100%;
-  min-height: 680px;
+.slide-shell {
+  margin: 0 auto;
+  width: min(100%, 1600px);
   border: 1px solid var(--line);
   border-radius: 10px;
   overflow: hidden;
   background: #111;
+  box-shadow: 0 12px 32px rgba(16,24,40,.18);
 }
-iframe {
+.slide-image {
   display: block;
   width: 100%;
-  height: 100%;
-  min-height: 680px;
-  border: 0;
+  height: auto;
   background: #111;
 }
 .slide-list {
@@ -218,18 +262,8 @@ iframe {
   gap: 6px;
 }
 .slide-list button {
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: #fff;
-  color: var(--text);
-  padding: 7px 8px;
   text-align: left;
-  cursor: pointer;
-}
-.slide-list button[aria-current="true"] {
-  border-color: var(--active);
-  color: var(--active);
-  font-weight: 800;
+  padding: 7px 8px;
 }
 @media (max-width: 980px) {
   .app { grid-template-columns: 1fr; }
@@ -241,29 +275,20 @@ iframe {
   .theme-grid {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
-  .frame-shell, iframe { min-height: 520px; }
 }
 </style>
 </head>
-<body>
+<body data-gallery-kind="pptx-png">
 <div class="app">
   <aside class="sidebar">
-    <div class="brand">
-      <div>
-        <h1>Style and Object QA</h1>
-        <p class="meta">Source: ${escapeHtml(source)}<br />Generated: ${escapeHtml(generatedAt)}<br />Each style renders the same element-check deck. Color-only legacy presets are kept for CLI compatibility, not listed here.</p>
-      </div>
-    </div>
+    <h1>PPTX Theme QA Gallery</h1>
+    <p class="meta">Source: ${escapeHtml(source)}<br />Generated: ${escapeHtml(generatedAt)}<br />Each image is exported from a generated PPTX deck. HTML is only the gallery shell.</p>
     <div class="control-group">
-      <label for="themeSelect">Selected Theme Style</label>
+      <label for="themeSelect">Selected PPT Theme Style</label>
       <select id="themeSelect"></select>
     </div>
     <div class="control-group">
-      <label for="zoomRange">Preview Zoom <span id="zoomValue">100%</span></label>
-      <input id="zoomRange" type="range" min="45" max="120" value="80" />
-    </div>
-    <div class="control-group">
-      <label>QA Slide Navigation</label>
+      <label>Slide Navigation</label>
       <div class="button-row">
         <button id="prevSlide" type="button">Previous</button>
         <button id="nextSlide" type="button">Next</button>
@@ -271,19 +296,19 @@ iframe {
       <div id="slideList" class="slide-list" aria-label="Slides"></div>
     </div>
     <div class="control-group">
-      <label>Theme Styles</label>
+      <label>Generated PPTX Styles</label>
       <div id="themeGrid" class="theme-grid"></div>
     </div>
   </aside>
   <main class="stage">
     <div class="toolbar">
       <div><strong id="activeTheme">${escapeHtml(defaultTheme.name)}</strong> <span id="slideCounter" class="meta"></span></div>
-      <a id="openTheme" href="${escapeHtml(defaultTheme.file)}" target="_blank" rel="noreferrer">Open Selected Deck</a>
+      <a id="openTheme" href="${escapeHtml(defaultTheme.pptx)}" target="_blank" rel="noreferrer">Download Generated PPTX</a>
     </div>
     <div class="viewport">
-      <div class="frame-shell">
-        <iframe id="previewFrame" title="Selected theme deck preview" src="${escapeHtml(defaultTheme.file)}"></iframe>
-      </div>
+      <figure class="slide-shell">
+        <img id="slideImage" class="slide-image" alt="Generated PPTX slide preview" src="${escapeHtml(defaultTheme.slides[0]?.file ?? "")}" />
+      </figure>
     </div>
   </main>
 </div>
@@ -291,17 +316,13 @@ iframe {
 const themes = ${themesJson};
 const select = document.querySelector("#themeSelect");
 const grid = document.querySelector("#themeGrid");
-const frame = document.querySelector("#previewFrame");
+const slideImage = document.querySelector("#slideImage");
 const activeTheme = document.querySelector("#activeTheme");
 const openTheme = document.querySelector("#openTheme");
-const zoomRange = document.querySelector("#zoomRange");
-const zoomValue = document.querySelector("#zoomValue");
 const slideList = document.querySelector("#slideList");
 const slideCounter = document.querySelector("#slideCounter");
 let currentTheme = ${JSON.stringify(defaultTheme.name)};
 let currentSlide = 0;
-let slides = [];
-let userZoom = false;
 
 for (const theme of themes) {
   const option = document.createElement("option");
@@ -314,7 +335,7 @@ for (const theme of themes) {
   card.className = "theme-card";
   card.dataset.theme = theme.name;
   card.innerHTML = \`
-    <span class="theme-card-title"><span>\${theme.name}</span><span aria-hidden="true">↗</span></span>
+    <span class="theme-card-title"><span>\${theme.name}</span><span>\${theme.slides.length} slides</span></span>
     <span class="swatches">\${Object.values(theme.colors).map((color) => \`<span style="background:\${color}"></span>\`).join("")}</span>
   \`;
   card.addEventListener("click", () => setTheme(theme.name));
@@ -322,82 +343,51 @@ for (const theme of themes) {
 }
 
 select.addEventListener("change", () => setTheme(select.value));
-zoomRange.addEventListener("input", () => {
-  userZoom = true;
-  applyZoom();
-});
-window.addEventListener("resize", () => {
-  if (!userZoom) fitZoomToFrame();
-});
-document.querySelector("#prevSlide").addEventListener("click", () => goToSlide(Math.max(0, currentSlide - 1)));
-document.querySelector("#nextSlide").addEventListener("click", () => goToSlide(Math.min(slides.length - 1, currentSlide + 1)));
-frame.addEventListener("load", () => {
-  const doc = frame.contentDocument;
-  slides = [...doc.querySelectorAll(".slide")];
-  currentSlide = 0;
-  if (!userZoom) fitZoomToFrame();
-  else applyZoom();
-  renderSlideList();
-  goToSlide(0);
-});
+document.querySelector("#prevSlide").addEventListener("click", () => goToSlide(currentSlide - 1));
+document.querySelector("#nextSlide").addEventListener("click", () => goToSlide(currentSlide + 1));
 
 setTheme(currentTheme);
 
 function setTheme(name) {
   const theme = themes.find((candidate) => candidate.name === name) ?? themes[0];
   currentTheme = theme.name;
+  currentSlide = 0;
   select.value = theme.name;
-  frame.src = theme.file;
   activeTheme.textContent = theme.name;
-  openTheme.href = theme.file;
+  openTheme.href = theme.pptx;
   for (const card of grid.querySelectorAll(".theme-card")) {
     card.setAttribute("aria-current", String(card.dataset.theme === theme.name));
   }
+  renderSlideList(theme);
+  updateSlide(theme);
 }
 
-function applyZoom() {
-  zoomValue.textContent = \`\${zoomRange.value}%\`;
-  const doc = frame.contentDocument;
-  if (!doc) return;
-  const deck = doc.querySelector(".deck");
-  if (!deck) return;
-  const scale = Number(zoomRange.value) / 100;
-  deck.style.transform = \`scale(\${scale})\`;
-  deck.style.transformOrigin = "top left";
-  deck.style.width = \`\${100 / scale}%\`;
-}
-
-function fitZoomToFrame() {
-  const doc = frame.contentDocument;
-  if (!doc) return;
-  const firstSlide = doc.querySelector(".slide");
-  if (!firstSlide) return;
-  const slideWidth = firstSlide.offsetWidth || 1280;
-  const slideHeight = firstSlide.offsetHeight || 720;
-  const widthScale = Math.max(0.45, Math.min(1, (frame.clientWidth - 48) / slideWidth));
-  const heightScale = Math.max(0.45, Math.min(1, (frame.clientHeight - 48) / slideHeight));
-  const scale = Math.min(widthScale, heightScale, 0.92);
-  zoomRange.value = String(Math.round(scale * 100));
-  applyZoom();
-}
-
-function renderSlideList() {
+function renderSlideList(theme) {
   slideList.replaceChildren();
-  slides.forEach((slide, index) => {
-    const title = slide.querySelector(".title")?.textContent?.trim() || \`Slide \${index + 1}\`;
+  theme.slides.forEach((slide, index) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.textContent = \`\${index + 1}. \${title}\`;
-    button.addEventListener("click", () => goToSlide(index));
+    button.textContent = \`\${slide.index}. \${slide.title}\`;
+    button.addEventListener("click", () => {
+      currentSlide = index;
+      updateSlide(theme);
+    });
     slideList.append(button);
   });
 }
 
 function goToSlide(index) {
-  if (!slides.length) return;
-  currentSlide = Math.max(0, Math.min(index, slides.length - 1));
-  slides[currentSlide].scrollIntoView({ block: "start", behavior: "smooth" });
-  slideCounter.textContent = \`Slide \${currentSlide + 1} / \${slides.length}\`;
+  const theme = themes.find((candidate) => candidate.name === currentTheme) ?? themes[0];
+  currentSlide = Math.max(0, Math.min(index, theme.slides.length - 1));
+  updateSlide(theme);
+}
+
+function updateSlide(theme) {
+  const slide = theme.slides[currentSlide] ?? theme.slides[0];
+  if (!slide) return;
+  slideImage.src = slide.file;
+  slideImage.alt = \`\${theme.name} generated PPTX slide \${slide.index}: \${slide.title}\`;
+  slideCounter.textContent = \`Slide \${slide.index} / \${theme.slides.length} · \${slide.composition}\`;
   [...slideList.children].forEach((button, buttonIndex) => {
     button.setAttribute("aria-current", String(buttonIndex === currentSlide));
   });
@@ -413,4 +403,8 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll("\"", "&quot;");
+}
+
+function sortedUnique(values) {
+  return [...new Set(values.filter(Boolean))].sort();
 }

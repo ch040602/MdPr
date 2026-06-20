@@ -366,9 +366,12 @@ function createContentIndex(presentation: PresentationIR): Map<string, string> {
   for (const slide of presentation.slides) {
     if (slide.title) index.set(titleBlockId(slide.id), slide.title);
     for (const block of slide.blocks) {
-      if (block.text) index.set(block.id, blockTextForValidation(block));
+      const validationText = blockTextForValidation(block);
+      if (validationText) index.set(block.id, validationText);
       if (block.items?.length || block.listItems?.length) {
-        const items = block.items?.length ? block.items : block.listItems?.map((item) => item.text) ?? [];
+        const items = block.items?.length
+          ? block.items
+          : block.listItems?.map((item) => [item.label, item.description, item.text].filter(Boolean).join(" ")) ?? [];
         index.set(block.id, items.join("\n"));
         for (const [itemIndex, item] of items.entries()) {
           index.set(`${block.id}#${itemIndex}`, item);
@@ -435,6 +438,15 @@ function blockTextForValidation(block: PresentationIR["slides"][number]["blocks"
     if (block.sentences?.length) return block.sentences.join("\n");
     if (block.lines?.length) return block.lines.join("\n");
   }
+  if (block.type === "table" && block.rows?.length) {
+    return block.rows.map((row) => row.join(" ")).join("\n");
+  }
+  if (block.type === "chart" && block.chart) {
+    const labels = block.chart.labels.join("\n");
+    const series = block.chart.series.map((item) => `${item.name} ${item.values.join(" ")}`).join("\n");
+    return [labels, series].filter(Boolean).join("\n");
+  }
+  if (block.type === "image") return block.alt ?? "";
   return block.text ?? "";
 }
 
