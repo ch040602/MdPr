@@ -1,42 +1,43 @@
-# MDPR Style and Object QA
+# MDPR Composition Grammar QA
 
 ## Preview Purpose
 
-> This Actions/Pages deck is a visual QA fixture for MDPR decoration styles and editable object rendering.
+> A generated deck should show hierarchy, evidence, and object grammar before it shows decorative variation.
 
-The same semantic Markdown is rendered once per built-in decoration style.
-Use the slide list to compare surface grammar, typography, spacing, table coherence, chart contrast, and connector clarity.
+This Actions/Pages fixture renders the same semantic Markdown through every built-in decoration style.
+The target is not color variety alone; the target is bounded, readable, composition-aware slide output.
+
+## Composition Contract
+
+- Cover signal: title scale and first-viewport object identity.
+- Evidence rhythm: chart, table, and proof objects stay visually connected.
+- Object grammar: cards, tickets, flags, and vines vary without breaking alignment.
+- Connector clarity: pipeline arrows attach to object boundaries.
+- Bounds discipline: no region may exceed the slide or hide essential text.
 
 ## Style Families
 
 - Plain and clean: low-decoration baselines for dense source material.
 - Executive and technical: structured operational layouts with visible hierarchy.
-- Editorial and magazine-like styles: warmer page rhythm without losing bounded text.
+- Editorial and magazine-like: warmer page rhythm without losing bounded text.
 - Minimalism and newmorphism: sparse composition or soft raised surfaces.
-- Glass, grid, and data styles: visibly different background and surface grammar.
-
-## Theme Style Checks
-
-- **Surface grammar**: cards, rails, title rules, and proof callouts should change by style.
-- **Color harmony**: sequential emphasis uses brightness variation; contrast uses hue opposition.
-- **Typography**: same-role text keeps coherent size and readable line height.
-- **Spacing**: text stays inside card/table bounds with visible inner padding.
+- Glass, grid, and data: visibly different background and surface grammar.
 
 ## Markdown Semantics
 
-- Headings: slide boundaries and title regions are stable.
-- Lists: ordered and unordered items remain structured.
-- Label detail: Constraint: renderer rules stay deterministic.
+- **Headings**: slide boundaries and title regions are stable.
+- **Lists**: ordered and unordered items remain structured.
+- **Constraint**: renderer rules stay deterministic.
   The description line must be indented under the bold label.
-- Emphasis: **bold** and *italic* runs remain editable text styling.
+- **Emphasis**: **bold** and *italic* runs remain editable text styling.
 
 ## Pipeline Diagram
 
 Markdown source => Parse blocks => Split slides => Layout objects => Validate overflow => Render PPTX HTML PDF
 
-- One diagram block must stay on one slide.
-- Connectors should attach to node boundaries.
-- Straight or elbow routing should remain clear in every theme.
+- One diagram block stays on one slide.
+- Connectors attach to node boundaries.
+- Straight or elbow routing remains clear across styles.
 
 ## Table Coherence
 
@@ -49,7 +50,7 @@ Markdown source => Parse blocks => Split slides => Layout objects => Validate ov
 
 ## Chart and Table Pair
 
-Chart slides may keep numeric evidence beside a compact table when both are needed.
+Numeric evidence should sit beside the table when both are needed for interpretation.
 
 ```chart
 labels: Parser, Layout, PPTX
@@ -92,11 +93,7 @@ Review, 94
 ## Icon and Text Aside
 
 MDPR may add a restrained monotone icon only when the slide would otherwise be plain text.
-
-- Icons stay secondary to the text.
-- The icon box is centered in its slot.
-- Brand icons require explicit brand terms.
-- Generic object icons are used as fallbacks.
+The icon is a quiet anchor, not a substitute for layout structure.
 
 ## Overflow Guard
 
@@ -109,4 +106,4 @@ MDPR may add a restrained monotone icon only when the slide would otherwise be p
 
 - The `Theme Preview` workflow builds this source across built-in decoration styles.
 - The Pages gallery lets reviewers inspect each styled deck and each object-check slide.
-- The companion `mdpr-skill` repository can prepare optional reasoning hints, but MDPR owns final rendering.
+- `mdpr-skill` may prepare reasoning hints, but MDPR owns final rendering.

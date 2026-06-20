@@ -85,7 +85,7 @@ The parser preserves presentation-relevant Markdown structure: lists, emphasis, 
 
 Detailed rules are split out of this README: [methodology](docs/12-design-methodology.md), [object forms and icon paths](docs/13-object-forms-and-icons.md), [renderer rules](docs/07-rendering-rules.md), and [QA/overflow rules](docs/11-qa-overflow.md).
 
-For visual QA, `--theme-gallery executive,editorial,technical,clean` repeats the planned slides under multiple design presets in one PPTX. The Actions preview page lists decoration styles whose layout and surface grammar differ; legacy color-only presets remain available through `--design` for compatibility. Every `build` writes a deterministic `mdpresent-design-lock.json` and `mdpresent-manifest.json`; use `--visual` to add structural visual-validation summaries.
+For visual QA, `--theme-gallery executive,editorial,technical,clean` repeats the planned slides under multiple design presets in one PPTX. The Actions preview page lists decoration styles whose layout, scale hierarchy, proof objects, and surface grammar differ; legacy color-only presets remain available through `--design` for compatibility. `pnpm preview:themes` regenerates the Pages fixture and runs `scripts/evaluate-theme-preview.mjs` against the generated HTML. Every `build` writes a deterministic `mdpresent-design-lock.json` and `mdpresent-manifest.json`; use `--visual` to add structural visual-validation summaries.
 
 ## Text and Table Coherence
 

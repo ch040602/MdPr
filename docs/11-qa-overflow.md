@@ -115,6 +115,19 @@ The design lock records the resolved decoration style, color seed, harmony rule,
 
 The manifest records source/config hashes, rendered outputs, diagnostics, overflow status, and optional `--visual` structural summaries. Visual summaries do not replace rendered screenshot review; they catch deterministic geometry regressions such as out-of-bounds regions, unreadable font floors, and region-count drift in CI-friendly form.
 
+## Actions preview evaluation
+
+`scripts/evaluate-theme-preview.mjs` checks the generated `docs/theme-preview` HTML after `scripts/build-theme-preview.mjs` runs. It verifies:
+
+- only distinct decoration-style pages are present
+- legacy color-only preset pages are absent from the Actions gallery
+- each generated deck contains required composition markers
+- tables render as structured HTML tables
+- proof objects render as `arc-ring`, `gauge`, and `connected-strip` objects
+- all absolutely positioned regions stay inside the slide rectangle
+
+This evaluator is deterministic and complements manual visual review.
+
 추후 개선:
 
 ```text

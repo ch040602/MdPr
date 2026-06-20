@@ -242,6 +242,63 @@ test("renderHtml applies theme surface grammar in Actions previews", () => {
   assert.match(html, /body\[data-theme-style="magazine"\] \.slide::before/);
 });
 
+test("renderHtml exposes composition classes for stronger Actions previews", () => {
+  const html = renderHtmlForMarkdown([
+    "# Demo Deck",
+    "",
+    "## Evidence",
+    "",
+    "Chart slides keep numeric proof visible beside a compact table.",
+    "",
+    "```chart",
+    "labels: Parser, Layout, PPTX",
+    "Coverage: 92, 88, 95",
+    "```",
+    "",
+    "| Stage | Coverage |",
+    "| --- | ---: |",
+    "| Parser | 92 |",
+    "| Layout | 88 |",
+  ].join("\n"));
+
+  assert.match(html, /class="slide composition composition-chart-table"/);
+  assert.match(html, /data-composition="chart-table"/);
+  assert.match(html, /\.composition-chart-table \.chart/);
+  assert.match(html, /\.composition-cover \.title/);
+});
+
+test("renderHtml renders proof object chart variants instead of text fallbacks", () => {
+  const html = renderHtmlForMarkdown([
+    "# Demo Deck",
+    "",
+    "## Proof Objects",
+    "",
+    "```arc-ring",
+    "labels: Validated, Remaining",
+    "Coverage: 84, 16",
+    "```",
+    "",
+    "```gauge",
+    "labels: Readiness",
+    "Score: 91",
+    "```",
+    "",
+    "```connected-strip",
+    "Parse, 30",
+    "Plan, 62",
+    "Render, 86",
+    "Review, 94",
+    "```",
+  ].join("\n"));
+
+  assert.match(html, /class="proof-object proof-arc-ring"/);
+  assert.match(html, /class="proof-object proof-gauge"/);
+  assert.match(html, /class="proof-object proof-connected-strip"/);
+  assert.match(html, /data-proof-kind="arc-ring"/);
+  assert.doesNotMatch(html, /Coverage: 84, 16/);
+  assert.doesNotMatch(html, /Value: 30, 62, 86, 94/);
+});
+
 function renderHtmlForMarkdown(markdown) {
   const presentation = planPresentation(parseMarkdown(markdown), defaultConfig);
   const layout = planLayout(presentation, defaultConfig);

@@ -8,7 +8,7 @@
     "test": "corepack pnpm -r test",
     "typecheck": "corepack pnpm -r typecheck",
     "cli": "tsx packages/cli/src/index.ts",
-    "preview:themes": "node scripts/build-theme-preview.mjs",
+    "preview:themes": "node scripts/build-theme-preview.mjs && node scripts/evaluate-theme-preview.mjs",
     "preview:readme": "python scripts/build-readme-slide-assets.py"
   },
   "devDependencies": {

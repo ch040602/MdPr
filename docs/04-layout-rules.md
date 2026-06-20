@@ -80,6 +80,20 @@ The parser emits a `diagram` block with ordered nodes and directed edges. The la
 
 Five-item slides use the `pentagon` preset. PPTX rendering adds editable edge accent lines behind the item boxes using the active design preset's secondary color. These lines are background decoration and must not change item region coordinates or clip text.
 
+## Composition grammar
+
+Renderers may add a non-positioning composition layer from the selected `LayoutSpec`. This layer changes hierarchy and visual treatment without changing the Layout IR coordinates:
+
+```text
+cover        larger title scale and a single identity rule
+toc          compact navigational text grouping
+grid         card offset rhythm while keeping region bounds fixed
+pipeline     bounded diagram surface and connector clarity emphasis
+chart-table  chart emphasis, table surface, and compact evidence pairing
+```
+
+The composition layer is deterministic. It must not move regions outside the slide, reduce text below the configured minimum, or turn editable objects into a single flat screenshot.
+
 ## Layout Planner 의사코드
 
 ```ts

@@ -34,6 +34,15 @@ body { margin: 0; background: #111; font-family: var(--font); }
 .deck { display: flex; flex-direction: column; gap: 24px; padding: 24px; }
 .slide { position: relative; width: ${layout.slideSize.width}in; height: ${layout.slideSize.height}in; background: var(--bg); color: var(--text); overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.3); isolation: isolate; }
 .slide::before, .slide::after { content: ""; position: absolute; pointer-events: none; z-index: 0; }
+.composition-cover .title { display: flex; align-items: center; font-size: 54pt !important; line-height: 1.05 !important; max-width: 10.6in; }
+.composition-cover::after { left: 1in; bottom: 1.02in; width: 3.2in; height: .06in; background: var(--primary); opacity: .9; }
+.composition-toc .body { columns: 2; column-gap: .7in; font-size: 20pt !important; }
+.composition-chart-table .chart { justify-content: center; }
+.composition-chart-table .chart.surface { box-shadow: 0 .08in .24in color-mix(in srgb, var(--primary) 18%, transparent); }
+.composition-chart-table .table.surface { background: color-mix(in srgb, var(--surface) 98%, var(--primary) 2%); }
+.composition-pipeline .diagram { background: linear-gradient(135deg, color-mix(in srgb, var(--surface) 86%, transparent), color-mix(in srgb, var(--secondary) 12%, var(--surface))); }
+.composition-grid .item:nth-of-type(2) { transform: translateY(-.04in); }
+.composition-grid .item:nth-of-type(5) { transform: translateY(.04in); }
 .region { position: absolute; box-sizing: border-box; overflow: hidden; z-index: 2; overflow-wrap: anywhere; }
 .region > * { position: relative; z-index: 1; }
 .title { font-weight: 700; }
@@ -71,6 +80,23 @@ strong { color: var(--primary); }
 .chart-track { height: .18in; background: color-mix(in srgb, var(--surface-line) 60%, transparent); border-radius: 999px; overflow: hidden; }
 .chart-bar { height: 100%; background: var(--primary); border-radius: 999px; }
 .chart-value { color: var(--muted); text-align: right; }
+.proof-object { height: 100%; min-height: 1.05in; display: grid; align-items: center; justify-items: center; gap: .08in; color: var(--text); }
+.proof-object + .proof-object { margin-top: .16in; }
+.proof-label { color: var(--muted); font-size: .14in; font-weight: 800; text-transform: uppercase; letter-spacing: .03in; }
+.proof-value { color: var(--primary); font-size: .34in; font-weight: 900; line-height: 1; }
+.proof-arc-ring { grid-template-columns: minmax(1.15in, 1.35in) minmax(1.6in, 1fr); justify-items: start; }
+.proof-ring { position: relative; width: 1.25in; height: 1.25in; border-radius: 999px; background: conic-gradient(var(--primary) calc(var(--value) * 1%), color-mix(in srgb, var(--surface-line) 76%, transparent) 0); display: grid; place-items: center; }
+.proof-ring::after { content: ""; width: .74in; height: .74in; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--surface-line); }
+.proof-ring-text { position: absolute; color: var(--primary); font-weight: 900; font-size: .22in; }
+.proof-gauge { align-content: center; justify-items: stretch; padding: .2in .28in; }
+.proof-gauge-track { position: relative; height: .34in; border-radius: 999px; background: color-mix(in srgb, var(--surface-line) 70%, transparent); overflow: hidden; box-shadow: inset 0 0 0 1px var(--surface-line); }
+.proof-gauge-fill { height: 100%; width: calc(var(--value) * 1%); border-radius: inherit; background: linear-gradient(90deg, var(--secondary), var(--primary)); }
+.proof-gauge-meta { display: flex; justify-content: space-between; align-items: baseline; gap: .2in; }
+.proof-connected-strip { grid-template-columns: repeat(auto-fit, minmax(1.1in, 1fr)); gap: .12in; align-items: stretch; width: 100%; }
+.proof-step { position: relative; min-height: .82in; border: 1px solid var(--surface-line); background: color-mix(in srgb, var(--surface) 88%, transparent); border-radius: .1in; padding: .12in; display: grid; align-content: center; gap: .06in; }
+.proof-step:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -.13in; width: .14in; height: .02in; background: var(--primary); }
+.proof-step-name { font-weight: 800; }
+.proof-step-value { color: var(--primary); font-weight: 900; font-size: .2in; }
 table.mdpr-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: max(.13in, 11pt); line-height: 1.18; }
 .mdpr-table th, .mdpr-table td { border: 1px solid var(--surface-line); padding: .07in .08in; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
 .mdpr-table th { background: var(--primary); color: var(--bg); font-weight: 800; text-align: center; }
@@ -111,7 +137,8 @@ body[data-theme-style="magazine"] .slide::after { left: .72in; right: .72in; top
       ].filter(Boolean).join(" ");
       return `<div class="${classes}" style="${style}">${content}</div>`;
     }).join("\n");
-    return `<section class="slide" data-slide-id="${slide.sourceSlideId}" data-layout="${slide.layout.preset}">${regions}</section>`;
+    const composition = classNameForRegionId(slide.layout.preset);
+    return `<section class="slide composition composition-${composition}" data-slide-id="${slide.sourceSlideId}" data-layout="${slide.layout.preset}" data-composition="${composition}">${regions}</section>`;
   }).join("\n");
 
   const lang = presentation?.meta.language ?? "ko";
@@ -189,6 +216,7 @@ function renderBlock(block: BlockIR): string {
     return renderPipelineDiagram(block.diagram);
   }
   if (block.type === "chart" && block.chart?.kind === "bar") return renderBarChart(block.chart);
+  if (block.type === "chart" && block.chart) return renderProofChart(block.chart);
   if (block.type === "paragraph" && block.inlineRuns?.length) return `<p>${renderInlineRuns(block.inlineRuns)}</p>`;
   if (block.type === "paragraph" && block.sentences?.length) return `<p>${block.sentences.map(escapeHtml).join("<br />")}</p>`;
   if (block.type === "paragraph" && block.lines?.length) return `<p>${block.lines.map(escapeHtml).join("<br />")}</p>`;
@@ -197,6 +225,51 @@ function renderBlock(block: BlockIR): string {
   if (block.inlineRuns?.length) return `<p>${renderInlineRuns(block.inlineRuns)}</p>`;
   if (block.text) return `<p>${escapeHtml(block.text)}</p>`;
   return "";
+}
+
+function renderProofChart(chart: NonNullable<BlockIR["chart"]>): string {
+  if (chart.kind === "arc-ring") return renderArcRing(chart);
+  if (chart.kind === "gauge") return renderGauge(chart);
+  if (chart.kind === "connected-strip") return renderConnectedStrip(chart);
+  if (chart.kind === "ranked-bars") return renderBarChart({ ...chart, kind: "bar" });
+  if (chart.kind === "metric-dots") return renderConnectedStrip(chart);
+  return "";
+}
+
+function renderArcRing(chart: NonNullable<BlockIR["chart"]>): string {
+  const value = clampPercent(chart.series[0]?.values[0] ?? 0);
+  const label = chart.labels[0] ?? chart.series[0]?.name ?? "Value";
+  return [
+    `<div class="proof-object proof-arc-ring" data-proof-kind="arc-ring">`,
+    `<div class="proof-ring" style="--value:${value.toFixed(1)}"><span class="proof-ring-text">${Math.round(value)}%</span></div>`,
+    `<div><div class="proof-label">${escapeHtml(label)}</div><div class="proof-value">${Math.round(value)}%</div></div>`,
+    `</div>`,
+  ].join("");
+}
+
+function renderGauge(chart: NonNullable<BlockIR["chart"]>): string {
+  const value = clampPercent(chart.series[0]?.values[0] ?? 0);
+  const label = chart.labels[0] ?? chart.series[0]?.name ?? "Score";
+  return [
+    `<div class="proof-object proof-gauge" data-proof-kind="gauge" style="--value:${value.toFixed(1)}">`,
+    `<div class="proof-gauge-meta"><span class="proof-label">${escapeHtml(label)}</span><span class="proof-value">${Math.round(value)}%</span></div>`,
+    `<div class="proof-gauge-track"><div class="proof-gauge-fill"></div></div>`,
+    `</div>`,
+  ].join("");
+}
+
+function renderConnectedStrip(chart: NonNullable<BlockIR["chart"]>): string {
+  const values = chart.series[0]?.values ?? [];
+  const steps = chart.labels.map((label, index) => {
+    const value = values[index] ?? 0;
+    return [
+      `<div class="proof-step">`,
+      `<span class="proof-step-name">${escapeHtml(label)}</span>`,
+      `<span class="proof-step-value">${escapeHtml(String(value))}</span>`,
+      `</div>`,
+    ].join("");
+  }).join("");
+  return `<div class="proof-object proof-connected-strip" data-proof-kind="connected-strip">${steps}</div>`;
 }
 
 function renderTable(rows: string[][]): string {
@@ -477,6 +550,10 @@ function surfaceVariantClass(style: string, role: string, id: string): string {
 
 function normalizeTableCellText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
 }
 
 function chooseDiagramArrangement(diagram: NonNullable<BlockIR["diagram"]>): "horizontal" | "vertical" | "u" | "reverse-u" | "cycle" {

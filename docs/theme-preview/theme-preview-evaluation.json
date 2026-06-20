@@ -1,0 +1,53 @@
+{
+  "ok": true,
+  "outDir": "docs/theme-preview",
+  "styleCount": 12,
+  "styleNames": [
+    "clean",
+    "data",
+    "editorial",
+    "executive",
+    "glass",
+    "grid",
+    "magazine",
+    "minimalism",
+    "newmorphism",
+    "plain",
+    "simple",
+    "technical"
+  ],
+  "missingStyles": [],
+  "extraStyles": [],
+  "legacyPages": [],
+  "slideCount": 17,
+  "compositionClasses": [
+    "chart-table",
+    "comparison",
+    "cover",
+    "grid",
+    "key-message",
+    "pipeline",
+    "table-focus",
+    "text-icon-aside",
+    "timeline",
+    "toc",
+    "vertical-list"
+  ],
+  "missingCompositions": [],
+  "surfaceVariants": [
+    "flag-drop",
+    "notched-corner",
+    "rounded",
+    "ticket",
+    "two-corner-left"
+  ],
+  "missingSurfaces": [],
+  "proofKinds": [
+    "arc-ring",
+    "connected-strip",
+    "gauge"
+  ],
+  "missingMarkers": [],
+  "overflowCount": 0,
+  "overflow": []
+}
