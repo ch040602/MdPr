@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>mdpresent Theme Preview</title>
+<title>MDPR Theme and Object QA Theme Preview</title>
 <style>
 :root {
   color-scheme: light;
@@ -193,8 +193,8 @@ iframe {
   <aside class="sidebar">
     <div class="brand">
       <div>
-        <h1>Theme Preview Gallery</h1>
-        <p class="meta">Source: examples/theme-preview-en/deck.md<br />Generated: 2026-06-20T10:40:42.288Z</p>
+        <h1>Theme and Object QA</h1>
+        <p class="meta">Source: examples/theme-preview-en/deck.md<br />Generated: 2026-06-20T11:00:20.878Z<br />Each theme renders the same element-check deck.</p>
       </div>
     </div>
     <div class="control-group">
@@ -206,7 +206,7 @@ iframe {
       <input id="zoomRange" type="range" min="55" max="120" value="100" />
     </div>
     <div class="control-group">
-      <label>Slide Navigation</label>
+      <label>QA Slide Navigation</label>
       <div class="button-row">
         <button id="prevSlide" type="button">Previous</button>
         <button id="nextSlide" type="button">Next</button>
@@ -231,7 +231,7 @@ iframe {
   </main>
 </div>
 <script>
-const themes = [{"name":"plain","file":"themes/plain.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#93C5FD","surface":"#FFFFFF"}},{"name":"clean","file":"themes/clean.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#2563EB","secondary":"#DBEAFE","surface":"#FFFFFF"}},{"name":"executive","file":"themes/executive.html","colors":{"background":"#F8FAFC","text":"#0F172A","primary":"#1D4ED8","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"editorial","file":"themes/editorial.html","colors":{"background":"#F7F3EF","text":"#1F2937","primary":"#B45309","secondary":"#FCD34D","surface":"#FFFBF5"}},{"name":"technical","file":"themes/technical.html","colors":{"background":"#F9FAFB","text":"#111827","primary":"#047857","secondary":"#A7F3D0","surface":"#FFFFFF"}},{"name":"dark","file":"themes/dark.html","colors":{"background":"#111827","text":"#F9FAFB","primary":"#38BDF8","secondary":"#164E63","surface":"#1F2937"}},{"name":"nord","file":"themes/nord.html","colors":{"background":"#2E3440","text":"#ECEFF4","primary":"#88C0D0","secondary":"#B48EAD","surface":"#3B4252"}},{"name":"solarized","file":"themes/solarized.html","colors":{"background":"#FDF6E3","text":"#073642","primary":"#268BD2","secondary":"#B58900","surface":"#EEE8D5"}},{"name":"dracula","file":"themes/dracula.html","colors":{"background":"#282A36","text":"#F8F8F2","primary":"#BD93F9","secondary":"#FF79C6","surface":"#44475A"}},{"name":"tableau","file":"themes/tableau.html","colors":{"background":"#FFFFFF","text":"#1F2937","primary":"#4E79A7","secondary":"#F28E2B","surface":"#F7F7F7"}},{"name":"gruvbox","file":"themes/gruvbox.html","colors":{"background":"#282828","text":"#FBF1C7","primary":"#FABD2F","secondary":"#83A598","surface":"#3C3836"}},{"name":"monokai","file":"themes/monokai.html","colors":{"background":"#272822","text":"#F8F8F2","primary":"#A6E22E","secondary":"#FD971F","surface":"#3E3D32"}},{"name":"material","file":"themes/material.html","colors":{"background":"#FAFAFA","text":"#263238","primary":"#2196F3","secondary":"#FF9800","surface":"#FFFFFF"}},{"name":"tokyo-night","file":"themes/tokyo-night.html","colors":{"background":"#1A1B26","text":"#C0CAF5","primary":"#7AA2F7","secondary":"#BB9AF7","surface":"#24283B"}}];
+const themes = [{"name":"plain","file":"themes/plain.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#93C5FD","surface":"#FFFFFF"}},{"name":"simple","file":"themes/simple.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"clean","file":"themes/clean.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#2563EB","secondary":"#DBEAFE","surface":"#FFFFFF"}},{"name":"executive","file":"themes/executive.html","colors":{"background":"#F8FAFC","text":"#0F172A","primary":"#1D4ED8","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"editorial","file":"themes/editorial.html","colors":{"background":"#F7F3EF","text":"#1F2937","primary":"#B45309","secondary":"#FCD34D","surface":"#FFFBF5"}},{"name":"technical","file":"themes/technical.html","colors":{"background":"#F9FAFB","text":"#111827","primary":"#047857","secondary":"#A7F3D0","surface":"#FFFFFF"}},{"name":"minimalism","file":"themes/minimalism.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#111827","secondary":"#E5E7EB","surface":"#FFFFFF"}},{"name":"newmorphism","file":"themes/newmorphism.html","colors":{"background":"#E9EEF5","text":"#243041","primary":"#4F6F8F","secondary":"#CBD5E1","surface":"#E9EEF5"}},{"name":"glass","file":"themes/glass.html","colors":{"background":"#0B1020","text":"#F8FAFC","primary":"#8A4FFF","secondary":"#22D3EE","surface":"#17213A"}},{"name":"grid","file":"themes/grid.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#DC2626","secondary":"#111827","surface":"#FFFFFF"}},{"name":"data","file":"themes/data.html","colors":{"background":"#101820","text":"#F8FAFC","primary":"#F59E0B","secondary":"#38BDF8","surface":"#162331"}},{"name":"magazine","file":"themes/magazine.html","colors":{"background":"#F8F4EF","text":"#18181B","primary":"#C2410C","secondary":"#111827","surface":"#FFFCF7"}},{"name":"dark","file":"themes/dark.html","colors":{"background":"#111827","text":"#F9FAFB","primary":"#38BDF8","secondary":"#164E63","surface":"#1F2937"}},{"name":"nord","file":"themes/nord.html","colors":{"background":"#2E3440","text":"#ECEFF4","primary":"#88C0D0","secondary":"#B48EAD","surface":"#3B4252"}},{"name":"solarized","file":"themes/solarized.html","colors":{"background":"#FDF6E3","text":"#073642","primary":"#268BD2","secondary":"#B58900","surface":"#EEE8D5"}},{"name":"dracula","file":"themes/dracula.html","colors":{"background":"#282A36","text":"#F8F8F2","primary":"#BD93F9","secondary":"#FF79C6","surface":"#44475A"}},{"name":"tableau","file":"themes/tableau.html","colors":{"background":"#FFFFFF","text":"#1F2937","primary":"#4E79A7","secondary":"#F28E2B","surface":"#F7F7F7"}},{"name":"gruvbox","file":"themes/gruvbox.html","colors":{"background":"#282828","text":"#FBF1C7","primary":"#FABD2F","secondary":"#83A598","surface":"#3C3836"}},{"name":"monokai","file":"themes/monokai.html","colors":{"background":"#272822","text":"#F8F8F2","primary":"#A6E22E","secondary":"#FD971F","surface":"#3E3D32"}},{"name":"material","file":"themes/material.html","colors":{"background":"#FAFAFA","text":"#263238","primary":"#2196F3","secondary":"#FF9800","surface":"#FFFFFF"}},{"name":"tokyo-night","file":"themes/tokyo-night.html","colors":{"background":"#1A1B26","text":"#C0CAF5","primary":"#7AA2F7","secondary":"#BB9AF7","surface":"#24283B"}}];
 const select = document.querySelector("#themeSelect");
 const grid = document.querySelector("#themeGrid");
 const frame = document.querySelector("#previewFrame");

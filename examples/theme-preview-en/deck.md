@@ -1,48 +1,112 @@
-# mdpresent
+# MDPR Theme and Object QA
 
-## Core Principle
+## Preview Purpose
 
-> Markdown remains the source of truth; the deck is a rendered presentation view.
+> This Actions/Pages deck is a visual QA fixture for MDPR themes and editable object rendering.
 
-The source document should stay readable for people.
-Slide splitting, layout selection, and overflow checks are handled by deterministic rules.
+The same semantic Markdown is rendered once per built-in theme.
+Use the slide list to compare color, typography, spacing, table coherence, chart contrast, and connector clarity.
 
-## Generation Flow
+## Theme Families
 
-```text
-Markdown source
-  → Structure parsing
-  → Slide splitting
-  → Presentation model
-  → Layout planning
-  → Quality checks
-  → Rendered output
-```
+- Plain and clean: low-decoration baselines for dense source material.
+- Executive and technical: structured operational layouts with visible hierarchy.
+- Editorial and magazine-like presets: warmer page rhythm without losing bounded text.
+- Dark and code-adjacent presets: contrast, readable muted text, and restrained surfaces.
+- Data-friendly presets: chart accents, table headers, and proof objects stay theme-bound.
 
-## Rule-Based Engine
+## Theme Style Checks
 
-- NO LLM runtime: generation does not call an external model.
-- Rule-based layout: headings, density, list count, sentence units, and diagram signals drive placement.
-- Reproducible output: the same source and settings produce the same presentation structure.
-- Auxiliary skill ready: the standalone CLI can be wrapped as a local automation skill.
+- **Surface grammar**: cards, rails, title rules, and proof callouts should change by theme.
+- **Color harmony**: sequential emphasis uses brightness variation; contrast uses hue opposition.
+- **Typography**: same-role text keeps coherent size and readable line height.
+- **Spacing**: text stays inside card/table bounds with visible inner padding.
 
 ## Markdown Semantics
 
-- Lists: ordered items, nesting, and description lines stay structured.
-- Emphasis: bold and italic markers become editable text effects.
-- Quotes: key statements are separated into emphasized regions.
-- Diagrams: arrow flows become nodes and connected lines.
+- Headings: slide boundaries and title regions are stable.
+- Lists: ordered and unordered items remain structured.
+- Label detail: Constraint: renderer rules stay deterministic.
+  The description line must be indented under the bold label.
+- Emphasis: **bold** and *italic* runs remain editable text styling.
 
-## Theme Selection
+## Pipeline Diagram
 
-- Presets: business, editorial, technical, dark, and data-friendly palettes are available.
-- Switching: one presentation structure can be compared across multiple visual themes.
-- Consistency: titles, body text, cards, and connectors keep their role-based styling.
-- Editing: generated presentation files keep text and shapes editable.
+Markdown source => Parse blocks => Split slides => Layout objects => Validate overflow => Render PPTX HTML PDF
 
-## Quality Checks
+- One diagram block must stay on one slide.
+- Connectors should attach to node boundaries.
+- Straight or elbow routing should remain clear in every theme.
 
-- Text fit: content is checked against its assigned region.
-- Diagram connections: node connectors are drawn from calculated coordinates.
-- Continuation slides: dense content is split instead of shrinking below readable size.
-- Cleanup: decorative bullets and empty artifacts are removed before rendering.
+## Table Coherence
+
+| Object | Renderer expectation | QA signal |
+| --- | --- | --- |
+| Text box | editable, vertically aligned | readable at minimum size |
+| Table | native table object | header fill and cell padding |
+| Diagram | nodes and connectors | no clipped labels |
+| Chart | theme-colored data object | contrast and legend clarity |
+
+## Chart and Table Pair
+
+Chart slides may keep numeric evidence beside a compact table when both are needed.
+
+```chart
+labels: Parser, Layout, PPTX
+Coverage: 92, 88, 95
+Defects: 3, 5, 2
+```
+
+| Stage | Coverage | Defects |
+| --- | ---: | ---: |
+| Parser | 92 | 3 |
+| Layout | 88 | 5 |
+| PPTX | 95 | 2 |
+
+## Editable Proof Objects
+
+```arc-ring
+labels: Validated, Remaining
+Coverage: 84, 16
+```
+
+```gauge
+labels: Readiness
+Score: 91
+```
+
+```connected-strip
+Parse, 30
+Plan, 62
+Render, 86
+Review, 94
+```
+
+## Object Shape Grammar
+
+- Method flag: short high-level step.
+- Ticket panel: document-like evidence.
+- Circle vine: compact relationship marker.
+- Two-corner panel: linear grouping.
+
+## Icon and Text Aside
+
+MDPR may add a restrained monotone icon only when the slide would otherwise be plain text.
+
+- Icons stay secondary to the text.
+- The icon box is centered in its slot.
+- Brand icons require explicit brand terms.
+- Generic object icons are used as fallbacks.
+
+## Overflow Guard
+
+- Text fit: region bounds are validated before output.
+- Tables: cell text uses middle alignment and coherent margins.
+- Continuation slides: dense content splits before text becomes unreadable.
+- Cleanup: decorative-only bullets and empty artifacts are removed.
+
+## Actions Output Review
+
+- The `Theme Preview` workflow builds this source across all built-in themes.
+- The Pages gallery lets reviewers inspect each themed deck and each object-check slide.
+- The companion `mdpr-skill` repository can prepare optional reasoning hints, but MDPR owns final rendering.

@@ -2,7 +2,7 @@
 
 `mdpresent` is not a direct Markdown-to-PowerPoint converter. It is a CLI-based presentation structuring tool that splits Markdown documents into a shared `Presentation IR`, then renders that structure to `PPTX`, `PDF`, or `HTML`.
 
-`mdpresent` is the main deterministic runtime. Parsing, splitting, layout, validation, theme selection, editable object rendering, and PowerPoint output are rule-based and require no LLM calls. The separate `mdpr-skill` project is only a reasoning companion: it can prepare compact semantic hints or review artifacts, but MDPR may ignore those hints and still build the deck deterministically.
+`mdpresent` is the main deterministic runtime. Parsing, splitting, layout, validation, theme selection, editable object rendering, and PowerPoint output are rule-based and require no LLM calls. The separate [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) project is only a reasoning companion: it can prepare compact semantic hints or review artifacts, but MDPR may ignore those hints and still build the deck deterministically.
 
 ![MDPR deterministic presentation pipeline teaser](docs/assets/readme-slides/mdpr-pipeline-teaser.png)
 
@@ -17,7 +17,7 @@ Language variants:
 
 The same Markdown source can produce editable PPTX slides with responsive structure, adaptive diagrams, and reusable design presets.
 
-[Open the interactive theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between all built-in themes, browse slides, and inspect the generated HTML deck output.
+[Open the interactive theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) to switch between all built-in themes, browse per-theme visual QA slides, and inspect element-check slides for tables, charts, diagrams, proof objects, icon slots, typography, and overflow behavior.
 
 | Cover / Title | Pipeline Diagram |
 | --- | --- |
@@ -128,9 +128,9 @@ examples/   Example Markdown, config, and override files
 The repository runs two Actions workflows:
 
 - `CI` installs the pnpm workspace, runs typecheck, builds all packages, and runs tests on push, pull request, and manual dispatch.
-- `Theme Preview` builds the package workspace, regenerates the theme preview gallery, and publishes it to GitHub Pages.
+- `Theme Preview` builds the package workspace, regenerates the theme preview gallery from the theme/object QA deck, and publishes it to GitHub Pages.
 
-These checks protect the deterministic MDPR runtime. The optional `mdpr-skill` repository may prepare semantic hints and review artifacts, but MDPR's Actions must pass without an LLM or external API key.
+These checks protect the deterministic MDPR runtime. The optional [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) repository may prepare semantic hints and review artifacts, but MDPR's Actions must pass without an LLM or external API key.
 
 ## Acknowledgements
 

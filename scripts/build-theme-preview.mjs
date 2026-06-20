@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDeckPlan } from "../packages/cli/dist/orchestrate.js";
-import { DESIGN_PRESET_NAMES, resolveDesignTokens } from "../packages/core/dist/index.js";
+import { DECORATION_STYLE_NAMES, resolveDesignTokens } from "../packages/core/dist/index.js";
 import { renderHtml } from "../packages/render-html/dist/index.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -13,12 +13,12 @@ const themesDir = join(outDir, "themes");
 mkdirSync(themesDir, { recursive: true });
 
 const deck = createDeckPlan(inputPath);
-const themeEntries = DESIGN_PRESET_NAMES.map((name) => {
+const themeEntries = DECORATION_STYLE_NAMES.map((name) => {
   const tokens = resolveDesignTokens(name, deck.config.theme);
   const fileName = `${name}.html`;
   const html = withPreviewMetadata(renderHtml(
     { presentation: deck.presentation, layout: deck.layout },
-    { title: `${deck.presentation.meta.title} - ${name}`, designPreset: name },
+    { title: `${deck.presentation.meta.title} - ${name}`, decorationStyle: name },
   ), name);
   writeFileSync(join(themesDir, fileName), html, "utf-8");
 
@@ -249,8 +249,8 @@ iframe {
   <aside class="sidebar">
     <div class="brand">
       <div>
-        <h1>Theme Preview Gallery</h1>
-        <p class="meta">Source: ${escapeHtml(source)}<br />Generated: ${escapeHtml(generatedAt)}</p>
+        <h1>Theme and Object QA</h1>
+        <p class="meta">Source: ${escapeHtml(source)}<br />Generated: ${escapeHtml(generatedAt)}<br />Each theme renders the same element-check deck.</p>
       </div>
     </div>
     <div class="control-group">
@@ -262,7 +262,7 @@ iframe {
       <input id="zoomRange" type="range" min="55" max="120" value="100" />
     </div>
     <div class="control-group">
-      <label>Slide Navigation</label>
+      <label>QA Slide Navigation</label>
       <div class="button-row">
         <button id="prevSlide" type="button">Previous</button>
         <button id="nextSlide" type="button">Next</button>
