@@ -225,56 +225,77 @@ def build_showcase(slide: Any) -> None:
     total_png = style_count * slide_count
 
     add_shape(slide, 1, 0, 0, SLIDE_W, SLIDE_H, "101820", "101820")
-    add_shape(slide, 1, 0, 0, 88, SLIDE_H, "14B8A6", "14B8A6")
-    add_shape(slide, 1, 88, 0, SLIDE_W - 88, 12, "E9B44C", "E9B44C")
-    add_text(slide, 130, 54, 820, 60, "MDPR Visual Grammar", 50, "FFFFFF", True, margin=0)
+    add_shape(slide, 1, 0, 0, 74, SLIDE_H, "14B8A6", "14B8A6")
+    add_shape(slide, 1, 74, 0, SLIDE_W - 74, 10, "E9B44C", "E9B44C")
+    add_shape(slide, 1, 74, 820, SLIDE_W - 74, 80, "0C1320", "0C1320")
+
+    add_text(slide, 124, 58, 840, 58, "Markdown to editable PowerPoint", 46, "FFFFFF", True, margin=0)
     add_text(
         slide,
-        134,
+        126,
         124,
-        980,
-        40,
-        "PPTX-first themes, layout compositions, proof objects, and visual QA generated from actual MDPR outputs.",
-        21,
+        790,
+        56,
+        "MDPR uses rule-based layouts, theme colors, proof objects, tables, charts, and visual QA generated from actual PPTX outputs.",
+        20,
         "CBD5E1",
         margin=0,
+        valign="top",
     )
+    add_shape(slide, 1, 126, 196, 180, 6, "14B8A6", "14B8A6")
 
-    add_metric(slide, 1130, 48, 158, 104, str(style_count), "theme styles", PALETTE["teal"])
-    add_metric(slide, 1306, 48, 158, 104, str(composition_count), "layouts", PALETTE["amber"])
-    add_metric(slide, 1130, 170, 158, 104, str(surface_count + proof_count), "object forms", PALETTE["violet"])
-    add_metric(slide, 1306, 170, 158, 104, f"{total_png}", "PPT PNGs", PALETTE["rose"])
+    hero_style, hero_index, hero_label = SHOWCASE_SOURCES[2]
+    hero_path = ROOT / "docs" / "theme-preview" / "slides" / hero_style / f"slide-{hero_index:02d}.png"
+    add_shape(slide, 5, 126, 242, 792, 446, "FFFFFF", "334155", 1.3, True)
+    add_picture(slide, hero_path, 144, 262, 756, 386)
+    add_shape(slide, 1, 144, 648, 756, 40, "FFFFFF", "FFFFFF", 0.5, False)
+    add_text(slide, 164, 657, 180, 22, hero_style, 14, PALETTE["ink"], True, margin=0)
+    add_text(slide, 350, 657, 520, 22, f"{hero_label}: chart and table stay editable, aligned, and theme-bound", 13, PALETTE["muted"], False, "right", "middle", 0)
 
-    thumb_positions = [
-        (130, 220, 490, 260),
-        (650, 220, 490, 260),
-        (130, 552, 490, 260),
-        (650, 552, 490, 260),
-    ]
-    for (style, index, label), (x, y, w, h) in zip(SHOWCASE_SOURCES, thumb_positions):
-        add_shape(slide, 5, x - 10, y - 10, w + 20, h + 52, "FFFFFF", "334155", 1.2, True)
-        image_path = ROOT / "docs" / "theme-preview" / "slides" / style / f"slide-{index:02d}.png"
-        add_picture(slide, image_path, x, y, w, h)
-        add_shape(slide, 1, x, y + h, w, 38, "FFFFFF", "FFFFFF", 0.5, False)
-        add_text(slide, x + 18, y + h + 8, 160, 22, style, 15, PALETTE["ink"], True, margin=0)
-        add_text(slide, x + 176, y + h + 8, w - 194, 22, label, 14, PALETTE["muted"], False, "right", "middle", 0)
-
-    add_shape(slide, 5, 1180, 326, 304, 356, "FFFFFF", "334155", 1.2, True)
-    add_text(slide, 1210, 354, 230, 34, "Feature Coverage", 24, PALETTE["ink"], True, margin=0)
+    add_shape(slide, 5, 978, 58, 486, 242, "17213A", "334155", 1.2, True)
+    add_text(slide, 1014, 88, 396, 32, "What is covered", 25, "FFFFFF", True, margin=0)
     chips = [
-        ("Theme colors", PALETTE["teal"]),
-        ("SVG surfaces", PALETTE["amber"]),
-        ("Proof objects", PALETTE["violet"]),
-        ("Native tables", PALETTE["rose"]),
-        ("Charts + prose", PALETTE["sage"]),
-        ("Overflow QA", PALETTE["indigo"]),
+        ("Themes", f"{style_count} styles", PALETTE["teal"]),
+        ("Layouts", f"{composition_count} compositions", PALETTE["amber"]),
+        ("Objects", f"{surface_count + proof_count} forms", PALETTE["violet"]),
+        ("Exports", f"{total_png} PPTX PNGs", PALETTE["rose"]),
     ]
-    for idx, (label, accent) in enumerate(chips):
-        add_feature_chip(slide, 1210, 398 + idx * 43, 244, label, accent)
+    for idx, (label, value, accent) in enumerate(chips):
+        y = 138 + idx * 36
+        add_shape(slide, 9, 1008, y + 6, 20, 20, accent, "FFFFFF", 1.0, False)
+        add_text(slide, 1040, y + 4, 130, 24, label, 13, "E2E8F0", True, margin=0)
+        add_text(slide, 1192, y + 4, 224, 24, value, 13, "CBD5E1", False, "right", "middle", 0)
 
-    add_shape(slide, 5, 1180, 714, 304, 84, "17213A", "22D3EE", 1.8, False)
-    add_text(slide, 1210, 730, 244, 24, "Built from MDPR results", 16, "FFFFFF", True, "center", "middle", 0)
-    add_text(slide, 1210, 762, 244, 22, "theme-preview PPTX -> PNG", 12, "CBD5E1", False, "center", "middle", 0)
+    add_shape(slide, 5, 978, 338, 486, 226, "FFFDF8", "334155", 1.2, True)
+    add_text(slide, 1014, 370, 390, 30, "Deterministic visual rules", 24, PALETTE["ink"], True, margin=0)
+    rules = [
+        ("Theme colors", PALETTE["teal"]),
+        ("SVG-backed surfaces", PALETTE["amber"]),
+        ("Native tables + charts", PALETTE["rose"]),
+        ("Overflow and scale checks", PALETTE["indigo"]),
+    ]
+    for idx, (label, accent) in enumerate(rules):
+        y = 420 + idx * 34
+        add_shape(slide, 9, 1016, y + 6, 16, 16, accent, accent, 0.5, False)
+        add_text(slide, 1044, y, 330, 26, label, 14, PALETTE["ink"], True, margin=0)
+
+    strip = [
+        SHOWCASE_SOURCES[0],
+        SHOWCASE_SOURCES[1],
+        SHOWCASE_SOURCES[3],
+    ]
+    for idx, (style, index, label) in enumerate(strip):
+        x = 978 + idx * 160
+        y = 612
+        image_path = ROOT / "docs" / "theme-preview" / "slides" / style / f"slide-{index:02d}.png"
+        add_shape(slide, 5, x, y, 142, 112, "FFFFFF", "334155", 1.0, True)
+        add_picture(slide, image_path, x + 6, y + 6, 130, 74)
+        add_text(slide, x + 8, y + 86, 126, 18, style, 10.5, PALETTE["ink"], True, "center", "middle", 0)
+        add_text(slide, x + 8, y + 102, 126, 14, label, 9.2, PALETTE["muted"], False, "center", "middle", 0)
+
+    add_shape(slide, 5, 126, 724, 792, 74, "17213A", "22D3EE", 1.5, False)
+    add_text(slide, 158, 742, 250, 26, "Built from real MDPR results", 17, "FFFFFF", True, margin=0)
+    add_text(slide, 420, 742, 430, 26, "theme-preview PPTX -> PowerPoint PNG -> README teaser", 14, "CBD5E1", False, "right", "middle", 0)
 
 
 def build_cover(slide: Any) -> None:
