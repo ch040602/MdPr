@@ -1,124 +1,76 @@
-# 03. 페이지 분할 규칙
+# 03. Page Splitting Rules
 
-## 기본 heading 규칙
-
-```text
-#   cover 또는 section
-##  slide candidate
-### subsection 또는 autosplit 기준
-#### 본문 내부 heading
-```
-
-## 기본 절차
+## Heading Rules
 
 ```text
-1. Markdown 구조 생성
-   - 기본값: built-in simple parser
-   - 선택값: `--parser pandoc`으로 Pandoc JSON AST 생성 후 `BlockIR`로 정규화
-2. heading tree 생성
-3. h2 기준 slide candidate 생성
-4. candidate별 density 계산
-5. maxDensity 이하이면 한 슬라이드 유지
-6. `---` horizontal rule이 있으면 explicit slide separator로 우선 분할
-7. 초과하면 h3 기준 분할
-8. h3가 없으면 block group 기준 분할
-9. paragraph가 길면 Markdown line과 sentence chunk 기준으로 분할
-10. list가 길면 list chunk 기준 분할
-11. 표/이미지/코드는 독립 slide 후보로 분리
-12. cover와 toc 삽입
+#     cover or section
+##    slide candidate
+###   subsection or autosplit boundary
+####  in-body heading
 ```
 
-## Density 점수
-
-| 요소 | 기본 점수 |
-|---|---:|
-| 짧은 문단 | 1 |
-| 긴 문단 | 2 |
-| bullet 1개 | 1 |
-| nested bullet | 1.5 |
-| heading | 1 |
-| 작은 표 | 4 |
-| 큰 표 | 8 |
-| 이미지 | 5 |
-| 짧은 코드 | 5 |
-| 긴 코드 | 9 |
-| 인용문 | 3 |
-
-## Density 기준
+## Procedure
 
 ```text
-0 ~ 8    한 슬라이드
-9 ~ 14   레이아웃 최적화 또는 autosplit 검토
-15 이상  분할 권장
+1. Parse Markdown.
+2. Normalize Pandoc JSON into BlockIR when `--parser pandoc` is selected.
+3. Build the heading tree.
+4. Create slide candidates from h2 sections.
+5. Calculate density for each candidate.
+6. Keep candidates below the density threshold together.
+7. Split explicit `---` slide separators first.
+8. Split overloaded candidates by h3 sections.
+9. Split candidates without h3 sections by block groups.
+10. Split long paragraphs by Markdown lines and sentence chunks.
+11. Split long lists by list chunks.
+12. Move tables, images, and code into dedicated slide candidates when needed.
+13. Insert cover and table-of-contents slides.
+14. Split generated table-of-contents slides into continuation slides when the
+    entry count exceeds the bounded TOC capacity.
 ```
 
-## Sentence-Aware Paragraph Splitting
+## Density Scores
 
-Parser output preserves both author-written Markdown lines and sentence units:
+| Element | Default Score |
+| --- | ---: |
+| Short paragraph | 1 |
+| Long paragraph | 2 |
+| Bullet item | 1 |
+| Nested bullet | 1.5 |
+| Heading | 1 |
+| Small table | 4 |
+| Large table | 8 |
+| Image | 5 |
+| Short code block | 5 |
+| Long code block | 9 |
+| Quote | 3 |
 
 ```text
-BlockIR.lines      original paragraph lines from the Markdown file
-BlockIR.sentences  sentence-sized units split on terminal punctuation
+0-8      keep on one slide
+9-14     try layout optimization or autosplit
+15+      split
 ```
 
-When a slide candidate exceeds `split.autosplit.maxDensity` and does not have h3 children, the split planner expands long paragraph blocks into sentence units and creates continuation slides such as:
+## Preserved Block Structure
 
 ```text
-Long Narrative (1/3)
-Long Narrative (2/3)
-Long Narrative (3/3)
-```
-
-This keeps long Korean or English narrative paragraphs from reaching the renderer as one unbroken text box.
-
-## Explicit Slide Separators
-
-`---` on its own line is treated as an explicit slide separator, following common Markdown slide tools such as Slidev, reveal.js/reveal-md, and Pandoc.
-
-```md
-## Walkthrough
-
-First part.
-
----
-
-Second part without another heading.
-```
-
-The planner creates continuation slides:
-
-```text
-Walkthrough (1/2)
-Walkthrough (2/2)
-```
-
-If the separator appears before another slide-level heading, it starts the next heading cleanly and is not rendered as content.
-
-## Markdown Structure Blocks
-
-The parser now preserves these block types as presentation structure:
-
-```text
-paragraph  keeps text, original Markdown lines, sentence units, and inline emphasis runs
-bulletList keeps flat text plus structured listItems with ordered/nested metadata
-quote      `>` blockquote text
-table      pipe table rows, excluding the delimiter row
+paragraph  text, Markdown lines, sentence units, inline emphasis runs
+bulletList fallback text and structured listItems
+quote      blockquote text
+table      pipe table rows
 code       fenced code with language
 image      Markdown image references
+diagram    pipeline nodes and edges
 slideBreak explicit `---` separator
 ```
 
-## Pandoc Parser Mode
-
-Pandoc mode is selected explicitly:
+## Pandoc Mode
 
 ```bash
 mdpresent build deck.md --parser pandoc --to pptx,html --out dist
 ```
 
-In this mode, MDPR runs Pandoc with `--to json`, converts Pandoc blocks into MDPR `BlockIR`, and then uses the same outline builder, split planner, density rules, intent detector, layout planner, and renderers as the default parser.
-
-Pandoc mode is responsible for richer Markdown normalization only:
+Pandoc mode performs richer Markdown normalization only:
 
 ```text
 Markdown
@@ -129,31 +81,19 @@ Markdown
   -> Presentation IR
 ```
 
-It must not choose slide coordinates, colors, decorations, component variants, visual emphasis, or z-order. Those decisions belong to layout/rendering or to an optional design layer after `Presentation IR`.
+Pandoc mode must not choose slide coordinates, colors, decorations, visual emphasis, or z-order.
 
-## Structured Lists And Inline Emphasis
-
-List parsing keeps both renderer-friendly text and semantic structure:
+## Structured Lists and Emphasis
 
 ```text
-BlockIR.items       plain text list item fallback
+BlockIR.items       plain text fallback
 BlockIR.listItems   ordered/unordered flag, numeric marker, nesting level, inline runs
 BlockIR.listKind    ordered, unordered, or mixed
 ```
 
-Decorative list markers such as an empty `-` line or standalone `·` are removed during parsing so renderers do not emit empty bullets or empty text boxes.
+Decorative empty bullets are removed during parsing. Inline Markdown emphasis is preserved as `InlineRunIR` so PPTX and HTML renderers can map bold and italic to native target-format styling.
 
-Inline Markdown emphasis is preserved in `InlineRunIR`:
-
-```md
-1. Prepare **source**
-2. Render *deck*
-   - Validate output
-```
-
-This produces ordered list metadata for the first two items, nested unordered metadata for the third item, and bold/italic runs that PPTX and HTML renderers can map to native target-format styling.
-
-## SplitStrategy
+## Split Strategy
 
 ```ts
 type SplitStrategy =
@@ -163,10 +103,10 @@ type SplitStrategy =
   | "by-list-chunk"
   | "by-table"
   | "by-media"
-  | "continuation"
+  | "continuation";
 ```
 
-## 분할 override 예시
+## Split Override Example
 
 ```yaml
 operations:
@@ -178,33 +118,19 @@ operations:
       maxDensity: 14
 ```
 
-## Stable ID 규칙
+## Stable ID Policy
 
-슬라이드 번호는 자동 분할 결과에 따라 바뀔 수 있으므로, override는 `slideIndex`보다 `slideId`를 사용한다.
-
-권장 생성 방식:
+Slide numbers may change after autosplitting, so overrides should target `slideId` instead of `slideIndex`.
 
 ```text
 slugified-title + short-hash(headingPath + duplicate occurrence)
 ```
 
-Stable ID 보존 범위:
+Stable IDs are preserved when body content is inserted above or below an existing heading and the heading path remains the same. They are not preserved when heading text, heading level, duplicate heading order, or autosplit candidate structure changes.
 
-```text
-보존:
-- 기존 heading 위나 아래에 본문 paragraph/list/code/image를 삽입하는 경우
-- 기존 heading의 source line이 이동하지만 headingPath가 유지되는 경우
+## Generated TOC Capacity
 
-보존하지 않음:
-- heading 제목 변경
-- heading 계층 변경
-- 같은 headingPath를 가진 중복 heading을 기존 heading 앞에 추가
-- autosplit 결과 자체가 바뀌어 slide candidate가 달라지는 경우
-```
-
-예:
-
-```text
-main-features-a13f92
-comparison-as-is-to-be-991af
-```
+Generated table-of-contents slides are list slides, not semantic diagrams. When
+the deck has many h2 sections, MDPR splits the TOC into continuation slides with
+at most 14 entries per slide. This prevents TOC item regions from leaving the
+slide bounds while preserving graph and diagram slides as whole objects.

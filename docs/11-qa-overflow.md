@@ -1,50 +1,41 @@
-# 11. QA와 Overflow 정책
+# 11. QA and Overflow Policy
 
-## QA 검사 항목
+## QA Checks
 
 ```text
-- 텍스트 overflow
-- 표 overflow
-- 이미지 누락
-- asset 경로 오류
-- page number 겹침
-- safe area 위반
-- minFontSize 위반
-- override target 미존재
-- slot 좌표 범위 초과
+- text overflow
+- table overflow
+- missing images
+- invalid asset paths
+- overlapping page numbers
+- safe-area violations
+- minimum font size violations
+- missing override targets
+- slot coordinates outside slide bounds
 - design lock drift
 - manifest visual-validation summary
 ```
 
-## Overflow 처리 순서
+## Overflow Resolution Order
 
 ```text
-1. 기본 font size로 배치
-2. overflow 검사
-3. layout variant 변경 시도
-4. 최소 폰트 크기까지 shrink
-5. continuation slide 생성
-6. 그래도 실패하면 warn 또는 fail
+1. Place content with the default font size.
+2. Measure overflow.
+3. Try a layout variant.
+4. Shrink down to the configured readable font floor.
+5. Create continuation slides.
+6. Emit warn or fail diagnostics if content still does not fit.
 ```
 
-## CLI 옵션
-
-```bash
---on-overflow split
---on-overflow shrink
---on-overflow warn
---on-overflow fail
-```
-
-권장 기본값:
+Recommended defaults:
 
 ```text
-일반 build: split
+normal build: split
 CI/test: fail
-디자인 검토: warn
+design review: warn
 ```
 
-## Validation behavior
+## Diagnostics
 
 Executable validation checks must emit diagnostics for:
 
@@ -61,46 +52,46 @@ overflowPolicy.action = fail  -> error
 overflowPolicy.action != fail -> warning
 ```
 
-Safe-area and slot-bound checks use the same bounds rule in the MVP: a region must stay inside the slide rectangle.
+Safe-area and slot-bound checks use the same MVP rule: a region must stay inside the slide rectangle.
 
-Min font size validation compares the effective region font size against `region.typography.minFontSize`, then `overflowPolicy.minFontSize`, then the theme minimum.
+Minimum font size validation compares the effective region font size against `region.typography.minFontSize`, then `overflowPolicy.minFontSize`, then the theme minimum.
+
+## Text Normalization
 
 Markdown normalization happens before overflow validation and rendering. Repeated spaces and tabs collapse inside paragraph lines, inline emphasis runs, list text, and table cells so measured text matches rendered text.
 
-Simple Markdown table blocks carry both `rows` and validation `text`, matching Pandoc tables. PPTX table rendering clamps its compact table font to the same readable minimum rather than shrinking to an independent floor.
+Simple Markdown table blocks carry both row data and validation text, matching Pandoc tables. PPTX table rendering clamps compact table font size to the same readable minimum instead of shrinking to an independent floor.
 
-## Title regions
+## Title Regions
 
-Title regions are validated with the same overflow path as body regions. The layout planner adds a stable pseudo block id for each slide title, and the CLI validation content index maps that pseudo block to the `Presentation IR` slide title. This prevents renderers from injecting a long title that was never checked by `validate`.
+Title regions use the same overflow path as body regions. The layout planner adds a stable pseudo block id for each slide title, and CLI validation maps that pseudo block to the `Presentation IR` slide title. This prevents renderers from injecting long titles that were never checked by `validate`.
 
 ## Pre-Render Text Containment Resolver
 
 Before validation and rendering, the CLI applies a conservative text containment pass to the planned `Layout IR`.
 
-Behavior:
-
 ```text
 1. Build Presentation IR and initial Layout IR.
-2. Measure region text through the same overflow validator used by `validate`.
-3. For TEXT_OVERFLOW under reflow/shrink/split policies, reduce the region font size down to the configured minimum.
-4. If the font is already at minimum and slide bounds allow it, expand the region height slightly.
+2. Measure region text with the same overflow validator used by `validate`.
+3. For TEXT_OVERFLOW under reflow/shrink/split policies, reduce region font size down to the configured minimum.
+4. If the font is already at minimum and slide bounds allow it, expand region height slightly.
 5. Re-run measurement for a bounded number of iterations.
-6. Do not auto-resolve `fail` or `warn` policies; those remain explicit diagnostics.
+6. Do not auto-resolve `fail` or `warn`; those remain explicit diagnostics.
 ```
 
-The resolver does not change slide order, drop content, or move unrelated regions. When it cannot make text fit without violating the minimum font size or slide bounds, the normal overflow diagnostic remains.
+The resolver does not change slide order, drop content, or move unrelated regions. If it cannot make text fit without violating minimum font size or slide bounds, the normal overflow diagnostic remains.
 
-## Text measurement MVP
+## Text Measurement MVP
 
-초기 구현은 근사치로 시작해도 된다.
+The initial measurement model may be approximate:
 
 ```ts
-const averageCharWidth = fontSize * 0.52
-const charsPerLine = Math.floor(regionWidthPx / averageCharWidth)
-const lines = Math.ceil(text.length / charsPerLine)
+const averageCharWidth = fontSize * 0.52;
+const charsPerLine = Math.floor(regionWidthPx / averageCharWidth);
+const lines = Math.ceil(text.length / charsPerLine);
 ```
 
-Current measurement uses display width rather than raw character count. CJK/Hangul characters are treated as wider than ASCII, and explicit newline boundaries from `BlockIR.sentences` or `BlockIR.lines` are measured as separate lines.
+Current measurement uses display width rather than raw character count. Wide scripts are treated as wider than ASCII, and explicit newline boundaries from `BlockIR.sentences` or `BlockIR.lines` are measured as separate lines.
 
 ## Build Manifest and Design Lock
 
@@ -113,11 +104,18 @@ mdpresent-manifest.json
 
 The design lock records the resolved decoration style, color seed, harmony rule, palette seed, PowerPoint theme colors, typography, and surface policy. A supplied `--design-lock` path must match the resolved contract unless `--update-design-lock` is used.
 
-The manifest records source/config hashes, rendered outputs, diagnostics, overflow status, and optional `--visual` structural summaries. Visual summaries do not replace rendered screenshot review; they catch deterministic geometry regressions such as out-of-bounds regions, unreadable font floors, and region-count drift in CI-friendly form.
+The manifest records source/config hashes, rendered outputs, diagnostics, overflow status, and optional `--visual` structural summaries. Visual summaries do not replace rendered screenshot review; they catch deterministic geometry regressions such as out-of-bounds regions, unreadable font floors, and region-count drift.
 
-## Actions preview evaluation
+## Actions Preview Evaluation
 
-`scripts/evaluate-theme-preview.mjs` checks the generated `docs/theme-preview` artifacts after `scripts/build-theme-preview.mjs` runs. The builder renders PPTX decks first, exports each slide to PNG, and then writes an HTML gallery shell. The evaluator verifies:
+`scripts/evaluate-theme-preview.mjs` checks generated `docs/theme-preview` artifacts after `scripts/build-theme-preview.mjs` runs. The builder renders PPTX decks first, exports each slide to PNG, and then writes an HTML gallery shell.
+
+Generated TOC slides are bounded before layout by splitting long TOCs into
+continuation slides. This keeps large Markdown corpora from creating off-slide
+TOC regions while preserving non-TOC diagrams and graphs as single slide-level
+objects.
+
+The evaluator verifies:
 
 - only distinct decoration-style PPTX decks are present
 - legacy color-only preset decks are absent from the Actions gallery
@@ -126,15 +124,15 @@ The manifest records source/config hashes, rendered outputs, diagnostics, overfl
 - PNG files are large enough to reject blank or failed rasterization output
 - the manifest maps each style to its PPTX and slide PNG files
 - required composition classes, proof-object kinds, and surface variants are represented in the manifest
+- generated PPTX media includes required surface markers
 - the gallery has the `pptx-png` marker and does not fall back to legacy iframe-based HTML deck previews
 
-This evaluator is deterministic and complements manual visual review.
-
-추후 개선:
+## Future Improvements
 
 ```text
-- canvas 기반 측정
-- font metrics 반영
-- PPTX renderer별 보정 계수
-- 한국어/영어/숫자/코드 문자 폭 분리
+- canvas-based measurement
+- font metric integration
+- renderer-specific correction factors
+- script-aware width profiles
+- OCR or perceptual screenshot scoring
 ```

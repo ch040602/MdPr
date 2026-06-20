@@ -1,27 +1,28 @@
 # References
 
-이 파일은 구현자가 참고할 수 있는 외부 기술 후보를 정리한다. 특정 라이브러리 사용을 강제하지 않는다.
+This file lists implementation reference candidates. It does not require a specific library.
 
-## Markdown parsing
+## Markdown Parsing
 
 - unified
 - remark
 - remark-parse
 - gray-matter
+- Pandoc JSON AST
 
-## YAML / Schema validation
+## YAML and Schema Validation
 
 - yaml
 - ajv
 - json-schema-to-typescript
 
-## PPTX rendering
+## PPTX Rendering
 
 - PptxGenJS
-- Open XML SDK 자료
-- PresentationML 문서 구조 자료
+- Office Open XML documentation
+- PresentationML documentation
 
-## HTML / PDF rendering
+## HTML and PDF Rendering
 
 - Playwright
 - Chromium print-to-PDF
@@ -34,11 +35,11 @@
 
 ## Testing
 
+- Node test runner
 - vitest
 - uvu
-- snapshot test
+- snapshot tests
 
-## 설계 메모
+## Design Note
 
-MVP에서는 의존성을 최소화해도 된다. 다만 실제 제품화 단계에서는 Markdown AST, YAML, JSON Schema validation, PPTX generation, PDF generation 라이브러리를 분리하여 관리하는 것이 좋다.
-
+The MVP may keep dependencies minimal. Product-level implementation should separate Markdown AST handling, YAML parsing, JSON Schema validation, PPTX generation, PDF generation, and screenshot/raster validation.

@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "issues": [],
+  "showcaseMetrics": {
+    "styleCount": 10,
+    "slideCount": 19,
+    "compositionCount": 10,
+    "surfaceCount": 6,
+    "proofCount": 4
+  },
+  "mainImage": "docs/assets/readme-slides/mdpr-showcase-teaser.png",
+  "pipelineImage": "docs/assets/readme-slides/mdpr-pipeline-teaser.png"
+}

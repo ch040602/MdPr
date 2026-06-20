@@ -9,7 +9,7 @@
     "typecheck": "corepack pnpm -r typecheck",
     "cli": "tsx packages/cli/src/index.ts",
     "preview:themes": "node scripts/build-theme-preview.mjs && node scripts/evaluate-theme-preview.mjs",
-    "preview:readme": "python scripts/build-readme-slide-assets.py"
+    "preview:readme": "python scripts/build-readme-slide-assets.py && python scripts/evaluate-readme-assets.py"
   },
   "devDependencies": {
     "@types/node": "*",

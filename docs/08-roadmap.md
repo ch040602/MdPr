@@ -1,124 +1,108 @@
-# 08. 구현 로드맵
+# 08. Roadmap
 
-## Phase 1. Schema 고정
+## Phase 1. Schema Contracts
 
 - `config.schema.json`
 - `override.schema.json`
 - `presentation-ir.schema.json`
 - `layout-ir.schema.json`
 
-완료 기준:
+Acceptance: agents and humans can create valid config and override files from the schemas.
 
-```text
-Codex/LLM이 schema를 기준으로 config/override 파일을 생성할 수 있음
-```
+## Phase 2. Core Parser
 
-## Phase 2. Core parser
+- Markdown parsing
+- Pandoc JSON normalization
+- heading tree creation
+- block extraction
+- stable ID generation
+- `Presentation IR`
 
-- Markdown parse
-- heading tree 생성
-- block 추출
-- stable id 생성
-- Presentation IR 생성
-
-완료 기준:
+Acceptance:
 
 ```bash
 mdpresent inspect examples/basic/deck.md --json
 ```
 
-## Phase 3. Split planner
+## Phase 3. Split Planner
 
-- h1/h2/h3 기반 분할
-- density 계산
-- autosplit
-- cover/toc 삽입
+- h1/h2/h3 splitting
+- density calculation
+- explicit slide breaks
+- autosplitting
+- cover and TOC insertion
 
-완료 기준:
+Acceptance: dense sections split predictably without breaking a single diagram across slides.
 
-```text
-긴 h2 섹션이 h3 기준으로 자동 분할됨
-```
+## Phase 4. Intent Detection
 
-## Phase 4. Intent detection
+- comparison detection
+- item count detection
+- table/image/code/chart detection
+- timeline and pipeline detection
 
-- comparison 감지
-- item count 감지
-- table/image/code 감지
-- timeline 감지
-
-완료 기준:
+Acceptance:
 
 ```text
-기존/개선 → comparison
-4개 예시 → grid
-5개 방법 → pentagon 후보
-표 중심 → table
+before/after -> comparison
+four examples -> grid
+five methods -> pentagon candidate
+table-heavy slide -> table-focus
+pipeline arrows -> pipeline
 ```
 
-## Phase 5. Layout planner
+## Phase 5. Layout Planner
 
-- preset 정의
-- item count 기반 layout 선택
-- safe area 적용
-- overflow 검사 초안
+- presets
+- item-count layout selection
+- safe areas
+- typography and overflow floors
 
-완료 기준:
+Acceptance:
 
 ```bash
 mdpresent plan deck.md --json
 ```
 
-## Phase 6. Override engine
+## Phase 6. Override Engine
 
-- override YAML/JSON 로딩
-- schema 검증
-- target resolve
-- operation apply
-- diff 출력
+- YAML/JSON manifest loading
+- schema validation
+- target resolution
+- operation application
+- diff reporting
 
-완료 기준:
+Acceptance:
 
 ```bash
 mdpresent diff deck.md --override deck.override.yaml
 ```
 
-## Phase 7. HTML renderer
+## Phase 7. Renderers
 
-- Layout IR → HTML
-- CSS variable theme
-- slide navigation
+- PPTX editable objects
+- HTML preview and gallery shell
+- PDF export path
 
-완료 기준:
-
-```bash
-mdpresent build deck.md --to html
-```
-
-## Phase 8. PDF renderer
-
-- HTML 생성
-- PDF 출력
-
-완료 기준:
+Acceptance:
 
 ```bash
-mdpresent build deck.md --to pdf
+mdpresent build deck.md --to pptx,html,pdf --out dist
 ```
 
-## Phase 9. PPTX renderer
+## Phase 8. Design and QA
 
-- Layout IR → PPTX
-- editable text box
-- bullet
-- table
-- image
-- background
-- template theme 일부 반영
+- decoration style catalog
+- color seed and harmony derivation
+- SVG-backed surface grammar
+- icon catalog search
+- generated PPTX/PNG artifact checks
+- README and Actions preview assets
 
-완료 기준:
+Acceptance:
 
 ```bash
-mdpresent build deck.md --to pptx
+corepack pnpm preview:themes
+corepack pnpm preview:readme
+corepack pnpm test
 ```
-

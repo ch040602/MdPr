@@ -132,6 +132,21 @@ test("toc slides allocate each entry as a numbered item region", () => {
   assert.equal(items.every((region) => region.typography.fontSize >= defaultConfig.typography.minFontSize), true);
 });
 
+test("large generated toc decks split before any toc region leaves slide bounds", () => {
+  const lines = ["# Demo", ""];
+  for (let index = 1; index <= 23; index++) {
+    lines.push(`## Topic ${index}`, "", "Body.", "");
+  }
+  const presentation = planPresentation(parseMarkdown(lines.join("\n")), defaultConfig);
+  const layout = planLayout(presentation, defaultConfig);
+  const tocLayouts = layout.slides.filter((slide) => slide.layout.preset === "toc");
+  const overflow = validateLayoutOverflow(layout, new Map());
+
+  assert.equal(tocLayouts.length, 2);
+  assert.deepEqual(tocLayouts.map((slide) => slide.regions.filter((region) => region.role === "item").length), [14, 9]);
+  assert.equal(overflow.some((diagnostic) => diagnostic.code === "LAYOUT_REGION_OUT_OF_BOUNDS"), false);
+});
+
 test("dense vertical lists keep all items and distribute them across columns", () => {
   const layout = planLayout({
     version: "1.0",

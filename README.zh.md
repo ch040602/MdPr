@@ -1,26 +1,46 @@
 # mdpresent
 
-`mdpresent` 不是一个把 Markdown 直接转换成 PowerPoint 的工具。它是一个基于 CLI 的演示文稿结构化工具：先按规则把 Markdown 文档拆分为通用的 `Presentation IR`，再将该结构渲染为 `PPTX`、`PDF` 或 `HTML`。
+`mdpresent` 是一个把 Markdown 转换为结构化演示文稿输出的 CLI 工具。它不是直接的 Markdown-to-PowerPoint 转换器，而是先生成 `Presentation IR`，再规划 `Layout IR`，最后渲染为 editable `PPTX`、`HTML` 或 `PDF`。
 
-`mdpresent` 是一个 **NO LLM runtime** 引擎：解析、拆分、布局、验证和渲染都以 deterministic rule-based 方式运行，不需要外部 API 调用。由于 CLI 行为独立，它也可以封装为辅助 Codex skill 或本地自动化 skill。
+`mdpresent` 的运行时是 deterministic rule-based。解析、拆分、布局、验证、主题选择和 PowerPoint 渲染都不需要 LLM 调用或外部 API。独立项目 [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) 只是 reasoning companion；最终结构和渲染仍由 MDPR 决定。
+
+![MDPR theme and object showcase teaser](docs/assets/readme-slides/mdpr-showcase-teaser.png)
+
+上方 showcase 图像由真实的 MDPR theme-preview PPTX 输出导出为 PNG 后再生成。
 
 语言版本：
 
 - [English README](README.md)
 - [Korean README](README.ko.md)
 
-## 核心理念
+## 核心功能
 
-```text
-Markdown 是源文档。
-拆分由 heading 和 density 驱动。
-布局由 intent 和 item count 选择。
-例外情况通过 override manifest 控制。
-PPT 模板只提供背景和品牌资产。
-正文布局由 CLI 重新计算。
-```
+- **PPTX first**：先生成可编辑 PowerPoint，再导出 PNG 进行检查。
+- **No LLM runtime**：构建结果不依赖模型调用，可重复生成。
+- **Markdown semantics**：保留 heading、list、emphasis、table、chart、image、code、quote 和 pipeline diagram。
+- **Design grammar**：将 decoration style 与 color seed 分离，并根据 harmony 规则生成 PPT theme/chart colors。
+- **Object coverage**：支持 native table、native chart、proof object、icon slot、SVG-backed surface 和 diagram connector。
+- **Visual QA**：检查 PPTX/PNG artifact、slide count、surface marker、语言、overflow 和 manifest drift。
 
-## 流水线
+## 预览
+
+[PPT-generated theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/) 可以切换内置 style，下载每个 style 的 PPTX，并查看从 PowerPoint 输出导出的 PNG slide。
+
+| Cover / Title | Pipeline Diagram |
+| --- | --- |
+| <img src="docs/theme-preview/slides/technical/slide-01.png" alt="PPTX cover slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-09.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
+
+| Markdown Semantics | Editable Proof Objects |
+| --- | --- |
+| <img src="docs/theme-preview/slides/grid/slide-08.png" alt="PPTX semantic blocks slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/technical/slide-13.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> |
+
+## Runtime Pipeline
+
+- Agent hint 只能提供 compact semantic tag 或 icon keyword。
+- MDPR 负责 parsing、splitting、graph preservation、layout、theme color、icon search、z-order、overflow check 和 renderer output。
+- 一个 graph 或 diagram block 不会被拆成两页以上。
+
+<img src="docs/assets/readme-slides/mdpr-pipeline-teaser.png" alt="MDPR deterministic presentation pipeline" width="100%">
 
 ```text
 Markdown
@@ -32,9 +52,9 @@ Markdown
   -> Override Engine
   -> QA / Overflow Checker
   -> Renderer
-      ├─ PPTX
-      ├─ PDF
-      └─ HTML
+      -> PPTX
+      -> HTML
+      -> PDF
 ```
 
 ## 快速使用
@@ -44,55 +64,39 @@ mdpresent inspect examples/basic/deck.md --json > deck.plan.json
 mdpresent plan examples/basic/deck.md --json > layout.plan.json
 mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
+mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
-mdpresent build examples/basic/deck.md --to pptx --config examples/basic/mdpresent.config.yaml --out dist
-mdpresent build examples/basic/deck.md --to html,pptx --config examples/themes/nord.config.yaml --out dist
-mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery executive,nord,dracula,solarized
 ```
 
-## Markdown 结构保留
+## Design Controls
 
-Parser 会保留演示文稿所需的 Markdown 结构，而不是把所有内容都压平成普通段落。
+- `--theme-style`: `clean`, `executive`, `editorial`, `technical`, `minimalism`, `newmorphism`, `glass`, `grid`, `data`, `magazine`
+- `--theme-color`: main color seed，例如 `#8A4FFF`
+- `--theme-harmony`: `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, `triadic`
+- `--theme-gallery`: 用多个 style 重复渲染同一个 Markdown 以便比较
+- `--design`: legacy/shared preset 兼容选项
 
-- ordered/unordered list 会保留编号、嵌套层级和 fallback text。
-- 空的 `-` 行或单独的 `·` 等装饰性 bullet 会在渲染前移除。
-- `**bold**`、`*italic*` 等强调会反映到 HTML 和 editable PPTX text run。
-- paragraph line 和 sentence unit 会被保留，用于更安全的 slide splitting 和 overflow 判断。
-- `Draft => Review => Render` 这样的 pipeline line 会转换为 semantic diagram block，并根据内容自动选择 horizontal、vertical、U-shaped、reverse-U 或 cycle-like 布局。
-- 如果 diagram 和说明 block 位于同一个 section，diagram 会保留在标题 slide 中，说明内容会移动到 continuation slide。
+## Coherence Rules
 
-## Design Presets
+- 渲染前会规范化 text，减少多余空格和异常换行。
+- List item 会保留编号、缩进、bold 和 italic 信息。
+- Table 使用 middle vertical alignment、coherent cell margin 和 readable minimum font size。
+- SVG-backed surface 使用固定 corner radius，避免不同尺寸改变圆角观感。
+- Icon slot 只作为小型、居中、单色的辅助元素。
 
-`--design` 和 `theme.designPreset` 在 PPTX 与 HTML 中使用同一个 shared catalog。当前 preset 包括 `plain`、`clean`、`executive`、`editorial`、`technical`、`dark`、`nord`、`solarized`、`dracula`、`tableau`、`gruvbox`、`monokai`、`material`、`tokyo-night`。
-
-进行视觉 QA 时，可以使用 `--theme-gallery executive,nord,dracula,solarized` 在一个 PPTX 中比较多个 design preset。
-
-提供 `--template example.pptx` 时，PPTX 输出会分析模板中的 theme color 和不含文本的装饰图形。来自示例 slide 的装饰只会在生成 slide 具有相同推断 layout family 时复用；正文 placeholder 和任意 content box 位置仍由 mdpresent 重新计算。
-
-封面/title slide 使用按 preset 选择的 editable template。Theme gallery 会展示多个 title 候选；指定 `--design <preset>` 时只渲染该 preset 的一个 title template。
-
-## 实现优先级
-
-1. 先稳定 `schemas/` 中的 JSON Schema。
-2. 在 `packages/core` 中实现 Markdown 到 `Presentation IR`。
-3. 在 `packages/layout` 中实现 `Presentation IR` 到 `Layout IR`。
-4. 在 `packages/override` 中应用结构化的 override manifest。
-5. 优先实现 `packages/render-html`，用于预览输出。
-6. `packages/render-pdf` 从 HTML 渲染路径开始。
-7. `packages/render-pptx` 以可编辑 slide object 为中心实现。
-
-## 目录概览
+## Project Map
 
 ```text
-docs/       最终需求和设计文档
-schemas/    Config / Override / Presentation IR / Layout IR 的 JSON Schema
-packages/   TypeScript package scaffold
-examples/   示例 Markdown、config 和 override 文件
+docs/       design, rendering, QA, and methodology documents
+schemas/    Config, Override, Presentation IR, and Layout IR schemas
+packages/   core, layout, override, CLI, and renderers
+examples/   example Markdown decks and configs
+scripts/    theme preview, README asset, and evaluation utilities
 ```
 
-## Codex 工作流
+## GitHub Actions
 
-1. 将此仓库交给 Codex。
-2. 让 Codex 先阅读 `docs/09-codex-implementation-guide.md`。
-3. 除非有明确的 schema-contract TODO，否则保持 `schemas/*.json` 稳定。
-4. 按 `packages/core` → `packages/layout` → `packages/override` → renderers 的顺序实现。
+- `CI`: installs the workspace, typechecks, builds, and runs tests.
+- `Theme Preview`: generates PPTX decks, exports PNG slides, verifies artifacts, and publishes GitHub Pages.
+
+Both workflows must pass without an LLM or external API key.

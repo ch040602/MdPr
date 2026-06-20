@@ -4,6 +4,8 @@ import { calculateDensity } from "./density.js";
 import { detectSlideIntent, countPrimaryItems } from "../intent/detectSlideIntent.js";
 import { createStableId } from "../utils/stableId.js";
 
+const MAX_TOC_ITEMS_PER_SLIDE = 14;
+
 function flattenNodes(nodes: OutlineNode[]): OutlineNode[] {
   return nodes.flatMap((node) => [node, ...flattenNodes(node.children)]);
 }
@@ -43,19 +45,26 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
       type: "listItem" as const,
       text: n.title,
     }));
-    slides.push({
-      id: createStableId(["toc"], "toc"),
-      index: slides.length + 1,
-      role: "toc",
-      title: tocTitle,
-      headingPath: [tocTitle],
-      source: {},
-      blocks: tocBlocks,
-      intent: "list",
-      tags: ["auto-toc"],
-      primaryItemCount: tocBlocks.length,
-      density: tocBlocks.length,
-    });
+    const tocChunks = chunkTocBlocks(tocBlocks);
+    for (const [chunkIndex, blocks] of tocChunks.entries()) {
+      const continuation = tocChunks.length > 1 ? `${chunkIndex + 1}/${tocChunks.length}` : undefined;
+      const title = continuation && !continuation.startsWith("1/")
+        ? `${tocTitle} (Cont. ${continuation})`
+        : tocTitle;
+      slides.push({
+        id: createStableId(continuation ? ["toc", continuation] : ["toc"], "toc"),
+        index: slides.length + 1,
+        role: "toc",
+        title,
+        headingPath: [title],
+        source: {},
+        blocks,
+        intent: "list",
+        tags: continuation ? ["auto-toc", "auto-toc-continuation"] : ["auto-toc"],
+        primaryItemCount: blocks.length,
+        density: blocks.length,
+      });
+    }
   }
 
   for (const node of candidates) {
@@ -106,6 +115,15 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
     assets: [],
     diagnostics: [],
   };
+}
+
+function chunkTocBlocks<T>(blocks: T[]): T[][] {
+  if (blocks.length <= MAX_TOC_ITEMS_PER_SLIDE) return [blocks];
+  const chunks: T[][] = [];
+  for (let index = 0; index < blocks.length; index += MAX_TOC_ITEMS_PER_SLIDE) {
+    chunks.push(blocks.slice(index, index + MAX_TOC_ITEMS_PER_SLIDE));
+  }
+  return chunks;
 }
 
 function tocTitleForLanguage(language?: string): string {

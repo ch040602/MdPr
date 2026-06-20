@@ -1,49 +1,38 @@
-# 04. 레이아웃 선택 규칙
+# 04. Layout Selection Rules
 
-## 기본 규칙
+## Selection Formula
 
 ```text
-SlideIntent + itemCount + blockType + density → LayoutPreset
+SlideIntent + itemCount + blockType + density -> LayoutPreset
 ```
 
-## Intent 감지
+## Intent Detection
 
-| 조건 | intent |
-|---|---|
-| 기존/개선, Before/After, As-Is/To-Be, 장점/단점 | comparison |
-| 날짜, 단계, phase, step 반복 | timeline |
-| 큰 표 포함 | table |
-| 이미지가 본문보다 중요 | image |
-| 코드 블록 포함 | code |
-| 인용문 중심 | quote |
-| `A => B => C` 또는 `A -> B -> C` pipeline syntax | diagram |
-| 여러 예시/방법/기능 | grid 또는 list |
-| 일반 본문 | standard |
+| Condition | Intent |
+| --- | --- |
+| Before/After, As-Is/To-Be, pros/cons, two opposed groups | comparison |
+| Dates, stages, phases, repeated steps | timeline |
+| Large table | table |
+| Image is more important than body text | image |
+| Code block | code |
+| Quote-centered slide | quote |
+| `A => B => C` or `A -> B -> C` pipeline syntax | diagram |
+| Multiple examples, methods, or features | grid or list |
+| General prose | standard |
 
-## 개수 기반 레이아웃
+## Count-Based Layouts
 
-| 항목 수 | 기본 preset | 대안 |
-|---:|---|---|
+| Item Count | Default Preset | Alternative |
+| ---: | --- | --- |
 | 1 | single-card | title-body |
 | 2 | comparison | two-cards |
 | 3 | vertical-list | three-cards |
 | 4 | grid 2x2 | quadrant |
 | 5 | pentagon radial | vertical-list |
 | 6 | grid 3x2 | grid 2x3 |
-| 7 이상 | vertical-list | autosplit |
+| 7+ | vertical-list | autosplit |
 
-## 비교 구조 감지
-
-비교 구조로 판단할 조건:
-
-```text
-- 제목에 기존/개선, Before/After, As-Is/To-Be, 장점/단점 포함
-- h3가 정확히 2개이고 서로 대비됨
-- bullet group이 2개이며 group title이 대비됨
-- 표가 비교축 column을 가짐
-```
-
-## Preset 목록
+## Presets
 
 ```text
 cover
@@ -64,57 +53,54 @@ code-focus
 quote
 summary
 pipeline
+chart-table
 ```
 
 ## Pipeline Diagram Routing
 
-A single Markdown line that uses `=>` or `->` between two or more labels is parsed as a semantic pipeline diagram instead of a paragraph.
+A single Markdown line with `=>` or `->` between two or more labels becomes a semantic pipeline diagram.
 
 ```md
 Draft => Review => Render => Validate
 ```
 
-The parser emits a `diagram` block with ordered nodes and directed edges. The layout planner routes it to the `pipeline` preset and creates one `diagram` region. Renderers should preserve the node/edge relationship instead of converting the content to bullets.
+The parser emits ordered nodes and directed edges. The layout planner routes the slide to the `pipeline` preset and creates a `diagram` region. Renderers must preserve the node/edge relationship rather than flattening the flow into bullets.
 
-## Polygon Edge Decoration
+## Composition Grammar
 
-Five-item slides use the `pentagon` preset. PPTX rendering adds editable edge accent lines behind the item boxes using the active design preset's secondary color. These lines are background decoration and must not change item region coordinates or clip text.
-
-## Composition grammar
-
-Renderers may add a non-positioning composition layer from the selected `LayoutSpec`. This layer changes hierarchy and visual treatment without changing the Layout IR coordinates:
+Renderers may apply a non-positioning composition layer from the selected `LayoutSpec`. This layer changes visual hierarchy without changing Layout IR coordinates.
 
 ```text
 cover        larger title scale and a single identity rule
-toc          compact navigational text grouping
-grid         card offset rhythm while keeping region bounds fixed
-pipeline     bounded diagram surface and connector clarity emphasis
-chart-table  chart emphasis, table surface, and compact evidence pairing
+toc          compact navigational grouping
+grid         card offset rhythm inside fixed region bounds
+pipeline     bounded diagram surface and connector clarity
+chart-table  chart emphasis plus table/evidence pairing
 ```
 
-The composition layer is deterministic. It must not move regions outside the slide, reduce text below the configured minimum, or turn editable objects into a single flat screenshot.
+The composition layer must not move regions outside the slide, reduce text below the minimum font size, or flatten editable objects into screenshots.
 
-## Layout Planner 의사코드
+## Planner Pseudocode
 
 ```ts
 function chooseLayout(slide, config) {
-  if (slide.intent === "comparison") return comparisonHorizontal()
-  if (slide.intent === "table") return tableFocus()
-  if (slide.intent === "image") return chooseImageLayout(slide)
-  if (slide.intent === "code") return codeFocus()
-  if (slide.intent === "timeline") return timeline()
-  if (slide.intent === "diagram") return pipeline()
+  if (slide.intent === "comparison") return comparisonHorizontal();
+  if (slide.intent === "table") return tableFocus();
+  if (slide.intent === "image") return chooseImageLayout(slide);
+  if (slide.intent === "code") return codeFocus();
+  if (slide.intent === "timeline") return timeline();
+  if (slide.intent === "diagram") return pipeline();
 
-  const itemCount = countPrimaryItems(slide)
-  if (itemCount > 0) return chooseItemLayout(itemCount)
+  const itemCount = countPrimaryItems(slide);
+  if (itemCount > 0) return chooseItemLayout(itemCount);
 
-  return titleBody()
+  return titleBody();
 }
 ```
 
-## Safe area
+## Safe Area
 
-PPT slide master의 배경 요소와 본문이 충돌하지 않도록 safe area와 avoid zone을 둔다.
+Safe areas and avoid zones keep generated content away from master-slide background elements.
 
 ```yaml
 safeArea:

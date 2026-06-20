@@ -164,9 +164,9 @@ def add_card(
         title_w = w - 50
         title_size = 11
         body_x = x + 24
-        body_y = y + 60
+        body_y = y + 55
         body_step = 16
-        body_size = 10.5
+        body_size = 9.8
         body_align = "center"
     elif w <= 175:
         dot_x = x + 28
@@ -174,9 +174,9 @@ def add_card(
         title_w = w - 61
         title_size = 13
         body_x = x + 32
-        body_y = y + 61
+        body_y = y + 56
         body_step = 17
-        body_size = 12
+        body_size = 11.2
         body_align = "left"
     else:
         dot_x = x + 32
@@ -184,14 +184,14 @@ def add_card(
         title_w = w - 76
         title_size = 15
         body_x = x + 36
-        body_y = y + 58
+        body_y = y + 54
         body_step = 18
-        body_size = 13
+        body_size = 12.2
         body_align = "left"
     add_dot(slide, dot_x, y + 35, label, accent)
     add_text(slide, title_x, y + 21, title_w, 28, title, title_size, PALETTE["ink"], True, margin=0)
     for idx, line in enumerate(lines):
-        add_text(slide, body_x, body_y + idx * body_step, w - (body_x - x) - 20, 16, line, body_size, PALETTE["muted"], False, body_align, margin=0)
+        add_text(slide, body_x, body_y + idx * body_step, w - (body_x - x) - 20, 22, line, body_size, PALETTE["muted"], False, body_align, margin=0)
 
 
 def add_arrow(
@@ -261,13 +261,13 @@ def build_slide(slide: Any) -> None:
 
     add_shape(slide, 5, 172, 245, 80, 34, PALETTE["content"], PALETTE["content_line"], 1.1, True)
     add_text(slide, 172, 245, 80, 34, "source", 13, "334155", True, "center", "middle")
-    add_card(slide, 102, 308, 220, 105, "Markdown", ["headings, tables", "charts and images"], PALETTE["content_accent"], "M")
-    add_card(slide, 102, 448, 220, 105, "MDPR Splitter", ["Pandoc or simple AST", "slide/object split"], PALETTE["content_accent"], "S")
+    add_card(slide, 102, 308, 220, 112, "Markdown", ["headings + tables", "charts + images"], PALETTE["content_accent"], "M")
+    add_card(slide, 102, 452, 220, 112, "MDPR Splitter", ["Pandoc/simple AST", "slide/object split"], PALETTE["content_accent"], "S")
     add_arrow(slide, 212, 279, 212, 306, PALETTE["arrow"], 4.0)
-    add_arrow(slide, 212, 413, 212, 446, PALETTE["secondary"], 3.4)
+    add_arrow(slide, 212, 420, 212, 450, PALETTE["secondary"], 3.4)
 
-    add_card(slide, 412, 244, 205, 104, "Slide Element IR", ["semantic blocks", "graph kept whole"], PALETTE["reason_accent"], "I", PALETTE["reason_line"])
-    add_card(slide, 412, 410, 205, 124, "Hint Packet", ["intent + importance"], PALETTE["reason_accent"], "H", PALETTE["reason_line"])
+    add_card(slide, 412, 244, 205, 110, "Slide Element IR", ["semantic blocks", "whole graph"], PALETTE["reason_accent"], "I", PALETTE["reason_line"])
+    add_card(slide, 412, 410, 205, 124, "Hint Packet", [], PALETTE["reason_accent"], "H", PALETTE["reason_line"])
     add_shape(slide, 5, 448, 482, 132, 34, "FFF7E6", PALETTE["reason_accent"], 1.1)
     add_text(slide, 448, 482, 132, 34, "hints only", 13, "7C3D12", True, "center")
     add_elbow(slide, [(322, 500), (362, 500), (362, 296), (410, 296)], PALETTE["secondary"], 3.4)
@@ -298,13 +298,13 @@ def build_slide(slide: Any) -> None:
     add_elbow(slide, [(617, 472), (660, 472), (660, 404), (698, 404)], PALETTE["hint"], 2.8, True)
 
     add_arrow(slide, 1059, 296, 1138, 296, PALETTE["arrow"], 4.6)
-    add_card(slide, 1162, 250, 166, 96, "Styled IR", ["coherent deck"], PALETTE["output_accent"], "S")
-    add_card(slide, 1162, 395, 166, 96, "Renderers", ["PPTX output"], PALETTE["output_accent"], "R")
-    add_arrow(slide, 1245, 346, 1245, 393, PALETTE["secondary"], 3.6)
+    add_card(slide, 1162, 250, 166, 104, "Styled IR", ["coherent deck"], PALETTE["output_accent"], "S")
+    add_card(slide, 1162, 397, 166, 104, "Renderers", ["PPTX output"], PALETTE["output_accent"], "R")
+    add_arrow(slide, 1245, 354, 1245, 395, PALETTE["secondary"], 3.6)
     add_shape(slide, 5, 1162, 506, 166, 52, PALETTE["proof"], PALETTE["proof_accent"], 1.4, True)
     add_dot(slide, 1186, 532, "V", PALETTE["proof_accent"])
     add_text(slide, 1212, 520, 92, 24, "Visual QA", 14, PALETTE["proof_dark"], True)
-    add_arrow(slide, 1245, 491, 1245, 504, PALETTE["proof_accent"], 2.8)
+    add_arrow(slide, 1245, 501, 1245, 504, PALETTE["proof_accent"], 2.8)
 
     add_shape(slide, 5, 72, 610, 1256, 66, PALETTE["paper"], PALETTE["line"], 1.2, True)
     add_text(slide, 104, 629, 205, 28, "Coherence checks", 17, PALETTE["ink"], True)
@@ -343,7 +343,7 @@ def write_svg() -> None:
   <rect x="1162" y="512" width="166" height="44" rx="14" fill="#FFF1F2" stroke="#BE123C" stroke-width="1.5"/>
   <rect x="72" y="610" width="1256" height="66" rx="18" fill="#FFFDF8" stroke="#DACFC0" stroke-width="1.2"/>
   <g font-family="Aptos, Inter, Arial" font-size="15" font-weight="800" fill="#111827"><text x="160" y="346">Markdown</text><text x="160" y="486">MDPR Splitter</text><text x="470" y="282">Slide Element IR</text><text x="470" y="448">Hint Packet</text><text x="1220" y="286">Styled IR</text><text x="1220" y="431">Renderers</text></g>
-  <g font-family="Aptos, Inter, Arial" font-size="13" fill="#526071"><text x="138" y="376">headings, tables</text><text x="138" y="397">charts and images</text><text x="138" y="516">Pandoc or simple AST</text><text x="138" y="537">slide/object split</text><text x="448" y="312">semantic blocks</text><text x="448" y="331">graph kept whole</text><text x="448" y="478">intent + importance</text><text x="1198" y="316">coherent deck</text><text x="1198" y="461">PPTX output</text></g>
+  <g font-family="Aptos, Inter, Arial" font-size="12.5" fill="#526071"><text x="138" y="376">headings + tables</text><text x="138" y="397">charts + images</text><text x="138" y="516">Pandoc/simple AST</text><text x="138" y="537">slide/object split</text><text x="448" y="312">semantic blocks</text><text x="448" y="331">whole graph</text><text x="448" y="478">intent + importance</text><text x="1198" y="316">coherent deck</text><text x="1198" y="461">PPTX output</text></g>
   <g font-family="Aptos, Inter, Arial" font-size="13" font-weight="800" fill="#111827"><text x="737" y="398">Features</text><text x="870" y="398">Recipes</text><text x="1003" y="398">Theme</text><text x="737" y="516">Compose</text><text x="870" y="516">Objects</text><text x="1003" y="516">Decorate</text></g>
   <g font-family="Aptos, Inter, Arial" font-size="12" fill="#526071"><text x="724" y="426">density</text><text x="724" y="444">size risk</text><text x="857" y="426">profile</text><text x="857" y="444">variant</text><text x="990" y="426">harmony</text><text x="990" y="444">PPT accents</text><text x="724" y="544">regions</text><text x="724" y="562">overflow</text><text x="857" y="544">charts</text><text x="857" y="562">icons</text><text x="990" y="544">type</text><text x="990" y="562">effects</text></g>
   <text x="1212" y="538" font-family="Aptos, Inter, Arial" font-size="14" font-weight="800" fill="#881337">Visual QA</text>

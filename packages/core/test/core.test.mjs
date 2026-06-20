@@ -587,6 +587,23 @@ test("planPresentation localizes the generated toc slide from deck language", ()
   assert.deepEqual(toc?.headingPath, ["Agenda"]);
 });
 
+test("planPresentation splits large generated toc slides into bounded continuation slides", () => {
+  const lines = ["# Demo", ""];
+  for (let index = 1; index <= 23; index++) {
+    lines.push(`## Topic ${index}`, "", "Body.", "");
+  }
+
+  const config = structuredClone(defaultConfig);
+  config.deck.language = "en";
+  const presentation = planPresentation(parseMarkdown(lines.join("\n")), config);
+  const tocSlides = presentation.slides.filter((slide) => slide.role === "toc");
+
+  assert.equal(tocSlides.length, 2);
+  assert.deepEqual(tocSlides.map((slide) => slide.blocks.length), [14, 9]);
+  assert.deepEqual(tocSlides.map((slide) => slide.title), ["Agenda", "Agenda (Cont. 2/2)"]);
+  assert.equal(tocSlides.every((slide) => slide.primaryItemCount <= 14), true);
+});
+
 test("planPresentation autosplits dense h2 content by h3 subsections", () => {
   const denseItems = Array.from({ length: 10 }, (_, index) => `- Item ${index + 1}`).join("\n");
   const doc = parseMarkdown([

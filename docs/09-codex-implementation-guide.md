@@ -1,6 +1,6 @@
-# 09. Codex 구현 가이드
+# 09. Codex Implementation Guide
 
-## 먼저 읽을 파일
+## Read First
 
 ```text
 README.md
@@ -11,24 +11,27 @@ docs/05-overrides-for-llm.md
 schemas/*.json
 ```
 
-## 구현 원칙
+## Implementation Rules
 
-```text
-1. schema를 먼저 지킨다.
-2. Presentation IR과 Layout IR 타입을 안정적으로 유지한다.
-3. renderer는 split/layout 판단을 다시 하지 않는다.
-4. override는 operation 기반으로 정규화한다.
-5. slideIndex보다 slideId를 우선한다.
-6. preset enum을 임의로 늘리지 않는다. 필요하면 schema와 docs를 함께 수정한다.
-```
+1. Respect schemas first.
+2. Keep `Presentation IR` and `Layout IR` stable.
+3. Do not let renderers redo split or layout decisions.
+4. Normalize overrides as operations.
+5. Prefer `slideId` over `slideIndex`.
+6. Do not expand preset enums without updating schemas, docs, and tests together.
+7. Keep PPTX as the primary editable-object renderer.
+8. Keep HTML as a preview/gallery shell.
 
-## 첫 번째 구현 목표
+## Milestone Commands
 
-```text
+```bash
 mdpresent inspect examples/basic/deck.md --json
+mdpresent plan examples/basic/deck.md --json
+mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml
+mdpresent build examples/basic/deck.md --to pptx --out dist
 ```
 
-이 명령이 다음 정보를 출력해야 한다.
+## Expected Inspect Fields
 
 ```text
 - slide index
@@ -40,58 +43,38 @@ mdpresent inspect examples/basic/deck.md --json
 - primary item count
 ```
 
-## 두 번째 구현 목표
-
-```text
-mdpresent plan examples/basic/deck.md --json
-```
-
-이 명령이 다음 정보를 출력해야 한다.
+## Expected Plan Fields
 
 ```text
 - slide size
-- theme token
+- theme tokens
 - layout preset
 - regions
 - typography
 - overflow policy
+- diagnostics
 ```
 
-## 세 번째 구현 목표
+## Recommended Tests
 
 ```text
-mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml
-```
-
-이 명령이 override target과 operation의 유효성을 검사해야 한다.
-
-## 네 번째 구현 목표
-
-```text
-mdpresent build examples/basic/deck.md --to pptx --out dist
-```
-
-Editable PPTX 출력을 주 렌더러로 완성한다. HTML은 브라우저 미리보기와 Pages gallery shell로 유지한다.
-
-## 테스트 권장사항
-
-```text
-- heading split snapshot
-- density calculation snapshot
+- heading split snapshots
+- density calculation cases
 - intent detection cases
 - layout selection cases
-- override target resolve cases
+- override target resolution cases
 - schema validation cases
+- PPTX text/table/chart rendering cases
+- generated artifact evaluation
 ```
 
-## 구현하지 않아도 되는 것
-
-초기 버전에서 다음은 TODO로 남겨도 된다.
+## Deferred Items
 
 ```text
-- 완벽한 PPTX template parser
-- 완벽한 text measurement
-- 애니메이션
+- complete PPTX template parser
+- perfect text measurement
+- animation
 - video/audio
-- Marp CSS 1:1 compatibility
+- one-to-one Marp CSS compatibility
+- automated perceptual scoring
 ```

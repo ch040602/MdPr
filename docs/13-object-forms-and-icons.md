@@ -63,13 +63,17 @@ Coherence guards:
 - Use fixed absolute corner radii so shape size does not change the perceived roundness style.
 - Fall back to `rounded` for dense text, crowded tables, or already visually rich slides.
 
-README teaser assets are stored at:
+README teaser and preview assets are stored at:
 
 ```text
+docs/assets/readme-slides/mdpr-showcase-teaser.pptx
+docs/assets/readme-slides/mdpr-showcase-teaser.png
 docs/assets/readme-slides/mdpr-pipeline-teaser.svg
 docs/assets/readme-slides/mdpr-pipeline-teaser.pptx
 docs/assets/readme-slides/mdpr-pipeline-teaser.png
 ```
+
+The showcase teaser is the README main image and uses thumbnails from generated `docs/theme-preview/slides/` PowerPoint PNG exports. The pipeline teaser remains the runtime-pipeline explanation image.
 
 ## Icon Catalog Path
 

@@ -38,6 +38,14 @@ PALETTE = {
 }
 
 
+SHOWCASE_SOURCES = [
+    ("technical", 1, "Cover / title"),
+    ("glass", 8, "Semantic grid"),
+    ("data", 11, "Chart + table"),
+    ("magazine", 15, "Object grammar"),
+]
+
+
 def rgb(hex_color: str) -> int:
     h = hex_color.strip().lstrip("#")
     r = int(h[0:2], 16)
@@ -83,6 +91,22 @@ def add_shape(
         shape.Shadow.OffsetX = 1.1
         shape.Shadow.OffsetY = 2.0
     return shape
+
+
+def add_picture(slide: Any, path: Path, x: float, y: float, w: float, h: float) -> None:
+    if not path.exists():
+        add_shape(slide, 5, x, y, w, h, "FFFFFF", PALETTE["line"], 1.4, True)
+        add_text(slide, x + 22, y + h / 2 - 18, w - 44, 36, "Preview image missing", 18, PALETTE["muted"], True, "center")
+        return
+    slide.Shapes.AddPicture(str(path), False, True, px_x(x), px_y(y), px_x(w), px_y(h))
+
+
+def load_theme_preview_metadata() -> dict[str, Any]:
+    manifest_path = ROOT / "docs" / "theme-preview" / "preview-manifest.json"
+    evaluation_path = ROOT / "docs" / "theme-preview" / "theme-preview-evaluation.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    evaluation = json.loads(evaluation_path.read_text(encoding="utf-8")) if evaluation_path.exists() else {}
+    return {"manifest": manifest, "evaluation": evaluation}
 
 
 def add_text(
@@ -135,6 +159,18 @@ def add_icon(slide: Any, cx: float, cy: float, r: float, fill: str, label: str) 
     add_text(slide, cx - r, cy - r, r * 2, r * 2, label, r * 1.05, "FFFFFF", True, "center", "middle", 0.0)
 
 
+def add_metric(slide: Any, x: float, y: float, w: float, h: float, value: str, label: str, accent: str) -> None:
+    add_shape(slide, 5, x, y, w, h, "FFFFFF", accent, 2.0, True)
+    add_text(slide, x + 18, y + 16, w - 36, 44, value, 34, accent, True, "center", "middle", 0)
+    add_text(slide, x + 18, y + 61, w - 36, 34, label, 15, PALETTE["muted"], True, "center", "middle", 0)
+
+
+def add_feature_chip(slide: Any, x: float, y: float, w: float, label: str, accent: str) -> None:
+    add_shape(slide, 5, x, y, w, 42, "FFFFFF", accent, 1.4, False)
+    add_icon(slide, x + 23, y + 21, 9, accent, label[:1].upper())
+    add_text(slide, x + 42, y + 8, w - 56, 26, label, 13, PALETTE["ink"], True, "left", "middle", 0)
+
+
 def add_card(
     slide: Any,
     x: float,
@@ -175,6 +211,70 @@ def prepare_slide(prs: Any) -> Any:
     slide.FollowMasterBackground = False
     slide.Background.Fill.ForeColor.RGB = rgb(PALETTE["bg"])
     return slide
+
+
+def build_showcase(slide: Any) -> None:
+    metadata = load_theme_preview_metadata()
+    manifest = metadata["manifest"]
+    evaluation = metadata["evaluation"]
+    style_count = int(manifest.get("styleCount", 0))
+    slide_count = int(manifest.get("slideCount", 0))
+    composition_count = len(manifest.get("compositionClasses", []))
+    surface_count = len(evaluation.get("renderedSurfaceVariants") or manifest.get("surfaceVariants", []))
+    proof_count = len(manifest.get("proofKinds", []))
+    total_png = style_count * slide_count
+
+    add_shape(slide, 1, 0, 0, SLIDE_W, SLIDE_H, "101820", "101820")
+    add_shape(slide, 1, 0, 0, 88, SLIDE_H, "14B8A6", "14B8A6")
+    add_shape(slide, 1, 88, 0, SLIDE_W - 88, 12, "E9B44C", "E9B44C")
+    add_text(slide, 130, 54, 820, 60, "MDPR Visual Grammar", 50, "FFFFFF", True, margin=0)
+    add_text(
+        slide,
+        134,
+        124,
+        980,
+        40,
+        "PPTX-first themes, layout compositions, proof objects, and visual QA generated from actual MDPR outputs.",
+        21,
+        "CBD5E1",
+        margin=0,
+    )
+
+    add_metric(slide, 1130, 48, 158, 104, str(style_count), "theme styles", PALETTE["teal"])
+    add_metric(slide, 1306, 48, 158, 104, str(composition_count), "layouts", PALETTE["amber"])
+    add_metric(slide, 1130, 170, 158, 104, str(surface_count + proof_count), "object forms", PALETTE["violet"])
+    add_metric(slide, 1306, 170, 158, 104, f"{total_png}", "PPT PNGs", PALETTE["rose"])
+
+    thumb_positions = [
+        (130, 220, 490, 260),
+        (650, 220, 490, 260),
+        (130, 552, 490, 260),
+        (650, 552, 490, 260),
+    ]
+    for (style, index, label), (x, y, w, h) in zip(SHOWCASE_SOURCES, thumb_positions):
+        add_shape(slide, 5, x - 10, y - 10, w + 20, h + 52, "FFFFFF", "334155", 1.2, True)
+        image_path = ROOT / "docs" / "theme-preview" / "slides" / style / f"slide-{index:02d}.png"
+        add_picture(slide, image_path, x, y, w, h)
+        add_shape(slide, 1, x, y + h, w, 38, "FFFFFF", "FFFFFF", 0.5, False)
+        add_text(slide, x + 18, y + h + 8, 160, 22, style, 15, PALETTE["ink"], True, margin=0)
+        add_text(slide, x + 176, y + h + 8, w - 194, 22, label, 14, PALETTE["muted"], False, "right", "middle", 0)
+
+    add_shape(slide, 5, 1180, 326, 304, 356, "FFFFFF", "334155", 1.2, True)
+    add_text(slide, 1210, 354, 230, 34, "Feature Coverage", 24, PALETTE["ink"], True, margin=0)
+    chips = [
+        ("Theme colors", PALETTE["teal"]),
+        ("SVG surfaces", PALETTE["amber"]),
+        ("Proof objects", PALETTE["violet"]),
+        ("Native tables", PALETTE["rose"]),
+        ("Charts + prose", PALETTE["sage"]),
+        ("Overflow QA", PALETTE["indigo"]),
+    ]
+    for idx, (label, accent) in enumerate(chips):
+        add_feature_chip(slide, 1210, 398 + idx * 43, 244, label, accent)
+
+    add_shape(slide, 5, 1180, 714, 304, 84, "17213A", "22D3EE", 1.8, False)
+    add_text(slide, 1210, 730, 244, 24, "Built from MDPR results", 16, "FFFFFF", True, "center", "middle", 0)
+    add_text(slide, 1210, 762, 244, 22, "theme-preview PPTX -> PNG", 12, "CBD5E1", False, "center", "middle", 0)
 
 
 def build_cover(slide: Any) -> None:
@@ -411,6 +511,25 @@ def export_pngs() -> None:
     shutil.rmtree(TMP_DIR, ignore_errors=True)
 
 
+def export_showcase_teaser() -> None:
+    import win32com.client  # type: ignore
+
+    pptx_path = OUT_DIR / "mdpr-showcase-teaser.pptx"
+    png_path = OUT_DIR / "mdpr-showcase-teaser.png"
+    app = win32com.client.DispatchEx("PowerPoint.Application")
+    app.Visible = True
+    prs = app.Presentations.Add(WithWindow=False)
+    try:
+        prs.PageSetup.SlideWidth = PPT_W * 72
+        prs.PageSetup.SlideHeight = PPT_H * 72
+        build_showcase(prepare_slide(prs))
+        prs.SaveAs(str(pptx_path))
+        prs.Slides(1).Export(str(png_path), "PNG", SLIDE_W, SLIDE_H)
+    finally:
+        prs.Close()
+        app.Quit()
+
+
 def sync_pipeline_preview_from_teaser() -> None:
     teaser_png = OUT_DIR / "mdpr-pipeline-teaser.png"
     teaser_svg = OUT_DIR / "mdpr-pipeline-teaser.svg"
@@ -423,6 +542,10 @@ def sync_pipeline_preview_from_teaser() -> None:
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     subprocess.run([sys.executable, str(ROOT / "scripts" / "build-readme-pipeline-teaser.py")], check=True)
+    export_showcase_teaser()
+    metadata = load_theme_preview_metadata()
+    manifest = metadata["manifest"]
+    evaluation = metadata["evaluation"]
     write_svg("cover", "PPTX cover export", "A PPTX cover slide exported to PNG for MDPR.")
     write_svg("pipeline", "PPTX pipeline export", "A PPTX pipeline diagram exported to PNG with aligned badges.")
     write_svg("semantics", "PPTX semantic blocks export", "A PPTX semantic-blocks slide exported to PNG.")
@@ -430,8 +553,27 @@ def main() -> None:
     export_pngs()
     sync_pipeline_preview_from_teaser()
     report = {
-        "assets": ["cover", "pipeline", "semantics", "decorations"],
+        "assets": ["mdpr-showcase-teaser", "cover", "pipeline", "semantics", "decorations"],
         "pngSize": [SLIDE_W, SLIDE_H],
+        "showcase": {
+            "pptx": "docs/assets/readme-slides/mdpr-showcase-teaser.pptx",
+            "png": "docs/assets/readme-slides/mdpr-showcase-teaser.png",
+            "metrics": {
+                "styleCount": manifest.get("styleCount"),
+                "slideCount": manifest.get("slideCount"),
+                "compositionCount": len(manifest.get("compositionClasses", [])),
+                "surfaceCount": len(evaluation.get("renderedSurfaceVariants") or manifest.get("surfaceVariants", [])),
+                "proofCount": len(manifest.get("proofKinds", [])),
+            },
+            "sources": [
+                f"docs/theme-preview/slides/{style}/slide-{index:02d}.png"
+                for style, index, _ in SHOWCASE_SOURCES
+            ],
+            "metadataSources": [
+                "docs/theme-preview/preview-manifest.json",
+                "docs/theme-preview/theme-preview-evaluation.json",
+            ],
+        },
         "alignmentRules": [
             "badge text uses the same bounding box as its circle",
             "badge text boxes set margin to zero",

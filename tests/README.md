@@ -1,34 +1,47 @@
-# 테스트 설계
+# Test Design
 
-초기 테스트는 snapshot 중심으로 구성한다.
+The test suite should lock behavior at the semantic contract level before visual output is reviewed.
 
-## 권장 테스트
+## Recommended Coverage
 
 ```text
 core/parser
-  - heading parse
-  - bullet parse
-  - code parse
+  - heading parsing
+  - bullet and ordered-list parsing
+  - code block parsing
+  - table and image parsing
+  - inline emphasis preservation
 
 core/split
-  - h2 candidate 생성
-  - h3 autosplit
-  - density threshold
+  - h2 slide candidates
+  - h3 autosplitting
+  - density thresholds
+  - explicit slide breaks
+  - one diagram per slide
 
 core/intent
-  - comparison keyword
-  - 4 items → grid
-  - 5 items → pentagon candidate
+  - comparison keywords
+  - four items -> grid
+  - five items -> pentagon candidate
+  - table/chart/code/image intent detection
 
 layout
   - comparison regions
-  - 2x2 grid regions
-  - pentagon regions
+  - 2x2 and 3x2 grid regions
+  - pipeline diagram regions
+  - table-focus regions
+  - overflow font floors
 
 override
-  - slideId target resolve
+  - slideId target resolution
   - setLayout operation
   - setTypography operation
-  - target not found diagnostic
-```
+  - target-not-found diagnostics
 
+render-pptx
+  - editable text boxes
+  - native tables and charts
+  - SVG-backed surfaces
+  - centered icon and badge slots
+  - bounded connectors
+```

@@ -1,42 +1,46 @@
-# 00. 제품 정의
+# 00. Product Definition
 
-## 한 줄 정의
+## One-Line Definition
 
-`mdpresent`는 Markdown 문서를 규칙 기반으로 분해해 공통 발표 구조로 만들고, 이를 PPTX / PDF / HTML로 렌더링하는 CLI 기반 프레젠테이션 구조화 프로그램이다.
+`mdpresent` is a CLI-based presentation structuring tool that decomposes Markdown into a shared presentation structure and renders it to PPTX, HTML, or PDF.
 
-## 하지 않는 것
-
-```text
-Markdown 파일을 단순히 PPT로 변환하는 도구가 아니다.
-Marp 문법을 그대로 재구현하는 도구가 아니다.
-CSS 렌더링 결과를 슬라이드 이미지로 박는 도구가 아니다.
-```
-
-## 하는 것
+## Non-Goals
 
 ```text
-Markdown heading과 내용을 분석한다.
-heading + density로 슬라이드를 분할한다.
-비교 / 예시 / 방법 / 표 / 이미지 / 코드 등의 구조를 감지한다.
-규칙 기반으로 레이아웃을 선택한다.
-기본 폰트 크기와 최소 폰트 크기를 보존한다.
-PPTX에서는 템플릿 배경과 slide master 요소를 배경으로 활용한다.
-PDF/HTML에서는 CLI/config의 배경색과 폰트를 따른다.
-특정 슬라이드는 override manifest로 레이아웃을 강제한다.
+- It is not a direct Markdown-to-PowerPoint converter.
+- It is not a full Marp syntax clone.
+- It is not a tool that embeds CSS-rendered slide screenshots into PowerPoint.
+- It is not an LLM runtime.
 ```
 
-## 핵심 산출물
+## Responsibilities
 
 ```text
-Presentation IR: 어떤 슬라이드들이 필요한가
-Layout IR: 각 슬라이드의 요소가 어디에 배치되는가
-Renderer Output: PPTX / PDF / HTML
+- analyze Markdown headings and content blocks
+- split slides from headings, density, and explicit separators
+- detect comparison, example, method, table, image, code, chart, and diagram structures
+- choose layouts through deterministic rules
+- preserve configured font sizes and readable minimum font floors
+- use PPTX template backgrounds and master assets where appropriate
+- use CLI/config theme tokens for HTML and PDF outputs
+- apply override manifests for selected slide exceptions
+- produce generated artifact manifests and QA diagnostics
 ```
 
-## 자동화와 수동 제어의 비율
+## Core Outputs
 
 ```text
-자동 규칙으로 90% 생성
-Override manifest로 10% 예외 제어
+Presentation IR: which slides and semantic blocks are needed
+Layout IR: where each slide element is placed
+Renderer Output: PPTX, HTML, and PDF artifacts
+Design Lock: resolved style, color, typography, and surface contract
+Manifest: source hashes, output paths, diagnostics, and visual summaries
 ```
 
+## Automation Model
+
+```text
+Most output is produced by deterministic rules.
+Overrides handle explicit exceptions.
+Optional agent hints may suggest compact semantic tags, but MDPR owns final choices.
+```
