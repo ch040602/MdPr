@@ -21,9 +21,10 @@ The parser preserves presentation-relevant Markdown structure:
 
 ```text
 simple, clean, executive, editorial, technical,
-glass, grid, data, magazine,
-dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, tokyo-night
+minimalism, newmorphism, glass, grid, data, magazine
 ```
+
+Legacy color-only presets remain available through `theme.designPreset` and `--design` for existing decks, but Actions previews only enumerate decoration styles that alter layout, surfaces, or page grammar.
 
 `theme.colorSeed` provides the main color. `theme.colorCombination` derives the supporting palette using Adobe Color Wheel-style harmony rules:
 

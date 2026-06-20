@@ -18,6 +18,7 @@ export function renderHtml(input: RenderHtmlInput, options: RenderHtmlOptions = 
   const layout = isRenderableDeck(input) ? input.layout : input;
   const presentation = isRenderableDeck(input) ? input.presentation : undefined;
   const design = resolveDesignTokens(options.decorationStyle ?? options.designPreset ?? layout.theme.decorationStyle ?? layout.theme.designPreset, layout.theme);
+  const themeStyle = classNameForRegionId(design.decorationStyle);
   const css = `
 :root {
   --bg: #${design.backgroundColor};
@@ -31,32 +32,60 @@ export function renderHtml(input: RenderHtmlInput, options: RenderHtmlOptions = 
 }
 body { margin: 0; background: #111; font-family: var(--font); }
 .deck { display: flex; flex-direction: column; gap: 24px; padding: 24px; }
-.slide { position: relative; width: ${layout.slideSize.width}in; height: ${layout.slideSize.height}in; background: var(--bg); color: var(--text); overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
-.region { position: absolute; box-sizing: border-box; }
+.slide { position: relative; width: ${layout.slideSize.width}in; height: ${layout.slideSize.height}in; background: var(--bg); color: var(--text); overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.3); isolation: isolate; }
+.slide::before, .slide::after { content: ""; position: absolute; pointer-events: none; z-index: 0; }
+.region { position: absolute; box-sizing: border-box; overflow: hidden; z-index: 2; overflow-wrap: anywhere; }
+.region > * { position: relative; z-index: 1; }
 .title { font-weight: 700; }
 .body.key-message { background: var(--surface); border-left: .08in solid var(--primary); padding: .18in .28in; }
 .body.key-message blockquote { margin: 0; font-weight: 700; color: var(--text); }
-.item { background: var(--surface); border-left: .06in solid var(--primary); padding: .12in .18in; }
+.surface { background: color-mix(in srgb, var(--surface) 94%, transparent); border: .012in solid var(--surface-line); padding: .15in .19in; }
+.surface.rounded { border-radius: .12in; }
+.surface.two-corner-left { border-radius: .18in .035in .035in .18in; }
+.surface.two-corner-right { border-radius: .035in .18in .18in .035in; }
+.surface.flag-drop { border-radius: .06in .06in .16in .06in; }
+.surface.flag-drop::before { content: ""; position: absolute; left: .16in; top: 0; width: .26in; height: .22in; background: var(--primary); border-radius: 0 0 .06in .06in; opacity: .9; z-index: 0; }
+.surface.circle-vine { padding-left: .48in; border-radius: .14in; }
+.surface.circle-vine::before { content: ""; position: absolute; left: .18in; top: 50%; width: .16in; height: .16in; margin-top: -.08in; background: var(--primary); border-radius: 999px; z-index: 0; }
+.surface.circle-vine::after { content: ""; position: absolute; left: .255in; top: 50%; width: .14in; height: .012in; margin-top: -.006in; background: var(--primary); opacity: .5; z-index: 0; }
+.surface.notched-corner { clip-path: polygon(0 0, calc(100% - .18in) 0, 100% .18in, 100% 100%, 0 100%); border-radius: .08in; }
+.surface.ticket { border-radius: .12in; background-image: radial-gradient(circle at left 50%, var(--bg) 0 .11in, transparent .115in), radial-gradient(circle at right 50%, var(--bg) 0 .11in, transparent .115in); }
+.item { line-height: 1.22; }
 .region ul, .region ol { margin: 0; padding-left: 1.2em; }
 .structured-list { list-style: none; padding-left: 0; }
 .region li.level-1 { margin-left: 1.1em; }
 .region li.level-2 { margin-left: 2.2em; }
 .region p { margin: 0 0 .45em; }
 .region img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.item-number { display: inline-flex; width: .28in; height: .28in; align-items: center; justify-content: center; margin-right: .1in; border-radius: 999px; background: var(--primary); color: var(--bg); font-weight: 700; }
+.item-number { display: inline-flex; width: .28in; height: .28in; align-items: center; justify-content: center; margin-right: .1in; border-radius: 999px; background: var(--primary); color: var(--bg); font-weight: 700; vertical-align: middle; line-height: 1; }
 .item-label { font-weight: 700; display: block; margin-bottom: .12in; color: var(--primary); }
 .item-description { display: block; margin-left: .18in; color: var(--muted); }
 strong { color: var(--primary); }
 .pipeline { position: relative; height: 100%; min-height: 3.6in; }
 .pipeline-connectors { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 3; }
 .pipeline-connector { fill: none; stroke: var(--primary); stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.pipeline-node { position: absolute; z-index: 2; min-width: 0; border: 1px solid var(--surface-line); background: var(--surface); padding: .12in; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: .12in; font-weight: 700; line-height: 1.18; }
+.pipeline-node { position: absolute; z-index: 2; min-width: 0; border: 1px solid var(--surface-line); background: var(--surface); padding: .14in; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: .12in; font-weight: 700; line-height: 1.18; overflow: hidden; }
 .chart { width: 100%; height: 100%; display: flex; flex-direction: column; gap: .12in; justify-content: center; }
 .chart-row { display: grid; grid-template-columns: 1.1in 1fr .45in; gap: .1in; align-items: center; font-size: .13in; }
 .chart-label { color: var(--text); font-weight: 700; }
 .chart-track { height: .18in; background: color-mix(in srgb, var(--surface-line) 60%, transparent); border-radius: 999px; overflow: hidden; }
 .chart-bar { height: 100%; background: var(--primary); border-radius: 999px; }
 .chart-value { color: var(--muted); text-align: right; }
+table.mdpr-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: max(.13in, 11pt); line-height: 1.18; }
+.mdpr-table th, .mdpr-table td { border: 1px solid var(--surface-line); padding: .07in .08in; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
+.mdpr-table th { background: var(--primary); color: var(--bg); font-weight: 800; text-align: center; }
+.mdpr-table td:first-child { font-weight: 700; }
+.mdpr-table td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.mdpr-table tr:nth-child(odd) td { background: color-mix(in srgb, var(--surface) 76%, transparent); }
+body[data-theme-style="glass"] .slide { background: radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--primary) 42%, transparent) 0, transparent 34%), radial-gradient(circle at 78% 72%, color-mix(in srgb, var(--secondary) 34%, transparent) 0, transparent 30%), var(--bg); }
+body[data-theme-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 54%, transparent); border-color: color-mix(in srgb, #ffffff 46%, var(--surface-line)); box-shadow: 0 .08in .22in rgba(15,23,42,.22), inset 0 1px 0 rgba(255,255,255,.24); backdrop-filter: blur(14px); }
+body[data-theme-style="newmorphism"] .surface { border-color: color-mix(in srgb, #ffffff 65%, var(--surface-line)); box-shadow: .06in .07in .16in rgba(100,116,139,.25), -.04in -.04in .12in rgba(255,255,255,.76); }
+body[data-theme-style="minimalism"] .surface { background: transparent; border-color: var(--surface-line); box-shadow: none; }
+body[data-theme-style="grid"] .slide { background-image: linear-gradient(to right, color-mix(in srgb, var(--surface-line) 44%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--surface-line) 34%, transparent) 1px, transparent 1px); background-size: 1.72in 1.72in, 1.72in 1.72in; }
+body[data-theme-style="data"] .slide::before { content: "DATA"; left: .66in; top: .34in; color: var(--primary); font-size: 8pt; font-weight: 800; letter-spacing: .08in; }
+body[data-theme-style="data"] .slide::after { left: .66in; right: .66in; bottom: .62in; height: .04in; background: var(--surface-line); opacity: .62; }
+body[data-theme-style="magazine"] .slide::before { content: "ISSUE"; right: .72in; top: .34in; color: var(--primary); font-size: 8pt; font-weight: 800; letter-spacing: .08in; }
+body[data-theme-style="magazine"] .slide::after { left: .72in; right: .72in; top: .72in; height: .012in; background: var(--text); opacity: .42; }
 `;
 
   const slides = layout.slides.map((slide) => {
@@ -73,7 +102,13 @@ strong { color: var(--primary); }
         region.typography?.lineHeight ? `line-height:${region.typography.lineHeight}` : "",
       ].filter(Boolean).join(";");
       const content = renderRegionContent(region.role, region.blockIds, blockText, sourceSlide);
-      const classes = ["region", region.role, classNameForRegionId(region.id)].filter(Boolean).join(" ");
+      const classes = [
+        "region",
+        region.role,
+        shouldRenderSurface(region.role, region.id, region.blockIds, sourceSlide) ? "surface" : "",
+        shouldRenderSurface(region.role, region.id, region.blockIds, sourceSlide) ? surfaceVariantClass(design.decorationStyle, surfaceRole(region.role, region.blockIds, sourceSlide), region.id) : "",
+        classNameForRegionId(region.id),
+      ].filter(Boolean).join(" ");
       return `<div class="${classes}" style="${style}">${content}</div>`;
     }).join("\n");
     return `<section class="slide" data-slide-id="${slide.sourceSlideId}" data-layout="${slide.layout.preset}">${regions}</section>`;
@@ -89,7 +124,7 @@ strong { color: var(--primary); }
 <title>${escapeHtml(options.title ?? presentation?.meta.title ?? "mdpresent")}</title>
 <style>${css}</style>
 </head>
-<body>
+<body data-theme-style="${escapeHtml(themeStyle)}">
 <main class="deck">
 ${slides}
 </main>
@@ -148,6 +183,7 @@ function renderBlock(block: BlockIR): string {
   if (block.type === "image") {
     return `<img src="${escapeHtml(block.src ?? "")}" alt="${escapeHtml(block.alt ?? "")}" />`;
   }
+  if (block.type === "table" && block.rows?.length) return renderTable(block.rows);
   if (block.type === "code") return `<pre><code>${escapeHtml(block.text ?? "")}</code></pre>`;
   if (block.type === "diagram" && block.diagram?.kind === "pipeline") {
     return renderPipelineDiagram(block.diagram);
@@ -161,6 +197,23 @@ function renderBlock(block: BlockIR): string {
   if (block.inlineRuns?.length) return `<p>${renderInlineRuns(block.inlineRuns)}</p>`;
   if (block.text) return `<p>${escapeHtml(block.text)}</p>`;
   return "";
+}
+
+function renderTable(rows: string[][]): string {
+  const [header, ...body] = rows;
+  const head = header
+    ? `<thead><tr>${header.map((cell) => `<th>${escapeHtml(normalizeTableCellText(cell))}</th>`).join("")}</tr></thead>`
+    : "";
+  const bodyRows = body.map((row) => [
+    "<tr>",
+    ...row.map((cell) => {
+      const text = normalizeTableCellText(cell);
+      const numeric = /^[-+]?[$€₩¥]?\s*\d[\d,]*(?:\.\d+)?%?$/.test(text.trim()) ? " numeric" : "";
+      return `<td class="${numeric.trim()}">${escapeHtml(text)}</td>`;
+    }),
+    "</tr>",
+  ].join("")).join("");
+  return `<table class="mdpr-table">${head}<tbody>${bodyRows}</tbody></table>`;
 }
 
 function renderBarChart(chart: NonNullable<BlockIR["chart"]>): string {
@@ -381,6 +434,49 @@ function isPseudoTitleBlockId(blockId: string): boolean {
 
 function classNameForRegionId(regionId: string): string {
   return regionId.replace(/[^a-z0-9_-]/gi, "-");
+}
+
+function shouldRenderSurface(role: string, id: string, blockIds: string[], slide?: SlideIR): boolean {
+  if (!blockIds.length) return false;
+  if (blockIds.some((blockId) => {
+    const block = slide?.blocks.find((candidate) => candidate.id === blockId);
+    return block?.type === "table" || block?.type === "chart";
+  })) return true;
+  return ["item", "table", "chart", "code"].includes(role) || id === "key-message" || id === "body-panel";
+}
+
+function surfaceRole(role: string, blockIds: string[], slide?: SlideIR): string {
+  const block = blockIds.map((blockId) => slide?.blocks.find((candidate) => candidate.id === blockId)).find(Boolean);
+  if (block?.type === "table") return "table";
+  if (block?.type === "chart") return "chart";
+  return role;
+}
+
+function surfaceVariantClass(style: string, role: string, id: string): string {
+  if (role === "table") return style === "grid" ? "two-corner-left" : "ticket";
+  if (role === "chart") return style === "data" ? "notched-corner" : "flag-drop";
+  if (role === "code") return "notched-corner";
+  if (id === "key-message" || id === "body-panel") return "two-corner-left";
+  if (role !== "item") return "rounded";
+
+  const index = Number(/\d+$/.exec(id)?.[0] ?? 0);
+  const variantsByStyle: Record<string, string[]> = {
+    glass: ["circle-vine", "two-corner-right", "rounded", "flag-drop"],
+    newmorphism: ["rounded", "two-corner-left", "circle-vine", "ticket"],
+    minimalism: ["rounded", "two-corner-left", "rounded", "notched-corner"],
+    grid: ["two-corner-left", "notched-corner", "two-corner-right", "rounded"],
+    data: ["notched-corner", "flag-drop", "two-corner-left", "ticket"],
+    magazine: ["flag-drop", "ticket", "circle-vine", "two-corner-left"],
+    editorial: ["ticket", "flag-drop", "two-corner-left", "circle-vine"],
+    executive: ["two-corner-left", "rounded", "flag-drop", "notched-corner"],
+    technical: ["two-corner-right", "circle-vine", "rounded", "notched-corner"],
+  };
+  const variants = variantsByStyle[style] ?? ["rounded", "two-corner-left", "flag-drop", "notched-corner"];
+  return variants[Math.abs(index - 1) % variants.length] ?? "rounded";
+}
+
+function normalizeTableCellText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
 }
 
 function chooseDiagramArrangement(diagram: NonNullable<BlockIR["diagram"]>): "horizontal" | "vertical" | "u" | "reverse-u" | "cycle" {

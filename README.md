@@ -74,7 +74,7 @@ mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass 
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
 mdpresent build examples/basic/deck.md --to pptx --config examples/basic/mdpresent.config.yaml --out dist
 mdpresent build examples/basic/deck.md --to html,pptx --config examples/themes/nord.config.yaml --out dist
-mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery executive,nord,dracula,solarized
+mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery executive,editorial,technical,clean
 ```
 
 ## Semantics and Design
@@ -85,7 +85,7 @@ The parser preserves presentation-relevant Markdown structure: lists, emphasis, 
 
 Detailed rules are split out of this README: [methodology](docs/12-design-methodology.md), [object forms and icon paths](docs/13-object-forms-and-icons.md), [renderer rules](docs/07-rendering-rules.md), and [QA/overflow rules](docs/11-qa-overflow.md).
 
-For visual QA, `--theme-gallery executive,nord,dracula,solarized` repeats the planned slides under multiple design presets in one PPTX. Every `build` writes a deterministic `mdpresent-design-lock.json` and `mdpresent-manifest.json`; use `--visual` to add structural visual-validation summaries.
+For visual QA, `--theme-gallery executive,editorial,technical,clean` repeats the planned slides under multiple design presets in one PPTX. The Actions preview page lists decoration styles whose layout and surface grammar differ; legacy color-only presets remain available through `--design` for compatibility. Every `build` writes a deterministic `mdpresent-design-lock.json` and `mdpresent-manifest.json`; use `--visual` to add structural visual-validation summaries.
 
 ## Text and Table Coherence
 

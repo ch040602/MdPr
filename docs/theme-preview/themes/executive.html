@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MDPR Theme and Object QA - executive</title>
+<title>MDPR Style and Object QA - executive</title>
 <style>
 :root {
   --bg: #F8FAFC;
@@ -17,40 +17,68 @@
 }
 body { margin: 0; background: #111; font-family: var(--font); }
 .deck { display: flex; flex-direction: column; gap: 24px; padding: 24px; }
-.slide { position: relative; width: 13.333in; height: 7.5in; background: var(--bg); color: var(--text); overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
-.region { position: absolute; box-sizing: border-box; }
+.slide { position: relative; width: 13.333in; height: 7.5in; background: var(--bg); color: var(--text); overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.3); isolation: isolate; }
+.slide::before, .slide::after { content: ""; position: absolute; pointer-events: none; z-index: 0; }
+.region { position: absolute; box-sizing: border-box; overflow: hidden; z-index: 2; overflow-wrap: anywhere; }
+.region > * { position: relative; z-index: 1; }
 .title { font-weight: 700; }
 .body.key-message { background: var(--surface); border-left: .08in solid var(--primary); padding: .18in .28in; }
 .body.key-message blockquote { margin: 0; font-weight: 700; color: var(--text); }
-.item { background: var(--surface); border-left: .06in solid var(--primary); padding: .12in .18in; }
+.surface { background: color-mix(in srgb, var(--surface) 94%, transparent); border: .012in solid var(--surface-line); padding: .15in .19in; }
+.surface.rounded { border-radius: .12in; }
+.surface.two-corner-left { border-radius: .18in .035in .035in .18in; }
+.surface.two-corner-right { border-radius: .035in .18in .18in .035in; }
+.surface.flag-drop { border-radius: .06in .06in .16in .06in; }
+.surface.flag-drop::before { content: ""; position: absolute; left: .16in; top: 0; width: .26in; height: .22in; background: var(--primary); border-radius: 0 0 .06in .06in; opacity: .9; z-index: 0; }
+.surface.circle-vine { padding-left: .48in; border-radius: .14in; }
+.surface.circle-vine::before { content: ""; position: absolute; left: .18in; top: 50%; width: .16in; height: .16in; margin-top: -.08in; background: var(--primary); border-radius: 999px; z-index: 0; }
+.surface.circle-vine::after { content: ""; position: absolute; left: .255in; top: 50%; width: .14in; height: .012in; margin-top: -.006in; background: var(--primary); opacity: .5; z-index: 0; }
+.surface.notched-corner { clip-path: polygon(0 0, calc(100% - .18in) 0, 100% .18in, 100% 100%, 0 100%); border-radius: .08in; }
+.surface.ticket { border-radius: .12in; background-image: radial-gradient(circle at left 50%, var(--bg) 0 .11in, transparent .115in), radial-gradient(circle at right 50%, var(--bg) 0 .11in, transparent .115in); }
+.item { line-height: 1.22; }
 .region ul, .region ol { margin: 0; padding-left: 1.2em; }
 .structured-list { list-style: none; padding-left: 0; }
 .region li.level-1 { margin-left: 1.1em; }
 .region li.level-2 { margin-left: 2.2em; }
 .region p { margin: 0 0 .45em; }
 .region img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.item-number { display: inline-flex; width: .28in; height: .28in; align-items: center; justify-content: center; margin-right: .1in; border-radius: 999px; background: var(--primary); color: var(--bg); font-weight: 700; }
+.item-number { display: inline-flex; width: .28in; height: .28in; align-items: center; justify-content: center; margin-right: .1in; border-radius: 999px; background: var(--primary); color: var(--bg); font-weight: 700; vertical-align: middle; line-height: 1; }
 .item-label { font-weight: 700; display: block; margin-bottom: .12in; color: var(--primary); }
 .item-description { display: block; margin-left: .18in; color: var(--muted); }
 strong { color: var(--primary); }
 .pipeline { position: relative; height: 100%; min-height: 3.6in; }
 .pipeline-connectors { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 3; }
 .pipeline-connector { fill: none; stroke: var(--primary); stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.pipeline-node { position: absolute; z-index: 2; min-width: 0; border: 1px solid var(--surface-line); background: var(--surface); padding: .12in; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: .12in; font-weight: 700; line-height: 1.18; }
+.pipeline-node { position: absolute; z-index: 2; min-width: 0; border: 1px solid var(--surface-line); background: var(--surface); padding: .14in; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: .12in; font-weight: 700; line-height: 1.18; overflow: hidden; }
 .chart { width: 100%; height: 100%; display: flex; flex-direction: column; gap: .12in; justify-content: center; }
 .chart-row { display: grid; grid-template-columns: 1.1in 1fr .45in; gap: .1in; align-items: center; font-size: .13in; }
 .chart-label { color: var(--text); font-weight: 700; }
 .chart-track { height: .18in; background: color-mix(in srgb, var(--surface-line) 60%, transparent); border-radius: 999px; overflow: hidden; }
 .chart-bar { height: 100%; background: var(--primary); border-radius: 999px; }
 .chart-value { color: var(--muted); text-align: right; }
+table.mdpr-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: max(.13in, 11pt); line-height: 1.18; }
+.mdpr-table th, .mdpr-table td { border: 1px solid var(--surface-line); padding: .07in .08in; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
+.mdpr-table th { background: var(--primary); color: var(--bg); font-weight: 800; text-align: center; }
+.mdpr-table td:first-child { font-weight: 700; }
+.mdpr-table td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.mdpr-table tr:nth-child(odd) td { background: color-mix(in srgb, var(--surface) 76%, transparent); }
+body[data-theme-style="glass"] .slide { background: radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--primary) 42%, transparent) 0, transparent 34%), radial-gradient(circle at 78% 72%, color-mix(in srgb, var(--secondary) 34%, transparent) 0, transparent 30%), var(--bg); }
+body[data-theme-style="glass"] .surface { background: color-mix(in srgb, var(--surface) 54%, transparent); border-color: color-mix(in srgb, #ffffff 46%, var(--surface-line)); box-shadow: 0 .08in .22in rgba(15,23,42,.22), inset 0 1px 0 rgba(255,255,255,.24); backdrop-filter: blur(14px); }
+body[data-theme-style="newmorphism"] .surface { border-color: color-mix(in srgb, #ffffff 65%, var(--surface-line)); box-shadow: .06in .07in .16in rgba(100,116,139,.25), -.04in -.04in .12in rgba(255,255,255,.76); }
+body[data-theme-style="minimalism"] .surface { background: transparent; border-color: var(--surface-line); box-shadow: none; }
+body[data-theme-style="grid"] .slide { background-image: linear-gradient(to right, color-mix(in srgb, var(--surface-line) 44%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--surface-line) 34%, transparent) 1px, transparent 1px); background-size: 1.72in 1.72in, 1.72in 1.72in; }
+body[data-theme-style="data"] .slide::before { content: "DATA"; left: .66in; top: .34in; color: var(--primary); font-size: 8pt; font-weight: 800; letter-spacing: .08in; }
+body[data-theme-style="data"] .slide::after { left: .66in; right: .66in; bottom: .62in; height: .04in; background: var(--surface-line); opacity: .62; }
+body[data-theme-style="magazine"] .slide::before { content: "ISSUE"; right: .72in; top: .34in; color: var(--primary); font-size: 8pt; font-weight: 800; letter-spacing: .08in; }
+body[data-theme-style="magazine"] .slide::after { left: .72in; right: .72in; top: .72in; height: .012in; background: var(--text); opacity: .42; }
 </style>
 </head>
-<body>
+<body data-theme-style="executive">
 <main class="deck" data-preview-theme="executive">
-<section class="slide" data-slide-id="mdpr-theme-and-object-qa-41f937" data-layout="cover"><div class="region title title" style="left:1in;top:2.25in;width:11.3in;height:1.25in;z-index:10;font-size:48pt;line-height:1.2">MDPR Theme and Object QA</div></section>
+<section class="slide" data-slide-id="mdpr-style-and-object-qa-97dcb6" data-layout="cover"><div class="region title title" style="left:1in;top:2.25in;width:11.3in;height:1.25in;z-index:10;font-size:48pt;line-height:1.2">MDPR Style and Object QA</div></section>
 <section class="slide" data-slide-id="toc-53a981" data-layout="toc"><div class="region title title" style="left:0.8in;top:0.42in;width:11.7in;height:0.9in;z-index:10;font-size:38pt;line-height:1.2">목차</div>
 <div class="region body body" style="left:1in;top:1.6in;width:11.2in;height:4.9in;z-index:10;font-size:22pt;line-height:1.2"><p>Preview Purpose</p>
-<p>Theme Families</p>
+<p>Style Families</p>
 <p>Theme Style Checks</p>
 <p>Markdown Semantics</p>
 <p>Pipeline Diagram</p>
@@ -61,27 +89,27 @@ strong { color: var(--primary); }
 <p>Icon and Text Aside</p>
 <p>Overflow Guard</p>
 <p>Actions Output Review</p></div></section>
-<section class="slide" data-slide-id="preview-purpose-6821f8" data-layout="key-message"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Preview Purpose</div>
-<div class="region body key-message" style="left:1in;top:1.55in;width:11.2in;height:1.45in;z-index:10;font-size:30pt;line-height:1.2"><blockquote>This Actions/Pages deck is a visual QA fixture for MDPR themes and editable object rendering.</blockquote></div>
-<div class="region body body" style="left:1in;top:3.35in;width:11.2in;height:2.95in;z-index:10;font-size:22pt;line-height:1.2"><p>The same semantic Markdown is rendered once per built-in theme.<br />Use the slide list to compare color, typography, spacing, table coherence, chart contrast, and connector clarity.</p></div></section>
-<section class="slide" data-slide-id="1-2-70a2c7" data-layout="vertical-list"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Theme Families</div>
-<div class="region item item-1" style="left:1in;top:1.55in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Plain and clean</span><span class="item-description">low-decoration baselines for dense source material.</span></li></ul></div>
-<div class="region item item-2" style="left:1in;top:2.8in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Executive and technical</span><span class="item-description">structured operational layouts with visible hierarchy.</span></li></ul></div>
-<div class="region item item-3" style="left:1in;top:4.05in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Editorial and magazine-like presets</span><span class="item-description">warmer page rhythm without losing bounded text.</span></li></ul></div></section>
-<section class="slide" data-slide-id="2-2-a1220a" data-layout="comparison"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Theme Families (Cont. 2/2)</div>
-<div class="region body left" style="left:0.9in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Dark and code-adjacent presets</span><span class="item-description">contrast, readable muted text, and restrained surfaces.</span></li></ul></div>
-<div class="region body right" style="left:7in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Data-friendly presets</span><span class="item-description">chart accents, table headers, and proof objects stay theme-bound.</span></li></ul></div></section>
-<section class="slide" data-slide-id="theme-style-checks-256ed8" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Theme Style Checks</div>
-<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Surface grammar</span><span class="item-description">cards, rails, title rules, and proof callouts should change by theme.</span></li></ul></div>
-<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Color harmony</span><span class="item-description">sequential emphasis uses brightness variation; contrast uses hue opposition.</span></li></ul></div>
-<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Typography</span><span class="item-description">same-role text keeps coherent size and readable line height.</span></li></ul></div>
-<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Spacing</span><span class="item-description">text stays inside card/table bounds with visible inner padding.</span></li></ul></div></section>
-<section class="slide" data-slide-id="markdown-semantics-3fc223" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Markdown Semantics</div>
-<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Headings</span><span class="item-description">slide boundaries and title regions are stable.</span></li></ul></div>
-<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Lists</span><span class="item-description">ordered and unordered items remain structured.</span></li></ul></div>
-<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Label detail: Constraint: renderer rules stay deterministic.</span><span class="item-description">The description line must be indented under the bold label.</span></li></ul></div>
-<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Emphasis</span><span class="item-description">bold and italic runs remain editable text styling.</span></li></ul></div></section>
-<section class="slide" data-slide-id="pipeline-diagram-42bed1" data-layout="pipeline"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Pipeline Diagram</div>
+<section class="slide" data-slide-id="preview-purpose-41d9df" data-layout="key-message"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Preview Purpose</div>
+<div class="region body surface two-corner-left key-message" style="left:1in;top:1.55in;width:11.2in;height:1.45in;z-index:10;font-size:30pt;line-height:1.2"><blockquote>This Actions/Pages deck is a visual QA fixture for MDPR decoration styles and editable object rendering.</blockquote></div>
+<div class="region body body" style="left:1in;top:3.35in;width:11.2in;height:2.95in;z-index:10;font-size:22pt;line-height:1.2"><p>The same semantic Markdown is rendered once per built-in decoration style.<br />Use the slide list to compare surface grammar, typography, spacing, table coherence, chart contrast, and connector clarity.</p></div></section>
+<section class="slide" data-slide-id="1-2-684ba8" data-layout="vertical-list"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Style Families</div>
+<div class="region item surface two-corner-left item-1" style="left:1in;top:1.55in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Plain and clean</span><span class="item-description">low-decoration baselines for dense source material.</span></li></ul></div>
+<div class="region item surface rounded item-2" style="left:1in;top:2.8in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Executive and technical</span><span class="item-description">structured operational layouts with visible hierarchy.</span></li></ul></div>
+<div class="region item surface flag-drop item-3" style="left:1in;top:4.05in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Editorial and magazine-like styles</span><span class="item-description">warmer page rhythm without losing bounded text.</span></li></ul></div></section>
+<section class="slide" data-slide-id="2-2-e7731e" data-layout="comparison"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Style Families (Cont. 2/2)</div>
+<div class="region body left" style="left:0.9in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Minimalism and newmorphism</span><span class="item-description">sparse composition or soft raised surfaces.</span></li></ul></div>
+<div class="region body right" style="left:7in;top:1.7in;width:5.4in;height:4.8in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Glass, grid, and data styles</span><span class="item-description">visibly different background and surface grammar.</span></li></ul></div></section>
+<section class="slide" data-slide-id="theme-style-checks-2bf0de" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Theme Style Checks</div>
+<div class="region item surface two-corner-left item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Surface grammar</span><span class="item-description">cards, rails, title rules, and proof callouts should change by style.</span></li></ul></div>
+<div class="region item surface rounded item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Color harmony</span><span class="item-description">sequential emphasis uses brightness variation; contrast uses hue opposition.</span></li></ul></div>
+<div class="region item surface flag-drop item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Typography</span><span class="item-description">same-role text keeps coherent size and readable line height.</span></li></ul></div>
+<div class="region item surface notched-corner item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Spacing</span><span class="item-description">text stays inside card/table bounds with visible inner padding.</span></li></ul></div></section>
+<section class="slide" data-slide-id="markdown-semantics-285f27" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Markdown Semantics</div>
+<div class="region item surface two-corner-left item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Headings</span><span class="item-description">slide boundaries and title regions are stable.</span></li></ul></div>
+<div class="region item surface rounded item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Lists</span><span class="item-description">ordered and unordered items remain structured.</span></li></ul></div>
+<div class="region item surface flag-drop item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Label detail: Constraint: renderer rules stay deterministic.</span><span class="item-description">The description line must be indented under the bold label.</span></li></ul></div>
+<div class="region item surface notched-corner item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Emphasis</span><span class="item-description">bold and italic runs remain editable text styling.</span></li></ul></div></section>
+<section class="slide" data-slide-id="pipeline-diagram-1bc72d" data-layout="pipeline"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Pipeline Diagram</div>
 <div class="region diagram diagram" style="left:0.7in;top:1.32in;width:11.95in;height:5.75in;z-index:10;font-size:22pt;line-height:1.2"><div class="pipeline pipeline-u" data-arrangement="u">
 <svg class="pipeline-connectors" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
 <defs><marker id="pipeline-arrow-node-1-node-2-node-3-node-4-node-5-node-6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--primary)" /></marker></defs>
@@ -89,40 +117,33 @@ strong { color: var(--primary); }
 </svg>
 <div class="pipeline-node" data-node="1" style="left:0.00%;top:30.40%;width:31.20%;height:18.00%">Markdown source</div><div class="pipeline-node" data-node="2" style="left:34.40%;top:30.40%;width:31.20%;height:18.00%">Parse blocks</div><div class="pipeline-node" data-node="3" style="left:68.80%;top:30.40%;width:31.20%;height:18.00%">Split slides</div><div class="pipeline-node" data-node="4" style="left:68.80%;top:51.60%;width:31.20%;height:18.00%">Layout objects</div><div class="pipeline-node" data-node="5" style="left:34.40%;top:51.60%;width:31.20%;height:18.00%">Validate overflow</div><div class="pipeline-node" data-node="6" style="left:0.00%;top:51.60%;width:31.20%;height:18.00%">Render PPTX HTML PDF</div>
 </div></div></section>
-<section class="slide" data-slide-id="table-coherence-38d18a" data-layout="table-focus"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Table Coherence</div>
-<div class="region body body" style="left:1in;top:1.6in;width:11.2in;height:4.9in;z-index:10;font-size:22pt;line-height:1.2"><p>Object | Renderer expectation | QA signal
-Text box | editable, vertically aligned | readable at minimum size
-Table | native table object | header fill and cell padding
-Diagram | nodes and connectors | no clipped labels
-Chart | theme-colored data object | contrast and legend clarity</p></div></section>
-<section class="slide" data-slide-id="chart-and-table-pair-fb9e9c" data-layout="chart-table"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Chart and Table Pair</div>
-<div class="region chart chart" style="left:0.82in;top:1.65in;width:5.05in;height:3.75in;z-index:10;font-size:17pt;line-height:1.2"><div class="chart" aria-label="Coverage"><div class="chart-row"><span class="chart-label">Parser</span><span class="chart-track"><span class="chart-bar" style="width:96.8%"></span></span><span class="chart-value">92</span></div><div class="chart-row"><span class="chart-label">Layout</span><span class="chart-track"><span class="chart-bar" style="width:92.6%"></span></span><span class="chart-value">88</span></div><div class="chart-row"><span class="chart-label">PPTX</span><span class="chart-track"><span class="chart-bar" style="width:100.0%"></span></span><span class="chart-value">95</span></div></div></div>
-<div class="region table table" style="left:6.1in;top:1.72in;width:6.05in;height:3.28in;z-index:10;font-size:17pt;line-height:1.2"><p>Stage | Coverage | Defects
-Parser | 92 | 3
-Layout | 88 | 5
-PPTX | 95 | 2</p></div>
+<section class="slide" data-slide-id="table-coherence-8a4958" data-layout="table-focus"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Table Coherence</div>
+<div class="region body surface ticket body" style="left:1in;top:1.6in;width:11.2in;height:4.9in;z-index:10;font-size:22pt;line-height:1.2"><table class="mdpr-table"><thead><tr><th>Object</th><th>Renderer expectation</th><th>QA signal</th></tr></thead><tbody><tr><td class="">Text box</td><td class="">editable, vertically aligned</td><td class="">readable at minimum size</td></tr><tr><td class="">Table</td><td class="">native table object</td><td class="">header fill and cell padding</td></tr><tr><td class="">Diagram</td><td class="">nodes and connectors</td><td class="">no clipped labels</td></tr><tr><td class="">Chart</td><td class="">style-colored data object</td><td class="">contrast and legend clarity</td></tr></tbody></table></div></section>
+<section class="slide" data-slide-id="chart-and-table-pair-ed286b" data-layout="chart-table"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Chart and Table Pair</div>
+<div class="region chart surface flag-drop chart" style="left:0.82in;top:1.65in;width:5.05in;height:3.75in;z-index:10;font-size:17pt;line-height:1.2"><div class="chart" aria-label="Coverage"><div class="chart-row"><span class="chart-label">Parser</span><span class="chart-track"><span class="chart-bar" style="width:96.8%"></span></span><span class="chart-value">92</span></div><div class="chart-row"><span class="chart-label">Layout</span><span class="chart-track"><span class="chart-bar" style="width:92.6%"></span></span><span class="chart-value">88</span></div><div class="chart-row"><span class="chart-label">PPTX</span><span class="chart-track"><span class="chart-bar" style="width:100.0%"></span></span><span class="chart-value">95</span></div></div></div>
+<div class="region table surface ticket table" style="left:6.1in;top:1.72in;width:6.05in;height:3.28in;z-index:10;font-size:17pt;line-height:1.2"><table class="mdpr-table"><thead><tr><th>Stage</th><th>Coverage</th><th>Defects</th></tr></thead><tbody><tr><td class="">Parser</td><td class="numeric">92</td><td class="numeric">3</td></tr><tr><td class="">Layout</td><td class="numeric">88</td><td class="numeric">5</td></tr><tr><td class="">PPTX</td><td class="numeric">95</td><td class="numeric">2</td></tr></tbody></table></div>
 <div class="region body body" style="left:6.1in;top:5.25in;width:6.05in;height:0.9in;z-index:10;font-size:17pt;line-height:1.2"><p>Chart slides may keep numeric evidence beside a compact table when both are needed.</p></div></section>
-<section class="slide" data-slide-id="1-2-f5bf98" data-layout="chart-table"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Editable Proof Objects</div>
-<div class="region chart chart" style="left:1in;top:1.55in;width:11.2in;height:4.75in;z-index:10;font-size:22pt;line-height:1.2"><p>Coverage: 84, 16</p>
+<section class="slide" data-slide-id="1-2-e18297" data-layout="chart-table"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Editable Proof Objects</div>
+<div class="region chart surface flag-drop chart" style="left:1in;top:1.55in;width:11.2in;height:4.75in;z-index:10;font-size:22pt;line-height:1.2"><p>Coverage: 84, 16</p>
 <p>Score: 91</p></div></section>
-<section class="slide" data-slide-id="2-2-d1e9ea" data-layout="chart-table"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Editable Proof Objects (Cont. 2/2)</div>
-<div class="region chart chart" style="left:1in;top:1.55in;width:11.2in;height:4.75in;z-index:10;font-size:22pt;line-height:1.2"><p>Value: 30, 62, 86, 94</p></div></section>
-<section class="slide" data-slide-id="object-shape-grammar-61d882" data-layout="timeline"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Object Shape Grammar</div>
+<section class="slide" data-slide-id="2-2-8cac06" data-layout="chart-table"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Editable Proof Objects (Cont. 2/2)</div>
+<div class="region chart surface flag-drop chart" style="left:1in;top:1.55in;width:11.2in;height:4.75in;z-index:10;font-size:22pt;line-height:1.2"><p>Value: 30, 62, 86, 94</p></div></section>
+<section class="slide" data-slide-id="object-shape-grammar-30c277" data-layout="timeline"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Object Shape Grammar</div>
 <div class="region body body" style="left:1in;top:1.6in;width:11.2in;height:4.9in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Method flag</span><span class="item-description">short high-level step.</span></li><li class="level-0"><span class="item-label">Ticket panel</span><span class="item-description">document-like evidence.</span></li><li class="level-0"><span class="item-label">Circle vine</span><span class="item-description">compact relationship marker.</span></li><li class="level-0"><span class="item-label">Two-corner panel</span><span class="item-description">linear grouping.</span></li></ul></div></section>
-<section class="slide" data-slide-id="icon-and-text-aside-e0d5a4" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Icon and Text Aside</div>
-<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">Icons stay secondary to the text.</li></ul></div>
-<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">The icon box is centered in its slot.</li></ul></div>
-<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">Brand icons require explicit brand terms.</li></ul></div>
-<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">Generic object icons are used as fallbacks.</li></ul></div></section>
-<section class="slide" data-slide-id="overflow-guard-da3d3b" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Overflow Guard</div>
-<div class="region item item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Text fit</span><span class="item-description">region bounds are validated before output.</span></li></ul></div>
-<div class="region item item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Tables</span><span class="item-description">cell text uses middle alignment and coherent margins.</span></li></ul></div>
-<div class="region item item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Continuation slides</span><span class="item-description">dense content splits before text becomes unreadable.</span></li></ul></div>
-<div class="region item item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Cleanup</span><span class="item-description">decorative-only bullets and empty artifacts are removed.</span></li></ul></div></section>
-<section class="slide" data-slide-id="actions-output-review-7c5900" data-layout="vertical-list"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Actions Output Review</div>
-<div class="region item item-1" style="left:1in;top:1.55in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">The Theme Preview workflow builds this source across all built-in themes.</li></ul></div>
-<div class="region item item-2" style="left:1in;top:2.8in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">The Pages gallery lets reviewers inspect each themed deck and each object-check slide.</li></ul></div>
-<div class="region item item-3" style="left:1in;top:4.05in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">The companion mdpr-skill repository can prepare optional reasoning hints, but MDPR owns final rendering.</li></ul></div></section>
+<section class="slide" data-slide-id="icon-and-text-aside-721982" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Icon and Text Aside</div>
+<div class="region item surface two-corner-left item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">Icons stay secondary to the text.</li></ul></div>
+<div class="region item surface rounded item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">The icon box is centered in its slot.</li></ul></div>
+<div class="region item surface flag-drop item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">Brand icons require explicit brand terms.</li></ul></div>
+<div class="region item surface notched-corner item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">Generic object icons are used as fallbacks.</li></ul></div></section>
+<section class="slide" data-slide-id="overflow-guard-1f5257" data-layout="grid"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Overflow Guard</div>
+<div class="region item surface two-corner-left item-1" style="left:0.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Text fit</span><span class="item-description">region bounds are validated before output.</span></li></ul></div>
+<div class="region item surface rounded item-2" style="left:6.9in;top:1.6in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Tables</span><span class="item-description">cell text uses middle alignment and coherent margins.</span></li></ul></div>
+<div class="region item surface flag-drop item-3" style="left:0.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Continuation slides</span><span class="item-description">dense content splits before text becomes unreadable.</span></li></ul></div>
+<div class="region item surface notched-corner item-4" style="left:6.9in;top:4.1in;width:5.5in;height:2.1in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0"><span class="item-label">Cleanup</span><span class="item-description">decorative-only bullets and empty artifacts are removed.</span></li></ul></div></section>
+<section class="slide" data-slide-id="actions-output-review-d4fb26" data-layout="vertical-list"><div class="region title title" style="left:0.8in;top:0.5in;width:11.7in;height:0.8in;z-index:10;font-size:34pt;line-height:1.2">Actions Output Review</div>
+<div class="region item surface two-corner-left item-1" style="left:1in;top:1.55in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">The Theme Preview workflow builds this source across built-in decoration styles.</li></ul></div>
+<div class="region item surface rounded item-2" style="left:1in;top:2.8in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">The Pages gallery lets reviewers inspect each styled deck and each object-check slide.</li></ul></div>
+<div class="region item surface flag-drop item-3" style="left:1in;top:4.05in;width:11.2in;height:0.95in;z-index:10;font-size:22pt;line-height:1.2"><ul class="structured-list"><li class="level-0">The companion mdpr-skill repository can prepare optional reasoning hints, but MDPR owns final rendering.</li></ul></div></section>
 </main>
 </body>
 </html>

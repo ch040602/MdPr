@@ -138,9 +138,9 @@ test("renderHtml separates block quotes as key-message regions with accent styli
   const html = renderHtml({ presentation, layout });
 
   assert.match(html, /data-layout="key-message"/);
-  assert.match(html, /class="region body key-message"/);
+  assert.match(html, /class="region body surface two-corner-left key-message"/);
   assert.match(html, /<blockquote>Keep the Markdown source authoritative\.<\/blockquote>/);
-  assert.match(html, /border-left: \.08in solid var\(--primary\)/);
+  assert.match(html, /\.surface\.two-corner-left/);
 });
 
 test("renderHtml marks pipeline diagrams with selected graph arrangements", () => {
@@ -205,6 +205,41 @@ test("renderHtml separates decoration style from theme color seed", () => {
   assert.equal(layout.theme.colorSeed, "#8A4FFF");
   assert.match(html, /--primary: #8A4FFF;/);
   assert.match(html, /--surface: #10182C;/);
+});
+
+test("renderHtml renders table blocks as bounded HTML tables", () => {
+  const html = renderHtmlForMarkdown([
+    "# Demo Deck",
+    "",
+    "## Table",
+    "",
+    "| Stage | Coverage | Defects |",
+    "| --- | ---: | ---: |",
+    "| Parser | 92 | 3 |",
+    "| Layout | 88 | 5 |",
+  ].join("\n"));
+
+  assert.match(html, /<table class="mdpr-table">/);
+  assert.match(html, /class="region body surface ticket/);
+  assert.match(html, /<th>Coverage<\/th>/);
+  assert.match(html, /<td class="numeric">92<\/td>/);
+  assert.match(html, /vertical-align: middle/);
+  assert.doesNotMatch(html, /Stage \| Coverage \| Defects/);
+});
+
+test("renderHtml applies theme surface grammar in Actions previews", () => {
+  const config = structuredClone(defaultConfig);
+  config.theme.decorationStyle = "magazine";
+  const doc = parseMarkdown("# Demo Deck\n\n## Cards\n\n- Alpha\n- Beta\n- Gamma\n- Delta");
+  const presentation = planPresentation(doc, config);
+  const layout = planLayout(presentation, config);
+
+  const html = renderHtml({ presentation, layout });
+
+  assert.match(html, /body data-theme-style="magazine"/);
+  assert.match(html, /class="region item surface flag-drop/);
+  assert.match(html, /class="region item surface ticket/);
+  assert.match(html, /body\[data-theme-style="magazine"\] \.slide::before/);
 });
 
 function renderHtmlForMarkdown(markdown) {

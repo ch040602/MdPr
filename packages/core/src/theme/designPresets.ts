@@ -87,15 +87,6 @@ export const DECORATION_STYLE_NAMES = [
   "grid",
   "data",
   "magazine",
-  "dark",
-  "nord",
-  "solarized",
-  "dracula",
-  "tableau",
-  "gruvbox",
-  "monokai",
-  "material",
-  "tokyo-night",
 ] as const satisfies readonly DecorationStyleName[];
 
 const DEFAULT_SURFACE_POLICY: BaseDesignTokens["surfacePolicy"] = {

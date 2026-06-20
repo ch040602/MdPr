@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDeckPlan } from "../packages/cli/dist/orchestrate.js";
@@ -10,6 +10,7 @@ const inputPath = resolve(repoRoot, process.argv[2] ?? "examples/theme-preview-e
 const outDir = resolve(repoRoot, process.argv[3] ?? "docs/theme-preview");
 const themesDir = join(outDir, "themes");
 
+rmSync(themesDir, { recursive: true, force: true });
 mkdirSync(themesDir, { recursive: true });
 
 const deck = createDeckPlan(inputPath);
@@ -249,17 +250,17 @@ iframe {
   <aside class="sidebar">
     <div class="brand">
       <div>
-        <h1>Theme and Object QA</h1>
-        <p class="meta">Source: ${escapeHtml(source)}<br />Generated: ${escapeHtml(generatedAt)}<br />Each theme renders the same element-check deck.</p>
+        <h1>Style and Object QA</h1>
+        <p class="meta">Source: ${escapeHtml(source)}<br />Generated: ${escapeHtml(generatedAt)}<br />Each style renders the same element-check deck. Color-only legacy presets are kept for CLI compatibility, not listed here.</p>
       </div>
     </div>
     <div class="control-group">
-      <label for="themeSelect">Selected Theme</label>
+      <label for="themeSelect">Selected Theme Style</label>
       <select id="themeSelect"></select>
     </div>
     <div class="control-group">
       <label for="zoomRange">Preview Zoom <span id="zoomValue">100%</span></label>
-      <input id="zoomRange" type="range" min="55" max="120" value="100" />
+      <input id="zoomRange" type="range" min="45" max="120" value="80" />
     </div>
     <div class="control-group">
       <label>QA Slide Navigation</label>
@@ -270,7 +271,7 @@ iframe {
       <div id="slideList" class="slide-list" aria-label="Slides"></div>
     </div>
     <div class="control-group">
-      <label>All Themes</label>
+      <label>Theme Styles</label>
       <div id="themeGrid" class="theme-grid"></div>
     </div>
   </aside>
@@ -300,6 +301,7 @@ const slideCounter = document.querySelector("#slideCounter");
 let currentTheme = ${JSON.stringify(defaultTheme.name)};
 let currentSlide = 0;
 let slides = [];
+let userZoom = false;
 
 for (const theme of themes) {
   const option = document.createElement("option");
@@ -320,14 +322,21 @@ for (const theme of themes) {
 }
 
 select.addEventListener("change", () => setTheme(select.value));
-zoomRange.addEventListener("input", applyZoom);
+zoomRange.addEventListener("input", () => {
+  userZoom = true;
+  applyZoom();
+});
+window.addEventListener("resize", () => {
+  if (!userZoom) fitZoomToFrame();
+});
 document.querySelector("#prevSlide").addEventListener("click", () => goToSlide(Math.max(0, currentSlide - 1)));
 document.querySelector("#nextSlide").addEventListener("click", () => goToSlide(Math.min(slides.length - 1, currentSlide + 1)));
 frame.addEventListener("load", () => {
   const doc = frame.contentDocument;
   slides = [...doc.querySelectorAll(".slide")];
   currentSlide = 0;
-  applyZoom();
+  if (!userZoom) fitZoomToFrame();
+  else applyZoom();
   renderSlideList();
   goToSlide(0);
 });
@@ -356,6 +365,20 @@ function applyZoom() {
   deck.style.transform = \`scale(\${scale})\`;
   deck.style.transformOrigin = "top left";
   deck.style.width = \`\${100 / scale}%\`;
+}
+
+function fitZoomToFrame() {
+  const doc = frame.contentDocument;
+  if (!doc) return;
+  const firstSlide = doc.querySelector(".slide");
+  if (!firstSlide) return;
+  const slideWidth = firstSlide.offsetWidth || 1280;
+  const slideHeight = firstSlide.offsetHeight || 720;
+  const widthScale = Math.max(0.45, Math.min(1, (frame.clientWidth - 48) / slideWidth));
+  const heightScale = Math.max(0.45, Math.min(1, (frame.clientHeight - 48) / slideHeight));
+  const scale = Math.min(widthScale, heightScale, 0.92);
+  zoomRange.value = String(Math.round(scale * 100));
+  applyZoom();
 }
 
 function renderSlideList() {

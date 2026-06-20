@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>MDPR Theme and Object QA Theme Preview</title>
+<title>MDPR Style and Object QA Theme Preview</title>
 <style>
 :root {
   color-scheme: light;
@@ -193,17 +193,17 @@ iframe {
   <aside class="sidebar">
     <div class="brand">
       <div>
-        <h1>Theme and Object QA</h1>
-        <p class="meta">Source: examples/theme-preview-en/deck.md<br />Generated: 2026-06-20T11:00:20.878Z<br />Each theme renders the same element-check deck.</p>
+        <h1>Style and Object QA</h1>
+        <p class="meta">Source: examples/theme-preview-en/deck.md<br />Generated: 2026-06-20T11:17:29.828Z<br />Each style renders the same element-check deck. Color-only legacy presets are kept for CLI compatibility, not listed here.</p>
       </div>
     </div>
     <div class="control-group">
-      <label for="themeSelect">Selected Theme</label>
+      <label for="themeSelect">Selected Theme Style</label>
       <select id="themeSelect"></select>
     </div>
     <div class="control-group">
       <label for="zoomRange">Preview Zoom <span id="zoomValue">100%</span></label>
-      <input id="zoomRange" type="range" min="55" max="120" value="100" />
+      <input id="zoomRange" type="range" min="45" max="120" value="80" />
     </div>
     <div class="control-group">
       <label>QA Slide Navigation</label>
@@ -214,7 +214,7 @@ iframe {
       <div id="slideList" class="slide-list" aria-label="Slides"></div>
     </div>
     <div class="control-group">
-      <label>All Themes</label>
+      <label>Theme Styles</label>
       <div id="themeGrid" class="theme-grid"></div>
     </div>
   </aside>
@@ -231,7 +231,7 @@ iframe {
   </main>
 </div>
 <script>
-const themes = [{"name":"plain","file":"themes/plain.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#93C5FD","surface":"#FFFFFF"}},{"name":"simple","file":"themes/simple.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"clean","file":"themes/clean.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#2563EB","secondary":"#DBEAFE","surface":"#FFFFFF"}},{"name":"executive","file":"themes/executive.html","colors":{"background":"#F8FAFC","text":"#0F172A","primary":"#1D4ED8","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"editorial","file":"themes/editorial.html","colors":{"background":"#F7F3EF","text":"#1F2937","primary":"#B45309","secondary":"#FCD34D","surface":"#FFFBF5"}},{"name":"technical","file":"themes/technical.html","colors":{"background":"#F9FAFB","text":"#111827","primary":"#047857","secondary":"#A7F3D0","surface":"#FFFFFF"}},{"name":"minimalism","file":"themes/minimalism.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#111827","secondary":"#E5E7EB","surface":"#FFFFFF"}},{"name":"newmorphism","file":"themes/newmorphism.html","colors":{"background":"#E9EEF5","text":"#243041","primary":"#4F6F8F","secondary":"#CBD5E1","surface":"#E9EEF5"}},{"name":"glass","file":"themes/glass.html","colors":{"background":"#0B1020","text":"#F8FAFC","primary":"#8A4FFF","secondary":"#22D3EE","surface":"#17213A"}},{"name":"grid","file":"themes/grid.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#DC2626","secondary":"#111827","surface":"#FFFFFF"}},{"name":"data","file":"themes/data.html","colors":{"background":"#101820","text":"#F8FAFC","primary":"#F59E0B","secondary":"#38BDF8","surface":"#162331"}},{"name":"magazine","file":"themes/magazine.html","colors":{"background":"#F8F4EF","text":"#18181B","primary":"#C2410C","secondary":"#111827","surface":"#FFFCF7"}},{"name":"dark","file":"themes/dark.html","colors":{"background":"#111827","text":"#F9FAFB","primary":"#38BDF8","secondary":"#164E63","surface":"#1F2937"}},{"name":"nord","file":"themes/nord.html","colors":{"background":"#2E3440","text":"#ECEFF4","primary":"#88C0D0","secondary":"#B48EAD","surface":"#3B4252"}},{"name":"solarized","file":"themes/solarized.html","colors":{"background":"#FDF6E3","text":"#073642","primary":"#268BD2","secondary":"#B58900","surface":"#EEE8D5"}},{"name":"dracula","file":"themes/dracula.html","colors":{"background":"#282A36","text":"#F8F8F2","primary":"#BD93F9","secondary":"#FF79C6","surface":"#44475A"}},{"name":"tableau","file":"themes/tableau.html","colors":{"background":"#FFFFFF","text":"#1F2937","primary":"#4E79A7","secondary":"#F28E2B","surface":"#F7F7F7"}},{"name":"gruvbox","file":"themes/gruvbox.html","colors":{"background":"#282828","text":"#FBF1C7","primary":"#FABD2F","secondary":"#83A598","surface":"#3C3836"}},{"name":"monokai","file":"themes/monokai.html","colors":{"background":"#272822","text":"#F8F8F2","primary":"#A6E22E","secondary":"#FD971F","surface":"#3E3D32"}},{"name":"material","file":"themes/material.html","colors":{"background":"#FAFAFA","text":"#263238","primary":"#2196F3","secondary":"#FF9800","surface":"#FFFFFF"}},{"name":"tokyo-night","file":"themes/tokyo-night.html","colors":{"background":"#1A1B26","text":"#C0CAF5","primary":"#7AA2F7","secondary":"#BB9AF7","surface":"#24283B"}}];
+const themes = [{"name":"plain","file":"themes/plain.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#93C5FD","surface":"#FFFFFF"}},{"name":"simple","file":"themes/simple.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#2563EB","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"clean","file":"themes/clean.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#2563EB","secondary":"#DBEAFE","surface":"#FFFFFF"}},{"name":"executive","file":"themes/executive.html","colors":{"background":"#F8FAFC","text":"#0F172A","primary":"#1D4ED8","secondary":"#BFDBFE","surface":"#FFFFFF"}},{"name":"editorial","file":"themes/editorial.html","colors":{"background":"#F7F3EF","text":"#1F2937","primary":"#B45309","secondary":"#FCD34D","surface":"#FFFBF5"}},{"name":"technical","file":"themes/technical.html","colors":{"background":"#F9FAFB","text":"#111827","primary":"#047857","secondary":"#A7F3D0","surface":"#FFFFFF"}},{"name":"minimalism","file":"themes/minimalism.html","colors":{"background":"#FFFFFF","text":"#111827","primary":"#111827","secondary":"#E5E7EB","surface":"#FFFFFF"}},{"name":"newmorphism","file":"themes/newmorphism.html","colors":{"background":"#E9EEF5","text":"#243041","primary":"#4F6F8F","secondary":"#CBD5E1","surface":"#E9EEF5"}},{"name":"glass","file":"themes/glass.html","colors":{"background":"#0B1020","text":"#F8FAFC","primary":"#8A4FFF","secondary":"#22D3EE","surface":"#17213A"}},{"name":"grid","file":"themes/grid.html","colors":{"background":"#F8FAFC","text":"#111827","primary":"#DC2626","secondary":"#111827","surface":"#FFFFFF"}},{"name":"data","file":"themes/data.html","colors":{"background":"#101820","text":"#F8FAFC","primary":"#F59E0B","secondary":"#38BDF8","surface":"#162331"}},{"name":"magazine","file":"themes/magazine.html","colors":{"background":"#F8F4EF","text":"#18181B","primary":"#C2410C","secondary":"#111827","surface":"#FFFCF7"}}];
 const select = document.querySelector("#themeSelect");
 const grid = document.querySelector("#themeGrid");
 const frame = document.querySelector("#previewFrame");
@@ -244,6 +244,7 @@ const slideCounter = document.querySelector("#slideCounter");
 let currentTheme = "technical";
 let currentSlide = 0;
 let slides = [];
+let userZoom = false;
 
 for (const theme of themes) {
   const option = document.createElement("option");
@@ -264,14 +265,21 @@ for (const theme of themes) {
 }
 
 select.addEventListener("change", () => setTheme(select.value));
-zoomRange.addEventListener("input", applyZoom);
+zoomRange.addEventListener("input", () => {
+  userZoom = true;
+  applyZoom();
+});
+window.addEventListener("resize", () => {
+  if (!userZoom) fitZoomToFrame();
+});
 document.querySelector("#prevSlide").addEventListener("click", () => goToSlide(Math.max(0, currentSlide - 1)));
 document.querySelector("#nextSlide").addEventListener("click", () => goToSlide(Math.min(slides.length - 1, currentSlide + 1)));
 frame.addEventListener("load", () => {
   const doc = frame.contentDocument;
   slides = [...doc.querySelectorAll(".slide")];
   currentSlide = 0;
-  applyZoom();
+  if (!userZoom) fitZoomToFrame();
+  else applyZoom();
   renderSlideList();
   goToSlide(0);
 });
@@ -300,6 +308,20 @@ function applyZoom() {
   deck.style.transform = `scale(${scale})`;
   deck.style.transformOrigin = "top left";
   deck.style.width = `${100 / scale}%`;
+}
+
+function fitZoomToFrame() {
+  const doc = frame.contentDocument;
+  if (!doc) return;
+  const firstSlide = doc.querySelector(".slide");
+  if (!firstSlide) return;
+  const slideWidth = firstSlide.offsetWidth || 1280;
+  const slideHeight = firstSlide.offsetHeight || 720;
+  const widthScale = Math.max(0.45, Math.min(1, (frame.clientWidth - 48) / slideWidth));
+  const heightScale = Math.max(0.45, Math.min(1, (frame.clientHeight - 48) / slideHeight));
+  const scale = Math.min(widthScale, heightScale, 0.92);
+  zoomRange.value = String(Math.round(scale * 100));
+  applyZoom();
 }
 
 function renderSlideList() {

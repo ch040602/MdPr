@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   calculateDensity,
   defaultConfig,
+  DECORATION_STYLE_NAMES,
   detectSlideIntent,
   DESIGN_PRESET_NAMES,
   parseMarkdown,
@@ -1124,6 +1125,26 @@ test("design tokens expose minimalism and newmorphism decoration styles", () => 
   assert.equal(newmorphism.surfacePolicy.shadow, "newmorphic");
   assert.equal(newmorphism.surfaceFill, "E9EEF5");
   assert.equal(newmorphism.paletteSeed.base, "4F6F8F");
+});
+
+test("decoration style catalog omits legacy color-only design presets", () => {
+  assert.deepEqual(DECORATION_STYLE_NAMES, [
+    "plain",
+    "simple",
+    "clean",
+    "executive",
+    "editorial",
+    "technical",
+    "minimalism",
+    "newmorphism",
+    "glass",
+    "grid",
+    "data",
+    "magazine",
+  ]);
+  assert.equal(DESIGN_PRESET_NAMES.includes("nord"), true);
+  assert.equal(DECORATION_STYLE_NAMES.includes("nord"), false);
+  assert.equal(resolveDesignTokens("nord", defaultConfig.theme).decorationStyle, "nord");
 });
 
 function contentSlideIdsByTitle(presentation) {

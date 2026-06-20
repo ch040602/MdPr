@@ -1,23 +1,23 @@
-# MDPR Theme and Object QA
+# MDPR Style and Object QA
 
 ## Preview Purpose
 
-> This Actions/Pages deck is a visual QA fixture for MDPR themes and editable object rendering.
+> This Actions/Pages deck is a visual QA fixture for MDPR decoration styles and editable object rendering.
 
-The same semantic Markdown is rendered once per built-in theme.
-Use the slide list to compare color, typography, spacing, table coherence, chart contrast, and connector clarity.
+The same semantic Markdown is rendered once per built-in decoration style.
+Use the slide list to compare surface grammar, typography, spacing, table coherence, chart contrast, and connector clarity.
 
-## Theme Families
+## Style Families
 
 - Plain and clean: low-decoration baselines for dense source material.
 - Executive and technical: structured operational layouts with visible hierarchy.
-- Editorial and magazine-like presets: warmer page rhythm without losing bounded text.
-- Dark and code-adjacent presets: contrast, readable muted text, and restrained surfaces.
-- Data-friendly presets: chart accents, table headers, and proof objects stay theme-bound.
+- Editorial and magazine-like styles: warmer page rhythm without losing bounded text.
+- Minimalism and newmorphism: sparse composition or soft raised surfaces.
+- Glass, grid, and data styles: visibly different background and surface grammar.
 
 ## Theme Style Checks
 
-- **Surface grammar**: cards, rails, title rules, and proof callouts should change by theme.
+- **Surface grammar**: cards, rails, title rules, and proof callouts should change by style.
 - **Color harmony**: sequential emphasis uses brightness variation; contrast uses hue opposition.
 - **Typography**: same-role text keeps coherent size and readable line height.
 - **Spacing**: text stays inside card/table bounds with visible inner padding.
@@ -45,7 +45,7 @@ Markdown source => Parse blocks => Split slides => Layout objects => Validate ov
 | Text box | editable, vertically aligned | readable at minimum size |
 | Table | native table object | header fill and cell padding |
 | Diagram | nodes and connectors | no clipped labels |
-| Chart | theme-colored data object | contrast and legend clarity |
+| Chart | style-colored data object | contrast and legend clarity |
 
 ## Chart and Table Pair
 
@@ -107,6 +107,6 @@ MDPR may add a restrained monotone icon only when the slide would otherwise be p
 
 ## Actions Output Review
 
-- The `Theme Preview` workflow builds this source across all built-in themes.
-- The Pages gallery lets reviewers inspect each themed deck and each object-check slide.
+- The `Theme Preview` workflow builds this source across built-in decoration styles.
+- The Pages gallery lets reviewers inspect each styled deck and each object-check slide.
 - The companion `mdpr-skill` repository can prepare optional reasoning hints, but MDPR owns final rendering.
