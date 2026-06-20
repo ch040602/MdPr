@@ -259,7 +259,7 @@ def build_semantics(slide: Any) -> None:
 
 def build_decorations(slide: Any) -> None:
     add_shape(slide, 1, 0, 0, SLIDE_W, SLIDE_H, PALETTE["bg"], PALETTE["bg"])
-    add_text(slide, 92, 76, 820, 70, "Decoration Patterns", 54, PALETTE["ink"], True, margin=0)
+    add_text(slide, 92, 76, 820, 70, "Object Grammar", 54, PALETTE["ink"], True, margin=0)
     add_text(slide, 96, 150, 1010, 42, "Reusable treatments stay small, semantic, and theme-bound instead of filling empty space.", 23, PALETTE["muted"], margin=0)
 
     columns = [
@@ -341,7 +341,7 @@ def write_svg(name: str, title: str, body: str) -> None:
 """
     elif name == "decorations":
         diagram = """
-  <text x="92" y="120" font-family="Aptos, Arial" font-size="64" font-weight="800" fill="#111827">Decoration Patterns</text>
+  <text x="92" y="120" font-family="Aptos, Arial" font-size="64" font-weight="800" fill="#111827">Object Grammar</text>
   <text x="96" y="166" font-family="Aptos, Arial" font-size="28" fill="#64748B">Small theme-bound treatments selected by content role and density.</text>
   <g fill="#FFFDF8" stroke="#D8D1C6" stroke-width="3"><rect x="110" y="260" width="405" height="430" rx="22"/><rect x="596" y="260" width="405" height="430" rx="22"/><rect x="1082" y="260" width="405" height="430" rx="22"/></g>
   <g><rect x="110" y="260" width="12" height="430" fill="#86A789"/><rect x="596" y="260" width="12" height="430" fill="#E9B44C"/><rect x="1082" y="260" width="12" height="430" fill="#14B8A6"/></g>

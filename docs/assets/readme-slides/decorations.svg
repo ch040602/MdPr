@@ -3,7 +3,7 @@
   <desc id="desc">A PPTX object-grammar slide exported to PNG.</desc>
   <rect width="1600" height="900" fill="#F7F2EA"/>
 
-  <text x="92" y="120" font-family="Aptos, Arial" font-size="64" font-weight="800" fill="#111827">Decoration Patterns</text>
+  <text x="92" y="120" font-family="Aptos, Arial" font-size="64" font-weight="800" fill="#111827">Object Grammar</text>
   <text x="96" y="166" font-family="Aptos, Arial" font-size="28" fill="#64748B">Small theme-bound treatments selected by content role and density.</text>
   <g fill="#FFFDF8" stroke="#D8D1C6" stroke-width="3"><rect x="110" y="260" width="405" height="430" rx="22"/><rect x="596" y="260" width="405" height="430" rx="22"/><rect x="1082" y="260" width="405" height="430" rx="22"/></g>
   <g><rect x="110" y="260" width="12" height="430" fill="#86A789"/><rect x="596" y="260" width="12" height="430" fill="#E9B44C"/><rect x="1082" y="260" width="12" height="430" fill="#14B8A6"/></g>
