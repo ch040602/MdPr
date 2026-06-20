@@ -23,6 +23,12 @@ type IconEntry = {
   mode: "stroke" | "fill";
 };
 
+type IconKeywordEntry = {
+  kind: IconKind;
+  keywords: string[];
+  weight?: number;
+};
+
 const TABLER_LICENSE = "MIT";
 const SIMPLE_ICONS_LICENSE = "CC0-1.0 with brand guidelines";
 const SVG_REPO_LICENSE = "open-license catalog pattern";
@@ -43,26 +49,50 @@ export const ICON_CATALOG: Record<IconKind, IconEntry> = {
   github: simpleIcon(`<path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>`),
 };
 
+const ICON_KEYWORD_INDEX: IconKeywordEntry[] = [
+  { kind: "github", weight: 8, keywords: ["github", "git hub", "repository", "repo", "pull request", "commit"] },
+  { kind: "flow", weight: 4, keywords: ["pipeline", "flow", "workflow", "process", "route", "routing", "graph path", "단계", "흐름", "파이프라인"] },
+  { kind: "verified", weight: 4, keywords: ["valid", "validation", "validate", "qa", "quality", "risk", "guard", "check", "verified", "test", "검증", "확인", "품질"] },
+  { kind: "database", weight: 4, keywords: ["database", "storage", "warehouse", "cache", "db", "dataset", "저장", "데이터베이스"] },
+  { kind: "cloud", weight: 4, keywords: ["cloud", "deploy", "deployment", "service", "hosting", "remote", "api"] },
+  { kind: "server", weight: 4, keywords: ["server", "runtime", "engine", "backend", "worker", "render service", "서버", "런타임"] },
+  { kind: "chart", weight: 3, keywords: ["chart", "metric", "metrics", "graph", "score", "measure", "analytics", "data", "plot", "그래프", "수치"] },
+  { kind: "table", weight: 3, keywords: ["table", "grid", "matrix", "row", "column", "spreadsheet", "표", "행렬"] },
+  { kind: "image", weight: 3, keywords: ["image", "visual", "asset", "photo", "picture", "rendered png", "screenshot", "이미지", "그림"] },
+  { kind: "palette", weight: 3, keywords: ["color", "theme", "palette", "design", "style", "harmony", "coherence", "색상", "테마", "디자인"] },
+  { kind: "code", weight: 3, keywords: ["code", "parser", "markdown", "pandoc", "syntax", "schema", "cli", "코드", "파서"] },
+  { kind: "spark", weight: 3, keywords: ["hint", "idea", "skill", "reason", "agent", "llm", "semantic hint", "아이디어", "추론", "힌트"] },
+  { kind: "article", weight: 1, keywords: ["document", "docs", "readme", "article", "note", "text", "content", "문서", "본문"] },
+];
+
 export function iconKindForIndex(index: number): IconKind {
   const kinds: IconKind[] = ["article", "flow", "verified", "spark", "chart", "table", "image", "palette", "code", "database", "cloud", "server"];
   return kinds[Math.abs(index) % kinds.length]!;
 }
 
 export function iconKindForText(value: string): IconKind {
-  const marker = value.toLowerCase();
-  if (/github|repo|repository/.test(marker)) return "github";
-  if (/pipeline|flow|process|graph|단계/.test(marker)) return "flow";
-  if (/valid|qa|risk|guard|검증|check/.test(marker)) return "verified";
-  if (/database|storage|warehouse/.test(marker)) return "database";
-  if (/cloud|deploy|service/.test(marker)) return "cloud";
-  if (/server|runtime|engine/.test(marker)) return "server";
-  if (/chart|metric|graph|score|data/.test(marker)) return "chart";
-  if (/table|grid|matrix/.test(marker)) return "table";
-  if (/image|visual|asset|photo/.test(marker)) return "image";
-  if (/color|theme|palette|design/.test(marker)) return "palette";
-  if (/code|parser|markdown|pandoc/.test(marker)) return "code";
-  if (/hint|idea|skill|reason/.test(marker)) return "spark";
-  return "article";
+  const marker = normalizeSearchText(value);
+  if (!marker) return "article";
+  const markerTokens = new Set(marker.split(" ").filter(Boolean));
+  let best: { kind: IconKind; score: number } = { kind: "article", score: 0 };
+
+  for (const entry of ICON_KEYWORD_INDEX) {
+    let score = 0;
+    for (const keyword of entry.keywords) {
+      const normalizedKeyword = normalizeSearchText(keyword);
+      if (!normalizedKeyword) continue;
+      if (marker.includes(normalizedKeyword)) {
+        score += (entry.weight ?? 1) * (normalizedKeyword.includes(" ") ? 3 : 2);
+        continue;
+      }
+      const keywordTokens = normalizedKeyword.split(" ").filter(Boolean);
+      const matched = keywordTokens.filter((token) => markerTokens.has(token)).length;
+      if (matched > 0) score += (entry.weight ?? 1) * (matched / keywordTokens.length);
+    }
+    if (score > best.score) best = { kind: entry.kind, score };
+  }
+
+  return best.score > 0 ? best.kind : "article";
 }
 
 export function iconSource(kind: IconKind): Pick<IconEntry, "source" | "license"> {
@@ -93,4 +123,12 @@ function svgrepo(svg: string): IconEntry {
 
 function normalizeHexColor(color: string): string {
   return `#${color.replace(/^#/, "")}`;
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[_\-./\\:;()[\]{}|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

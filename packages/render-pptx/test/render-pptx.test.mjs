@@ -7,8 +7,17 @@ import { tmpdir } from "node:os";
 import PptxGenJSExport from "pptxgenjs";
 import JSZip from "jszip";
 import { renderPptx } from "../dist/index.js";
+import { iconKindForText } from "../dist/iconCatalog.js";
 
 const PptxGenJS = typeof PptxGenJSExport === "function" ? PptxGenJSExport : PptxGenJSExport.default;
+
+test("icon catalog searches keyword candidates before choosing a semantic icon", () => {
+  assert.equal(iconKindForText("GitHub repository pull request workflow"), "github");
+  assert.equal(iconKindForText("PowerPoint theme color harmony and palette coherence"), "palette");
+  assert.equal(iconKindForText("Database storage cache evidence"), "database");
+  assert.equal(iconKindForText("LLM semantic hint ideas for icon choice"), "spark");
+  assert.equal(iconKindForText("검증 품질 guard"), "verified");
+});
 
 async function patchTemplateTheme(templatePath, colors) {
   const zip = await JSZip.loadAsync(readFileSync(templatePath));

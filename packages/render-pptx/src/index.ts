@@ -65,7 +65,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
       slide.background = { color: isCover ? coverBackgroundColor(designPreset) : designPreset.backgroundColor };
       addPresetBackground(slide, designPreset, layout.slideSize);
       if (isCover) addCoverTemplateDecorations(slide, designPreset, layout.slideSize);
-      addLayoutDecorations(slide, layoutSlide, designPreset);
+      addLayoutDecorations(slide, layoutSlide, designPreset, sourceSlide);
       addThemeGalleryLabel(slide, designPreset, layout.slideSize, options.themeGalleryPresets);
       for (const asset of templateAssets.images) {
         slide.addImage({ path: asset.path, x: asset.x, y: asset.y, w: asset.w, h: asset.h });
@@ -109,7 +109,10 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
         const tocItemNumber = region.role === "item" && layoutSlide.layout.preset === "toc" ? itemIndexFromRegionId(region.id) : undefined;
         const badgeNumber = orderedItemNumber;
         const badge = badgeNumber !== undefined ? renderItemNumberBadge(slide, region, badgeNumber, designPreset, common) : undefined;
-        const iconBadge = badgeNumber === undefined && tocItemNumber === undefined && region.role === "item" ? renderItemIconBadge(slide, region, designPreset, common) : undefined;
+        const itemIconKind = blocks.length
+          ? iconKindForText(blocks.map(blockSearchText).join(" "))
+          : iconKindForIndex(Number(/\d+$/.exec(region.id)?.[0] ?? 0));
+        const iconBadge = badgeNumber === undefined && tocItemNumber === undefined && region.role === "item" ? renderItemIconBadge(slide, region, itemIconKind, designPreset, common) : undefined;
         const textCommon = badgeNumber !== undefined || iconBadge
           ? textBoxForRegion(region, common, badge ? { reservedLeft: badge.right - region.x + 0.14 } : iconBadge ? { reservedLeft: iconBadge.right - region.x + 0.14 } : undefined)
           : textBoxForRegion(region, common);
@@ -526,6 +529,24 @@ function renderPlainRegionContent(
   return normalizeRenderableText(text || "");
 }
 
+function blockSearchText(block: BlockIR): string {
+  const parts: string[] = [];
+  if (block.text) parts.push(block.text);
+  if (block.alt) parts.push(block.alt);
+  if (block.items?.length) parts.push(...block.items);
+  if (block.listItems?.length) parts.push(...block.listItems.map((item) => item.text));
+  if (block.rows?.length) parts.push(...block.rows.flat());
+  if (block.chart) {
+    parts.push(...block.chart.labels);
+    parts.push(...block.chart.series.map((series) => series.name));
+  }
+  if (block.diagram) {
+    parts.push(...block.diagram.nodes.map((node) => node.label));
+    parts.push(...block.diagram.edges.flatMap((edge) => [edge.from, edge.to, edge.label ?? ""]));
+  }
+  return parts.filter(Boolean).join(" ");
+}
+
 function paragraphUnits(block: BlockIR): string[] {
   if (block.sentences?.length) return block.sentences;
   if (block.lines?.length) return block.lines;
@@ -826,6 +847,7 @@ function renderItemNumberBadge(
 function renderItemIconBadge(
   slide: PptxGenJS.Slide,
   region: { id: string; x: number; y: number; w: number; h: number },
+  iconKind: IconKind,
   preset: DesignTokens,
   common: PptxGenJS.TextPropsOptions,
 ): { x: number; y: number; size: number; right: number } | undefined {
@@ -836,7 +858,6 @@ function renderItemIconBadge(
   const surfaceSize = size + 0.16;
   const surfaceX = x - 0.08;
   const surfaceY = y - 0.08;
-  const iconKind = iconKindForIndex(Number(/\d+$/.exec(region.id)?.[0] ?? 0));
 
   slide.addShape("roundRect", {
     x: surfaceX,
@@ -1951,11 +1972,11 @@ function uniformDiagramLabelFontSize(boxes: DiagramNodeBox[], baseFontSize: numb
   return Math.min(...boxes.map((box) => diagramLabelFontSize(box.node.label, box.w, box.h, baseFontSize)));
 }
 
-function addLayoutDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
+function addLayoutDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens, sourceSlide?: SlideIR): void {
   addTocDecorations(slide, layoutSlide, preset);
   addVerticalListDecorations(slide, layoutSlide, preset);
   addRegionAccents(slide, layoutSlide, preset);
-  addTextIconAsideDecoration(slide, layoutSlide, preset);
+  addTextIconAsideDecoration(slide, layoutSlide, preset, sourceSlide);
   if (layoutSlide.layout.preset !== "pentagon") return;
   const itemRegions = layoutSlide.regions
     .filter((region) => region.role === "item")
@@ -2050,7 +2071,7 @@ function uniqueRounded(values: number[]): number[] {
   return [...new Set(values.map((value) => Number(value.toFixed(2))))].sort((left, right) => left - right);
 }
 
-function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
+function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens, sourceSlide?: SlideIR): void {
   if (layoutSlide.layout.preset !== "text-icon-aside") return;
   const region = layoutSlide.regions.find((candidate) => candidate.role === "icon" || candidate.id === "icon-aside");
   if (!region) return;
@@ -2058,12 +2079,15 @@ function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutI
   const iconSize = Math.min(0.58, Math.max(0.36, Math.min(region.w, region.h) * 0.72));
   const x = region.x + (region.w - iconSize) / 2;
   const y = region.y + (region.h - iconSize) / 2;
-  drawCatalogIcon(slide, iconKindForLayout(layoutSlide), x, y, iconSize, preset.textColor);
+  drawCatalogIcon(slide, iconKindForLayout(layoutSlide, sourceSlide), x, y, iconSize, preset.textColor);
 }
 
-function iconKindForLayout(layoutSlide: LayoutIR["slides"][number]): IconKind {
+function iconKindForLayout(layoutSlide: LayoutIR["slides"][number], sourceSlide?: SlideIR): IconKind {
   const titleRegion = layoutSlide.regions.find((region) => region.role === "title");
-  return iconKindForText(`${layoutSlide.sourceSlideId} ${titleRegion?.id ?? ""}`);
+  const sourceText = sourceSlide
+    ? [sourceSlide.title, sourceSlide.headingPath.join(" "), ...sourceSlide.blocks.map(blockSearchText)].join(" ")
+    : "";
+  return iconKindForText(`${sourceText} ${layoutSlide.sourceSlideId} ${titleRegion?.id ?? ""}`);
 }
 
 function drawCatalogIcon(

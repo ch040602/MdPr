@@ -79,10 +79,12 @@ The local SVG icon catalog is stored in:
 packages/render-pptx/src/iconCatalog.ts
 ```
 
-The catalog keeps icons monotone and secondary to text. Selection is semantic:
+The catalog keeps icons monotone and secondary to text. Selection is semantic and keyword-search based:
 
 - Tabler Icons-style 24px stroke glyphs for general UI and concept icons.
 - Simple Icons-style filled glyphs only when the text explicitly names that brand.
 - SVG Repo-style generic object glyphs for infrastructure or fallback cases.
+- MDPR searches title, body, list, table, chart-label, and diagram-label keywords against the local icon index, then chooses the highest scoring tracked catalog icon.
+- If an optional skill/agent proposes icon ideas, it may only provide compact keyword hints such as `validation`, `database`, `palette`, or `workflow`; MDPR still performs the final deterministic catalog search and may ignore the hint.
 
 The renderer centers each icon in its slot and writes source/license metadata into the generated image alt text where the PPTX API allows it.
