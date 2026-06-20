@@ -591,6 +591,7 @@ function renderPlainListRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: 
   const fittedTotalH = fittedRowHeights.reduce((sum, height) => sum + height, 0);
   const startY = baseY + Math.max(0, (baseH - fittedTotalH) / 2);
   const rowFit = totalH <= baseH ? "none" : common.fit;
+  const rowAlign: PptxGenJS.HAlign = role === "item" ? "center" : "left";
   let cursorY = startY;
 
   for (const [index, item] of items.entries()) {
@@ -604,7 +605,7 @@ function renderPlainListRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: 
       h: rowH,
       fontSize: baseFontSize,
       margin: common.margin ?? [0, 0, 0, 0],
-      align: "left",
+      align: rowAlign,
       valign: "middle",
       fit: rowFit,
       breakLine: false,
@@ -745,6 +746,9 @@ type TextPlacement = {
   valign: PptxGenJS.VAlign;
 };
 
+const MIN_TEXT_BOX_WIDTH_IN = 0.3;
+const MIN_TEXT_BOX_HEIGHT_IN = 0.05;
+
 function textPlacementForRegion(region: { id: string; role: string; h: number; w: number }): TextPlacement {
   if (region.id === "key-message") {
     return {
@@ -880,34 +884,45 @@ function textBoxForRegion(
   options: { reservedLeft?: number } = {},
 ): PptxGenJS.TextPropsOptions {
   const placement = textPlacementForRegion(region);
-  const leftInset = Math.max(placement.inset.left, options.reservedLeft ?? 0);
-  const rightInset = placement.inset.right;
-  const topInset = placement.inset.top;
-  const bottomInset = placement.inset.bottom;
-
-  if (region.id === "key-message") {
-    return {
-      ...common,
-      x: region.x + leftInset,
-      y: region.y + topInset,
-      w: Math.max(0.2, region.w - leftInset - rightInset),
-      h: Math.max(0.2, region.h - topInset - bottomInset),
-      margin: placement.margin,
-      align: placement.align,
-      valign: placement.valign,
-    };
-  }
+  const minW = textBoxMinimumExtent(region.w, MIN_TEXT_BOX_WIDTH_IN);
+  const minH = textBoxMinimumExtent(region.h, MIN_TEXT_BOX_HEIGHT_IN);
+  const leftInset = boundedLeadingInset(Math.max(placement.inset.left, options.reservedLeft ?? 0), placement.inset.right, region.w, minW);
+  const rightInset = boundedTrailingInset(placement.inset.right, leftInset, region.w, minW);
+  const topInset = boundedLeadingInset(placement.inset.top, placement.inset.bottom, region.h, minH);
+  const bottomInset = boundedTrailingInset(placement.inset.bottom, topInset, region.h, minH);
+  const w = Math.max(minW, region.w - leftInset - rightInset);
+  const h = Math.max(minH, region.h - topInset - bottomInset);
+  const margin = fittedTextMargin(placement.margin, w, h);
 
   return {
     ...common,
     x: region.x + leftInset,
     y: region.y + topInset,
-    w: Math.max(0.2, region.w - leftInset - rightInset),
-    h: Math.max(0.2, region.h - topInset - bottomInset),
-    margin: placement.margin,
-    align: options.reservedLeft !== undefined ? "left" : placement.align,
+    w,
+    h,
+    margin,
+    align: region.id !== "key-message" && options.reservedLeft !== undefined ? "left" : placement.align,
     valign: placement.valign,
   };
+}
+
+function textBoxMinimumExtent(extent: number, preferredMinimum: number): number {
+  return Math.max(0.001, Math.min(preferredMinimum, extent));
+}
+
+function boundedLeadingInset(requested: number, trailing: number, extent: number, minimumExtent: number): number {
+  const available = Math.max(0, extent - minimumExtent);
+  return Math.min(requested, Math.max(0, available - Math.max(0, trailing)));
+}
+
+function boundedTrailingInset(requested: number, leading: number, extent: number, minimumExtent: number): number {
+  const available = Math.max(0, extent - leading - minimumExtent);
+  return Math.min(requested, available);
+}
+
+function fittedTextMargin(margin: [number, number, number, number], w: number, h: number): [number, number, number, number] {
+  if (w < 0.35 || h < 0.22) return [0, 0, 0, 0];
+  return margin;
 }
 
 function centeredMarkerTextOptions(

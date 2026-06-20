@@ -10,6 +10,32 @@ import { renderPptx } from "../dist/index.js";
 import { iconKindForText } from "../dist/iconCatalog.js";
 
 const PptxGenJS = typeof PptxGenJSExport === "function" ? PptxGenJSExport : PptxGenJSExport.default;
+const EMU_PER_INCH = 914400;
+
+async function assertPptxObjectsInsideSlide(pptxPath, widthIn = 13.333, heightIn = 7.5) {
+  const zip = await JSZip.loadAsync(readFileSync(pptxPath));
+  const slideRight = Math.round(widthIn * EMU_PER_INCH);
+  const slideBottom = Math.round(heightIn * EMU_PER_INCH);
+  const tolerance = 3;
+  const slidePaths = Object.keys(zip.files).filter((path) => /^ppt\/slides\/slide\d+\.xml$/.test(path));
+
+  for (const slidePath of slidePaths) {
+    const xml = await zip.file(slidePath).async("string");
+    const objects = [...xml.matchAll(/<p:(?:sp|pic|cxnSp)\b[\s\S]*?<\/p:(?:sp|pic|cxnSp)>/g)].map((match) => match[0]);
+    for (const [index, objectXml] of objects.entries()) {
+      const xfrm = /<a:off x="(-?\d+)" y="(-?\d+)"\/><a:ext cx="(-?\d+)" cy="(-?\d+)"\/>/.exec(objectXml);
+      if (!xfrm) continue;
+      const x = Number(xfrm[1]);
+      const y = Number(xfrm[2]);
+      const w = Math.max(0, Number(xfrm[3]));
+      const h = Math.max(0, Number(xfrm[4]));
+      assert.equal(x >= -tolerance, true, `${slidePath} object ${index} x underflow: ${x}`);
+      assert.equal(y >= -tolerance, true, `${slidePath} object ${index} y underflow: ${y}`);
+      assert.equal(x + w <= slideRight + tolerance, true, `${slidePath} object ${index} x overflow: ${x + w} > ${slideRight}`);
+      assert.equal(y + h <= slideBottom + tolerance, true, `${slidePath} object ${index} y overflow: ${y + h} > ${slideBottom}`);
+    }
+  }
+}
 
 test("icon catalog searches keyword candidates before choosing a semantic icon", () => {
   assert.equal(iconKindForText("GitHub repository pull request workflow"), "github");
@@ -473,6 +499,64 @@ test("renderPptx keeps stressed plain-list row text boxes inside the source regi
   }
 });
 
+test("renderPptx clamps compact text boxes to the owning region and slide bounds", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-compact-bounds-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "list-1",
+      type: "bulletList",
+      items: ["Tiny bounded label"],
+    },
+  ];
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "item-1",
+      role: "item",
+      blockIds: ["list-1#0"],
+      x: 12.98,
+      y: 7.24,
+      w: 0.32,
+      h: 0.22,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 14, lineHeight: 1.2, minFontSize: 10 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "technical" });
+
+    await assertPptxObjectsInsideSlide(outPath);
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const labelShape = [...xml.matchAll(/<p:sp>[\s\S]*?<\/p:sp>/g)]
+      .map((match) => match[0])
+      .find((shape) => shape.includes("<a:t>Tiny bounded label</a:t>"));
+    assert.ok(labelShape);
+    const xfrm = /<a:off x="(\d+)" y="(\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/>/.exec(labelShape);
+    assert.ok(xfrm);
+    const x = Number(xfrm[1]);
+    const y = Number(xfrm[2]);
+    const w = Number(xfrm[3]);
+    const h = Number(xfrm[4]);
+    const regionLeft = Math.round(12.98 * EMU_PER_INCH);
+    const regionTop = Math.round(7.24 * EMU_PER_INCH);
+    const regionRight = Math.round((12.98 + 0.32) * EMU_PER_INCH);
+    const regionBottom = Math.round((7.24 + 0.22) * EMU_PER_INCH);
+    assert.equal(x >= regionLeft, true, `text x underflow: ${x} < ${regionLeft}`);
+    assert.equal(y >= regionTop, true, `text y underflow: ${y} < ${regionTop}`);
+    assert.equal(x + w <= regionRight + 3, true, `text x overflow: x=${x} w=${w} right=${x + w} > ${regionRight}`);
+    assert.equal(y + h <= regionBottom + 3, true, `text y overflow: y=${y} h=${h} bottom=${y + h} > ${regionBottom}`);
+    assert.match(labelShape, /anchor="ctr"/);
+    assert.match(labelShape, /<a:pPr[^>]*algn="ctr"/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx avoids hard tab indentation in rich list text boxes", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-indent-"));
   const outPath = join(outDir, "deck.pptx");
@@ -524,6 +608,7 @@ test("design presets add visual background accents and card surfaces without cha
 
   try {
     await renderPptx(sampleDeck, { outPath, designPreset: "executive" });
+    await assertPptxObjectsInsideSlide(outPath);
 
     const expanded = join(outDir, "expanded");
     execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
