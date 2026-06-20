@@ -1,35 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">Pipeline slide preview</title>
-  <desc id="desc">A generated pipeline slide with adaptive diagram nodes and connectors.</desc>
-  <rect width="1600" height="900" fill="#F9FAFB"/>
-  <text x="96" y="115" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="800" fill="#111827">Pipeline</text>
-  <rect x="96" y="155" width="140" height="10" rx="5" fill="#047857"/>
-  <g font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">
-    <rect x="110" y="250" width="285" height="110" rx="18" fill="#FFFFFF" stroke="#D1FAE5" stroke-width="4"/>
-    <text x="252" y="318" fill="#111827">Markdown</text>
-    <rect x="505" y="250" width="285" height="110" rx="18" fill="#FFFFFF" stroke="#D1FAE5" stroke-width="4"/>
-    <text x="648" y="305" fill="#111827">Outline</text>
-    <text x="648" y="337" fill="#111827">Tree</text>
-    <rect x="900" y="250" width="285" height="110" rx="18" fill="#FFFFFF" stroke="#D1FAE5" stroke-width="4"/>
-    <text x="1042" y="305" fill="#111827">Presentation</text>
-    <text x="1042" y="337" fill="#111827">IR</text>
-    <rect x="1205" y="520" width="285" height="110" rx="18" fill="#FFFFFF" stroke="#D1FAE5" stroke-width="4"/>
-    <text x="1348" y="575" fill="#111827">Layout IR</text>
-    <text x="1348" y="607" fill="#111827">and QA</text>
-    <rect x="810" y="520" width="285" height="110" rx="18" fill="#FFFFFF" stroke="#D1FAE5" stroke-width="4"/>
-    <text x="952" y="575" fill="#111827">Renderer</text>
-    <text x="952" y="607" fill="#111827">PPTX / HTML</text>
-  </g>
-  <g stroke="#047857" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <path d="M 405 305 H 490"/>
-    <path d="M 800 305 H 885"/>
-    <path d="M 1195 305 H 1348 V 505"/>
-    <path d="M 1200 575 H 1110"/>
-  </g>
-  <g fill="#047857">
-    <path d="M 490 305 l-20 -13 v26z"/>
-    <path d="M 885 305 l-20 -13 v26z"/>
-    <path d="M 1348 505 l-13 -20 h26z"/>
-    <path d="M 1110 575 l20 -13 v26z"/>
-  </g>
+  <title id="title">Pipeline diagram slide preview</title>
+  <desc id="desc">A generated pipeline diagram slide preview with aligned badges.</desc>
+  <rect width="1600" height="900" fill="#F7F2EA"/>
+
+  <rect x="92" y="246" width="286" height="380" rx="34" fill="#E7F3EA" stroke="#D8D1C6" stroke-width="3"/>
+  <rect x="430" y="246" width="286" height="380" rx="34" fill="#FFF2D2" stroke="#D8D1C6" stroke-width="3"/>
+  <rect x="768" y="246" width="410" height="380" rx="34" fill="#E4F7F3" stroke="#D8D1C6" stroke-width="3"/>
+  <rect x="1230" y="246" width="286" height="380" rx="34" fill="#ECEBFF" stroke="#D8D1C6" stroke-width="3"/>
+  <text x="120" y="308" font-family="Aptos, Arial" font-size="30" font-weight="800" fill="#2F6F5E">1. Content</text>
+  <text x="458" y="308" font-family="Aptos, Arial" font-size="30" font-weight="800" fill="#9A5B16">2. Reasoning</text>
+  <text x="796" y="308" font-family="Aptos, Arial" font-size="30" font-weight="800" fill="#2F6F5E">3. Rules</text>
+  <text x="1258" y="308" font-family="Aptos, Arial" font-size="30" font-weight="800" fill="#6366F1">4. Outputs</text>
+  <g fill="#FFFDF8" stroke="#D8D1C6" stroke-width="3"><rect x="126" y="356" width="220" height="102" rx="16"/><rect x="126" y="500" width="220" height="102" rx="16"/><rect x="468" y="356" width="210" height="102" rx="16"/><rect x="468" y="500" width="210" height="102" rx="16"/><rect x="1264" y="356" width="210" height="102" rx="16"/><rect x="1264" y="500" width="210" height="102" rx="16"/></g>
+  <g font-family="Aptos, Arial" font-size="22" font-weight="800" fill="#111827"><text x="184" y="414">Markdown</text><text x="184" y="558">Splitter</text><text x="526" y="414">Slide IR</text><text x="526" y="558">Hint Packet</text><text x="1322" y="414">Styled IR</text><text x="1322" y="558">Renderers</text></g>
+  <g stroke="#111827" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M346 551 H405 V407 H460"/><path d="M678 407 H804"/><path d="M1134 385 H1222"/><path d="M236 458 V496"/><path d="M1369 458 V496"/></g>
+  <g fill="#111827"><path d="M460 407 l-18 -12 v24z"/><path d="M804 407 l-18 -12 v24z"/><path d="M1222 385 l-18 -12 v24z"/><path d="M236 496 l-12 -18 h24z"/><path d="M1369 496 l-12 -18 h24z"/></g>
+  <rect x="812" y="338" width="322" height="94" rx="18" fill="#E4F7F3" stroke="#14B8A6" stroke-width="4"/>
+  <text x="844" y="397" font-family="Aptos, Arial" font-size="28" font-weight="800" fill="#2F6F5E">Rule Engine</text>
+
 </svg>

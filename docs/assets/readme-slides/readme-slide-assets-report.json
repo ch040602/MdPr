@@ -1,0 +1,17 @@
+{
+  "assets": [
+    "cover",
+    "pipeline",
+    "semantics"
+  ],
+  "pngSize": [
+    1600,
+    900
+  ],
+  "alignmentRules": [
+    "badge text uses the same bounding box as its circle",
+    "badge text boxes set margin to zero",
+    "badge text is horizontally centered and vertically middle anchored",
+    "card text keeps minimum left and right padding"
+  ]
+}
