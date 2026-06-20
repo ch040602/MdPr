@@ -57,12 +57,13 @@ Current implemented baseline:
 - chooses pipeline graph arrangements from content shape: horizontal for short flows, vertical for long labels, U-shaped and reverse-U for denser multi-step flows, and cycle-like placement when an edge returns to the first node
 - sizes diagram nodes and shrinks wrapped node labels before connector drawing to reduce text clipping outside shapes
 - places diagram labels below decorative strips/badges so text does not overlap node decoration
-- renders card/table/chart/code background surfaces through the active surface policy; SVG-backed policies create a proportional-corner SVG surface first, then apply PPT border and shadow geometry with the same radius
+- renders card/table/chart/code background surfaces through the active surface policy; SVG-backed policies create a fixed-radius SVG surface first, then apply PPT border and shadow geometry without letting native rounded-rectangle geometry drift by shape size
+- renders icon slots through a semantic SVG catalog: Tabler-style concept icons first, Simple Icons-style brand glyphs only on explicit brand matches, and SVG Repo-style generic object fallbacks
 - uses preset-specific editable cover/title templates; theme-gallery output shows multiple title candidates, while explicit `--design` output uses one title treatment
 - renders pentagon layout edge accents as editable background line shapes
 ```
 
-Built-in design presets:
+Built-in decoration styles:
 
 ```text
 plain      minimal editable output using the configured theme
@@ -70,6 +71,10 @@ clean      light background, card surfaces, simple title rule
 executive  light business deck with blue accent, title rule, card surfaces, corner accent
 editorial  warmer editorial palette with card surfaces and accent bars
 technical  green-accent technical deck with clean card surfaces
+glass      translucent dark-field surfaces with native PPT shadow/glow effects
+grid       strict modular grid, restrained type, hairline columns, and red-accent structure
+data       dark data-journalism grammar with source/data rails and dense proof surfaces
+magazine   editorial magazine rhythm with issue label, rules, column rail, and warm page surfaces
 dark       dark background with high-contrast text and cyan accents
 nord       Nord-inspired dark editorial palette
 solarized  Solarized-inspired warm analytical palette
@@ -83,7 +88,7 @@ tokyo-night Tokyo Night-inspired deep technical palette
 
 The shared preset catalog lives in `@mdpresent/core`. `theme.designPreset` is the format-independent config location and is consumed by PPTX and HTML. `pptx.designPreset` remains supported as a PPTX-specific compatibility override.
 
-`theme.decorationStyle` selects the decoration grammar separately from color. Examples include `simple` for minimal surfaces and `glass` for translucent proportional-corner surfaces. `theme.colorSeed` provides the main color, while `theme.primaryColor` remains a compatibility fallback.
+`theme.decorationStyle` selects the decoration grammar separately from color. Examples include `simple` for minimal surfaces, `glass` for translucent fixed-radius surfaces with native PPT shadow/glow effects, `grid` for modular Swiss-style structure, `data` for dense publication-grade proof pages, and `magazine` for editorial cover/page rhythm. `theme.colorSeed` provides the main color, while `theme.primaryColor` remains a compatibility fallback.
 
 `theme.colorCombination` extends the selected decoration style with Adobe Color Wheel-style harmony. `preset` preserves the catalog colors. `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic` derive secondary, rule, chart, and PowerPoint theme accent colors from `theme.colorSeed` first, then `theme.primaryColor`.
 
@@ -93,9 +98,9 @@ Surface policy order:
 
 ```text
 1. Resolve decoration style and color seed.
-2. Resolve proportional surface corner radius from actual region size.
-3. If the surface policy uses SVG, generate an SVG rounded surface with that radius.
-4. Add PPT border and shadow effects after the SVG surface using the same resolved geometry.
+2. Resolve a bounded absolute surface corner radius from the role and actual region size.
+3. If the surface policy uses SVG, generate an SVG rounded surface with an aspect-aware viewBox so the radius remains visually fixed across wide and tall shapes.
+4. Add PPT shadow/glow effects above the SVG surface with transparent native geometry when needed, so visible borders do not inherit PowerPoint's size-dependent rounded-rectangle adjustment.
 5. Render text, tables, charts, icons, and connectors as editable PPT objects above the surface.
 ```
 
@@ -160,7 +165,7 @@ PPTX text boxes use role-aware inner margins and vertical anchors so titles, ite
 chart slides with short prose and no table use a parallel body-plus-chart layout rather than pushing interpretation below the graph
 chart slides with a table reserve separate chart and table regions so numeric evidence and table details remain visible on the same page
 editable chart proof objects include segmented arc rings, gauges, connected strips, ranked bars, and metric dots
-generated monochrome icons follow a centered Material-style 24px icon box and remain secondary to slide text
+generated monochrome SVG icons follow a centered 24px icon box and remain secondary to slide text; icon selection prefers Tabler-style concept icons, Simple Icons-style brand glyphs for explicit brand terms, and SVG Repo-style generic object icons for infrastructure/fallback cases
 color-combination palettes feed PPT theme accent1-accent6 with contrast-aware saturation and lightness variants rather than surface-line duplicates
 ```
 

@@ -204,7 +204,7 @@ test("renderHtml separates decoration style from theme color seed", () => {
   assert.equal(layout.theme.decorationStyle, "glass");
   assert.equal(layout.theme.colorSeed, "#8A4FFF");
   assert.match(html, /--primary: #8A4FFF;/);
-  assert.match(html, /--surface: #FBFCFD;/);
+  assert.match(html, /--surface: #10182C;/);
 });
 
 function renderHtmlForMarkdown(markdown) {

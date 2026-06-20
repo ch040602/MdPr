@@ -665,12 +665,12 @@ test("planPresentation forces paragraph-heavy sections into continuation slides 
   assert.deepEqual(contentSlides.map((slide) => slide.blocks.length), [2, 2]);
 });
 
-test("README Design Presets section is split instead of staying as one prose-filled slide", () => {
+test("README Semantics and Design section stays compact after moving detail docs out", () => {
   const markdown = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../../README.md"), "utf-8");
   const presentation = planPresentation(parseMarkdown(markdown, "README.md"), defaultConfig);
-  const designSlides = presentation.slides.filter((slide) => slide.title.startsWith("Design Presets"));
+  const designSlides = presentation.slides.filter((slide) => slide.title.startsWith("Semantics and Design"));
 
-  assert.equal(designSlides.length >= 2, true);
+  assert.equal(designSlides.length <= 3, true);
   assert.equal(designSlides.every((slide) => slide.blocks.length <= 2), true);
 });
 
@@ -1074,7 +1074,56 @@ test("design tokens separate decoration style from main color seed", () => {
   assert.equal(tokens.colorCombination, "analogous");
   assert.equal(tokens.cards, true);
   assert.equal(tokens.surfacePolicy.shapeSource, "svg");
-  assert.equal(tokens.surfacePolicy.cornerScale, "proportional");
+  assert.equal(tokens.surfacePolicy.cornerScale, "fixed");
+});
+
+test("design tokens expose grid data and magazine decoration styles", () => {
+  const grid = resolveDesignTokens("grid", {
+    ...defaultConfig.theme,
+    colorSeed: "#DC2626",
+    colorCombination: "complementary",
+  });
+  const data = resolveDesignTokens("data", {
+    ...defaultConfig.theme,
+    colorSeed: "#F59E0B",
+    colorCombination: "monochromatic",
+  });
+  const magazine = resolveDesignTokens("magazine", {
+    ...defaultConfig.theme,
+    colorSeed: "#C2410C",
+    colorCombination: "triadic",
+  });
+
+  assert.equal(grid.decorationStyle, "grid");
+  assert.equal(data.decorationStyle, "data");
+  assert.equal(magazine.decorationStyle, "magazine");
+  assert.equal(grid.surfacePolicy.shadow, "none");
+  assert.equal(data.surfacePolicy.shadow, "none");
+  assert.equal(magazine.surfacePolicy.cornerScale, "fixed");
+  assert.equal(grid.primaryColor, "DC2626");
+  assert.equal(data.paletteSeed.base, "F59E0B");
+  assert.equal(magazine.colorCombination, "triadic");
+});
+
+test("design tokens expose minimalism and newmorphism decoration styles", () => {
+  const minimalism = resolveDesignTokens("minimalism", {
+    ...defaultConfig.theme,
+    colorSeed: "#111827",
+    colorCombination: "monochromatic",
+  });
+  const newmorphism = resolveDesignTokens("newmorphism", {
+    ...defaultConfig.theme,
+    colorSeed: "#4F6F8F",
+    colorCombination: "analogous",
+  });
+
+  assert.equal(minimalism.decorationStyle, "minimalism");
+  assert.equal(minimalism.surfacePolicy.shadow, "none");
+  assert.equal(minimalism.surfacePolicy.shapeSource, "svg");
+  assert.equal(newmorphism.decorationStyle, "newmorphism");
+  assert.equal(newmorphism.surfacePolicy.shadow, "newmorphic");
+  assert.equal(newmorphism.surfaceFill, "E9EEF5");
+  assert.equal(newmorphism.paletteSeed.base, "4F6F8F");
 });
 
 function contentSlideIdsByTitle(presentation) {

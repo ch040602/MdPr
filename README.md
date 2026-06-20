@@ -77,46 +77,15 @@ mdpresent build examples/basic/deck.md --to html,pptx --config examples/themes/n
 mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery executive,nord,dracula,solarized
 ```
 
-## Markdown Semantics
+## Semantics and Design
 
-The parser preserves presentation-relevant Markdown structure and avoids flattening everything to plain paragraphs:
+The parser preserves presentation-relevant Markdown structure: lists, emphasis, key messages, line breaks, diagrams, tables, charts, and image blocks remain typed content instead of being flattened into paragraphs. One graph or diagram block stays on one slide.
 
-- Lists: ordered and unordered lists keep numbering, nesting level, and fallback text
-- Cleanup: decorative empty bullet lines are removed before rendering
-- Emphasis: paragraph and list-item emphasis such as `**bold**` and `*italic*` is carried into HTML and editable PPTX text runs
-- Key messages: block quotes such as `> Important sentence` become separated callout regions with accent styling
-- Line breaks: paragraph line breaks and sentence units are kept for safer slide splitting
-- Diagrams: standalone pipeline lines such as `Draft => Review => Render` become semantic diagram blocks with adaptive horizontal, vertical, U-shaped, reverse-U, or cycle-like placement
-- Diagram integrity: one graph or diagram block stays on a single slide; MDPR does not split a diagram across continuation pages
-- Numeric storytelling: chart slides can keep a short prose explanation beside the chart, while chart-plus-table slides keep the graph and table in parallel regions
+`--design` and `theme.designPreset` use one shared catalog across PPTX and HTML. `theme.decorationStyle` or `--theme-style` selects the visual grammar, while `theme.colorSeed` or `--theme-color` selects the main color. `theme.colorCombination` or `--theme-harmony` derives the PowerPoint theme accents and chart colors from that seed.
 
-## Design Presets
+Detailed rules are split out of this README: [methodology](docs/12-design-methodology.md), [object forms and icon paths](docs/13-object-forms-and-icons.md), [renderer rules](docs/07-rendering-rules.md), and [QA/overflow rules](docs/11-qa-overflow.md).
 
-`--design` and `theme.designPreset` use one shared catalog across PPTX and HTML. Current presets include `plain`, `clean`, `executive`, `editorial`, `technical`, `dark`, `nord`, `solarized`, `dracula`, `tableau`, `gruvbox`, `monokai`, `material`, and `tokyo-night`.
-
-Theme decoration and theme color are separate decisions. `theme.decorationStyle` or `--theme-style` selects the visual grammar, such as `simple`, `clean`, `executive`, `technical`, or `glass`. `theme.colorSeed` or `--theme-color` accepts the main color. MDPR then derives the supporting colors from `theme.colorCombination` or `--theme-harmony`.
-
-`theme.colorCombination` can derive Adobe Color Wheel-style palettes from `theme.colorSeed` first, then `theme.primaryColor`, on top of a decoration style. Supported values are `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic`. Derived colors use harmony hue offsets plus saturation/lightness tuning, feed element accents and chart color tokens, and are registered into the generated PowerPoint document theme colors (`accent1` through `accent6`).
-
-Decoration styles define surface density, line weight, shadow behavior, and background treatment. The `glass` and card-oriented styles use SVG-generated surface layers with proportional corner geometry before PPT border and shadow effects are applied, avoiding native rounded-rectangle radius drift across differently sized text backgrounds.
-
-Every `build` writes a deterministic `mdpresent-design-lock.json` and `mdpresent-manifest.json` beside the rendered files. The design lock captures the resolved decoration style, color seed, palette seed, PowerPoint theme colors, typography, and surface policy. Use `--design-lock <path>` to pin a contract and `--update-design-lock` to accept intentional style/color changes. Use `--visual` to add structural visual-validation summaries to the manifest.
-
-Chart fences support native PowerPoint bar charts and editable chart proof objects. Use `chart` or `bar` for native bar charts, `arc-ring` for progress/ratio rings, `gauge` for score/readiness gauges, `connected-strip` for small-multiple flow metrics, `ranked-bars` for ranked evidence, and `metric-dots` for compact status/progress indicators. Generic `chart` fences may also declare `kind: arc-ring`, `kind: gauge`, `kind: connected-strip`, `kind: ranked-bars`, or `kind: metric-dots`.
-
-Current editable object families include cover/title text, paragraph text, ordered and unordered list cards, quote callouts, code windows, single-card layouts, comparison cards, vertical-list cards, 2x2 and 3x2 grid cards, pentagon/radial cards, native tables, native bar charts, chart-beside-prose, chart-plus-table, pipeline diagrams, image-focus layouts, image-beside-text layouts, text-icon-aside support, preset backgrounds, region surfaces, accent rails, number badges, icon badges, proof callouts, theme colors, and template assets.
-
-Text-only relief and item-card badges use restrained Material Icons-inspired monochrome glyphs. The icons follow the Material 24px box assumption, are centered inside their icon slot, and remain secondary to the text.
-
-When a chart slide contains prose but no table, MDPR reserves a left explanation region and a wider right chart region so interpretation and evidence are read together. When the same slide contains a table, MDPR preserves the chart-plus-table parallel layout and keeps table text vertically centered with readable margins.
-
-For visual QA, `--theme-gallery executive,nord,dracula,solarized` repeats the planned slides under multiple design presets in one PPTX.
-
-Separated key messages, ordered item cards, and label/detail list items inherit the active preset's accent colors. PPTX output keeps these as editable text, shapes, one-sided accent lines, and number badges rather than flattened images.
-
-When `--template example.pptx` is provided, PPTX output reads the template's theme colors and non-text decorative shapes. Decorations from example slides are reused only on generated slides with the same inferred layout family, while body placeholders and arbitrary content positions are still recalculated by mdpresent.
-
-Cover/title slides use preset-specific editable templates. Theme-gallery output shows multiple title candidates, while `--design <preset>` renders only that preset's title treatment.
+For visual QA, `--theme-gallery executive,nord,dracula,solarized` repeats the planned slides under multiple design presets in one PPTX. Every `build` writes a deterministic `mdpresent-design-lock.json` and `mdpresent-manifest.json`; use `--visual` to add structural visual-validation summaries.
 
 ## Text and Table Coherence
 
@@ -162,3 +131,9 @@ The repository runs two Actions workflows:
 - `Theme Preview` builds the package workspace, regenerates the theme preview gallery, and publishes it to GitHub Pages.
 
 These checks protect the deterministic MDPR runtime. The optional `mdpr-skill` repository may prepare semantic hints and review artifacts, but MDPR's Actions must pass without an LLM or external API key.
+
+## Acknowledgements
+
+MDPR stores rendered README teaser assets at `docs/assets/readme-slides/mdpr-pipeline-teaser.svg`, `docs/assets/readme-slides/mdpr-pipeline-teaser.pptx`, and `docs/assets/readme-slides/mdpr-pipeline-teaser.png`.
+
+SVG-backed PowerPoint surfaces are generated by `packages/render-pptx/src/designPresets.ts`. The restrained monochrome icon catalog is stored in `packages/render-pptx/src/iconCatalog.ts`, using local SVG path data organized by Tabler Icons-style concept glyphs, Simple Icons-style explicit brand glyphs, and SVG Repo-style generic object glyphs.

@@ -5,11 +5,10 @@ import PptxGenJSExport from "pptxgenjs";
 import type PptxGenJS from "pptxgenjs";
 import JSZip from "jszip";
 import { addPresetBackground, addRegionSurface, type DesignPresetName, resolveDesignPreset } from "./designPresets.js";
+import { iconKindForIndex, iconKindForText, iconSource, iconSvgDataUri, type IconKind } from "./iconCatalog.js";
 import { extractTemplateDesignAssets, type TemplateShapeAsset, type TemplateTheme } from "./templateImport.js";
 
 export type { DesignPresetName } from "./designPresets.js";
-
-type MaterialIconKind = "article" | "account-tree" | "verified" | "auto-awesome" | "bar-chart" | "table-chart" | "image" | "palette" | "code";
 
 export type RenderPptxOptions = {
   outPath: string;
@@ -34,7 +33,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
   const layoutName = "MDPRESENT_LAYOUT";
   const designPresets = options.themeGalleryPresets?.length
     ? options.themeGalleryPresets.map((preset) => resolveDesignPreset(preset, layout.theme))
-    : [resolveDesignPreset(options.designPreset ?? layout.theme.designPreset, layout.theme)];
+    : [resolveDesignPreset(options.designPreset ?? layout.theme.decorationStyle ?? layout.theme.designPreset, layout.theme)];
   const templateAssets = await extractTemplateDesignAssets(options.templatePath);
   let documentDesignPreset: DesignTokens | undefined;
 
@@ -63,7 +62,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
       const isCover = layoutSlide.layout.preset === "cover";
       const roleFontSizes = fontSizesByRole(layoutSlide, layout.theme.bodyFontSize);
 
-      slide.background = { color: isCover ? designPreset.primaryColor : designPreset.backgroundColor };
+      slide.background = { color: isCover ? coverBackgroundColor(designPreset) : designPreset.backgroundColor };
       addPresetBackground(slide, designPreset, layout.slideSize);
       if (isCover) addCoverTemplateDecorations(slide, designPreset, layout.slideSize);
       addLayoutDecorations(slide, layoutSlide, designPreset);
@@ -89,7 +88,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           h: region.h,
           fontFace: region.typography?.fontFamily ?? layout.theme.fontFamily,
           fontSize,
-          color: isCover && region.role === "title" ? readableTextColor(designPreset.primaryColor) : designPreset.textColor,
+          color: isCover && region.role === "title" ? coverTitleColor(designPreset) : designPreset.textColor,
           margin: textPlacement.margin,
           fit: textFitForRegion(region, layoutSlide.overflowPolicy.action),
           wrap: true,
@@ -150,7 +149,46 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
   }
 
   await pptx.writeFile({ fileName: options.outPath, compression: false });
-  if (documentDesignPreset) await writePptxThemeColors(options.outPath, documentDesignPreset);
+  if (documentDesignPreset) {
+    await writePptxThemeColors(options.outPath, documentDesignPreset);
+    if (documentDesignPreset.surfacePolicy.shadow === "glass") await addPptxGlowEffects(options.outPath, documentDesignPreset.primaryColor);
+  }
+}
+
+function coverBackgroundColor(preset: DesignTokens): string {
+  if ([
+    "glass",
+    "newmorphism",
+    "minimalism",
+    "grid",
+    "data",
+    "magazine",
+    "dark",
+    "nord",
+    "dracula",
+    "gruvbox",
+    "monokai",
+    "tokyo-night",
+  ].includes(preset.decorationStyle)) return preset.backgroundColor;
+  return preset.primaryColor;
+}
+
+function coverTitleColor(preset: DesignTokens): string {
+  if ([
+    "glass",
+    "newmorphism",
+    "minimalism",
+    "grid",
+    "data",
+    "magazine",
+    "dark",
+    "nord",
+    "dracula",
+    "gruvbox",
+    "monokai",
+    "tokyo-night",
+  ].includes(preset.decorationStyle)) return preset.textColor;
+  return readableTextColor(preset.primaryColor);
 }
 
 function textFitForRegion(
@@ -258,6 +296,25 @@ async function writePptxThemeColors(outPath: string, preset: DesignTokens): Prom
   }
   zip.file(themePath, xml);
   await writeFile(outPath, await zip.generateAsync({ type: "nodebuffer" }));
+}
+
+async function addPptxGlowEffects(outPath: string, color: string): Promise<void> {
+  const zip = await JSZip.loadAsync(await readFile(outPath));
+  const slidePaths = Object.keys(zip.files).filter((path) => /^ppt\/slides\/slide\d+\.xml$/.test(path));
+  let changed = false;
+  for (const slidePath of slidePaths) {
+    const file = zip.file(slidePath);
+    if (!file) continue;
+    let xml = await file.async("string");
+    if (!xml.includes("<a:outerShdw") || xml.includes("<a:glow")) continue;
+    xml = xml.replace(
+      /(<a:effectLst>[\s\S]*?<a:outerShdw[\s\S]*?<\/a:outerShdw>)([\s\S]*?<\/a:effectLst>)/g,
+      `$1<a:glow rad="63500"><a:srgbClr val="${color}"><a:alpha val="23000"/></a:srgbClr></a:glow>$2`,
+    );
+    zip.file(slidePath, xml);
+    changed = true;
+  }
+  if (changed) await writeFile(outPath, await zip.generateAsync({ type: "nodebuffer" }));
 }
 
 function applyTemplateTheme(preset: DesignTokens, theme: TemplateTheme): DesignTokens {
@@ -764,7 +821,7 @@ function renderItemIconBadge(
   const surfaceSize = size + 0.16;
   const surfaceX = x - 0.08;
   const surfaceY = y - 0.08;
-  const iconKind = materialIconKindForIndex(Number(/\d+$/.exec(region.id)?.[0] ?? 0));
+  const iconKind = iconKindForIndex(Number(/\d+$/.exec(region.id)?.[0] ?? 0));
 
   slide.addShape("roundRect", {
     x: surfaceX,
@@ -775,7 +832,7 @@ function renderItemIconBadge(
     fill: { color: preset.backgroundColor },
     line: { color: preset.surfaceLine, pt: 0.7 },
   } as never);
-  drawMonoIcon(slide, iconKind, x, y, size, preset.textColor, preset.backgroundColor);
+  drawCatalogIcon(slide, iconKind, x, y, size, preset.textColor);
 
   void common;
   return { x: surfaceX, y: surfaceY, size: surfaceSize, right: surfaceX + surfaceSize };
@@ -1857,172 +1914,36 @@ function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutI
   const iconSize = Math.min(0.58, Math.max(0.36, Math.min(region.w, region.h) * 0.72));
   const x = region.x + (region.w - iconSize) / 2;
   const y = region.y + (region.h - iconSize) / 2;
-  drawMonoIcon(slide, iconKindForLayout(layoutSlide), x, y, iconSize, preset.textColor, preset.backgroundColor);
+  drawCatalogIcon(slide, iconKindForLayout(layoutSlide), x, y, iconSize, preset.textColor);
 }
 
-function iconKindForLayout(layoutSlide: LayoutIR["slides"][number]): MaterialIconKind {
+function iconKindForLayout(layoutSlide: LayoutIR["slides"][number]): IconKind {
   const titleRegion = layoutSlide.regions.find((region) => region.role === "title");
-  const marker = `${layoutSlide.sourceSlideId} ${titleRegion?.id ?? ""}`.toLowerCase();
-  if (/pipeline|flow|process|단계/.test(marker)) return "account-tree";
-  if (/valid|qa|risk|guard|검증/.test(marker)) return "verified";
-  if (/chart|metric|graph|score/.test(marker)) return "bar-chart";
-  if (/table|grid/.test(marker)) return "table-chart";
-  if (/image|visual|asset/.test(marker)) return "image";
-  if (/color|theme|palette/.test(marker)) return "palette";
-  if (/code|parser|markdown/.test(marker)) return "code";
-  if (/design|hint|idea|skill/.test(marker)) return "auto-awesome";
-  return "article";
+  return iconKindForText(`${layoutSlide.sourceSlideId} ${titleRegion?.id ?? ""}`);
 }
 
-function materialIconKindForIndex(index: number): MaterialIconKind {
-  const kinds: MaterialIconKind[] = ["article", "account-tree", "verified", "auto-awesome", "bar-chart", "table-chart", "image", "palette", "code"];
-  return kinds[Math.abs(index) % kinds.length]!;
-}
-
-function drawMonoIcon(
+function drawCatalogIcon(
   slide: PptxGenJS.Slide,
-  kind: MaterialIconKind,
+  kind: IconKind,
   x: number,
   y: number,
   size: number,
   color: string,
-  knockoutColor: string,
 ): void {
-  const box = {
-    x: x + size * 0.14,
-    y: y + size * 0.14,
-    w: size * 0.72,
-    h: size * 0.72,
-  };
-
-  if (kind === "account-tree") {
-    for (let index = 0; index < 3; index++) {
-      slide.addShape("ellipse", {
-        x: box.x + index * box.w * 0.38,
-        y: box.y + box.h * 0.36,
-        w: box.w * 0.2,
-        h: box.w * 0.2,
-        fill: { color },
-        line: { color, transparency: 100 },
-      });
-    }
-    for (let index = 0; index < 2; index++) {
-      slide.addShape("rect", {
-        x: box.x + box.w * (0.2 + index * 0.38),
-        y: box.y + box.h * 0.45,
-        w: box.w * 0.22,
-        h: box.h * 0.045,
-        fill: { color },
-        line: { color, transparency: 100 },
-      });
-    }
-    return;
-  }
-
-  if (kind === "verified") {
-    slide.addShape("pentagon", {
-      x: box.x + box.w * 0.12,
-      y: box.y + box.h * 0.06,
-      w: box.w * 0.76,
-      h: box.h * 0.84,
-      fill: { color },
-      line: { color, transparency: 100 },
-      rotate: 180,
-    } as never);
-    slide.addShape("rect", {
-      x: box.x + box.w * 0.45,
-      y: box.y + box.h * 0.28,
-      w: box.w * 0.11,
-      h: box.h * 0.38,
-      fill: { color: knockoutColor },
-      line: { color: knockoutColor, transparency: 100 },
-      rotate: 35,
-    });
-    return;
-  }
-
-  if (kind === "auto-awesome") {
-    slide.addShape("diamond", { x: box.x + box.w * 0.28, y: box.y, w: box.w * 0.32, h: box.w * 0.32, fill: { color }, line: { color, transparency: 100 } } as never);
-    slide.addShape("diamond", { x: box.x + box.w * 0.05, y: box.y + box.h * 0.45, w: box.w * 0.2, h: box.w * 0.2, fill: { color }, line: { color, transparency: 100 } } as never);
-    slide.addShape("diamond", { x: box.x + box.w * 0.62, y: box.y + box.h * 0.55, w: box.w * 0.22, h: box.w * 0.22, fill: { color }, line: { color, transparency: 100 } } as never);
-    return;
-  }
-
-  if (kind === "bar-chart") {
-    [0.35, 0.62, 0.48].forEach((height, index) => {
-      slide.addShape("rect", {
-        x: box.x + box.w * (0.16 + index * 0.25),
-        y: box.y + box.h * (0.78 - height),
-        w: box.w * 0.13,
-        h: box.h * height,
-        fill: { color },
-        line: { color, transparency: 100 },
-      });
-    });
-    return;
-  }
-
-  if (kind === "table-chart") {
-    slide.addShape("rect", { x: box.x + box.w * 0.1, y: box.y + box.h * 0.18, w: box.w * 0.8, h: box.h * 0.64, fill: { color }, line: { color, transparency: 100 } });
-    for (let index = 0; index < 2; index++) {
-      slide.addShape("rect", { x: box.x + box.w * 0.16, y: box.y + box.h * (0.36 + index * 0.18), w: box.w * 0.68, h: box.h * 0.045, fill: { color: knockoutColor }, line: { color: knockoutColor, transparency: 100 } });
-    }
-    slide.addShape("rect", { x: box.x + box.w * 0.44, y: box.y + box.h * 0.22, w: box.w * 0.045, h: box.h * 0.54, fill: { color: knockoutColor }, line: { color: knockoutColor, transparency: 100 } });
-    return;
-  }
-
-  if (kind === "image") {
-    slide.addShape("roundRect", { x: box.x + box.w * 0.08, y: box.y + box.h * 0.16, w: box.w * 0.84, h: box.h * 0.68, rectRadius: 0.03, fill: { color }, line: { color, transparency: 100 } } as never);
-    slide.addShape("ellipse", { x: box.x + box.w * 0.62, y: box.y + box.h * 0.26, w: box.w * 0.12, h: box.w * 0.12, fill: { color: knockoutColor }, line: { color: knockoutColor, transparency: 100 } });
-    slide.addShape("triangle", { x: box.x + box.w * 0.22, y: box.y + box.h * 0.48, w: box.w * 0.5, h: box.h * 0.22, fill: { color: knockoutColor }, line: { color: knockoutColor, transparency: 100 } } as never);
-    return;
-  }
-
-  if (kind === "palette") {
-    slide.addShape("ellipse", {
-      x: box.x + box.w * 0.08,
-      y: box.y + box.h * 0.12,
-      w: box.w * 0.78,
-      h: box.h * 0.72,
-      fill: { color: knockoutColor, transparency: 100 },
-      line: { color, pt: Math.max(1, size * 4) },
-    });
-    for (const [px, py] of [[0.28, 0.3], [0.52, 0.28], [0.38, 0.52]]) {
-      slide.addShape("ellipse", { x: box.x + box.w * px, y: box.y + box.h * py, w: box.w * 0.1, h: box.w * 0.1, fill: { color }, line: { color, transparency: 100 } });
-    }
-    return;
-  }
-
-  if (kind === "code") {
-    slide.addShape("rect", { x: box.x + box.w * 0.1, y: box.y + box.h * 0.23, w: box.w * 0.22, h: box.h * 0.08, fill: { color }, line: { color, transparency: 100 }, rotate: -35 });
-    slide.addShape("rect", { x: box.x + box.w * 0.68, y: box.y + box.h * 0.23, w: box.w * 0.22, h: box.h * 0.08, fill: { color }, line: { color, transparency: 100 }, rotate: 35 });
-    slide.addShape("rect", { x: box.x + box.w * 0.42, y: box.y + box.h * 0.18, w: box.w * 0.1, h: box.h * 0.64, fill: { color }, line: { color, transparency: 100 }, rotate: 15 });
-    return;
-  }
-
-  slide.addShape("roundRect", {
-    x: box.x + box.w * 0.22,
-    y: box.y + box.h * 0.1,
-    w: box.w * 0.56,
-    h: box.h * 0.78,
-    rectRadius: 0.04,
-    fill: { color },
-    line: { color, transparency: 100 },
-  });
-  for (let index = 0; index < 3; index++) {
-    slide.addShape("rect", {
-      x: box.x + box.w * 0.34,
-      y: box.y + box.h * (0.28 + index * 0.16),
-      w: box.w * 0.32,
-      h: box.h * 0.045,
-      fill: { color: knockoutColor },
-      line: { color: knockoutColor, transparency: 100 },
-    });
-  }
+  const source = iconSource(kind);
+  slide.addImage({
+    data: iconSvgDataUri(kind, color),
+    x,
+    y,
+    w: size,
+    h: size,
+    altText: `${kind} icon from ${source.source} (${source.license})`,
+  } as never);
 }
 
 function addCoverTemplateDecorations(slide: PptxGenJS.Slide, preset: DesignTokens, slideSize: LayoutIR["slideSize"]): void {
   const variant = coverTemplateVariant(preset.name);
+  if (variant === "none") return;
 
   if (variant === "split-band") {
     slide.addShape("rect", {
@@ -2103,10 +2024,11 @@ function addCoverTemplateDecorations(slide: PptxGenJS.Slide, preset: DesignToken
   });
 }
 
-function coverTemplateVariant(presetName: string): "top-rule" | "split-band" | "left-rail" | "frame" {
-  if (["editorial", "solarized", "gruvbox"].includes(presetName)) return "split-band";
-  if (["technical", "material", "tableau"].includes(presetName)) return "left-rail";
-  if (["dark", "nord", "dracula", "monokai", "tokyo-night"].includes(presetName)) return "frame";
+function coverTemplateVariant(presetName: string): "none" | "top-rule" | "split-band" | "left-rail" | "frame" {
+  if (["minimalism", "newmorphism"].includes(presetName)) return "none";
+  if (["editorial", "magazine", "solarized", "gruvbox"].includes(presetName)) return "split-band";
+  if (["technical", "grid", "material", "tableau"].includes(presetName)) return "left-rail";
+  if (["glass", "data", "dark", "nord", "dracula", "monokai", "tokyo-night"].includes(presetName)) return "frame";
   return "top-rule";
 }
 

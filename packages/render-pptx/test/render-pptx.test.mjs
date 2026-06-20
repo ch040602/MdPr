@@ -539,10 +539,186 @@ test("renderPptx applies decoration style separately from theme color seed", asy
     const mediaFiles = readdirSync(join(expanded, "ppt", "media"));
 
     assert.match(xml, /val="8A4FFF"/);
-    assert.match(xml, /val="FBFCFD"/);
+    assert.match(xml, /val="0B1020"/);
     assert.match(xml, /outerShdw/);
+    assert.match(xml, /glow/);
     assert.equal(mediaFiles.some((file) => file.endsWith(".svg")), true);
     assert.match(themeXml, /<a:accent1><a:srgbClr val="8A4FFF"\/><\/a:accent1>/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx emits newmorphic and minimalist style surfaces", async () => {
+  const cases = [
+    {
+      style: "newmorphism",
+      colorSeed: "#4F6F8F",
+      harmony: "analogous",
+      expectedBackground: "E9EEF5",
+      expectedSvg: /data-mdpr-newmorphism="soft-ui"|newmorphicLift/,
+    },
+    {
+      style: "minimalism",
+      colorSeed: "#111827",
+      harmony: "monochromatic",
+      expectedBackground: "FFFFFF",
+      expectedSvg: /data-mdpr-surface="rounded"/,
+    },
+  ];
+
+  for (const item of cases) {
+    const outDir = mkdtempSync(join(tmpdir(), `mdpresent-pptx-${item.style}-`));
+    const outPath = join(outDir, "deck.pptx");
+    const deck = structuredClone(sampleDeck);
+    deck.layout.theme.decorationStyle = item.style;
+    deck.layout.theme.colorSeed = item.colorSeed;
+    deck.layout.theme.primaryColor = item.colorSeed;
+    deck.layout.theme.colorCombination = item.harmony;
+
+    try {
+      await renderPptx(deck, { outPath });
+
+      const expanded = join(outDir, "expanded");
+      execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+      const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+      const mediaDir = join(expanded, "ppt", "media");
+      const svgText = readdirSync(mediaDir)
+        .filter((file) => file.endsWith(".svg"))
+        .map((file) => readFileSync(join(mediaDir, file), "utf-8"))
+        .join("\n");
+
+      assert.match(xml, new RegExp(`val="${item.expectedBackground}"`));
+      assert.match(svgText, item.expectedSvg);
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }
+});
+
+test("SVG surfaces diversify card shape grammar without moving layout regions", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-surface-variants-"));
+  const outPath = join(outDir, "surface-variants.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    { id: "list-1#0", type: "listItem", text: "Method flag: short high-level step" },
+    { id: "list-1#1", type: "listItem", text: "Ticket panel: document-like evidence" },
+    { id: "list-1#2", type: "listItem", text: "Circle vine: connected semantic marker" },
+    { id: "list-1#3", type: "listItem", text: "Two-corner panel: linear grouping" },
+  ];
+  deck.layout.slides[0].layout = { preset: "grid", columns: 2, rows: 2 };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "item-1",
+      role: "item",
+      blockIds: ["list-1#0"],
+      x: 0.9,
+      y: 1.6,
+      w: 5.2,
+      h: 1.35,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+    {
+      id: "item-2",
+      role: "item",
+      blockIds: ["list-1#1"],
+      x: 6.7,
+      y: 1.6,
+      w: 5.2,
+      h: 1.35,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+    {
+      id: "item-3",
+      role: "item",
+      blockIds: ["list-1#2"],
+      x: 0.9,
+      y: 3.35,
+      w: 5.2,
+      h: 1.35,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+    {
+      id: "item-4",
+      role: "item",
+      blockIds: ["list-1#3"],
+      x: 6.7,
+      y: 3.35,
+      w: 5.2,
+      h: 1.35,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "magazine" });
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const slideXml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const surfaceSvgs = await Promise.all(Object.keys(zip.files)
+      .filter((path) => /^ppt\/media\/.*\.svg$/.test(path))
+      .map((path) => zip.file(path).async("string")));
+    const combinedSvg = surfaceSvgs.join("\n");
+
+    assert.match(slideXml, /Method flag/);
+    assert.match(slideXml, /Ticket panel/);
+    assert.match(slideXml, /Circle vine/);
+    assert.match(slideXml, /Two-corner panel/);
+    assert.match(slideXml, /<a:off x="822960" y="1463040"\/><a:ext cx="4754880" cy="1234440"\/>/);
+    assert.match(combinedSvg, /data-mdpr-surface="flag-drop"/);
+    assert.match(combinedSvg, /data-mdpr-surface="ticket"/);
+    assert.match(combinedSvg, /data-mdpr-surface="circle-vine"/);
+    assert.match(combinedSvg, /data-mdpr-surface="two-corner-left"/);
+    assert.match(combinedSvg, /data-mdpr-surface-accent="circle-vine-line"/);
+    assert.match(combinedSvg, /data-mdpr-surface-accent="flag-drop"/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx renders distinct native decoration grammar for glass grid data and magazine styles", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-style-grammar-"));
+
+  try {
+    for (const style of ["glass", "grid", "data", "magazine"]) {
+      const outPath = join(outDir, `${style}.pptx`);
+      const deck = structuredClone(sampleDeck);
+      deck.layout.theme.decorationStyle = style;
+      deck.layout.theme.colorSeed = "#8A4FFF";
+      deck.layout.theme.primaryColor = "#8A4FFF";
+      deck.layout.theme.colorCombination = "split-complementary";
+
+      await renderPptx(deck, { outPath });
+
+      const expanded = join(outDir, style);
+      execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+      const slideDir = join(expanded, "ppt", "slides");
+      const xml = readdirSync(slideDir)
+        .filter((file) => /^slide\d+\.xml$/.test(file))
+        .map((file) => readFileSync(join(slideDir, file), "utf-8"))
+        .join("\n");
+
+      if (style === "glass") {
+        assert.match(xml, /outerShdw/);
+        assert.match(xml, /glow/);
+      }
+      if (style === "grid") {
+        assert.equal((xml.match(/prst="line"/g) ?? []).length >= 7, true);
+      }
+      if (style === "data") {
+        assert.match(xml, /DATA/);
+        assert.equal((xml.match(/prst="rect"/g) ?? []).length >= 4, true);
+      }
+      if (style === "magazine") {
+        assert.match(xml, /ISSUE/);
+        assert.equal((xml.match(/prst="line"/g) ?? []).length >= 3, true);
+      }
+    }
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -756,6 +932,9 @@ test("renderPptx renders chart proof objects as editable shapes without native c
 
     const slideXml = await Promise.all([1, 2, 3, 4, 5].map(async (index) => zip.file(`ppt/slides/slide${index}.xml`).async("string")));
     const combinedXml = slideXml.join("\n");
+    const surfaceSvgs = await Promise.all(Object.keys(zip.files)
+      .filter((path) => /^ppt\/media\/.*\.svg$/.test(path))
+      .map((path) => zip.file(path).async("string")));
 
     assert.match(slideXml[0], /Validation Ring/);
     assert.match(slideXml[0], /Coverage/);
@@ -772,7 +951,8 @@ test("renderPptx renders chart proof objects as editable shapes without native c
     assert.equal((slideXml[0].match(/prst="blockArc"/g) ?? []).length >= 2, true);
     assert.equal((slideXml[0].match(/prst="roundRect"/g) ?? []).length < 12, true);
     assert.equal((combinedXml.match(/prst="ellipse"/g) ?? []).length >= 12, true);
-    assert.equal((combinedXml.match(/prst="roundRect"/g) ?? []).length >= 16, true);
+    assert.equal((combinedXml.match(/prst="roundRect"/g) ?? []).length >= 8, true);
+    assert.equal(surfaceSvgs.some((svg) => /viewBox="0 0 \d+ \d+"[\s\S]*(?:rx="\d+"|data-mdpr-surface="(?:flag-drop|ticket|circle-vine|notched-corner|two-corner-left|two-corner-right)")/.test(svg)), true);
     assert.equal((combinedXml.match(/prst="line"/g) ?? []).length >= 4, true);
     assert.equal((combinedXml.match(/sz="1[4-9]00"|sz="2[0-9]00"|sz="3[0-9]00"/g) ?? []).length >= 8, true);
   } finally {
@@ -830,6 +1010,66 @@ test("renderPptx renders text-only slides with a restrained monotone icon aside"
     assert.match(xml, /MDPR owns deterministic slide structure/);
     assert.doesNotMatch(xml, /monotone icon aside/);
     assert.doesNotMatch(xml, /<a:ext cx="2212848" cy="2212848"\/>/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx selects SVG icons from semantic source families", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-svg-icons-"));
+  const outPath = join(outDir, "svg-icons.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides = [
+    {
+      id: "github-data-flow",
+      index: 0,
+      role: "content",
+      title: "GitHub Data Flow",
+      headingPath: ["GitHub Data Flow"],
+      source: {},
+      intent: "standard",
+      tags: [],
+      blocks: [{ id: "body-1", type: "paragraph", text: "GitHub repository data flows through the runtime." }],
+    },
+    {
+      id: "database-runtime",
+      index: 1,
+      role: "content",
+      title: "Database Runtime",
+      headingPath: ["Database Runtime"],
+      source: {},
+      intent: "standard",
+      tags: [],
+      blocks: [{ id: "body-2", type: "paragraph", text: "Database storage evidence stays secondary to the text." }],
+    },
+  ];
+  deck.layout.slides = deck.presentation.slides.map((slide, index) => ({
+    id: `layout-${slide.id}`,
+    sourceSlideId: slide.id,
+    index,
+    layout: { preset: "text-icon-aside" },
+    background: { color: "#FFFFFF" },
+    overflowPolicy: { action: "shrink", minFontSize: 14, maxShrinkSteps: 3 },
+    regions: [
+      { id: "title", role: "title", blockIds: [`__title:${slide.id}`], x: 0.8, y: 0.45, w: 11.7, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 30, fontWeight: "bold", lineHeight: 1.2, minFontSize: 14 } },
+      { id: "body-panel", role: "body", blockIds: [`body-${index + 1}`], x: 0.9, y: 1.68, w: 7, h: 3.72, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 } },
+      { id: "icon-aside", role: "icon", blockIds: [], x: 8.55, y: 2.15, w: 2.42, h: 2.42, zIndex: 5, typography: { fontFamily: "Arial", fontSize: 12, lineHeight: 1.2, minFontSize: 10 } },
+    ],
+  }));
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "technical" });
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const svgs = await Promise.all(Object.keys(zip.files)
+      .filter((path) => /^ppt\/media\/.*\.svg$/.test(path))
+      .map((path) => zip.file(path).async("string")));
+    const slideXml = await zip.file("ppt/slides/slide1.xml").async("string");
+
+    assert.equal(svgs.length >= 2, true);
+    assert.equal(svgs.some((svg) => svg.includes("C4.422 18.07 3.633 17.7")), true);
+    assert.equal(svgs.some((svg) => svg.includes("c4.42 0 8 1.57 8 3.5")), true);
+    assert.match(slideXml, /descr="github icon from simple-icons/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

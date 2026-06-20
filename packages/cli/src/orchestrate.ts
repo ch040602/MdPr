@@ -117,7 +117,7 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
         { presentation: deck.presentation, layout: deck.layout },
         {
           title: deck.presentation.meta.title,
-          designPreset: options.designPreset ?? deck.config.theme.designPreset ?? deck.config.pptx.designPreset,
+          designPreset: options.designPreset,
         },
       );
       mkdirSync(dirname(outPath), { recursive: true });
@@ -138,7 +138,7 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
         {
           outPath,
           templatePath: options.templatePath ?? deck.config.pptx.template,
-          designPreset: options.designPreset ?? deck.config.theme.designPreset ?? deck.config.pptx.designPreset,
+          designPreset: options.designPreset,
           themeGalleryPresets: options.themeGalleryPresets,
           lockBackgroundToMaster: deck.config.pptx.lockBackgroundToMaster,
         },

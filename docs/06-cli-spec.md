@@ -107,7 +107,8 @@ Current build behavior:
 - `--theme-harmony` and `theme.colorCombination` derive `monochromatic`, `analogous`, `complementary`, `split-complementary`, or `triadic` palettes from the color seed; `preset` keeps the catalog colors unchanged
 - `--design-lock path.json` checks the resolved design contract; `--update-design-lock` accepts intentional changes
 - `--visual` adds structural visual-validation summaries to the output manifest
-- built-in presets: plain, clean, executive, editorial, technical, dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, tokyo-night
+- built-in decoration styles: plain, simple, clean, executive, editorial, technical, glass, grid, data, magazine, dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, tokyo-night
+- icon slots use deterministic SVG source routing: Tabler-style concept icons, Simple Icons-style brand icons for explicit brand names, and SVG Repo-style generic object fallbacks
 - pptx can reuse positioned image assets from a template/master PPTX as a background layer
 - config files are loaded from YAML or JSON; `pptx.template` paths are resolved relative to the config file
 - pdf remains a structured TODO diagnostic
@@ -178,7 +179,7 @@ mdpresent override set deck.md \
 --override deck.override.yaml
 --template company-template.pptx
 --design plain|clean|executive|editorial|technical|dark|nord|solarized|dracula|tableau|gruvbox|monokai|material|tokyo-night
---theme-style plain|simple|clean|executive|editorial|technical|glass|dark|nord|solarized|dracula|tableau|gruvbox|monokai|material|tokyo-night
+--theme-style plain|simple|clean|executive|editorial|technical|glass|grid|data|magazine|dark|nord|solarized|dracula|tableau|gruvbox|monokai|material|tokyo-night
 --theme-color "#2563EB"
 --theme-harmony preset|monochromatic|analogous|complementary|split-complementary|triadic
 --design-lock dist/mdpresent-design-lock.json

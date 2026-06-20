@@ -138,7 +138,7 @@ test("CLI theme style and color seed stay independently selectable", () => {
       "build",
       basicDeck,
       "--to",
-      "html",
+      "html,pptx",
       "--out",
       outDir,
       "--theme-style",
@@ -153,11 +153,56 @@ test("CLI theme style and color seed stay independently selectable", () => {
       stdio: ["ignore", "pipe", "pipe"],
     });
     const html = readFileSync(join(outDir, "deck.html"), "utf-8");
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${join(outDir, "deck.pptx")}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
 
     assert.match(html, /--primary: #8A4FFF;/);
-    assert.match(html, /--surface: #FBFCFD;/);
+    assert.match(html, /--surface: #10182C;/);
+    assert.match(xml, /val="0B1020"/);
+    assert.match(xml, /outerShdw/);
+    assert.match(xml, /glow/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("CLI accepts minimalism and newmorphism decoration styles", () => {
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+  const cases = [
+    ["minimalism", "#111827", "monochromatic"],
+    ["newmorphism", "#4F6F8F", "analogous"],
+  ];
+
+  for (const [style, color, harmony] of cases) {
+    const outDir = mkdtempSync(join(tmpdir(), `mdpresent-cli-${style}-`));
+    try {
+      execFileSync(process.execPath, [
+        cliPath,
+        "build",
+        basicDeck,
+        "--to",
+        "html,pptx",
+        "--out",
+        outDir,
+        "--theme-style",
+        style,
+        "--theme-color",
+        color,
+        "--theme-harmony",
+        harmony,
+      ], {
+        cwd: repoRoot,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+      const designLock = JSON.parse(readFileSync(join(outDir, "mdpresent-design-lock.json"), "utf-8"));
+      assert.equal(designLock.decorationStyle, style);
+      assert.equal(designLock.colorSeed, color);
+      assert.equal(existsSync(join(outDir, "deck.pptx")), true);
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
   }
 });
 

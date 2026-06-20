@@ -165,7 +165,7 @@ Usage:
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
   mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--visual] [--json]
-  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--design executive] [--theme-style glass] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,nord] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual]
+  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--design executive] [--theme-style minimalism|newmorphism|glass|grid|data|magazine] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,nord] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual]
 
 Config and override file loading are still scaffold diagnostics. HTML and PPTX rendering are wired through the shared orchestration path.
 `);
