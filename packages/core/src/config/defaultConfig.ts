@@ -50,6 +50,7 @@ export const defaultConfig: Config = {
   theme: {
     designPreset: "clean",
     colorCombination: "preset",
+    colorSeed: "#2563EB",
     backgroundColor: "#FFFFFF",
     textColor: "#111827",
     primaryColor: "#2563EB",

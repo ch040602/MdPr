@@ -66,6 +66,9 @@
         "designPreset": {
           "type": "string"
         },
+        "decorationStyle": {
+          "type": "string"
+        },
         "colorCombination": {
           "enum": [
             "preset",
@@ -75,6 +78,9 @@
             "split-complementary",
             "triadic"
           ]
+        },
+        "colorSeed": {
+          "type": "string"
         },
         "backgroundColor": {
           "type": "string"

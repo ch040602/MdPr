@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import PptxGenJSExport from "pptxgenjs";
@@ -515,6 +515,34 @@ test("shared presentation palettes can be selected for PPTX output", async () =>
     assert.match(xml, /val="2E3440"/);
     assert.match(xml, /val="ECEFF4"/);
     assert.match(xml, /val="88C0D0"/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx applies decoration style separately from theme color seed", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-style-color-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.layout.theme.decorationStyle = "glass";
+  deck.layout.theme.colorSeed = "#8A4FFF";
+  deck.layout.theme.primaryColor = "#8A4FFF";
+  deck.layout.theme.colorCombination = "analogous";
+
+  try {
+    await renderPptx(deck, { outPath });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+    const themeXml = await readPptxThemeXml(outPath);
+    const mediaFiles = readdirSync(join(expanded, "ppt", "media"));
+
+    assert.match(xml, /val="8A4FFF"/);
+    assert.match(xml, /val="FBFCFD"/);
+    assert.match(xml, /outerShdw/);
+    assert.equal(mediaFiles.some((file) => file.endsWith(".svg")), true);
+    assert.match(themeXml, /<a:accent1><a:srgbClr val="8A4FFF"\/><\/a:accent1>/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

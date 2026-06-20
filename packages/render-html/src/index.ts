@@ -1,9 +1,10 @@
-import { resolveDesignTokens, type BlockIR, type DesignPresetName, type InlineRunIR, type ListItemIR, type PresentationIR, type SlideIR } from "@mdpresent/core";
+import { resolveDesignTokens, type BlockIR, type DecorationStyleName, type DesignPresetName, type InlineRunIR, type ListItemIR, type PresentationIR, type SlideIR } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 
 export type RenderHtmlOptions = {
   title?: string;
   designPreset?: DesignPresetName;
+  decorationStyle?: DecorationStyleName;
 };
 
 export type RenderableDeckIR = {
@@ -16,7 +17,7 @@ export type RenderHtmlInput = LayoutIR | RenderableDeckIR;
 export function renderHtml(input: RenderHtmlInput, options: RenderHtmlOptions = {}): string {
   const layout = isRenderableDeck(input) ? input.layout : input;
   const presentation = isRenderableDeck(input) ? input.presentation : undefined;
-  const design = resolveDesignTokens(options.designPreset ?? layout.theme.designPreset, layout.theme);
+  const design = resolveDesignTokens(options.decorationStyle ?? options.designPreset ?? layout.theme.decorationStyle ?? layout.theme.designPreset, layout.theme);
   const css = `
 :root {
   --bg: #${design.backgroundColor};

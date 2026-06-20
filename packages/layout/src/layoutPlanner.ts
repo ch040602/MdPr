@@ -6,7 +6,9 @@ export function planLayout(presentation: PresentationIR, config: Config): Layout
   const theme: ThemeTokens = {
     fontFamily: config.typography.fontFamily,
     designPreset: config.theme.designPreset ?? config.pptx.designPreset,
+    decorationStyle: config.theme.decorationStyle ?? config.theme.designPreset ?? config.pptx.designPreset,
     colorCombination: config.theme.colorCombination,
+    colorSeed: config.theme.colorSeed ?? config.theme.primaryColor,
     backgroundColor: config.theme.backgroundColor,
     textColor: config.theme.textColor,
     primaryColor: config.theme.primaryColor,

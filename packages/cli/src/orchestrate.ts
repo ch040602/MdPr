@@ -1,7 +1,9 @@
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 import type { Config, Diagnostic, OutputFormat, ParserMode, PresentationIR, SlideIR } from "@mdpresent/core";
 import { defaultConfig, parseMarkdown, parseMarkdownWithPandoc, planPresentation } from "@mdpresent/core";
+import { resolveDesignTokens } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 import { planLayout, validateLayoutOverflow } from "@mdpresent/layout";
 import { renderHtml } from "@mdpresent/render-html";
@@ -12,7 +14,7 @@ import { parse as parseYaml } from "yaml";
 export type ConfigSource =
   | { kind: "default" }
   | { kind: "config-file"; path: string }
-  | { kind: "cli-args"; values: Partial<Config> };
+  | { kind: "cli-args"; values: DeepPartial<Config> };
 
 export type OverrideSource = {
   path: string;
@@ -21,8 +23,9 @@ export type OverrideSource = {
 export type OrchestrationOptions = {
   configPath?: string;
   overridePath?: string;
-  cliConfig?: Partial<Config>;
+  cliConfig?: DeepPartial<Config>;
   parser?: ParserMode;
+  visualValidation?: boolean;
 };
 
 export type DeckPlan = {
@@ -40,10 +43,14 @@ export type BuildOptions = OrchestrationOptions & {
   templatePath?: string | null;
   designPreset?: DesignPresetName;
   themeGalleryPresets?: DesignPresetName[];
+  designLockPath?: string | null;
+  updateDesignLock?: boolean;
 };
 
 export type BuildResult = DeckPlan & {
   writtenFiles: string[];
+  manifestPath?: string;
+  designLockPath?: string;
 };
 
 export type ValidationResult = DeckPlan & {
@@ -141,8 +148,14 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
   }
 
   const writtenFiles = await Promise.all(renderJobs);
+  const designLockPath = options.designLockPath ?? join(outDir, "mdpresent-design-lock.json");
+  const designLock = createDesignLock(deck);
+  enforceOrWriteDesignLock(designLockPath, designLock, Boolean(options.updateDesignLock));
+  const manifestPath = join(outDir, "mdpresent-manifest.json");
+  const manifest = createBuildManifest(inputPath, deck, writtenFiles, designLockPath, options.visualValidation);
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
 
-  return { ...deck, writtenFiles };
+  return { ...deck, writtenFiles: [...writtenFiles, manifestPath, designLockPath], manifestPath, designLockPath };
 }
 
 export function validateDeck(inputPath: string, options: OrchestrationOptions = {}): ValidationResult {
@@ -150,6 +163,9 @@ export function validateDeck(inputPath: string, options: OrchestrationOptions = 
   const contentByBlockId = createContentIndex(deck.presentation);
   const overflowDiagnostics = validateLayoutOverflow(deck.layout, contentByBlockId);
   const diagnostics = [...deck.diagnostics, ...overflowDiagnostics];
+  if (options.visualValidation) {
+    diagnostics.push(...visualValidationDiagnostics(deck.layout));
+  }
 
   return {
     ...deck,
@@ -158,12 +174,146 @@ export function validateDeck(inputPath: string, options: OrchestrationOptions = 
   };
 }
 
+function createDesignLock(deck: DeckPlan) {
+  const tokens = resolveDesignTokens(deck.layout.theme.decorationStyle ?? deck.layout.theme.designPreset, deck.layout.theme);
+  return {
+    schemaVersion: 1,
+    engine: "mdpresent",
+    decorationStyle: tokens.decorationStyle,
+    colorSeed: deck.layout.theme.colorSeed ?? deck.layout.theme.primaryColor,
+    colorCombination: tokens.colorCombination,
+    paletteSeed: tokens.paletteSeed,
+    surfacePolicy: tokens.surfacePolicy,
+    themeColors: tokens.themeColors,
+    typography: {
+      fontFamily: deck.layout.theme.fontFamily,
+      titleFontSize: deck.layout.theme.titleFontSize,
+      bodyFontSize: deck.layout.theme.bodyFontSize,
+      minFontSize: deck.layout.theme.minFontSize,
+    },
+  };
+}
+
+function enforceOrWriteDesignLock(lockPath: string, current: ReturnType<typeof createDesignLock>, update: boolean): void {
+  mkdirSync(dirname(lockPath), { recursive: true });
+  const serialized = JSON.stringify(current, null, 2);
+  if (!existsSync(lockPath) || update) {
+    writeFileSync(lockPath, serialized, "utf-8");
+    return;
+  }
+
+  const existing = JSON.parse(readFileSync(lockPath, "utf-8")) as unknown;
+  if (stableJson(existing) !== stableJson(current)) {
+    throw new Error(`Design lock drift detected: ${lockPath}. Re-run with --update-design-lock to accept the new style/color contract.`);
+  }
+}
+
+function createBuildManifest(
+  inputPath: string,
+  deck: DeckPlan,
+  writtenFiles: string[],
+  designLockPath: string,
+  visualValidation: boolean | undefined,
+) {
+  const source = readFileSync(inputPath, "utf-8");
+  return {
+    schemaVersion: 1,
+    engine: "mdpresent",
+    source: {
+      path: inputPath,
+      sha256: sha256(source),
+    },
+    config: {
+      sha256: sha256(stableJson(deck.config)),
+      sources: deck.configSources,
+    },
+    slideCount: deck.presentation.slides.length,
+    outputs: writtenFiles,
+    designLock: designLockPath,
+    diagnostics: deck.diagnostics,
+    validation: {
+      layoutOverflow: validateLayoutOverflow(deck.layout, createContentIndex(deck.presentation)).map((diagnostic) => ({
+        level: diagnostic.level,
+        code: diagnostic.code,
+        message: diagnostic.message,
+        slideId: diagnostic.slideId,
+      })),
+      visual: visualValidation ? createVisualValidationSummary(deck.layout) : null,
+    },
+  };
+}
+
+function createVisualValidationSummary(layout: LayoutIR) {
+  const diagnostics = visualValidationDiagnostics(layout);
+  return {
+    checked: true,
+    slideCount: layout.slides.length,
+    checks: {
+      nonBlankSlides: layout.slides.every((slide) => slide.regions.some((region) => region.blockIds.length || region.role === "title")),
+      regionBounds: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_REGION_BOUNDS"),
+      minimumTextSize: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_FONT_FLOOR"),
+      backgroundContentOverlap: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_BACKGROUND_OVERLAP"),
+    },
+    diagnostics,
+  };
+}
+
+function visualValidationDiagnostics(layout: LayoutIR): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  for (const slide of layout.slides) {
+    for (const region of slide.regions) {
+      if (region.x < 0 || region.y < 0 || region.x + region.w > layout.slideSize.width || region.y + region.h > layout.slideSize.height) {
+        diagnostics.push({
+          level: "error",
+          code: "VISUAL_REGION_BOUNDS",
+          slideId: slide.sourceSlideId,
+          message: `Region ${region.id} is outside the slide bounds.`,
+        });
+      }
+      const minFontSize = region.typography?.minFontSize ?? layout.theme.minFontSize;
+      const fontSize = region.typography?.fontSize ?? layout.theme.bodyFontSize;
+      if (region.role !== "image" && Math.min(fontSize, minFontSize) < 8) {
+        diagnostics.push({
+          level: "error",
+          code: "VISUAL_FONT_FLOOR",
+          slideId: slide.sourceSlideId,
+          message: `Region ${region.id} falls below the 8pt visual readability floor.`,
+        });
+      }
+    }
+  }
+  return diagnostics;
+}
+
+function stableJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => `${JSON.stringify(key)}:${stableJson(item)}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function sha256(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
 export function resolveEffectiveConfig(options: OrchestrationOptions = {}, diagnostics: Diagnostic[] = []): Config {
   const fileConfig = options.configPath ? readConfigFile(options.configPath, diagnostics) : undefined;
   return mergeConfig(mergeConfig(defaultConfig, fileConfig), options.cliConfig);
 }
 
-function mergeConfig(base: Config, override?: Partial<Config>): Config {
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends Array<infer U>
+    ? Array<U>
+    : T[K] extends object
+      ? DeepPartial<T[K]>
+      : T[K];
+};
+
+function mergeConfig(base: Config, override?: DeepPartial<Config>): Config {
   if (!override) return structuredClone(base);
   return mergeObjects(structuredClone(base), override) as Config;
 }

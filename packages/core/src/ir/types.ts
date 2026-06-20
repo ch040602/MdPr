@@ -15,6 +15,23 @@ export type DesignPresetName =
   | "monokai"
   | "material"
   | "tokyo-night";
+export type DecorationStyleName =
+  | "plain"
+  | "simple"
+  | "clean"
+  | "executive"
+  | "editorial"
+  | "technical"
+  | "glass"
+  | "dark"
+  | "nord"
+  | "solarized"
+  | "dracula"
+  | "tableau"
+  | "gruvbox"
+  | "monokai"
+  | "material"
+  | "tokyo-night";
 export type ColorCombinationName =
   | "preset"
   | "monochromatic"
@@ -242,7 +259,9 @@ export type Config = {
   };
   theme: {
     designPreset?: DesignPresetName;
+    decorationStyle?: DecorationStyleName;
     colorCombination?: ColorCombinationName;
+    colorSeed?: string;
     backgroundColor: string;
     textColor: string;
     primaryColor: string;

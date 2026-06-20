@@ -172,8 +172,14 @@
         "designPreset": {
           "$ref": "#/$defs/designPreset"
         },
+        "decorationStyle": {
+          "$ref": "#/$defs/decorationStyle"
+        },
         "colorCombination": {
           "$ref": "#/$defs/colorCombination"
+        },
+        "colorSeed": {
+          "type": "string"
         },
         "backgroundColor": {
           "type": "string"
@@ -241,6 +247,26 @@
         "executive",
         "editorial",
         "technical",
+        "dark",
+        "nord",
+        "solarized",
+        "dracula",
+        "tableau",
+        "gruvbox",
+        "monokai",
+        "material",
+        "tokyo-night"
+      ]
+    },
+    "decorationStyle": {
+      "enum": [
+        "plain",
+        "simple",
+        "clean",
+        "executive",
+        "editorial",
+        "technical",
+        "glass",
         "dark",
         "nord",
         "solarized",

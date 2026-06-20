@@ -70,6 +70,7 @@ mdpresent inspect examples/basic/deck.md --json > deck.plan.json
 mdpresent plan examples/basic/deck.md --json > layout.plan.json
 mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
+mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
 mdpresent build examples/basic/deck.md --to pptx --config examples/basic/mdpresent.config.yaml --out dist
 mdpresent build examples/basic/deck.md --to html,pptx --config examples/themes/nord.config.yaml --out dist
@@ -93,7 +94,13 @@ The parser preserves presentation-relevant Markdown structure and avoids flatten
 
 `--design` and `theme.designPreset` use one shared catalog across PPTX and HTML. Current presets include `plain`, `clean`, `executive`, `editorial`, `technical`, `dark`, `nord`, `solarized`, `dracula`, `tableau`, `gruvbox`, `monokai`, `material`, and `tokyo-night`.
 
-`theme.colorCombination` can derive Adobe Color Wheel-style palettes from `theme.primaryColor` on top of a preset. Supported values are `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic`. Derived colors use harmony hue offsets plus saturation/lightness tuning, feed element accents and chart color tokens, and are registered into the generated PowerPoint document theme colors (`accent1` through `accent6`).
+Theme decoration and theme color are separate decisions. `theme.decorationStyle` or `--theme-style` selects the visual grammar, such as `simple`, `clean`, `executive`, `technical`, or `glass`. `theme.colorSeed` or `--theme-color` accepts the main color. MDPR then derives the supporting colors from `theme.colorCombination` or `--theme-harmony`.
+
+`theme.colorCombination` can derive Adobe Color Wheel-style palettes from `theme.colorSeed` first, then `theme.primaryColor`, on top of a decoration style. Supported values are `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic`. Derived colors use harmony hue offsets plus saturation/lightness tuning, feed element accents and chart color tokens, and are registered into the generated PowerPoint document theme colors (`accent1` through `accent6`).
+
+Decoration styles define surface density, line weight, shadow behavior, and background treatment. The `glass` and card-oriented styles use SVG-generated surface layers with proportional corner geometry before PPT border and shadow effects are applied, avoiding native rounded-rectangle radius drift across differently sized text backgrounds.
+
+Every `build` writes a deterministic `mdpresent-design-lock.json` and `mdpresent-manifest.json` beside the rendered files. The design lock captures the resolved decoration style, color seed, palette seed, PowerPoint theme colors, typography, and surface policy. Use `--design-lock <path>` to pin a contract and `--update-design-lock` to accept intentional style/color changes. Use `--visual` to add structural visual-validation summaries to the manifest.
 
 Chart fences support native PowerPoint bar charts and editable chart proof objects. Use `chart` or `bar` for native bar charts, `arc-ring` for progress/ratio rings, `gauge` for score/readiness gauges, `connected-strip` for small-multiple flow metrics, `ranked-bars` for ranked evidence, and `metric-dots` for compact status/progress indicators. Generic `chart` fences may also declare `kind: arc-ring`, `kind: gauge`, `kind: connected-strip`, `kind: ranked-bars`, or `kind: metric-dots`.
 

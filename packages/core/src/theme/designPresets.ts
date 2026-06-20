@@ -1,4 +1,4 @@
-import type { ColorCombinationName, Config, DesignPresetName } from "../ir/types.js";
+import type { ColorCombinationName, Config, DecorationStyleName, DesignPresetName } from "../ir/types.js";
 
 export type ThemeColorTokens = {
   dark1: string;
@@ -29,7 +29,8 @@ export type PaletteSeedTokens = {
 };
 
 type BaseDesignTokens = {
-  name: DesignPresetName;
+  name: DecorationStyleName;
+  decorationStyle: DecorationStyleName;
   backgroundColor: string;
   textColor: string;
   primaryColor: string;
@@ -41,6 +42,12 @@ type BaseDesignTokens = {
   titleRule: boolean;
   cornerAccent: boolean;
   cards: boolean;
+  surfacePolicy: {
+    shapeSource: "pptx" | "svg";
+    cornerScale: "fixed" | "proportional";
+    shadow: "none" | "soft" | "glass";
+    opacity: number;
+  };
 };
 
 export type DesignTokens = BaseDesignTokens & {
@@ -67,9 +74,36 @@ export const DESIGN_PRESET_NAMES = [
   "tokyo-night",
 ] as const satisfies readonly DesignPresetName[];
 
-export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
+export const DECORATION_STYLE_NAMES = [
+  "plain",
+  "simple",
+  "clean",
+  "executive",
+  "editorial",
+  "technical",
+  "glass",
+  "dark",
+  "nord",
+  "solarized",
+  "dracula",
+  "tableau",
+  "gruvbox",
+  "monokai",
+  "material",
+  "tokyo-night",
+] as const satisfies readonly DecorationStyleName[];
+
+const DEFAULT_SURFACE_POLICY: BaseDesignTokens["surfacePolicy"] = {
+  shapeSource: "svg",
+  cornerScale: "proportional",
+  shadow: "soft",
+  opacity: 1,
+};
+
+export const DESIGN_PRESETS: Record<DecorationStyleName, BaseDesignTokens> = {
   plain: {
     name: "plain",
+    decorationStyle: "plain",
     backgroundColor: "FFFFFF",
     textColor: "111827",
     primaryColor: "2563EB",
@@ -81,9 +115,27 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: false,
     cornerAccent: false,
     cards: false,
+    surfacePolicy: { shapeSource: "pptx", cornerScale: "fixed", shadow: "none", opacity: 1 },
+  },
+  simple: {
+    name: "simple",
+    decorationStyle: "simple",
+    backgroundColor: "FFFFFF",
+    textColor: "111827",
+    primaryColor: "2563EB",
+    secondaryColor: "BFDBFE",
+    surfaceFill: "FFFFFF",
+    surfaceLine: "E5E7EB",
+    mutedTextColor: "4B5563",
+    ruleColor: "2563EB",
+    titleRule: true,
+    cornerAccent: false,
+    cards: true,
+    surfacePolicy: { ...DEFAULT_SURFACE_POLICY, shadow: "none" },
   },
   clean: {
     name: "clean",
+    decorationStyle: "clean",
     backgroundColor: "F8FAFC",
     textColor: "111827",
     primaryColor: "2563EB",
@@ -95,9 +147,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: false,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   executive: {
     name: "executive",
+    decorationStyle: "executive",
     backgroundColor: "F8FAFC",
     textColor: "0F172A",
     primaryColor: "1D4ED8",
@@ -109,9 +163,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   editorial: {
     name: "editorial",
+    decorationStyle: "editorial",
     backgroundColor: "F7F3EF",
     textColor: "1F2937",
     primaryColor: "B45309",
@@ -123,9 +179,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   technical: {
     name: "technical",
+    decorationStyle: "technical",
     backgroundColor: "F9FAFB",
     textColor: "111827",
     primaryColor: "047857",
@@ -137,9 +195,27 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: false,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
+  },
+  glass: {
+    name: "glass",
+    decorationStyle: "glass",
+    backgroundColor: "F8FAFC",
+    textColor: "0F172A",
+    primaryColor: "2563EB",
+    secondaryColor: "DBEAFE",
+    surfaceFill: "FFFFFF",
+    surfaceLine: "CBD5E1",
+    mutedTextColor: "475569",
+    ruleColor: "2563EB",
+    titleRule: true,
+    cornerAccent: true,
+    cards: true,
+    surfacePolicy: { shapeSource: "svg", cornerScale: "proportional", shadow: "glass", opacity: 0.72 },
   },
   dark: {
     name: "dark",
+    decorationStyle: "dark",
     backgroundColor: "111827",
     textColor: "F9FAFB",
     primaryColor: "38BDF8",
@@ -151,9 +227,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   nord: {
     name: "nord",
+    decorationStyle: "nord",
     backgroundColor: "2E3440",
     textColor: "ECEFF4",
     primaryColor: "88C0D0",
@@ -165,9 +243,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   solarized: {
     name: "solarized",
+    decorationStyle: "solarized",
     backgroundColor: "FDF6E3",
     textColor: "073642",
     primaryColor: "268BD2",
@@ -179,9 +259,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   dracula: {
     name: "dracula",
+    decorationStyle: "dracula",
     backgroundColor: "282A36",
     textColor: "F8F8F2",
     primaryColor: "BD93F9",
@@ -193,9 +275,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   tableau: {
     name: "tableau",
+    decorationStyle: "tableau",
     backgroundColor: "FFFFFF",
     textColor: "1F2937",
     primaryColor: "4E79A7",
@@ -207,9 +291,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   gruvbox: {
     name: "gruvbox",
+    decorationStyle: "gruvbox",
     backgroundColor: "282828",
     textColor: "FBF1C7",
     primaryColor: "FABD2F",
@@ -221,9 +307,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   monokai: {
     name: "monokai",
+    decorationStyle: "monokai",
     backgroundColor: "272822",
     textColor: "F8F8F2",
     primaryColor: "A6E22E",
@@ -235,9 +323,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   material: {
     name: "material",
+    decorationStyle: "material",
     backgroundColor: "FAFAFA",
     textColor: "263238",
     primaryColor: "2196F3",
@@ -249,9 +339,11 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
   "tokyo-night": {
     name: "tokyo-night",
+    decorationStyle: "tokyo-night",
     backgroundColor: "1A1B26",
     textColor: "C0CAF5",
     primaryColor: "7AA2F7",
@@ -263,15 +355,16 @@ export const DESIGN_PRESETS: Record<DesignPresetName, BaseDesignTokens> = {
     titleRule: true,
     cornerAccent: true,
     cards: true,
+    surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
 };
 
 export function resolveDesignTokens(
-  name: DesignPresetName | undefined,
-  theme: Pick<Config["theme"], "backgroundColor" | "textColor" | "primaryColor" | "colorCombination">,
+  name: DecorationStyleName | DesignPresetName | undefined,
+  theme: Pick<Config["theme"], "backgroundColor" | "textColor" | "primaryColor" | "colorSeed" | "colorCombination">,
 ): DesignTokens {
   const colorCombination = theme.colorCombination ?? "preset";
-  const primaryColor = normalizeHex(theme.primaryColor);
+  const primaryColor = normalizeHex(theme.colorSeed ?? theme.primaryColor);
   if (!name || name === "plain") {
     return finalizeDesignTokens({
       ...DESIGN_PRESETS.plain,
@@ -281,7 +374,7 @@ export function resolveDesignTokens(
       ruleColor: primaryColor,
     }, colorCombination);
   }
-  const preset = { ...(DESIGN_PRESETS[name] ?? DESIGN_PRESETS.clean) };
+  const preset = { ...(DESIGN_PRESETS[name as DecorationStyleName] ?? DESIGN_PRESETS.clean) };
   if (colorCombination !== "preset") {
     preset.primaryColor = primaryColor;
     preset.ruleColor = primaryColor;
@@ -291,6 +384,10 @@ export function resolveDesignTokens(
 
 export function isDesignPresetName(value: string): value is DesignPresetName {
   return (DESIGN_PRESET_NAMES as readonly string[]).includes(value);
+}
+
+export function isDecorationStyleName(value: string): value is DecorationStyleName {
+  return (DECORATION_STYLE_NAMES as readonly string[]).includes(value);
 }
 
 function normalizeHex(color: string): string {

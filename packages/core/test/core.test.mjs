@@ -1059,6 +1059,24 @@ test("design tokens register a full contrast-aware harmony palette in PPT theme 
   assert.equal(tokens.paletteSeed.contrast.every((color) => accents.includes(color)), true);
 });
 
+test("design tokens separate decoration style from main color seed", () => {
+  const tokens = resolveDesignTokens("glass", {
+    ...defaultConfig.theme,
+    primaryColor: "#8A4FFF",
+    colorSeed: "#8A4FFF",
+    colorCombination: "analogous",
+  });
+
+  assert.equal(tokens.name, "glass");
+  assert.equal(tokens.decorationStyle, "glass");
+  assert.equal(tokens.primaryColor, "8A4FFF");
+  assert.equal(tokens.paletteSeed.base, "8A4FFF");
+  assert.equal(tokens.colorCombination, "analogous");
+  assert.equal(tokens.cards, true);
+  assert.equal(tokens.surfacePolicy.shapeSource, "svg");
+  assert.equal(tokens.surfacePolicy.cornerScale, "proportional");
+});
+
 function contentSlideIdsByTitle(presentation) {
   return new Map(
     presentation.slides

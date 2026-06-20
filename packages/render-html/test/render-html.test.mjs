@@ -190,6 +190,23 @@ test("renderHtml applies shared design preset tokens from LayoutIR", () => {
   assert.match(html, /--surface: #3B4252;/);
 });
 
+test("renderHtml separates decoration style from theme color seed", () => {
+  const config = structuredClone(defaultConfig);
+  config.theme.decorationStyle = "glass";
+  config.theme.colorSeed = "#8A4FFF";
+  config.theme.colorCombination = "analogous";
+  const doc = parseMarkdown("# Demo Deck\n\n## Theme\n\n- Body text");
+  const presentation = planPresentation(doc, config);
+  const layout = planLayout(presentation, config);
+
+  const html = renderHtml({ presentation, layout });
+
+  assert.equal(layout.theme.decorationStyle, "glass");
+  assert.equal(layout.theme.colorSeed, "#8A4FFF");
+  assert.match(html, /--primary: #8A4FFF;/);
+  assert.match(html, /--surface: #FBFCFD;/);
+});
+
 function renderHtmlForMarkdown(markdown) {
   const presentation = planPresentation(parseMarkdown(markdown), defaultConfig);
   const layout = planLayout(presentation, defaultConfig);

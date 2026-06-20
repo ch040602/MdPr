@@ -57,6 +57,7 @@ Current implemented baseline:
 - chooses pipeline graph arrangements from content shape: horizontal for short flows, vertical for long labels, U-shaped and reverse-U for denser multi-step flows, and cycle-like placement when an edge returns to the first node
 - sizes diagram nodes and shrinks wrapped node labels before connector drawing to reduce text clipping outside shapes
 - places diagram labels below decorative strips/badges so text does not overlap node decoration
+- renders card/table/chart/code background surfaces through the active surface policy; SVG-backed policies create a proportional-corner SVG surface first, then apply PPT border and shadow geometry with the same radius
 - uses preset-specific editable cover/title templates; theme-gallery output shows multiple title candidates, while explicit `--design` output uses one title treatment
 - renders pentagon layout edge accents as editable background line shapes
 ```
@@ -82,9 +83,21 @@ tokyo-night Tokyo Night-inspired deep technical palette
 
 The shared preset catalog lives in `@mdpresent/core`. `theme.designPreset` is the format-independent config location and is consumed by PPTX and HTML. `pptx.designPreset` remains supported as a PPTX-specific compatibility override.
 
-`theme.colorCombination` extends the selected preset with Adobe Color Wheel-style harmony. `preset` preserves the catalog colors. `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic` derive secondary, rule, chart, and PowerPoint theme accent colors from `theme.primaryColor`.
+`theme.decorationStyle` selects the decoration grammar separately from color. Examples include `simple` for minimal surfaces and `glass` for translucent proportional-corner surfaces. `theme.colorSeed` provides the main color, while `theme.primaryColor` remains a compatibility fallback.
+
+`theme.colorCombination` extends the selected decoration style with Adobe Color Wheel-style harmony. `preset` preserves the catalog colors. `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic` derive secondary, rule, chart, and PowerPoint theme accent colors from `theme.colorSeed` first, then `theme.primaryColor`.
 
 PPTX output writes the active color tokens into `ppt/theme/theme*.xml` (`dk1`, `lt1`, `accent1` through `accent6`, hyperlink colors) after generation so charts and user-edited objects can inherit the same document theme as the rendered shapes.
+
+Surface policy order:
+
+```text
+1. Resolve decoration style and color seed.
+2. Resolve proportional surface corner radius from actual region size.
+3. If the surface policy uses SVG, generate an SVG rounded surface with that radius.
+4. Add PPT border and shadow effects after the SVG surface using the same resolved geometry.
+5. Render text, tables, charts, icons, and connectors as editable PPT objects above the surface.
+```
 
 Template/master import baseline:
 

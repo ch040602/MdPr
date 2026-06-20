@@ -12,6 +12,8 @@
 - minFontSize 위반
 - override target 미존재
 - slot 좌표 범위 초과
+- design lock drift
+- manifest visual-validation summary
 ```
 
 ## Overflow 처리 순서
@@ -99,6 +101,19 @@ const lines = Math.ceil(text.length / charsPerLine)
 ```
 
 Current measurement uses display width rather than raw character count. CJK/Hangul characters are treated as wider than ASCII, and explicit newline boundaries from `BlockIR.sentences` or `BlockIR.lines` are measured as separate lines.
+
+## Build Manifest and Design Lock
+
+Every build emits two audit files next to the rendered deck:
+
+```text
+mdpresent-design-lock.json
+mdpresent-manifest.json
+```
+
+The design lock records the resolved decoration style, color seed, harmony rule, palette seed, PowerPoint theme colors, typography, and surface policy. A supplied `--design-lock` path must match the resolved contract unless `--update-design-lock` is used.
+
+The manifest records source/config hashes, rendered outputs, diagnostics, overflow status, and optional `--visual` structural summaries. Visual summaries do not replace rendered screenshot review; they catch deterministic geometry regressions such as out-of-bounds regions, unreadable font floors, and region-count drift in CI-friendly form.
 
 추후 개선:
 

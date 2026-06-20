@@ -1,6 +1,14 @@
 #!/usr/bin/env node
 import { buildDeck, inspectDeck, planDeck, validateDeck } from "./orchestrate.js";
-import { isDesignPresetName as isKnownDesignPresetName, type DesignPresetName, type OutputFormat, type ParserMode } from "@mdpresent/core";
+import {
+  isDecorationStyleName as isKnownDecorationStyleName,
+  isDesignPresetName as isKnownDesignPresetName,
+  type ColorCombinationName,
+  type DecorationStyleName,
+  type DesignPresetName,
+  type OutputFormat,
+  type ParserMode,
+} from "@mdpresent/core";
 
 const args = process.argv.slice(2);
 const exitCode = await runCli(args);
@@ -39,7 +47,11 @@ export async function runCli(args: string[]): Promise<number> {
       outDir: readOption(args, "--out") ?? "dist",
       templatePath: readOption(args, "--template"),
       designPreset: readDesignPreset(args),
+      cliConfig: readThemeCliConfig(args),
       themeGalleryPresets: readThemeGalleryPresets(args),
+      designLockPath: readOption(args, "--design-lock"),
+      updateDesignLock: args.includes("--update-design-lock"),
+      visualValidation: args.includes("--visual"),
     });
 
     for (const outPath of result.writtenFiles) console.log(`Wrote ${outPath}`);
@@ -75,6 +87,8 @@ function readCommonOptions(args: string[]) {
     configPath: readOption(args, "--config"),
     overridePath: readOption(args, "--override"),
     parser: readParserMode(args),
+    cliConfig: readThemeCliConfig(args),
+    visualValidation: args.includes("--visual"),
   };
 }
 
@@ -102,6 +116,34 @@ function readDesignPreset(args: string[]): DesignPresetName | undefined {
   throw new Error(`Unknown design preset: ${value}`);
 }
 
+function readDecorationStyle(args: string[]): DecorationStyleName | undefined {
+  const value = readOption(args, "--theme-style");
+  if (!value) return undefined;
+  if (isKnownDecorationStyleName(value)) return value;
+  throw new Error(`Unknown theme decoration style: ${value}`);
+}
+
+function readColorCombination(args: string[]): ColorCombinationName | undefined {
+  const value = readOption(args, "--theme-harmony");
+  if (!value) return undefined;
+  if (["preset", "monochromatic", "analogous", "complementary", "split-complementary", "triadic"].includes(value)) return value as ColorCombinationName;
+  throw new Error(`Unknown theme harmony: ${value}`);
+}
+
+function readThemeCliConfig(args: string[]) {
+  const decorationStyle = readDecorationStyle(args);
+  const colorSeed = readOption(args, "--theme-color");
+  const colorCombination = readColorCombination(args);
+  if (!decorationStyle && !colorSeed && !colorCombination) return undefined;
+  return {
+    theme: {
+      ...(decorationStyle ? { decorationStyle } : {}),
+      ...(colorSeed ? { colorSeed, primaryColor: colorSeed } : {}),
+      ...(colorCombination ? { colorCombination } : {}),
+    },
+  };
+}
+
 function readThemeGalleryPresets(args: string[]): DesignPresetName[] | undefined {
   const value = readOption(args, "--theme-gallery");
   if (!value) return undefined;
@@ -122,8 +164,8 @@ function printHelp() {
 Usage:
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
-  mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--json]
-  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--design executive] [--theme-gallery executive,nord] [--template master.pptx]
+  mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--visual] [--json]
+  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--design executive] [--theme-style glass] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,nord] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual]
 
 Config and override file loading are still scaffold diagnostics. HTML and PPTX rendering are wired through the shared orchestration path.
 `);

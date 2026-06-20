@@ -50,6 +50,10 @@ mdpresent build deck.md \
   --config mdpresent.config.yaml \
   --override deck.override.yaml \
   --design executive \
+  --theme-style glass \
+  --theme-color "#8A4FFF" \
+  --theme-harmony analogous \
+  --visual \
   --template company-master.pptx
 ```
 
@@ -96,8 +100,13 @@ Current build behavior:
 ```text
 - html writes dist/deck.html through @mdpresent/render-html
 - pptx writes dist/deck.pptx through @mdpresent/render-pptx
-- `--design` and `theme.designPreset` use the shared design preset catalog for PPTX and HTML
-- `theme.colorCombination` derives `monochromatic`, `analogous`, `complementary`, `split-complementary`, or `triadic` palettes from `theme.primaryColor`; `preset` keeps the catalog colors unchanged
+- build writes dist/mdpresent-design-lock.json and dist/mdpresent-manifest.json beside rendered outputs
+- `--design` and `theme.designPreset` remain compatibility aliases for the shared preset catalog
+- `--theme-style` and `theme.decorationStyle` select the decoration grammar separately from color
+- `--theme-color` and `theme.colorSeed` provide the main color seed
+- `--theme-harmony` and `theme.colorCombination` derive `monochromatic`, `analogous`, `complementary`, `split-complementary`, or `triadic` palettes from the color seed; `preset` keeps the catalog colors unchanged
+- `--design-lock path.json` checks the resolved design contract; `--update-design-lock` accepts intentional changes
+- `--visual` adds structural visual-validation summaries to the output manifest
 - built-in presets: plain, clean, executive, editorial, technical, dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, tokyo-night
 - pptx can reuse positioned image assets from a template/master PPTX as a background layer
 - config files are loaded from YAML or JSON; `pptx.template` paths are resolved relative to the config file
@@ -169,6 +178,12 @@ mdpresent override set deck.md \
 --override deck.override.yaml
 --template company-template.pptx
 --design plain|clean|executive|editorial|technical|dark|nord|solarized|dracula|tableau|gruvbox|monokai|material|tokyo-night
+--theme-style plain|simple|clean|executive|editorial|technical|glass|dark|nord|solarized|dracula|tableau|gruvbox|monokai|material|tokyo-night
+--theme-color "#2563EB"
+--theme-harmony preset|monochromatic|analogous|complementary|split-complementary|triadic
+--design-lock dist/mdpresent-design-lock.json
+--update-design-lock
+--visual
 --background "#0B1020"
 --font Pretendard
 --font-size 22

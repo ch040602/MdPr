@@ -25,9 +25,12 @@ test("buildDeck delegates rendering through the orchestration boundary", async (
 
   try {
     const result = await buildDeck(basicDeck, { formats: ["html"], outDir });
-    const html = readFileSync(result.writtenFiles[0], "utf-8");
+    const htmlPath = result.writtenFiles.find((file) => file.endsWith("deck.html"));
+    assert.ok(htmlPath);
+    const html = readFileSync(htmlPath, "utf-8");
 
-    assert.equal(result.writtenFiles.length, 1);
+    assert.equal(result.writtenFiles.some((file) => file.endsWith("mdpresent-manifest.json")), true);
+    assert.equal(result.writtenFiles.some((file) => file.endsWith("mdpresent-design-lock.json")), true);
     assert.match(html, /AI 업무 자동화 제안서/);
     assert.match(html, /회의록 자동 요약/);
   } finally {
@@ -41,7 +44,7 @@ test("buildDeck writes PPTX output through the renderer boundary", async () => {
   try {
     const result = await buildDeck(basicDeck, { formats: ["pptx"], outDir });
 
-    assert.deepEqual(result.writtenFiles.map((file) => file.endsWith("deck.pptx")), [true]);
+    assert.equal(result.writtenFiles.some((file) => file.endsWith("deck.pptx")), true);
     assert.equal(existsSync(join(outDir, "deck.pptx")), true);
     assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "PPTX_RENDERER_NOT_IMPLEMENTED"), false);
   } finally {
@@ -54,11 +57,105 @@ test("buildDeck applies CLI design preset to HTML output", async () => {
 
   try {
     const result = await buildDeck(basicDeck, { formats: ["html"], outDir, designPreset: "nord" });
-    const html = readFileSync(result.writtenFiles[0], "utf-8");
+    const htmlPath = result.writtenFiles.find((file) => file.endsWith("deck.html"));
+    assert.ok(htmlPath);
+    const html = readFileSync(htmlPath, "utf-8");
 
     assert.match(html, /--bg: #2E3440;/);
     assert.match(html, /--text: #ECEFF4;/);
     assert.match(html, /--primary: #88C0D0;/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("buildDeck writes design lock and output manifest with visual validation summary", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-manifest-"));
+
+  try {
+    const result = await buildDeck(basicDeck, {
+      formats: ["html"],
+      outDir,
+      visualValidation: true,
+      cliConfig: {
+        theme: {
+          decorationStyle: "glass",
+          colorSeed: "#8A4FFF",
+          primaryColor: "#8A4FFF",
+          colorCombination: "analogous",
+        },
+      },
+    });
+    assert.ok(result.manifestPath);
+    assert.ok(result.designLockPath);
+
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+    const designLock = JSON.parse(readFileSync(result.designLockPath, "utf-8"));
+
+    assert.equal(manifest.engine, "mdpresent");
+    assert.equal(manifest.validation.visual.checked, true);
+    assert.equal(manifest.validation.visual.checks.regionBounds, true);
+    assert.equal(designLock.decorationStyle, "glass");
+    assert.equal(designLock.colorSeed, "#8A4FFF");
+    assert.equal(designLock.paletteSeed.base, "8A4FFF");
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("buildDeck rejects design lock drift unless explicitly updated", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-lock-drift-"));
+  const lockPath = join(outDir, "lock.json");
+
+  try {
+    await buildDeck(basicDeck, {
+      formats: ["html"],
+      outDir,
+      designLockPath: lockPath,
+      cliConfig: { theme: { colorSeed: "#2563EB", primaryColor: "#2563EB" } },
+    });
+
+    await assert.rejects(
+      () => buildDeck(basicDeck, {
+        formats: ["html"],
+        outDir,
+        designLockPath: lockPath,
+        cliConfig: { theme: { colorSeed: "#8A4FFF", primaryColor: "#8A4FFF", colorCombination: "analogous" } },
+      }),
+      /Design lock drift detected/,
+    );
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("CLI theme style and color seed stay independently selectable", () => {
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-style-color-"));
+  try {
+    execFileSync(process.execPath, [
+      cliPath,
+      "build",
+      basicDeck,
+      "--to",
+      "html",
+      "--out",
+      outDir,
+      "--theme-style",
+      "glass",
+      "--theme-color",
+      "#8A4FFF",
+      "--theme-harmony",
+      "analogous",
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const html = readFileSync(join(outDir, "deck.html"), "utf-8");
+
+    assert.match(html, /--primary: #8A4FFF;/);
+    assert.match(html, /--surface: #FBFCFD;/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -69,7 +166,8 @@ test("buildDeck passes theme-gallery presets to PPTX output", async () => {
 
   try {
     const result = await buildDeck(basicDeck, { formats: ["pptx"], outDir, themeGalleryPresets: ["executive", "nord"] });
-    const outPath = result.writtenFiles[0];
+    const outPath = result.writtenFiles.find((file) => file.endsWith("deck.pptx"));
+    assert.ok(outPath);
     const expanded = join(outDir, "expanded");
 
     execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
