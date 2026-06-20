@@ -2,7 +2,8 @@
   "assets": [
     "cover",
     "pipeline",
-    "semantics"
+    "semantics",
+    "decorations"
   ],
   "pngSize": [
     1600,

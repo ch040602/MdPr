@@ -257,6 +257,58 @@ def build_semantics(slide: Any) -> None:
         add_text(slide, x + 58, y + 92, w - 96, 62, body, 20, PALETTE["muted"], False, valign="top")
 
 
+def build_decorations(slide: Any) -> None:
+    add_shape(slide, 1, 0, 0, SLIDE_W, SLIDE_H, PALETTE["bg"], PALETTE["bg"])
+    add_text(slide, 92, 76, 820, 70, "Decoration Patterns", 54, PALETTE["ink"], True, margin=0)
+    add_text(slide, 96, 150, 1010, 42, "Reusable treatments stay small, semantic, and theme-bound instead of filling empty space.", 23, PALETTE["muted"], margin=0)
+
+    columns = [
+        (110, 260, 405, "Structure", "sage", "A"),
+        (596, 260, 405, "Emphasis", "amber", "B"),
+        (1082, 260, 405, "Object Recipes", "teal", "C"),
+    ]
+    for x, y, w, title, accent, label in columns:
+        add_shape(slide, 5, x, y, w, 430, PALETTE["paper"], PALETTE["line"], 1.5, True)
+        add_shape(slide, 1, x, y, 12, 430, PALETTE[accent], PALETTE[accent])
+        add_icon(slide, x + 56, y + 54, 18, PALETTE[accent], label)
+        add_text(slide, x + 88, y + 30, w - 122, 42, title, 25, PALETTE["ink"], True, margin=0)
+
+    # Structure: rails, separators, badges.
+    add_shape(slide, 5, 166, 356, 292, 74, PALETTE["green_soft"], PALETTE["sage"], 1.2, False)
+    add_shape(slide, 1, 166, 356, 8, 74, PALETTE["sage"], PALETTE["sage"])
+    add_text(slide, 194, 374, 220, 28, "Accent rail", 18, PALETTE["ink"], True, margin=0)
+    add_shape(slide, 1, 166, 474, 292, 4, PALETTE["line"], PALETTE["line"])
+    add_text(slide, 166, 500, 292, 26, "Hairline separator", 17, PALETTE["ink"], True, "center", margin=0)
+    for idx, label in enumerate(["1", "2", "3"]):
+        cx = 206 + idx * 66
+        add_icon(slide, cx, 588, 18, PALETTE["sage"], label)
+    add_text(slide, 358, 568, 82, 42, "Step\nbadges", 16, PALETTE["ink"], True, "center", "middle", 0)
+
+    # Emphasis: proof callout, contrast block, underline marker.
+    add_shape(slide, 5, 650, 350, 294, 82, PALETTE["rose_soft"], PALETTE["rose"], 1.8, False)
+    add_icon(slide, 690, 391, 20, PALETTE["rose"], "!")
+    add_text(slide, 724, 372, 174, 28, "Proof callout", 18, PALETTE["rose"], True, margin=0)
+    add_shape(slide, 5, 650, 478, 294, 72, PALETTE["amber_soft"], PALETTE["amber"], 1.4, False)
+    add_text(slide, 684, 501, 226, 28, "Contrast surface", 18, PALETTE["amber_dark"], True, "center", margin=0)
+    add_text(slide, 650, 604, 294, 28, "Short underline marker", 17, PALETTE["ink"], True, "center", margin=0)
+    add_shape(slide, 1, 724, 642, 146, 8, PALETTE["amber"], PALETTE["amber"])
+
+    # Object recipes: compact chart, icon slot, connector treatment.
+    add_shape(slide, 5, 1136, 350, 294, 96, PALETTE["teal_soft"], PALETTE["teal"], 1.4, False)
+    for idx, h in enumerate([34, 56, 42]):
+        add_shape(slide, 1, 1170 + idx * 46, 402 - h, 28, h, [PALETTE["sage"], PALETTE["teal"], PALETTE["indigo"]][idx], [PALETTE["sage"], PALETTE["teal"], PALETTE["indigo"]][idx])
+    add_text(slide, 1300, 382, 104, 28, "Mini chart", 17, PALETTE["ink"], True, margin=0)
+    add_shape(slide, 5, 1136, 492, 294, 72, PALETTE["paper"], PALETTE["line"], 1.1, False)
+    add_icon(slide, 1172, 528, 16, PALETTE["teal"], "i")
+    add_text(slide, 1204, 512, 172, 30, "Icon slot", 18, PALETTE["ink"], True, margin=0)
+    add_elbow(slide, [(1156, 630), (1234, 630), (1234, 600), (1352, 600)], PALETTE["ink"], 3.4)
+    add_text(slide, 1160, 648, 270, 28, "Straight or elbow connectors", 16, PALETTE["muted"], False, "center", margin=0)
+
+    add_shape(slide, 5, 154, 744, 1250, 70, PALETTE["paper"], PALETTE["line"], 1.2, True)
+    add_text(slide, 194, 763, 220, 30, "Selection rule", 21, PALETTE["ink"], True, margin=0)
+    add_text(slide, 420, 762, 830, 32, "choose by content role, density, importance, image presence, and chart/table need", 19, PALETTE["muted"], margin=0)
+
+
 def svg_text(x: int, y: int, text: str, size: int, color: str, weight: int = 400, anchor: str = "start") -> str:
     return f'<text x="{x}" y="{y}" font-family="Aptos, Inter, Arial, sans-serif" font-size="{size}" font-weight="{weight}" text-anchor="{anchor}" fill="#{color}">{text}</text>'
 
@@ -286,6 +338,30 @@ def write_svg(name: str, title: str, body: str) -> None:
   <g><rect x="120" y="272" width="12" height="185" fill="#86A789"/><rect x="860" y="272" width="12" height="185" fill="#14B8A6"/><rect x="120" y="535" width="12" height="185" fill="#E9B44C"/><rect x="860" y="535" width="12" height="185" fill="#8B7CF6"/></g>
   <g font-family="Aptos, Arial" fill="#111827" font-weight="800" font-size="30"><text x="212" y="350">Lists</text><text x="952" y="350">Tables</text><text x="212" y="613">Emphasis</text><text x="952" y="613">Diagrams</text></g>
   <g font-family="Aptos, Arial" fill="#64748B" font-size="24"><text x="178" y="394">Aligned groups and readable line breaks</text><text x="918" y="394">Numeric rows plus compact charts</text><text x="178" y="657">Hierarchy-aware type sizes</text><text x="918" y="657">Straight or elbow connectors</text></g>
+"""
+    elif name == "decorations":
+        diagram = """
+  <text x="92" y="120" font-family="Aptos, Arial" font-size="64" font-weight="800" fill="#111827">Decoration Patterns</text>
+  <text x="96" y="166" font-family="Aptos, Arial" font-size="28" fill="#64748B">Small theme-bound treatments selected by content role and density.</text>
+  <g fill="#FFFDF8" stroke="#D8D1C6" stroke-width="3"><rect x="110" y="260" width="405" height="430" rx="22"/><rect x="596" y="260" width="405" height="430" rx="22"/><rect x="1082" y="260" width="405" height="430" rx="22"/></g>
+  <g><rect x="110" y="260" width="12" height="430" fill="#86A789"/><rect x="596" y="260" width="12" height="430" fill="#E9B44C"/><rect x="1082" y="260" width="12" height="430" fill="#14B8A6"/></g>
+  <g font-family="Aptos, Arial" font-size="30" font-weight="800" fill="#111827"><text x="198" y="320">Structure</text><text x="684" y="320">Emphasis</text><text x="1170" y="320">Object Recipes</text></g>
+  <g fill="#E7F3EA" stroke="#86A789" stroke-width="2"><rect x="166" y="356" width="292" height="74" rx="16"/></g><rect x="166" y="356" width="8" height="74" fill="#86A789"/>
+  <text x="194" y="402" font-family="Aptos, Arial" font-size="24" font-weight="800" fill="#111827">Accent rail</text>
+  <line x1="166" y1="474" x2="458" y2="474" stroke="#D8D1C6" stroke-width="4"/>
+  <text x="312" y="526" text-anchor="middle" font-family="Aptos, Arial" font-size="22" font-weight="800" fill="#111827">Hairline separator</text>
+  <g fill="#86A789"><circle cx="206" cy="588" r="18"/><circle cx="272" cy="588" r="18"/><circle cx="338" cy="588" r="18"/></g>
+  <g font-family="Aptos, Arial" font-size="18" font-weight="800" fill="#FFFFFF" text-anchor="middle"><text x="206" y="595">1</text><text x="272" y="595">2</text><text x="338" y="595">3</text></g>
+  <text x="399" y="584" text-anchor="middle" font-family="Aptos, Arial" font-size="20" font-weight="800" fill="#111827">Step</text><text x="399" y="610" text-anchor="middle" font-family="Aptos, Arial" font-size="20" font-weight="800" fill="#111827">badges</text>
+  <rect x="650" y="350" width="294" height="82" rx="18" fill="#FFE9EF" stroke="#BE123C" stroke-width="3"/><circle cx="690" cy="391" r="20" fill="#BE123C"/><text x="724" y="402" font-family="Aptos, Arial" font-size="24" font-weight="800" fill="#BE123C">Proof callout</text>
+  <rect x="650" y="478" width="294" height="72" rx="16" fill="#FFF2D2" stroke="#E9B44C" stroke-width="3"/><text x="797" y="524" text-anchor="middle" font-family="Aptos, Arial" font-size="24" font-weight="800" fill="#9A5B16">Contrast surface</text>
+  <text x="797" y="632" text-anchor="middle" font-family="Aptos, Arial" font-size="22" font-weight="800" fill="#111827">Short underline marker</text><rect x="724" y="642" width="146" height="8" fill="#E9B44C"/>
+  <rect x="1136" y="350" width="294" height="96" rx="16" fill="#E4F7F3" stroke="#14B8A6" stroke-width="3"/><rect x="1170" y="368" width="28" height="34" fill="#86A789"/><rect x="1216" y="346" width="28" height="56" fill="#14B8A6"/><rect x="1262" y="360" width="28" height="42" fill="#6366F1"/><text x="1300" y="402" font-family="Aptos, Arial" font-size="22" font-weight="800" fill="#111827">Mini chart</text>
+  <rect x="1136" y="492" width="294" height="72" rx="16" fill="#FFFDF8" stroke="#D8D1C6" stroke-width="2"/><circle cx="1172" cy="528" r="16" fill="#14B8A6"/><text x="1204" y="538" font-family="Aptos, Arial" font-size="24" font-weight="800" fill="#111827">Icon slot</text>
+  <path d="M1156 630 H1234 V600 H1352" fill="none" stroke="#111827" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1352 600 l-16 -10 v20z" fill="#111827"/><text x="1295" y="674" text-anchor="middle" font-family="Aptos, Arial" font-size="20" fill="#64748B">Straight or elbow connectors</text>
+  <rect x="154" y="744" width="1250" height="70" rx="18" fill="#FFFDF8" stroke="#D8D1C6" stroke-width="3"/>
+  <text x="194" y="790" font-family="Aptos, Arial" font-size="26" font-weight="800" fill="#111827">Selection rule</text>
+  <text x="420" y="790" font-family="Aptos, Arial" font-size="24" fill="#64748B">choose by role, density, importance, image presence, and chart/table need</text>
 """
     else:
         diagram = """
@@ -320,7 +396,7 @@ def export_pngs() -> None:
     prs.PageSetup.SlideWidth = PPT_W * 72
     prs.PageSetup.SlideHeight = PPT_H * 72
     try:
-        builders = [("cover", build_cover), ("pipeline", build_pipeline), ("semantics", build_semantics)]
+        builders = [("cover", build_cover), ("pipeline", build_pipeline), ("semantics", build_semantics), ("decorations", build_decorations)]
         for _, builder in builders:
             builder(prepare_slide(prs))
         prs.SaveAs(str(pptx_path))
@@ -338,9 +414,10 @@ def main() -> None:
     write_svg("cover", "mdpresent cover slide preview", "A generated cover slide preview for MDPR.")
     write_svg("pipeline", "Pipeline diagram slide preview", "A generated pipeline diagram slide preview with aligned badges.")
     write_svg("semantics", "Markdown semantics slide preview", "A generated Markdown semantics preview slide.")
+    write_svg("decorations", "Decoration patterns slide preview", "A generated decoration pattern preview slide.")
     export_pngs()
     report = {
-        "assets": ["cover", "pipeline", "semantics"],
+        "assets": ["cover", "pipeline", "semantics", "decorations"],
         "pngSize": [SLIDE_W, SLIDE_H],
         "alignmentRules": [
             "badge text uses the same bounding box as its circle",

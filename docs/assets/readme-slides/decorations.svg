@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Decoration patterns slide preview</title>
+  <desc id="desc">A generated decoration pattern preview slide.</desc>
+  <rect width="1600" height="900" fill="#F7F2EA"/>
+
+  <text x="92" y="120" font-family="Aptos, Arial" font-size="64" font-weight="800" fill="#111827">Decoration Patterns</text>
+  <text x="96" y="166" font-family="Aptos, Arial" font-size="28" fill="#64748B">Small theme-bound treatments selected by content role and density.</text>
+  <g fill="#FFFDF8" stroke="#D8D1C6" stroke-width="3"><rect x="110" y="260" width="405" height="430" rx="22"/><rect x="596" y="260" width="405" height="430" rx="22"/><rect x="1082" y="260" width="405" height="430" rx="22"/></g>
+  <g><rect x="110" y="260" width="12" height="430" fill="#86A789"/><rect x="596" y="260" width="12" height="430" fill="#E9B44C"/><rect x="1082" y="260" width="12" height="430" fill="#14B8A6"/></g>
+  <g font-family="Aptos, Arial" font-size="30" font-weight="800" fill="#111827"><text x="198" y="320">Structure</text><text x="684" y="320">Emphasis</text><text x="1170" y="320">Object Recipes</text></g>
+  <g fill="#E7F3EA" stroke="#86A789" stroke-width="2"><rect x="166" y="356" width="292" height="74" rx="16"/></g><rect x="166" y="356" width="8" height="74" fill="#86A789"/>
+  <text x="194" y="402" font-family="Aptos, Arial" font-size="24" font-weight="800" fill="#111827">Accent rail</text>
+  <line x1="166" y1="474" x2="458" y2="474" stroke="#D8D1C6" stroke-width="4"/>
+  <text x="312" y="526" text-anchor="middle" font-family="Aptos, Arial" font-size="22" font-weight="800" fill="#111827">Hairline separator</text>
+  <g fill="#86A789"><circle cx="206" cy="588" r="18"/><circle cx="272" cy="588" r="18"/><circle cx="338" cy="588" r="18"/></g>
+  <g font-family="Aptos, Arial" font-size="18" font-weight="800" fill="#FFFFFF" text-anchor="middle"><text x="206" y="595">1</text><text x="272" y="595">2</text><text x="338" y="595">3</text></g>
+  <text x="399" y="584" text-anchor="middle" font-family="Aptos, Arial" font-size="20" font-weight="800" fill="#111827">Step</text><text x="399" y="610" text-anchor="middle" font-family="Aptos, Arial" font-size="20" font-weight="800" fill="#111827">badges</text>
+  <rect x="650" y="350" width="294" height="82" rx="18" fill="#FFE9EF" stroke="#BE123C" stroke-width="3"/><circle cx="690" cy="391" r="20" fill="#BE123C"/><text x="724" y="402" font-family="Aptos, Arial" font-size="24" font-weight="800" fill="#BE123C">Proof callout</text>
+  <rect x="650" y="478" width="294" height="72" rx="16" fill="#FFF2D2" stroke="#E9B44C" stroke-width="3"/><text x="797" y="524" text-anchor="middle" font-family="Aptos, Arial" font-size="24" font-weight="800" fill="#9A5B16">Contrast surface</text>
+  <text x="797" y="632" text-anchor="middle" font-family="Aptos, Arial" font-size="22" font-weight="800" fill="#111827">Short underline marker</text><rect x="724" y="642" width="146" height="8" fill="#E9B44C"/>
+  <rect x="1136" y="350" width="294" height="96" rx="16" fill="#E4F7F3" stroke="#14B8A6" stroke-width="3"/><rect x="1170" y="368" width="28" height="34" fill="#86A789"/><rect x="1216" y="346" width="28" height="56" fill="#14B8A6"/><rect x="1262" y="360" width="28" height="42" fill="#6366F1"/><text x="1300" y="402" font-family="Aptos, Arial" font-size="22" font-weight="800" fill="#111827">Mini chart</text>
+  <rect x="1136" y="492" width="294" height="72" rx="16" fill="#FFFDF8" stroke="#D8D1C6" stroke-width="2"/><circle cx="1172" cy="528" r="16" fill="#14B8A6"/><text x="1204" y="538" font-family="Aptos, Arial" font-size="24" font-weight="800" fill="#111827">Icon slot</text>
+  <path d="M1156 630 H1234 V600 H1352" fill="none" stroke="#111827" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M1352 600 l-16 -10 v20z" fill="#111827"/><text x="1295" y="674" text-anchor="middle" font-family="Aptos, Arial" font-size="20" fill="#64748B">Straight or elbow connectors</text>
+  <rect x="154" y="744" width="1250" height="70" rx="18" fill="#FFFDF8" stroke="#D8D1C6" stroke-width="3"/>
+  <text x="194" y="790" font-family="Aptos, Arial" font-size="26" font-weight="800" fill="#111827">Selection rule</text>
+  <text x="420" y="790" font-family="Aptos, Arial" font-size="24" fill="#64748B">choose by role, density, importance, image presence, and chart/table need</text>
+
+</svg>

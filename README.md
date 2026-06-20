@@ -23,9 +23,9 @@ The same Markdown source can produce editable PPTX slides with responsive struct
 | --- | --- |
 | <img src="docs/assets/readme-slides/cover.png" alt="Generated mdpresent cover slide preview" width="100%"> | <img src="docs/assets/readme-slides/pipeline.png" alt="Generated pipeline diagram slide preview" width="100%"> |
 
-| Markdown Semantics |
-| --- |
-| <img src="docs/assets/readme-slides/semantics.png" alt="Generated Markdown semantics slide preview" width="100%"> |
+| Markdown Semantics | Decoration Patterns |
+| --- | --- |
+| <img src="docs/assets/readme-slides/semantics.png" alt="Generated Markdown semantics slide preview" width="100%"> | <img src="docs/assets/readme-slides/decorations.png" alt="Generated decoration patterns slide preview" width="100%"> |
 
 ## Runtime Pipeline
 
