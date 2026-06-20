@@ -8,6 +8,26 @@
     "surfaceCount": 6,
     "proofCount": 4
   },
+  "teaserLayoutValidation": {
+    "trackedShapes": 106,
+    "trackedPictures": 4,
+    "trackedTextBoxes": 113,
+    "boundsViolationCount": 0,
+    "textFitViolationCount": 0,
+    "circlePictureViolationCount": 0,
+    "pictureFrameViolationCount": 0,
+    "boundsViolations": [],
+    "textFitViolations": [],
+    "circlePictureViolations": [],
+    "pictureFrameViolations": [],
+    "rules": [
+      "Pictures use rectangular safe frames; circles are reserved for marker glyphs only.",
+      "Pictures must stay inside frame padding and never rely on circular PowerPoint masks.",
+      "Text is fitted before insertion and recorded as a failure if estimated lines exceed its box.",
+      "All generated shapes, pictures, and text boxes must stay inside the slide bounds."
+    ],
+    "ok": true
+  },
   "mainImage": "docs/assets/readme-slides/mdpr-showcase-teaser.png",
   "pipelineImage": "docs/assets/readme-slides/mdpr-pipeline-teaser.png"
 }

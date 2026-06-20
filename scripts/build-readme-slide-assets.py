@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,11 @@ SLIDE_W = 1600
 SLIDE_H = 900
 PPT_W = 13.333
 PPT_H = 7.5
+MIN_TEASER_FONT_PX = 11.5
+MIN_TEXT_PADDING_PX = 8
+TEXT_BOXES: list[dict[str, Any]] = []
+PICTURE_BOXES: list[dict[str, Any]] = []
+SHAPE_BOXES: list[dict[str, Any]] = []
 
 PALETTE = {
     "ink": "111827",
@@ -66,6 +72,48 @@ def font_pt(px: float) -> float:
     return max(9.2, px * 0.72)
 
 
+def reset_tracking() -> None:
+    TEXT_BOXES.clear()
+    PICTURE_BOXES.clear()
+    SHAPE_BOXES.clear()
+
+
+def track_box(kind: str, x: float, y: float, w: float, h: float, **extra: Any) -> None:
+    entry = {"kind": kind, "x": x, "y": y, "w": w, "h": h, **extra}
+    if kind == "text":
+        TEXT_BOXES.append(entry)
+    elif kind == "picture":
+        PICTURE_BOXES.append(entry)
+    else:
+        SHAPE_BOXES.append(entry)
+
+
+def estimate_text_size(text: str, requested_size: float, w: float, h: float, margin: float) -> tuple[float, bool]:
+    available_w = max(1, w - margin * 2)
+    available_h = max(1, h - margin)
+    normalized = " ".join(text.split())
+    if not normalized:
+        return requested_size, True
+
+    size = requested_size
+    while size >= MIN_TEASER_FONT_PX:
+        avg_char_w = max(4.8, size * 0.48)
+        chars_per_line = max(1, int(available_w / avg_char_w))
+        explicit_lines = text.splitlines() or [text]
+        line_count = 0
+        longest_word_ok = True
+        for line in explicit_lines:
+            words = line.split() or [""]
+            longest_word_ok = longest_word_ok and all(len(word) * avg_char_w <= available_w for word in words)
+            line_len = max(1, len(line))
+            line_count += max(1, math.ceil(line_len / chars_per_line))
+        needed_h = line_count * size * 1.45
+        if needed_h <= available_h and longest_word_ok:
+            return size, True
+        size -= 1.0
+    return MIN_TEASER_FONT_PX, False
+
+
 def add_shape(
     slide: Any,
     kind: int,
@@ -77,8 +125,11 @@ def add_shape(
     stroke: str = "FFFFFF",
     stroke_px: float = 1.4,
     shadow: bool = False,
+    name: str | None = None,
 ) -> Any:
     shape = slide.Shapes.AddShape(kind, px_x(x), px_y(y), px_x(w), px_y(h))
+    if name:
+        shape.Name = name
     shape.Fill.Visible = -1
     shape.Fill.ForeColor.RGB = rgb(fill)
     shape.Line.Visible = -1
@@ -90,15 +141,31 @@ def add_shape(
         shape.Shadow.Blur = 3
         shape.Shadow.OffsetX = 1.1
         shape.Shadow.OffsetY = 2.0
+    track_box("shape", x, y, w, h, shapeKind=kind, name=name)
     return shape
 
 
-def add_picture(slide: Any, path: Path, x: float, y: float, w: float, h: float) -> None:
+def add_picture(slide: Any, path: Path, x: float, y: float, w: float, h: float, *, name: str | None = None) -> Any:
     if not path.exists():
         add_shape(slide, 5, x, y, w, h, "FFFFFF", PALETTE["line"], 1.4, True)
         add_text(slide, x + 22, y + h / 2 - 18, w - 44, 36, "Preview image missing", 18, PALETTE["muted"], True, "center")
-        return
-    slide.Shapes.AddPicture(str(path), False, True, px_x(x), px_y(y), px_x(w), px_y(h))
+        return None
+    picture = slide.Shapes.AddPicture(str(path), False, True, px_x(x), px_y(y), px_x(w), px_y(h))
+    if name:
+        picture.Name = name
+    track_box("picture", x, y, w, h, name=name, frameKind="rect")
+    return picture
+
+
+def add_picture_frame(slide: Any, path: Path, x: float, y: float, w: float, h: float, *, name: str, caption_h: float = 0) -> None:
+    padding = 18 if w > 300 else 8
+    add_shape(slide, 5, x, y, w, h, "FFFFFF", "334155", 1.2, True, name=f"{name}-frame")
+    image_h = max(1, h - caption_h - padding * 2)
+    image_y = y + padding
+    add_picture(slide, path, x + padding, image_y, w - padding * 2, image_h, name=f"{name}-image")
+    # Teaser previews are intentionally rectangular. Circular shapes are marker-only,
+    # because PowerPoint picture masks can export with square corners across viewers.
+    track_box("shape", x, y, w, h, shapeKind="picture-frame-rect", name=name, safePadding=padding, caption_h=caption_h)
 
 
 def load_theme_preview_metadata() -> dict[str, Any]:
@@ -123,6 +190,7 @@ def add_text(
     valign: str = "middle",
     margin: float = 2.0,
 ) -> Any:
+    fitted_size, fits = estimate_text_size(text, size, w, h, margin)
     shape = slide.Shapes.AddTextbox(1, px_x(x), px_y(y), px_x(w), px_y(h))
     shape.Fill.Visible = 0
     shape.Line.Visible = 0
@@ -136,7 +204,7 @@ def add_text(
     tf2.VerticalAnchor = 3 if valign == "middle" else 1
     tf2.TextRange.Text = text
     tf2.TextRange.Font.Name = "Aptos"
-    tf2.TextRange.Font.Size = font_pt(size)
+    tf2.TextRange.Font.Size = font_pt(fitted_size)
     tf2.TextRange.Font.Bold = -1 if bold else 0
     tf2.TextRange.Font.Fill.ForeColor.RGB = rgb(color)
     tf2.TextRange.ParagraphFormat.Alignment = 2 if align == "center" else 1
@@ -151,11 +219,12 @@ def add_text(
         shape.TextFrame.TextRange.ParagraphFormat.Alignment = 2 if align == "center" else 1
     except Exception:
         pass
+    track_box("text", x, y, w, h, text=text, requestedSize=size, fittedSize=fitted_size, fits=fits, margin=margin)
     return shape
 
 
 def add_icon(slide: Any, cx: float, cy: float, r: float, fill: str, label: str) -> None:
-    add_shape(slide, 9, cx - r, cy - r, r * 2, r * 2, fill, "FFFFFF", 1.2, False)
+    add_shape(slide, 9, cx - r, cy - r, r * 2, r * 2, fill, "FFFFFF", 1.2, False, name=f"marker-{label}")
     add_text(slide, cx - r, cy - r, r * 2, r * 2, label, r * 1.05, "FFFFFF", True, "center", "middle", 0.0)
 
 
@@ -246,8 +315,7 @@ def build_showcase(slide: Any) -> None:
 
     hero_style, hero_index, hero_label = SHOWCASE_SOURCES[2]
     hero_path = ROOT / "docs" / "theme-preview" / "slides" / hero_style / f"slide-{hero_index:02d}.png"
-    add_shape(slide, 5, 126, 242, 792, 446, "FFFFFF", "334155", 1.3, True)
-    add_picture(slide, hero_path, 144, 262, 756, 386)
+    add_picture_frame(slide, hero_path, 126, 242, 792, 446, name="hero-preview", caption_h=40)
     add_shape(slide, 1, 144, 648, 756, 40, "FFFFFF", "FFFFFF", 0.5, False)
     add_text(slide, 164, 657, 180, 22, hero_style, 14, PALETTE["ink"], True, margin=0)
     add_text(slide, 350, 657, 520, 22, f"{hero_label}: chart and table stay editable, aligned, and theme-bound", 13, PALETTE["muted"], False, "right", "middle", 0)
@@ -288,10 +356,7 @@ def build_showcase(slide: Any) -> None:
         x = 978 + idx * 160
         y = 612
         image_path = ROOT / "docs" / "theme-preview" / "slides" / style / f"slide-{index:02d}.png"
-        add_shape(slide, 5, x, y, 142, 112, "FFFFFF", "334155", 1.0, True)
-        add_picture(slide, image_path, x + 6, y + 6, 130, 74)
-        add_text(slide, x + 8, y + 86, 126, 18, style, 10.5, PALETTE["ink"], True, "center", "middle", 0)
-        add_text(slide, x + 8, y + 102, 126, 14, label, 9.2, PALETTE["muted"], False, "center", "middle", 0)
+        add_picture_frame(slide, image_path, x, y, 142, 112, name=f"strip-preview-{idx + 1}", caption_h=0)
 
     add_shape(slide, 5, 126, 724, 792, 74, "17213A", "22D3EE", 1.5, False)
     add_text(slide, 158, 742, 250, 26, "Built from real MDPR results", 17, "FFFFFF", True, margin=0)
@@ -560,8 +625,89 @@ def sync_pipeline_preview_from_teaser() -> None:
         shutil.copyfile(teaser_svg, OUT_DIR / "pipeline.svg")
 
 
+def validate_tracked_layout() -> dict[str, Any]:
+    bounds_violations = []
+    text_fit_violations = []
+    circle_picture_violations = []
+    picture_frame_violations = []
+
+    for collection_name, boxes in [("shape", SHAPE_BOXES), ("picture", PICTURE_BOXES), ("text", TEXT_BOXES)]:
+        for box in boxes:
+            if box["x"] < 0 or box["y"] < 0 or box["x"] + box["w"] > SLIDE_W or box["y"] + box["h"] > SLIDE_H:
+                bounds_violations.append({"collection": collection_name, **box})
+
+    for box in TEXT_BOXES:
+        if not box.get("fits", True):
+            text_fit_violations.append({
+                "text": box.get("text", "")[:80],
+                "requestedSize": box.get("requestedSize"),
+                "fittedSize": box.get("fittedSize"),
+                "box": {key: box[key] for key in ["x", "y", "w", "h"]},
+            })
+
+    oval_shapes = [
+        shape for shape in SHAPE_BOXES
+        if shape.get("shapeKind") == 9
+    ]
+    for picture in PICTURE_BOXES:
+        for oval in oval_shapes:
+            inside_oval_bounds = (
+                picture["x"] >= oval["x"]
+                and picture["y"] >= oval["y"]
+                and picture["x"] + picture["w"] <= oval["x"] + oval["w"]
+                and picture["y"] + picture["h"] <= oval["y"] + oval["h"]
+            )
+            if inside_oval_bounds:
+                circle_picture_violations.append({"picture": picture.get("name"), "oval": oval.get("name")})
+
+    rect_frames = {
+        shape.get("name"): shape
+        for shape in SHAPE_BOXES
+        if shape.get("shapeKind") == "picture-frame-rect"
+    }
+    for picture in PICTURE_BOXES:
+        name = str(picture.get("name") or "")
+        if not name.endswith("-image"):
+            continue
+        frame_name = name[:-6]
+        frame = rect_frames.get(frame_name)
+        if not frame:
+            picture_frame_violations.append({"picture": name, "reason": "missing-rect-frame"})
+            continue
+        padding = float(frame.get("safePadding", 0))
+        if (
+            picture["x"] < frame["x"] + padding - 0.01
+            or picture["y"] < frame["y"] + padding - 0.01
+            or picture["x"] + picture["w"] > frame["x"] + frame["w"] - padding + 0.01
+            or picture["y"] + picture["h"] > frame["y"] + frame["h"] - padding - frame.get("caption_h", 0) + 0.01
+        ):
+            picture_frame_violations.append({"picture": name, "reason": "outside-safe-frame"})
+
+    return {
+        "trackedShapes": len(SHAPE_BOXES),
+        "trackedPictures": len(PICTURE_BOXES),
+        "trackedTextBoxes": len(TEXT_BOXES),
+        "boundsViolationCount": len(bounds_violations),
+        "textFitViolationCount": len(text_fit_violations),
+        "circlePictureViolationCount": len(circle_picture_violations),
+        "pictureFrameViolationCount": len(picture_frame_violations),
+        "boundsViolations": bounds_violations,
+        "textFitViolations": text_fit_violations,
+        "circlePictureViolations": circle_picture_violations,
+        "pictureFrameViolations": picture_frame_violations,
+        "rules": [
+            "Pictures use rectangular safe frames; circles are reserved for marker glyphs only.",
+            "Pictures must stay inside frame padding and never rely on circular PowerPoint masks.",
+            "Text is fitted before insertion and recorded as a failure if estimated lines exceed its box.",
+            "All generated shapes, pictures, and text boxes must stay inside the slide bounds.",
+        ],
+        "ok": not bounds_violations and not text_fit_violations and not circle_picture_violations and not picture_frame_violations,
+    }
+
+
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    reset_tracking()
     subprocess.run([sys.executable, str(ROOT / "scripts" / "build-readme-pipeline-teaser.py")], check=True)
     export_showcase_teaser()
     metadata = load_theme_preview_metadata()
@@ -602,6 +748,7 @@ def main() -> None:
             "card text keeps minimum left and right padding",
             "pipeline preview is synchronized from the validated README teaser",
         ],
+        "teaserLayoutValidation": validate_tracked_layout(),
     }
     (OUT_DIR / "readme-slide-assets-report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))

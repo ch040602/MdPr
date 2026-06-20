@@ -68,6 +68,18 @@ def main() -> None:
     if report.get("showcase", {}).get("metrics") != expected_sources:
         issues.append("showcase:metrics-drift")
 
+    teaser_layout = report.get("teaserLayoutValidation", {})
+    if teaser_layout.get("ok") is not True:
+        issues.append("showcase:teaser-layout-validation")
+    for key in [
+        "boundsViolationCount",
+        "textFitViolationCount",
+        "circlePictureViolationCount",
+        "pictureFrameViolationCount",
+    ]:
+        if int(teaser_layout.get(key, 0) or 0) != 0:
+            issues.append(f"showcase:{key}")
+
     pipeline_report = json.loads((OUT_DIR / "mdpr-pipeline-teaser-report.json").read_text(encoding="utf-8"))
     if pipeline_report.get("layoutValidation", {}).get("overflowCount") != 0:
         issues.append("pipeline:overflow-count")
@@ -76,6 +88,7 @@ def main() -> None:
         "ok": not issues,
         "issues": issues,
         "showcaseMetrics": expected_sources,
+        "teaserLayoutValidation": teaser_layout,
         "mainImage": "docs/assets/readme-slides/mdpr-showcase-teaser.png",
         "pipelineImage": "docs/assets/readme-slides/mdpr-pipeline-teaser.png",
     }
