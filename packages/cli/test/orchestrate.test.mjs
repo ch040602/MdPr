@@ -821,6 +821,37 @@ test("buildDeck manifest records pre-split overflow continuation strategy", asyn
   }
 });
 
+test("buildDeck manifest records code continuation reasons", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-code-continuation-strategy-"));
+  const deckPath = join(outDir, "deck.md");
+
+  try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Commands",
+      "",
+      "```bash",
+      "mdpresent inspect deck.md --json",
+      "mdpresent plan deck.md --json",
+      "mdpresent validate deck.md --coherence",
+      "mdpresent build deck.md --to pptx,html --out dist",
+      "mdpresent build deck.md --to pdf --out dist",
+      "mdpresent validate deck.md --visual --coherence",
+      "```",
+    ].join("\n"));
+
+    const result = await buildDeck(deckPath, { formats: ["html"], outDir });
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+
+    assert.equal(manifest.validation.overflowResolution.strategyCounts.preSplit > 0, true);
+    assert.equal(manifest.validation.overflowResolution.continuationReasons.code > 0, true);
+    assert.equal(manifest.validation.overflowResolution.graphOrDiagramBlocksSplit, false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("planDeck keeps auto-resolved body text above the readable font floor", () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-readable-font-floor-"));
   const deckPath = join(outDir, "deck.md");

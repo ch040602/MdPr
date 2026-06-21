@@ -28,6 +28,7 @@ Implemented in the deterministic runtime:
 - Long Markdown tables split into continuation slides with repeated headers.
 - Manifest overflow-resolution summaries report pre-split continuation groups,
   continuation reasons, font-shrink counts, and graph/diagram split protection.
+- Code continuation reasons are covered by a build manifest fixture.
 
 Remaining roadmap items are listed below.
 
@@ -59,7 +60,7 @@ Remaining roadmap items are listed below.
    - Try alternate layout candidates (partially implemented through candidate
      scoring; post-layout retry remains planned).
    - Reposition regions (planned).
-   - Add code-specific manifest strategy fixtures (planned).
+   - Add code-specific manifest strategy fixtures (implemented).
    - Shrink fonts only as a late fallback.
    - Emit diagnostics when content still cannot fit.
 
