@@ -33,6 +33,8 @@ Implemented in the deterministic runtime:
   before font shrink while preserving explicit override layouts.
 - Workspace package metadata rejects wildcard external dependency versions, and
   current external dependency ranges are pinned from the lockfile.
+- Runtime slide-intent and layout-preset constants are exported and checked
+  against JSON schemas to prevent schema/type drift.
 
 Remaining roadmap items are listed below.
 
@@ -186,5 +188,5 @@ Add or strengthen:
 - Text overflow corpus for CJK, code, and table cells.
 - Coherence fixtures for claim/evidence/caption grouping.
 - Benchmark regression tests.
-- Schema drift tests.
+- Additional schema generation automation.
 - Clean package smoke tests.

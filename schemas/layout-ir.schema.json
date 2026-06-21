@@ -31,9 +31,35 @@
       "items": {
         "$ref": "#/$defs/diagnostic"
       }
+    },
+    "overflowResolution": {
+      "$ref": "#/$defs/overflowResolution"
     }
   },
   "$defs": {
+    "overflowResolution": {
+      "type": "object",
+      "required": [
+        "candidateReflow",
+        "regionExpansion",
+        "fontShrink"
+      ],
+      "properties": {
+        "candidateReflow": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "regionExpansion": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fontShrink": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
     "slideSize": {
       "type": "object",
       "required": [
@@ -355,7 +381,8 @@
         "quote",
         "summary",
         "single-card",
-        "pipeline"
+        "pipeline",
+        "pipeline-one-page"
       ]
     }
   },

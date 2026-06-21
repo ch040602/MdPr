@@ -328,14 +328,19 @@
         "title",
         "standard",
         "comparison",
+        "evidence",
+        "metric",
         "list",
         "grid",
         "timeline",
+        "workflow",
         "table",
         "image",
         "code",
         "quote",
-        "summary"
+        "summary",
+        "diagram",
+        "chart"
       ]
     },
     "layoutPreset": {
@@ -344,6 +349,7 @@
         "toc",
         "section-divider",
         "title-body",
+        "text-icon-aside",
         "key-message",
         "comparison",
         "vertical-list",
@@ -351,13 +357,16 @@
         "pentagon",
         "timeline",
         "table-focus",
+        "chart-table",
         "image-focus",
         "image-left",
         "image-right",
         "code-focus",
         "quote",
         "summary",
-        "single-card"
+        "single-card",
+        "pipeline",
+        "pipeline-one-page"
       ]
     }
   },

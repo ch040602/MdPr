@@ -14,7 +14,11 @@ import {
   parsePandocJson,
   planPresentation,
   resolveDesignTokens,
+  slideIntents,
 } from "../dist/index.js";
+
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = resolve(packageRoot, "../..");
 
 test("parseMarkdown extracts headings, bullet lists, and fenced code blocks", () => {
   const markdown = [
@@ -45,6 +49,17 @@ test("parseMarkdown extracts headings, bullet lists, and fenced code blocks", ()
     "Stable layout",
   ]);
   assert.equal(doc.blocks.find((block) => block.type === "code")?.language, "ts");
+});
+
+test("slide intent schemas stay aligned with runtime intents", () => {
+  const presentationSchema = JSON.parse(readFileSync(resolve(repoRoot, "schemas/presentation-ir.schema.json"), "utf-8"));
+  const overrideSchema = JSON.parse(readFileSync(resolve(repoRoot, "schemas/override.schema.json"), "utf-8"));
+  const presentationIntentEnum = presentationSchema.$defs.slide.properties.intent.enum;
+  const presentationSecondaryIntentEnum = presentationSchema.$defs.slide.properties.secondaryIntents.items.enum;
+
+  assert.deepEqual([...presentationIntentEnum].sort(), [...slideIntents].sort());
+  assert.deepEqual([...presentationSecondaryIntentEnum].sort(), [...slideIntents].sort());
+  assert.deepEqual([...overrideSchema.$defs.slideIntent.enum].sort(), [...slideIntents].sort());
 });
 
 test("parseMarkdown preserves markdown paragraph lines and sentence units", () => {

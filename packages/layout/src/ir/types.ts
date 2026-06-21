@@ -1,28 +1,31 @@
 import type { ColorCombinationName, DecorationStyleName, DesignPresetName, Diagnostic } from "@mdpresent/core";
 
-export type LayoutPreset =
-  | "cover"
-  | "toc"
-  | "section-divider"
-  | "title-body"
-  | "text-icon-aside"
-  | "key-message"
-  | "comparison"
-  | "vertical-list"
-  | "grid"
-  | "pentagon"
-  | "timeline"
-  | "table-focus"
-  | "chart-table"
-  | "image-focus"
-  | "image-left"
-  | "image-right"
-  | "code-focus"
-  | "quote"
-  | "summary"
-  | "single-card"
-  | "pipeline"
-  | "pipeline-one-page";
+export const layoutPresets = [
+  "cover",
+  "toc",
+  "section-divider",
+  "title-body",
+  "text-icon-aside",
+  "key-message",
+  "comparison",
+  "vertical-list",
+  "grid",
+  "pentagon",
+  "timeline",
+  "table-focus",
+  "chart-table",
+  "image-focus",
+  "image-left",
+  "image-right",
+  "code-focus",
+  "quote",
+  "summary",
+  "single-card",
+  "pipeline",
+  "pipeline-one-page",
+] as const;
+
+export type LayoutPreset = typeof layoutPresets[number];
 
 export type Rect = { x: number; y: number; w: number; h: number };
 

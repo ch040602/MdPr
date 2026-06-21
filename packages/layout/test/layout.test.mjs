@@ -1,7 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defaultConfig, parseMarkdown, planPresentation } from "@mdpresent/core";
-import { measureText, planLayout, rankLayoutCandidates, validateLayoutOverflow } from "../dist/index.js";
+import { layoutPresets, measureText, planLayout, rankLayoutCandidates, validateLayoutOverflow } from "../dist/index.js";
+
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = resolve(packageRoot, "../..");
 
 test("comparison slides use title, left, and right regions", () => {
   const layout = layoutFor([
@@ -19,6 +25,19 @@ test("comparison slides use title, left, and right regions", () => {
   assert.deepEqual(slide.regions.map((region) => region.id), ["title", "left", "right"]);
   assert.deepEqual(slide.regions.find((region) => region.id === "left").blockIds, ["block-3#0"]);
   assert.deepEqual(slide.regions.find((region) => region.id === "right").blockIds, ["block-3#1"]);
+});
+
+test("layout preset schemas stay aligned with runtime presets", () => {
+  const schemaPaths = [
+    "schemas/config.schema.json",
+    "schemas/override.schema.json",
+    "schemas/layout-ir.schema.json",
+  ];
+
+  for (const schemaPath of schemaPaths) {
+    const schema = JSON.parse(readFileSync(resolve(repoRoot, schemaPath), "utf-8"));
+    assert.deepEqual([...schema.$defs.layoutPreset.enum].sort(), [...layoutPresets].sort(), schemaPath);
+  }
 });
 
 test("four primary items use a 2x2 grid with stable item regions", () => {

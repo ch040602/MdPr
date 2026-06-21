@@ -46,23 +46,26 @@ export type ColorCombinationName =
   | "triadic";
 
 export type SlideRole = "cover" | "toc" | "section" | "content" | "appendix";
-export type SlideIntent =
-  | "title"
-  | "standard"
-  | "comparison"
-  | "evidence"
-  | "metric"
-  | "list"
-  | "grid"
-  | "timeline"
-  | "workflow"
-  | "table"
-  | "image"
-  | "code"
-  | "quote"
-  | "summary"
-  | "diagram"
-  | "chart";
+export const slideIntents = [
+  "title",
+  "standard",
+  "comparison",
+  "evidence",
+  "metric",
+  "list",
+  "grid",
+  "timeline",
+  "workflow",
+  "table",
+  "image",
+  "code",
+  "quote",
+  "summary",
+  "diagram",
+  "chart",
+] as const;
+
+export type SlideIntent = typeof slideIntents[number];
 
 export type SlideIntentScores = Record<
   | "comparison"
