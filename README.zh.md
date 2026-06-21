@@ -23,7 +23,7 @@
 - **Design grammar**：将 decoration style 与 color seed 分离，并根据 harmony 规则生成 PPT theme/chart colors。
 - **Object coverage**：支持 native table、native chart、proof object、icon slot、SVG-backed surface 和 diagram connector。
 - **Deterministic validation**：检查 overflow、generated artifact contract、slide count、surface marker、语言和 manifest drift。
-- **Skill-side review**：LLM-advised layout critique, visual polish, and high-quality deck guidance belong in `mdpr-skill`, not MDPR runtime.
+- **Skill-side review**：LLM-advised layout critique, visual polish, and high-quality deck guidance belong in [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage), not MDPR runtime.
 
 ## 预览
 

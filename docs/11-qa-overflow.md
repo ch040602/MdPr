@@ -151,6 +151,10 @@ not a renderer. It verifies that README pages reference PNGs exported from the
 shared `examples/theme-preview-en/deck.md` preview deck and records SHA-256
 fingerprints for the selected documentation preview images.
 
+Agent-side visual critique is not part of this MDPR validation path. Run the
+[`mdpr-skill` review loop](https://github.com/ch040602/mdpr-skill#usage) when a
+deck needs LLM-advised critique before the deterministic MDPR build.
+
 ## Future Improvements
 
 ```text

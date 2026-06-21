@@ -7,6 +7,11 @@ changing the Markdown source. A separate skill may suggest semantic intent or a
 reason string, but MDPR does not call an agent and does not accept agent-authored
 final visual instructions as runtime authority.
 
+High-level visual critique and iterative review loops are intentionally outside
+this runtime contract. Use the optional
+[`mdpr-skill` review loop](https://github.com/ch040602/mdpr-skill#usage) before
+running MDPR when LLM-advised quality guidance is needed.
+
 ## Principles
 
 1. Support YAML and JSON.

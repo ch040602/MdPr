@@ -23,7 +23,7 @@
 - **Design grammar**: 장식 스타일과 색상 seed를 분리하고, harmony 규칙으로 PPT theme/chart 색을 계산합니다.
 - **Object coverage**: native table, native chart, proof object, icon slot, SVG-backed surface, diagram connector를 지원합니다.
 - **Deterministic validation**: overflow, generated artifact contract, slide count, surface marker, 언어, manifest drift를 검사합니다.
-- **Skill-side review**: LLM 기반 레이아웃 비평, visual polish, high-quality deck guidance는 MDPR runtime이 아니라 `mdpr-skill`의 역할입니다.
+- **Skill-side review**: LLM 기반 레이아웃 비평, visual polish, high-quality deck guidance는 MDPR runtime이 아니라 [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage)의 역할입니다.
 
 ## 미리보기
 

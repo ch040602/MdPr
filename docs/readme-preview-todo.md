@@ -64,8 +64,8 @@ from generated PPTX files.
 README preview generation itself is complete. Remaining improvements are role
 boundary and validation hardening work:
 
-- [ ] Add README contract tests that assert all language variants mention
+- [x] Add README contract tests that assert all language variants mention
   `LLM-advised quality` through `mdpr-skill`, while MDPR remains no-agent and
   owns final rendering.
-- [ ] Move high-level visual critique guidance out of MDPR docs and link to the
+- [x] Move high-level visual critique guidance out of MDPR docs and link to the
   skill-side review loop documentation.

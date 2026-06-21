@@ -21,6 +21,27 @@ SELECTED_THEME_PREVIEW_TITLES = {
     "Chart and Table Pair (Cont. 2/2)": "magazine",
 }
 
+README_ROLE_CONTRACTS = {
+    "README.md": [
+        "LLM-advised quality",
+        "[`mdpr-skill`](https://github.com/ch040602/mdpr-skill)",
+        "MDPR owns final structure and output",
+        "no API key, model call",
+    ],
+    "README.ko.md": [
+        "LLM-advised quality",
+        "[`mdpr-skill`](https://github.com/ch040602/mdpr-skill)",
+        "최종 구조와 출력은 MDPR이 결정",
+        "모델 호출 없이",
+    ],
+    "README.zh.md": [
+        "LLM-advised quality",
+        "[`mdpr-skill`](https://github.com/ch040602/mdpr-skill)",
+        "MDPR owns final structure and output",
+        "不依赖模型调用",
+    ],
+}
+
 
 def png_size(path: Path) -> tuple[int, int] | None:
     if not path.exists():
@@ -107,6 +128,9 @@ def main() -> None:
     expected_pipeline_image = selected_images_by_title.get("Pipeline Diagram", "")
 
     for readme_name, content in readmes.items():
+        for required_text in README_ROLE_CONTRACTS[readme_name]:
+            if required_text not in content:
+                issues.append(f"{readme_name}:missing-role-contract:{required_text}")
         if "docs/assets/readme-slides" in content:
             issues.append(f"{readme_name}:uses-retired-readme-assets")
         if EXPECTED_MAIN_IMAGE not in content:

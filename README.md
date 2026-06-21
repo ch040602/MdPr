@@ -26,7 +26,7 @@ Contributions: [Contributing guide](CONTRIBUTING.md)
 - **Design grammar**: separates decoration style from color seed and derives PPT theme/chart colors from the selected harmony.
 - **Object coverage**: supports native tables, native charts, proof objects, icon slots, SVG-backed surfaces, and bounded diagram connectors.
 - **Deterministic validation**: checks overflow, generated artifact contracts, slide counts, surface markers, language, and manifest drift.
-- **Skill-side review**: LLM-advised layout critique, visual polish, and high-quality deck guidance belong in `mdpr-skill`, not MDPR runtime.
+- **Skill-side review**: LLM-advised layout critique, visual polish, and high-quality deck guidance belong in [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage), not MDPR runtime.
 
 ## Preview Gallery
 
