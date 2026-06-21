@@ -52,6 +52,35 @@ test("buildDeck writes PPTX output through the renderer boundary", async () => {
   }
 });
 
+test("buildDeck writes PDF output by exporting a generated PPTX", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-pdf-"));
+  const exporterPath = join(outDir, "fake-pdf-exporter.mjs");
+  const originalExporter = process.env.MDPRESENT_PDF_EXPORT_COMMAND;
+
+  try {
+    writeFileSync(exporterPath, [
+      "import { existsSync, writeFileSync } from 'node:fs';",
+      "const [pptxPath, pdfPath] = process.argv.slice(2);",
+      "if (!existsSync(pptxPath)) process.exit(12);",
+      "writeFileSync(pdfPath, `%PDF-1.4\\nsource=${pptxPath}\\n%%EOF\\n`);",
+    ].join("\n"));
+    process.env.MDPRESENT_PDF_EXPORT_COMMAND = JSON.stringify([process.execPath, exporterPath, "{pptx}", "{pdf}"]);
+
+    const result = await buildDeck(basicDeck, { formats: ["pdf"], outDir });
+    const pdfPath = result.writtenFiles.find((file) => file.endsWith("deck.pdf"));
+
+    assert.ok(pdfPath);
+    assert.equal(existsSync(join(outDir, "deck.pdf")), true);
+    assert.match(readFileSync(join(outDir, "deck.pdf"), "utf-8"), /^%PDF-1\.4/);
+    assert.match(readFileSync(join(outDir, "deck.pdf"), "utf-8"), /\.pptx/);
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "PDF_RENDERER_NOT_IMPLEMENTED"), false);
+  } finally {
+    if (originalExporter === undefined) delete process.env.MDPRESENT_PDF_EXPORT_COMMAND;
+    else process.env.MDPRESENT_PDF_EXPORT_COMMAND = originalExporter;
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("buildDeck applies CLI design preset to HTML output", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-theme-"));
 

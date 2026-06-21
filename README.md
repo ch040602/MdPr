@@ -20,6 +20,7 @@ Contributions: [Contributing guide](CONTRIBUTING.md)
 
 - **PPTX first**: produces editable PowerPoint slides, then exports PNG previews for review.
 - **Deterministic runtime**: no API key, model call, or external LLM is required for build output.
+- **PDF export**: creates PPTX first, then saves that PPTX as PDF with PowerPoint on Windows or LibreOffice in CI/Linux.
 - **One-page teaser mode**: `--pipeline-one-page` keeps dense pipeline, feature, chart, and table summaries on one rendered slide.
 - **Markdown semantics**: preserves headings, lists, emphasis, tables, charts, images, code, quotes, and pipeline diagrams.
 - **Design grammar**: separates decoration style from color seed and derives PPT theme/chart colors from the selected harmony.

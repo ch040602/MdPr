@@ -7,6 +7,7 @@ import { resolveDesignTokens } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 import { planLayout, validateLayoutOverflow } from "@mdpresent/layout";
 import { renderHtml } from "@mdpresent/render-html";
+import { renderPdf } from "@mdpresent/render-pdf";
 import type { DesignPresetName } from "@mdpresent/render-pptx";
 import { renderPptx } from "@mdpresent/render-pptx";
 import { parse as parseYaml } from "yaml";
@@ -107,6 +108,7 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
   const formats = options.formats ?? ["html"];
   const outDir = options.outDir ?? "dist";
   const renderJobs: Promise<string>[] = [];
+  let pptxJob: Promise<string> | undefined;
 
   mkdirSync(outDir, { recursive: true });
 
@@ -126,12 +128,9 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
     }));
   }
 
-  if (formats.includes("pdf")) {
-    deck.diagnostics.push({ level: "warning", code: "PDF_RENDERER_NOT_IMPLEMENTED", message: "PDF renderer is TODO in scaffold." });
-  }
-  if (formats.includes("pptx")) {
-    const outPath = join(outDir, "deck.pptx");
-    renderJobs.push((async () => {
+  if (formats.includes("pptx") || formats.includes("pdf")) {
+    const outPath = formats.includes("pptx") ? join(outDir, "deck.pptx") : join(outDir, ".mdpresent-pdf", "deck.pptx");
+    pptxJob = (async () => {
       mkdirSync(dirname(outPath), { recursive: true });
       await renderPptx(
         { presentation: deck.presentation, layout: deck.layout },
@@ -143,6 +142,17 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
           lockBackgroundToMaster: deck.config.pptx.lockBackgroundToMaster,
         },
       );
+      return outPath;
+    })();
+    if (formats.includes("pptx")) renderJobs.push(pptxJob);
+  }
+
+  if (formats.includes("pdf")) {
+    const outPath = join(outDir, "deck.pdf");
+    renderJobs.push((async () => {
+      const pptxPath = await pptxJob;
+      if (!pptxPath) throw new Error("PDF output requires a generated PPTX source.");
+      await renderPdf({ pptxPath, outPath });
       return outPath;
     })());
   }

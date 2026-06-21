@@ -7,11 +7,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"no tests yet\""
+    "test": "npm run build && node --test test/*.test.mjs"
   },
-  "dependencies": {
-    "@mdpresent/layout": "workspace:*",
-    "@mdpresent/render-html": "workspace:*",
-    "playwright": "*"
-  }
+  "dependencies": {}
 }

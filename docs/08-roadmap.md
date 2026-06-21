@@ -113,7 +113,7 @@ These items track gaps between current implementation and the public README/API
 promises. They should be completed one step at a time with a focused test,
 lightweight validation, and a separate push.
 
-- [ ] Align PDF output promise with implementation: either wire
+- [x] Align PDF output promise with implementation: either wire
   `@mdpresent/render-pdf` into `buildDeck()` with fixture coverage, or mark PDF
   as experimental/TODO in user-facing examples.
 - [ ] Wire the Override Engine into CLI orchestration: apply overrides after
