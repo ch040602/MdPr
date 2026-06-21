@@ -7,7 +7,15 @@ import type {
   MarkdownDocument,
   PandocAttr,
 } from "../ir/types.js";
-import { parseMarkdown, splitSentences } from "./parseMarkdown.js";
+import {
+  deriveListItemStructure,
+  parseFencedChart,
+  parseFencedPipelineDiagram,
+  parseMarkdown,
+  parsePipelineDiagram,
+  parsePipelineList,
+  splitSentences,
+} from "./parseMarkdown.js";
 
 export type PandocParseOptions = {
   sourcePath?: string;
@@ -68,7 +76,7 @@ function extractPandocBlocks(document: unknown): unknown[] {
   throw new Error("Invalid Pandoc JSON: expected a document with a blocks array.");
 }
 
-function convertBlock(block: unknown, state: ParseState): BlockIR[] {
+function convertBlock(block: unknown, state: ParseState, inheritedAttr?: PandocAttr): BlockIR[] {
   const tag = tagOf(block);
   const content = contentOf(block);
 
@@ -107,6 +115,17 @@ function convertBlock(block: unknown, state: ParseState): BlockIR[] {
     const inlineRuns = inlineRunsFromPandoc(content);
     const text = normalizeText(inlineRuns.map((run) => run.text).join(""));
     if (!text) return [];
+    const pipeline = parsePipelineDiagram(text);
+    if (pipeline) {
+      return [{
+        id: newBlockId(state, "diagram"),
+        type: "diagram",
+        text: pipeline.nodes.map((node) => node.label).join(" => "),
+        diagram: pipeline,
+        source: sourceFor(state),
+        pandocAttr: inheritedAttr,
+      }];
+    }
     return [{
       id: newBlockId(state, "paragraph"),
       type: "paragraph",
@@ -115,27 +134,77 @@ function convertBlock(block: unknown, state: ParseState): BlockIR[] {
       sentences: splitSentences(text),
       inlineRuns,
       source: sourceFor(state),
+      pandocAttr: inheritedAttr,
     }];
   }
 
   if (tag === "BulletList" && Array.isArray(content)) {
-    return [listBlock(state, content, false)];
+    const listItems = collectListItemsFromPandoc(content, false, 0, 1);
+    const pipeline = parsePipelineList(listItems);
+    if (pipeline) {
+      return [{
+        id: newBlockId(state, "diagram"),
+        type: "diagram",
+        text: pipeline.nodes.map((node) => node.label).join(" => "),
+        diagram: pipeline,
+        source: sourceFor(state),
+        pandocAttr: inheritedAttr,
+      }];
+    }
+    return [listBlock(state, listItems, inheritedAttr)];
   }
 
   if (tag === "OrderedList" && Array.isArray(content)) {
     const items = asArray(content[1]);
-    return [listBlock(state, items, true)];
+    const start = Array.isArray(content[0]) ? Number(content[0][0] ?? 1) : 1;
+    const listItems = collectListItemsFromPandoc(items, true, 0, Number.isFinite(start) ? start : 1);
+    const pipeline = parsePipelineList(listItems);
+    if (pipeline) {
+      return [{
+        id: newBlockId(state, "diagram"),
+        type: "diagram",
+        text: pipeline.nodes.map((node) => node.label).join(" => "),
+        diagram: pipeline,
+        source: sourceFor(state),
+        pandocAttr: inheritedAttr,
+      }];
+    }
+    return [listBlock(state, listItems, inheritedAttr)];
   }
 
   if (tag === "CodeBlock" && Array.isArray(content)) {
     const attr = parsePandocAttr(content[0]);
+    const language = attr?.classes?.[0] ?? "";
+    const codeLines = String(content[1] ?? "").split(/\r?\n/);
+    const chart = parseFencedChart(language, codeLines);
+    if (chart) {
+      return [{
+        id: newBlockId(state, "chart"),
+        type: "chart",
+        text: chart.series.map((series) => `${series.name}: ${series.values.join(", ")}`).join("\n"),
+        chart,
+        source: sourceFor(state),
+        pandocAttr: attr ?? inheritedAttr,
+      }];
+    }
+    const pipeline = parseFencedPipelineDiagram(language, codeLines);
+    if (pipeline) {
+      return [{
+        id: newBlockId(state, "diagram"),
+        type: "diagram",
+        text: pipeline.nodes.map((node) => node.label).join(" => "),
+        diagram: pipeline,
+        source: sourceFor(state),
+        pandocAttr: attr ?? inheritedAttr,
+      }];
+    }
     return [{
       id: newBlockId(state, "code"),
       type: "code",
       text: String(content[1] ?? ""),
-      language: attr?.classes?.[0],
+      language,
       source: sourceFor(state),
-      pandocAttr: attr,
+      pandocAttr: attr ?? inheritedAttr,
     }];
   }
 
@@ -146,6 +215,7 @@ function convertBlock(block: unknown, state: ParseState): BlockIR[] {
       type: "quote",
       text,
       source: sourceFor(state),
+      pandocAttr: inheritedAttr,
     }] : [];
   }
 
@@ -157,6 +227,7 @@ function convertBlock(block: unknown, state: ParseState): BlockIR[] {
       rows,
       text: rows.map((row) => row.join(" | ")).join("\n"),
       source: sourceFor(state),
+      pandocAttr: inheritedAttr,
     }];
   }
 
@@ -169,7 +240,8 @@ function convertBlock(block: unknown, state: ParseState): BlockIR[] {
   }
 
   if (tag === "Div" && Array.isArray(content)) {
-    return asArray(content[1]).flatMap((child) => convertBlock(child, state));
+    const attr = parsePandocAttr(content[0]) ?? inheritedAttr;
+    return asArray(content[1]).flatMap((child) => convertBlock(child, state, attr));
   }
 
   if (tag === "RawBlock" && Array.isArray(content)) {
@@ -181,6 +253,7 @@ function convertBlock(block: unknown, state: ParseState): BlockIR[] {
       text,
       language: format === "html" ? undefined : format,
       source: sourceFor(state),
+      pandocAttr: inheritedAttr,
     }];
   }
 
@@ -193,32 +266,75 @@ function convertBlock(block: unknown, state: ParseState): BlockIR[] {
     sentences: splitSentences(text),
     inlineRuns: [{ text }],
     source: sourceFor(state),
+    pandocAttr: inheritedAttr,
   }] : [];
 }
 
-function listBlock(state: ParseState, items: unknown[], ordered: boolean): BlockIR {
-  const listItems: ListItemIR[] = items
-    .flatMap((item, index): ListItemIR[] => {
-      const text = normalizeText(blocksToText(asArray(item)));
-      if (!text) return [];
-      return [{
-        text,
-        level: 0,
-        ordered,
-        number: ordered ? index + 1 : undefined,
-        marker: ordered ? `${index + 1}.` : "-",
-        runs: [{ text }],
-      }];
-    });
-
+function listBlock(state: ParseState, listItems: ListItemIR[], pandocAttr?: PandocAttr): BlockIR {
   return {
     id: newBlockId(state, "list"),
     type: "bulletList",
     items: listItems.map((item) => item.text),
     listItems,
-    listKind: ordered ? "ordered" : "unordered",
+    listKind: listItems.every((item) => item.ordered) ? "ordered" : listItems.every((item) => !item.ordered) ? "unordered" : "mixed",
     source: sourceFor(state),
+    pandocAttr,
   };
+}
+
+function collectListItemsFromPandoc(items: unknown[], ordered: boolean, level: number, start: number): ListItemIR[] {
+  return items.flatMap((item, index): ListItemIR[] => {
+    const blocks = asArray(item);
+    const ownBlocks = blocks.filter((block) => tagOf(block) !== "BulletList" && tagOf(block) !== "OrderedList");
+    const nestedLists = blocks.filter((block) => tagOf(block) === "BulletList" || tagOf(block) === "OrderedList");
+    const text = normalizeText(blocksToText(ownBlocks));
+    const runs = inlineRunsFromPandocBlocks(ownBlocks);
+    const current: ListItemIR[] = text
+      ? [{
+          text,
+          level,
+          ordered,
+          number: ordered ? start + index : undefined,
+          marker: ordered ? `${start + index}.` : "-",
+          runs,
+          ...deriveListItemStructure(text, runs),
+        }]
+      : [];
+
+    const nested = nestedLists.flatMap((nestedList) => {
+      const tag = tagOf(nestedList);
+      const content = contentOf(nestedList);
+      if (tag === "BulletList" && Array.isArray(content)) {
+        return collectListItemsFromPandoc(content, false, level + 1, 1);
+      }
+      if (tag === "OrderedList" && Array.isArray(content)) {
+        const nestedStart = Array.isArray(content[0]) ? Number(content[0][0] ?? 1) : 1;
+        return collectListItemsFromPandoc(asArray(content[1]), true, level + 1, Number.isFinite(nestedStart) ? nestedStart : 1);
+      }
+      return [];
+    });
+
+    return [...current, ...nested];
+  });
+}
+
+function inlineRunsFromPandocBlocks(blocks: unknown[]): InlineRunIR[] {
+  const runs: InlineRunIR[] = [];
+  for (const block of blocks) {
+    const tag = tagOf(block);
+    const content = contentOf(block);
+    if ((tag === "Para" || tag === "Plain") && Array.isArray(content)) {
+      if (runs.length) runs.push({ text: "\n" });
+      runs.push(...inlineRunsFromPandoc(content));
+    } else {
+      const text = normalizeText(blocksToText([block]));
+      if (text) {
+        if (runs.length) runs.push({ text: "\n" });
+        runs.push({ text });
+      }
+    }
+  }
+  return mergeAdjacentRuns(runs).filter((run) => run.text.length > 0);
 }
 
 function inlineRunsFromPandoc(inlines: unknown[], style: Partial<InlineRunIR> = {}): InlineRunIR[] {

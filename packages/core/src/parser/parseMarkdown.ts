@@ -413,7 +413,7 @@ function normalizeRunText(text: string): string {
     .join("\n");
 }
 
-function deriveListItemStructure(rawText: string, runs: InlineRunIR[]): Partial<ListItemIR> {
+export function deriveListItemStructure(rawText: string, runs: InlineRunIR[]): Partial<ListItemIR> {
   const plainLines = normalizeStructuredText(stripInlineMarkdown(rawText)).split(/\n/).filter(Boolean);
   if (plainLines.length > 1) {
     const [label, ...descriptionLines] = plainLines;
@@ -438,7 +438,7 @@ function deriveListItemStructure(rawText: string, runs: InlineRunIR[]): Partial<
   };
 }
 
-function parsePipelineList(items: ListItemIR[]) {
+export function parsePipelineList(items: ListItemIR[]) {
   if (!items.length || !items.every((item) => hasPipelineArrow(item.text))) return undefined;
 
   const labels = items
@@ -451,7 +451,7 @@ function parsePipelineList(items: ListItemIR[]) {
   return createPipelineDiagram(labels);
 }
 
-function parseFencedPipelineDiagram(language: string, lines: string[]) {
+export function parseFencedPipelineDiagram(language: string, lines: string[]) {
   if (language && !["text", "txt", "flow", "pipeline"].includes(language.toLowerCase())) return undefined;
   const cleaned = lines.map((line) => stripInlineMarkdown(line.trim())).filter(Boolean);
   if (cleaned.length < 2) return undefined;
@@ -479,7 +479,7 @@ function parseFencedPipelineDiagram(language: string, lines: string[]) {
   return createPipelineDiagram(labels);
 }
 
-function parsePipelineDiagram(line: string) {
+export function parsePipelineDiagram(line: string) {
   if (!hasPipelineArrow(line)) return undefined;
   const labels = splitPipelineLabels(line);
   if (labels.length < 2) return undefined;
@@ -516,7 +516,7 @@ function createPipelineDiagram(labels: string[]) {
   return { kind: "pipeline" as const, nodes, edges };
 }
 
-function parseFencedChart(language: string, lines: string[]): ChartIR | undefined {
+export function parseFencedChart(language: string, lines: string[]): ChartIR | undefined {
   const chartKind = chartKindFromLanguage(language);
   if (!chartKind) return undefined;
   let cleaned = lines.map((line) => normalizeInlineSpacing(line)).filter(Boolean);

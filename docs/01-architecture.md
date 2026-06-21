@@ -22,8 +22,8 @@ Markdown
 
 ```text
 packages/core
-  Markdown parsing, Pandoc JSON normalization, outline tree, split planning,
-  density scoring, intent detection, and Presentation IR.
+  Markdown parsing, Pandoc JSON adaptation into MDPR semantic blocks, outline
+  tree, split planning, density scoring, intent detection, and Presentation IR.
 
 packages/layout
   Layout presets, region planning, safe areas, typography, overflow policy,

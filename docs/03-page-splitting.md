@@ -75,18 +75,22 @@ mdpresent build deck.md --parser pandoc --to pptx,html --out dist
 
 Pandoc mode is an advanced compatibility path and requires `pandoc` on `PATH`.
 The default parser already uses a built-in CommonMark/GFM AST path and does not
-shell out to Pandoc. Pandoc mode performs Markdown normalization only:
+shell out to Pandoc. Pandoc mode uses Pandoc only to obtain a Markdown AST, then
+adapts that tree into MDPR-owned semantics:
 
 ```text
 Markdown
   -> Pandoc JSON AST
-  -> MDPR BlockIR
+  -> MDPR Pandoc adapter
+  -> MDPR BlockIR with diagrams, chart fences, structured lists, tables,
+     images, code, quote, HTML, and Div attributes
   -> Outline Tree
   -> Split Planner
   -> Presentation IR
 ```
 
 Pandoc mode must not choose slide coordinates, colors, decorations, visual emphasis, or z-order.
+Those decisions remain in MDPR layout, design, validation, and renderer stages.
 
 ## Structured Lists and Emphasis
 

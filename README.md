@@ -112,8 +112,11 @@ mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery cle
 ```
 
 `--parser pandoc` is an advanced compatibility mode for users who need Pandoc
-Markdown normalization. It requires `pandoc` on `PATH`; MDPR's default parser
-does not require Pandoc and uses the built-in CommonMark/GFM AST path.
+Markdown normalization. It requires `pandoc` on `PATH`, but MDPR does not use
+Pandoc output as the presentation model. The Pandoc JSON AST is adapted back
+into MDPR semantic blocks, including diagrams, chart fences, structured lists,
+images, tables, code, and Div attributes. The default parser does not require
+Pandoc and uses the built-in CommonMark/GFM AST path.
 
 ## Design Controls
 

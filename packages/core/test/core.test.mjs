@@ -421,6 +421,66 @@ test("parsePandocJson normalizes Pandoc AST blocks into MDPR semantic blocks", (
   assert.equal(doc.blocks.some((block) => block.type === "slideBreak"), true);
 });
 
+test("parsePandocJson adapts Pandoc AST into MDPR diagram, chart, and structured list semantics", () => {
+  const doc = parsePandocJson({
+    "pandoc-api-version": [1, 23, 1],
+    meta: {},
+    blocks: [
+      { t: "Header", c: [1, ["deck", [], []], [{ t: "Str", c: "Deck" }]] },
+      {
+        t: "Para",
+        c: [
+          { t: "Str", c: "Draft" },
+          { t: "Space" },
+          { t: "Str", c: "=>" },
+          { t: "Space" },
+          { t: "Str", c: "Review" },
+          { t: "Space" },
+          { t: "Str", c: "=>" },
+          { t: "Space" },
+          { t: "Str", c: "Render" },
+        ],
+      },
+      {
+        t: "BulletList",
+        c: [
+          [
+            { t: "Plain", c: [{ t: "Strong", c: [{ t: "Str", c: "Parser" }] }, { t: "Str", c: ":" }, { t: "Space" }, { t: "Str", c: "AST" }] },
+            { t: "BulletList", c: [[{ t: "Plain", c: [{ t: "Str", c: "Preserve" }, { t: "Space" }, { t: "Str", c: "tables" }] }]] },
+          ],
+        ],
+      },
+      {
+        t: "CodeBlock",
+        c: [["metrics", ["ranked-bars"], []], "Parser, 91\nLayout, 87\nRenderer, 94"],
+      },
+      {
+        t: "Div",
+        c: [["proof", ["callout"], [["role", "evidence"]]], [
+          { t: "Para", c: [{ t: "Str", c: "Validated" }] },
+        ]],
+      },
+    ],
+  }, "deck.md");
+
+  const diagram = doc.blocks.find((block) => block.type === "diagram");
+  assert.deepEqual(diagram?.diagram.nodes.map((node) => node.label), ["Draft", "Review", "Render"]);
+
+  const list = doc.blocks.find((block) => block.type === "bulletList");
+  assert.deepEqual(list?.listItems.map((item) => [item.text, item.level, item.label, item.description]), [
+    ["Parser: AST", 0, "Parser", "AST"],
+    ["Preserve tables", 1, undefined, undefined],
+  ]);
+  assert.equal(list?.listItems[0].runs.some((run) => run.bold), true);
+
+  const chart = doc.blocks.find((block) => block.type === "chart");
+  assert.equal(chart?.chart.kind, "ranked-bars");
+  assert.deepEqual(chart?.chart.labels, ["Parser", "Layout", "Renderer"]);
+
+  const divParagraph = doc.blocks.find((block) => block.text === "Validated");
+  assert.deepEqual(divParagraph?.pandocAttr, { identifier: "proof", classes: ["callout"], attributes: { role: "evidence" } });
+});
+
 test("planPresentation consumes Pandoc-normalized documents through the existing split pipeline", () => {
   const doc = parsePandocJson({
     blocks: [
