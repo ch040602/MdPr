@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { defaultConfig, parseMarkdown, planPresentation } from "@mdpresent/core";
-import { measureText, planLayout, validateLayoutOverflow } from "../dist/index.js";
+import { measureText, planLayout, rankLayoutCandidates, validateLayoutOverflow } from "../dist/index.js";
 
 test("comparison slides use title, left, and right regions", () => {
   const layout = layoutFor([
@@ -443,6 +443,36 @@ test("chart-table slides with images keep chart table body and image in separate
   assert.equal(image.y > table.y + table.h, true);
 });
 
+test("layout candidate scoring ranks mixed evidence coverage above single-object focus", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Mixed Evidence",
+    "",
+    "- Awareness: 80%",
+    "- Activation: 40%",
+    "",
+    "```chart",
+    "labels: Awareness, Activation",
+    "Users: 8000, 4000",
+    "```",
+    "",
+    "| Stage | Users |",
+    "| --- | ---: |",
+    "| Awareness | 8000 |",
+    "| Activation | 4000 |",
+    "",
+    "![funnel](funnel.png)",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Mixed Evidence");
+  const ranked = rankLayoutCandidates(slide, defaultConfig);
+
+  assert.equal(ranked.length >= 3, true);
+  assert.equal(ranked[0].layout.preset, "chart-table");
+  assert.equal(ranked[0].score.objectCoveragePenalty, 0);
+  assert.equal(ranked[0].score.total < ranked.find((candidate) => candidate.layout.preset === "table-focus").score.total, true);
+});
+
 test("table-focus slides expose a table role region for native table rendering and decoration", () => {
   const layout = layoutFor([
     "# Demo",
@@ -566,6 +596,51 @@ test("measureText treats CJK text as wider than ASCII for wrapping estimates", (
   const cjk = measureText({ ...common, text: "가".repeat(20) }, 10);
 
   assert.equal(cjk.lines > ascii.lines, true);
+});
+
+test("measureText accepts rich text runs and reports role-aware confidence and bounds", () => {
+  const base = {
+    box: { widthIn: 1.85, heightIn: 0.56 },
+    fontFamily: "Arial",
+    fontSize: 18,
+    lineHeight: 1.18,
+  };
+  const body = measureText({
+    ...base,
+    role: "body",
+    runs: [
+      { text: "ABC 123 ", bold: true },
+      { text: "가나다" },
+      { text: " const value = 10;", code: true },
+    ],
+  });
+  const code = measureText({
+    ...base,
+    role: "code",
+    fontFamily: "Consolas",
+    runs: [{ text: "const WideName = value + 100;" }],
+  });
+
+  assert.equal(body.confidence, "font-metric");
+  assert.equal(body.lineCount >= 2, true);
+  assert.equal(body.usedHeightIn > 0, true);
+  assert.equal(body.overflowY, true);
+  assert.equal(code.lineCount >= body.lineCount, true);
+  assert.equal(code.usedWidthIn >= body.usedWidthIn, true);
+});
+
+test("measureText wraps CJK prose instead of treating the whole run as horizontal overflow", () => {
+  const result = measureText({
+    text: "Markdown은 원본 문서이며 발표자료 구조를 잃지 않도록 충분히 긴 한국어 문장을 포함합니다.",
+    fontFamily: "Pretendard",
+    fontSize: 18,
+    width: 3,
+    lineHeight: 1.2,
+  }, 2.64);
+
+  assert.equal(result.overflowX, false);
+  assert.equal(result.overflow, false);
+  assert.equal(result.lineCount > 1, true);
 });
 
 function layoutFor(lines) {

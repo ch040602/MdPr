@@ -8,6 +8,7 @@ import {
   defaultConfig,
   DECORATION_STYLE_NAMES,
   detectSlideIntent,
+  detectSlideIntentProfile,
   DESIGN_PRESET_NAMES,
   parseMarkdown,
   parsePandocJson,
@@ -1060,6 +1061,89 @@ test("detectSlideIntent routes diagram blocks to diagram intent", () => {
   };
 
   assert.equal(detectSlideIntent(slide), "diagram");
+});
+
+test("detectSlideIntentProfile exposes primary and secondary scores for mixed evidence slides", () => {
+  const doc = parseMarkdown([
+    "# Demo",
+    "",
+    "## Adoption Funnel",
+    "",
+    "- Awareness: 80%",
+    "- Activation: 40%",
+    "- Retention: 18%",
+    "",
+    "| Stage | Users |",
+    "| --- | ---: |",
+    "| Awareness | 8000 |",
+    "| Activation | 4000 |",
+    "",
+    "![funnel](funnel.png)",
+  ].join("\n"));
+  const presentation = planPresentation(doc, defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Adoption Funnel");
+  const profile = detectSlideIntentProfile(slide);
+
+  assert.equal(profile.primaryIntent, "evidence");
+  assert.deepEqual(profile.secondaryIntents.slice(0, 3), ["metric", "table", "image"]);
+  assert.equal(profile.scores.metric > 0, true);
+  assert.equal(profile.scores.table > 0, true);
+  assert.equal(profile.scores.image > 0, true);
+  assert.equal(slide.intent, "evidence");
+  assert.deepEqual(slide.secondaryIntents.slice(0, 3), ["metric", "table", "image"]);
+});
+
+test("planPresentation emits coherence groups for compact evidence packs", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Adoption Funnel",
+    "",
+    "The funnel narrowed after activation.",
+    "",
+    "- Awareness: 80%",
+    "- Activation: 40%",
+    "- Retention: 18%",
+    "",
+    "| Stage | Users |",
+    "| --- | ---: |",
+    "| Awareness | 8000 |",
+    "| Activation | 4000 |",
+    "",
+    "![funnel](funnel.png)",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Adoption Funnel");
+  const group = presentation.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
+
+  assert.equal(group.role, "evidence-pack");
+  assert.equal(group.keepTogether, true);
+  assert.equal(group.splitPriority <= 2, true);
+  assert.equal(group.primaryBlockId, slide.blocks.find((block) => block.type === "paragraph").id);
+  assert.deepEqual(group.supportingBlockIds.map((id) => slide.blocks.find((block) => block.id === id)?.type), ["bulletList", "table", "image"]);
+});
+
+test("coherence groups classify Korean purpose usage condition reason and improvement cues", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## 설계 조건",
+    "",
+    "목적: 텍스트 넘침을 줄인다.",
+    "",
+    "- 용도: 발표 자료 자동 생성",
+    "- 조건: agent 없이 동작",
+    "- 이유: PPTX 출력 품질 유지",
+    "- 개선: 성능 저하 탐지",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "설계 조건");
+  const group = presentation.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
+
+  assert.equal(group.role, "argument");
+  assert.equal(group.semanticSignals.includes("claim"), true);
+  assert.equal(group.semanticSignals.includes("action"), true);
+  assert.equal(group.semanticSignals.includes("risk"), true);
+  assert.equal(group.semanticSignals.includes("decision"), true);
+  assert.equal(group.semanticSignals.includes("metric"), true);
 });
 
 test("detectSlideIntent routes block quotes to quote intent for key-message layouts", () => {

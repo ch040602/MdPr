@@ -8,6 +8,7 @@
     "meta",
     "outline",
     "slides",
+    "coherenceGroups",
     "assets",
     "diagnostics"
   ],
@@ -43,6 +44,12 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/slide"
+      }
+    },
+    "coherenceGroups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/coherenceGroup"
       }
     },
     "assets": {
@@ -163,9 +170,12 @@
             "title",
             "standard",
             "comparison",
+            "evidence",
+            "metric",
             "list",
             "grid",
             "timeline",
+            "workflow",
             "table",
             "image",
             "code",
@@ -174,6 +184,45 @@
             "diagram",
             "chart"
           ]
+        },
+        "intentScores": {
+          "type": "object",
+          "properties": {
+            "comparison": { "type": "number" },
+            "evidence": { "type": "number" },
+            "metric": { "type": "number" },
+            "chart": { "type": "number" },
+            "table": { "type": "number" },
+            "image": { "type": "number" },
+            "workflow": { "type": "number" },
+            "timeline": { "type": "number" },
+            "code": { "type": "number" },
+            "summary": { "type": "number" }
+          },
+          "additionalProperties": false
+        },
+        "secondaryIntents": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "title",
+              "standard",
+              "comparison",
+              "evidence",
+              "metric",
+              "list",
+              "grid",
+              "timeline",
+              "workflow",
+              "table",
+              "image",
+              "code",
+              "quote",
+              "summary",
+              "diagram",
+              "chart"
+            ]
+          }
         },
         "tags": {
           "type": "array",
@@ -291,6 +340,81 @@
         }
       },
       "additionalProperties": true
+    },
+    "coherenceGroup": {
+      "type": "object",
+      "required": [
+        "id",
+        "slideId",
+        "headingPath",
+        "primaryBlockId",
+        "supportingBlockIds",
+        "role",
+        "keepTogether",
+        "splitPriority"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "slideId": { "type": "string" },
+        "headingPath": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "primaryBlockId": { "type": "string" },
+        "supportingBlockIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "role": {
+          "enum": [
+            "argument",
+            "comparison",
+            "workflow",
+            "evidence-pack",
+            "summary"
+          ]
+        },
+        "keepTogether": { "type": "boolean" },
+        "splitPriority": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blockRoles": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "claim",
+              "evidence",
+              "metric",
+              "example",
+              "risk",
+              "decision",
+              "action",
+              "caption",
+              "source",
+              "appendix"
+            ]
+          }
+        },
+        "semanticSignals": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "claim",
+              "evidence",
+              "metric",
+              "example",
+              "risk",
+              "decision",
+              "action",
+              "caption",
+              "source",
+              "appendix"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "inlineRun": {
       "type": "object",
@@ -424,7 +548,9 @@
             "bar",
             "arc-ring",
             "gauge",
-            "connected-strip"
+            "connected-strip",
+            "ranked-bars",
+            "metric-dots"
           ]
         },
         "labels": {

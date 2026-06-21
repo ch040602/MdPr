@@ -34,6 +34,23 @@ export type LayoutSpec = {
   direction?: "horizontal" | "vertical" | "radial";
 };
 
+export type LayoutCandidateScore = {
+  overflowPenalty: number;
+  minFontPenalty: number;
+  objectCoveragePenalty: number;
+  readingOrderPenalty: number;
+  whitespacePenalty: number;
+  alignmentPenalty: number;
+  emphasisPenalty: number;
+  sectionConsistencyPenalty: number;
+  total: number;
+};
+
+export type ScoredLayoutCandidate = {
+  layout: LayoutSpec;
+  score: LayoutCandidateScore;
+};
+
 export type TypographySpec = {
   fontFamily?: string;
   fontSize?: number;

@@ -1,4 +1,13 @@
-export type TextMeasureInput = {
+export type TextRun = {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  code?: boolean;
+};
+
+export type TextMeasureRole = "title" | "body" | "table-cell" | "code" | "caption";
+
+export type LegacyTextMeasureInput = {
   text: string;
   fontFamily: string;
   fontSize: number;
@@ -7,27 +16,196 @@ export type TextMeasureInput = {
   lineHeight: number;
 };
 
+export type RichTextMeasureInput = {
+  runs: TextRun[];
+  box: { widthIn: number; heightIn: number };
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  role: TextMeasureRole;
+  locale?: string;
+};
+
+export type TextMeasureInput = LegacyTextMeasureInput | RichTextMeasureInput;
+
 export type TextMeasureResult = {
+  lineCount: number;
+  usedWidthIn: number;
+  usedHeightIn: number;
+  overflowX: boolean;
+  overflowY: boolean;
+  confidence: "exact" | "font-metric" | "heuristic";
   lines: number;
   height: number;
   overflow: boolean;
 };
 
+type NormalizedMeasureInput = {
+  runs: TextRun[];
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  role: TextMeasureRole;
+  widthIn: number;
+  heightIn: number;
+};
+
 /**
- * MVP용 근사 측정기.
- * 실제 구현에서는 canvas/font metrics 기반으로 교체한다.
+ * Deterministic font-metric approximation used before renderer-specific proof.
+ * It models rich runs, CJK, punctuation, monospace/code, and role-specific
+ * wrapping without requiring an agent or a browser canvas at runtime.
  */
-export function measureText(input: TextMeasureInput, maxHeight: number): TextMeasureResult {
-  const averageCharWidth = input.fontSize * 0.52;
-  const widthPx = input.width * 96;
-  const widthUnitsPerLine = Math.max(1, widthPx / averageCharWidth);
-  const lines = input.text.split(/\r?\n/).reduce((sum, line) => sum + Math.max(1, Math.ceil(displayWidth(line) / widthUnitsPerLine)), 0);
-  const height = (input.fontSize * input.lineHeight * lines) / 72;
-  return { lines, height, overflow: height > maxHeight };
+export function measureText(input: TextMeasureInput, maxHeight?: number): TextMeasureResult {
+  const normalized = normalizeMeasureInput(input, maxHeight);
+  const widthPx = Math.max(1, normalized.widthIn * 96);
+  const explicitLines = runsToLines(normalized.runs);
+  const rolePaddingFactor = roleWidthFactor(normalized.role);
+  let lineCount = 0;
+  let maxLineWidthPx = 0;
+  let overflowX = false;
+
+  for (const lineRuns of explicitLines) {
+    const runWidths = lineRuns.map((run) => measureRunWidthPx(run, normalized) * rolePaddingFactor);
+    const lineWidthPx = runWidths.reduce((sum, width) => sum + width, 0);
+    const unbreakableWidthPx = longestUnbreakableWidthPx(lineRuns, normalized) * rolePaddingFactor;
+    maxLineWidthPx = Math.max(maxLineWidthPx, Math.min(lineWidthPx, widthPx));
+    overflowX = overflowX || unbreakableWidthPx > widthPx;
+    lineCount += Math.max(1, Math.ceil(lineWidthPx / widthPx));
+  }
+
+  const usedHeightIn = (normalized.fontSize * normalized.lineHeight * lineCount) / 72;
+  const usedWidthIn = maxLineWidthPx / 96;
+  const overflowY = usedHeightIn > normalized.heightIn;
+
+  return {
+    lineCount,
+    usedWidthIn,
+    usedHeightIn,
+    overflowX,
+    overflowY,
+    confidence: "font-metric",
+    lines: lineCount,
+    height: usedHeightIn,
+    overflow: overflowX || overflowY,
+  };
 }
 
-function displayWidth(value: string): number {
-  return Array.from(value).reduce((width, char) => width + (isWideCharacter(char) ? 1.85 : 1), 0);
+function normalizeMeasureInput(input: TextMeasureInput, maxHeight?: number): NormalizedMeasureInput {
+  if ("runs" in input) {
+    return {
+      runs: input.runs.length ? input.runs : [{ text: "" }],
+      fontFamily: input.fontFamily,
+      fontSize: input.fontSize,
+      lineHeight: input.lineHeight,
+      role: input.role,
+      widthIn: input.box.widthIn,
+      heightIn: input.box.heightIn,
+    };
+  }
+
+  return {
+    runs: [{ text: input.text, bold: input.fontWeight === "bold" }],
+    fontFamily: input.fontFamily,
+    fontSize: input.fontSize,
+    lineHeight: input.lineHeight,
+    role: "body",
+    widthIn: input.width,
+    heightIn: maxHeight ?? Number.POSITIVE_INFINITY,
+  };
+}
+
+function runsToLines(runs: TextRun[]): TextRun[][] {
+  const lines: TextRun[][] = [[]];
+  for (const run of runs) {
+    const parts = run.text.split(/\r?\n/);
+    parts.forEach((part, index) => {
+      if (index > 0) lines.push([]);
+      if (part) lines[lines.length - 1]!.push({ ...run, text: part });
+    });
+  }
+  return lines.length ? lines : [[{ text: "" }]];
+}
+
+function measureRunWidthPx(run: TextRun, input: NormalizedMeasureInput): number {
+  return Array.from(run.text).reduce((width, char) => width + charWidthPx(char, run, input), 0);
+}
+
+function longestUnbreakableWidthPx(runs: TextRun[], input: NormalizedMeasureInput): number {
+  let maxWidth = 0;
+  for (const run of runs) {
+    if (run.code || input.role === "code" || isMonospace(input.fontFamily)) {
+      maxWidth = Math.max(maxWidth, measureRunWidthPx(run, input));
+      continue;
+    }
+
+    let segmentWidth = 0;
+    for (const char of Array.from(run.text)) {
+      if (isBreakOpportunity(char)) {
+        maxWidth = Math.max(maxWidth, segmentWidth);
+        segmentWidth = 0;
+        continue;
+      }
+
+      const charWidth = charWidthPx(char, run, input);
+      if (isWideCharacter(char)) {
+        maxWidth = Math.max(maxWidth, segmentWidth, charWidth);
+        segmentWidth = 0;
+      } else {
+        segmentWidth += charWidth;
+      }
+    }
+    maxWidth = Math.max(maxWidth, segmentWidth);
+  }
+  return maxWidth;
+}
+
+function charWidthPx(char: string, run: TextRun, input: NormalizedMeasureInput): number {
+  const base = input.fontSize;
+  const codeLike = run.code || input.role === "code" || isMonospace(input.fontFamily);
+  let factor = codeLike ? 0.62 : 0.52;
+  if (isWideCharacter(char)) factor = codeLike ? 0.96 : 0.92;
+  else if (isUppercaseAscii(char)) factor = codeLike ? 0.62 : 0.6;
+  else if (isDigit(char)) factor = codeLike ? 0.62 : 0.54;
+  else if (isThinPunctuation(char)) factor = codeLike ? 0.62 : 0.3;
+  else if (/\s/.test(char)) factor = codeLike ? 0.62 : 0.28;
+  else if (isEmoji(char)) factor = 1.0;
+
+  if (run.bold) factor *= 1.08;
+  if (run.italic) factor *= 1.03;
+  if (run.code && input.role !== "code") factor *= 1.12;
+  return base * factor;
+}
+
+function roleWidthFactor(role: TextMeasureRole): number {
+  if (role === "table-cell") return 1.08;
+  if (role === "caption") return 1.02;
+  if (role === "title") return 1.04;
+  return 1;
+}
+
+function isMonospace(fontFamily: string): boolean {
+  return /consolas|courier|mono|menlo|monaco/i.test(fontFamily);
+}
+
+function isUppercaseAscii(char: string): boolean {
+  return /^[A-Z]$/.test(char);
+}
+
+function isDigit(char: string): boolean {
+  return /^[0-9]$/.test(char);
+}
+
+function isThinPunctuation(char: string): boolean {
+  return /^[.,:;|'"`!()\[\]{}]$/.test(char);
+}
+
+function isBreakOpportunity(char: string): boolean {
+  return /\s/.test(char) || /^[,.;:!?/\\()[\]{}|+-]$/.test(char);
+}
+
+function isEmoji(char: string): boolean {
+  const codePoint = char.codePointAt(0) ?? 0;
+  return codePoint >= 0x1f300 && codePoint <= 0x1faff;
 }
 
 function isWideCharacter(char: string): boolean {

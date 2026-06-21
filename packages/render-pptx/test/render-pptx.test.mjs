@@ -872,10 +872,9 @@ test("SVG surfaces diversify card shape grammar without moving layout regions", 
     assert.match(slideXml, /Circle vine/);
     assert.match(slideXml, /Two-corner panel/);
     assert.match(slideXml, /<a:off x="822960" y="1463040"\/><a:ext cx="4754880" cy="1234440"\/>/);
-    assert.match(combinedSvg, /data-mdpr-surface="flag-drop"/);
-    assert.match(combinedSvg, /data-mdpr-surface="two-corner-right"/);
-    assert.match(combinedSvg, /data-mdpr-surface="notched-corner"/);
-    assert.match(combinedSvg, /data-mdpr-surface="two-corner-left"/);
+    const itemSurfaceVariants = [...combinedSvg.matchAll(/data-mdpr-surface="([^"]+)"/g)].map((match) => match[1]);
+    assert.equal(itemSurfaceVariants.length >= 4, true);
+    assert.deepEqual(new Set(itemSurfaceVariants), new Set(["flag-drop"]));
     assert.doesNotMatch(combinedSvg, /data-mdpr-surface="ticket"/);
     assert.doesNotMatch(combinedSvg, /data-mdpr-surface="circle-vine"/);
     assert.doesNotMatch(combinedSvg, /data-mdpr-surface-accent="circle-vine-(?:dot|line)"/);

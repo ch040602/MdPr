@@ -3,7 +3,10 @@
 ## Selection Formula
 
 ```text
-SlideIntent + itemCount + blockType + density -> LayoutPreset
+SlideIntentScoreProfile + itemCount + blockType + density
+  -> candidate LayoutPresets
+  -> deterministic score
+  -> selected LayoutPreset
 ```
 
 ## Intent Detection
@@ -19,6 +22,25 @@ SlideIntent + itemCount + blockType + density -> LayoutPreset
 | `A => B => C` or `A -> B -> C` pipeline syntax | diagram |
 | Multiple examples, methods, or features | grid or list |
 | General prose | standard |
+
+Intent detection emits a compatibility `primaryIntent` plus a score map and
+secondary intents. Mixed slides such as table + chart + metrics can therefore
+route to compound layouts instead of losing secondary evidence.
+
+```ts
+type SlideIntentScores = {
+  comparison: number;
+  evidence: number;
+  metric: number;
+  chart: number;
+  table: number;
+  image: number;
+  workflow: number;
+  timeline: number;
+  code: number;
+  summary: number;
+};
+```
 
 ## Count-Based Layouts
 
@@ -54,6 +76,8 @@ quote
 summary
 pipeline
 chart-table
+text-icon-aside
+pipeline-one-page
 ```
 
 ## Pipeline Diagram Routing
@@ -80,21 +104,34 @@ chart-table  chart emphasis plus table/evidence pairing
 
 The composition layer must not move regions outside the slide, reduce text below the minimum font size, or flatten editable objects into screenshots.
 
+## Candidate Scoring
+
+The layout planner ranks a small deterministic candidate set before selecting
+the final preset. Candidate scores are penalties, so lower totals win.
+
+```ts
+type LayoutCandidateScore = {
+  overflowPenalty: number;
+  minFontPenalty: number;
+  objectCoveragePenalty: number;
+  readingOrderPenalty: number;
+  whitespacePenalty: number;
+  alignmentPenalty: number;
+  emphasisPenalty: number;
+  sectionConsistencyPenalty: number;
+  total: number;
+};
+```
+
+The score favors layouts that keep source objects visible, preserve heading to
+claim to evidence reading order, avoid unnecessary font reduction, and keep
+white space balanced.
+
 ## Planner Pseudocode
 
 ```ts
 function chooseLayout(slide, config) {
-  if (slide.intent === "comparison") return comparisonHorizontal();
-  if (slide.intent === "table") return tableFocus();
-  if (slide.intent === "image") return chooseImageLayout(slide);
-  if (slide.intent === "code") return codeFocus();
-  if (slide.intent === "timeline") return timeline();
-  if (slide.intent === "diagram") return pipeline();
-
-  const itemCount = countPrimaryItems(slide);
-  if (itemCount > 0) return chooseItemLayout(itemCount);
-
-  return titleBody();
+  return rankLayoutCandidates(slide, config)[0].layout;
 }
 ```
 

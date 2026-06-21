@@ -81,17 +81,39 @@ Before validation and rendering, the CLI applies a conservative text containment
 
 The resolver does not change slide order, drop content, or move unrelated regions. If it cannot make text fit without violating minimum font size or slide bounds, the normal overflow diagnostic remains.
 
-## Text Measurement MVP
+## Text Measurement
 
-The initial measurement model may be approximate:
+Text measurement accepts legacy plain text input and rich text runs. The
+runtime records a confidence value so future renderer-specific calibration can
+distinguish font-metric estimates from heuristic fallbacks.
 
 ```ts
-const averageCharWidth = fontSize * 0.52;
-const charsPerLine = Math.floor(regionWidthPx / averageCharWidth);
-const lines = Math.ceil(text.length / charsPerLine);
+type TextMeasureInput = {
+  runs: TextRun[];
+  box: { widthIn: number; heightIn: number };
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  role: "title" | "body" | "table-cell" | "code" | "caption";
+  locale?: string;
+};
+
+type TextMeasureResult = {
+  lineCount: number;
+  usedWidthIn: number;
+  usedHeightIn: number;
+  overflowX: boolean;
+  overflowY: boolean;
+  confidence: "exact" | "font-metric" | "heuristic";
+};
 ```
 
-Current measurement uses display width rather than raw character count. Wide scripts are treated as wider than ASCII, and explicit newline boundaries from `BlockIR.sentences` or `BlockIR.lines` are measured as separate lines.
+Measurement uses display width rather than raw character count. Wide scripts
+are treated as wider than ASCII, CJK prose may wrap at character boundaries,
+monospace/code runs are treated as less breakable, and explicit newline
+boundaries from `BlockIR.sentences` or `BlockIR.lines` are measured as separate
+lines. Table cells, captions, titles, body text, and code blocks use role-aware
+width factors.
 
 ## Build Manifest and Design Lock
 
@@ -146,6 +168,14 @@ The evaluator verifies:
   one slide when the source bundle is compact enough to remain readable
 - the gallery has the `pptx-png` marker and does not fall back to legacy iframe-based HTML deck previews
 
+## Performance Regression Gate
+
+`scripts/check-performance-regression.mjs` compares current manifest-like
+performance and quality counters with a baseline. It flags timing regressions
+by ratio and quality regressions when overflow count increases, minimum font
+size drops, or object coverage decreases. This keeps quality checks independent
+from absolute CI machine speed.
+
 `scripts/evaluate-readme-assets.py` is a documentation-preview contract check,
 not a renderer. It verifies that README pages reference PNGs exported from the
 shared `examples/theme-preview-en/deck.md` preview deck and records SHA-256
@@ -158,9 +188,8 @@ deck needs LLM-advised critique before the deterministic MDPR build.
 ## Future Improvements
 
 ```text
-- canvas-based measurement
-- font metric integration
 - renderer-specific correction factors
+- exact font metric integration where available
 - script-aware width profiles
 - OCR or perceptual screenshot scoring
 ```

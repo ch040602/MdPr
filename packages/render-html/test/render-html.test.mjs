@@ -232,7 +232,7 @@ test("renderHtml renders table blocks as bounded HTML tables", () => {
   assert.doesNotMatch(html, /Stage \| Coverage \| Defects/);
 });
 
-test("renderHtml applies theme surface grammar in Actions previews", () => {
+test("renderHtml keeps same-depth item surfaces coherent in Actions previews", () => {
   const config = structuredClone(defaultConfig);
   config.theme.decorationStyle = "magazine";
   const doc = parseMarkdown("# Demo Deck\n\n## Cards\n\n- Alpha\n- Beta\n- Gamma\n- Delta");
@@ -242,9 +242,8 @@ test("renderHtml applies theme surface grammar in Actions previews", () => {
   const html = renderHtml({ presentation, layout });
 
   assert.match(html, /body data-theme-style="magazine"/);
-  assert.match(html, /class="region item surface flag-drop/);
-  assert.match(html, /class="region item surface two-corner-right/);
-  assert.match(html, /class="region item surface notched-corner/);
+  const itemSurfaceClasses = [...html.matchAll(/class="region item surface ([^" ]+)/g)].map((match) => match[1]);
+  assert.deepEqual(new Set(itemSurfaceClasses), new Set(["flag-drop"]));
   assert.match(html, /body\[data-theme-style="magazine"\] \.slide::before/);
   assert.doesNotMatch(html, /circle-vine/);
 });

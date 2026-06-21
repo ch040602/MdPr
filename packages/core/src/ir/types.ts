@@ -50,9 +50,12 @@ export type SlideIntent =
   | "title"
   | "standard"
   | "comparison"
+  | "evidence"
+  | "metric"
   | "list"
   | "grid"
   | "timeline"
+  | "workflow"
   | "table"
   | "image"
   | "code"
@@ -60,6 +63,26 @@ export type SlideIntent =
   | "summary"
   | "diagram"
   | "chart";
+
+export type SlideIntentScores = Record<
+  | "comparison"
+  | "evidence"
+  | "metric"
+  | "chart"
+  | "table"
+  | "image"
+  | "workflow"
+  | "timeline"
+  | "code"
+  | "summary",
+  number
+>;
+
+export type SlideIntentProfile = {
+  primaryIntent: SlideIntent;
+  secondaryIntents: SlideIntent[];
+  scores: SlideIntentScores;
+};
 
 export type SourceRange = {
   file?: string;
@@ -187,9 +210,36 @@ export type SlideIR = {
   source: SourceRange;
   blocks: BlockIR[];
   intent: SlideIntent;
+  intentScores?: SlideIntentScores;
+  secondaryIntents?: SlideIntent[];
   tags: string[];
   primaryItemCount?: number;
   density?: number;
+};
+
+export type SemanticBlockRole =
+  | "claim"
+  | "evidence"
+  | "metric"
+  | "example"
+  | "risk"
+  | "decision"
+  | "action"
+  | "caption"
+  | "source"
+  | "appendix";
+
+export type CoherenceGroup = {
+  id: string;
+  slideId: string;
+  headingPath: string[];
+  primaryBlockId: string;
+  supportingBlockIds: string[];
+  role: "argument" | "comparison" | "workflow" | "evidence-pack" | "summary";
+  keepTogether: boolean;
+  splitPriority: number;
+  blockRoles?: Record<string, SemanticBlockRole>;
+  semanticSignals?: SemanticBlockRole[];
 };
 
 export type AssetRef = {
@@ -203,6 +253,7 @@ export type PresentationIR = {
   meta: DeckMeta;
   outline: OutlineNode[];
   slides: SlideIR[];
+  coherenceGroups: CoherenceGroup[];
   assets: AssetRef[];
   diagnostics: Diagnostic[];
 };

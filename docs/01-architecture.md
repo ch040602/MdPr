@@ -7,8 +7,9 @@ Markdown
   -> Parser (simple Markdown or Pandoc JSON)
   -> Outline Builder
   -> Split Planner
+  -> Coherence Grouping
   -> Presentation IR
-  -> Layout Planner
+  -> Layout Planner (candidate scoring)
   -> Layout IR
   -> Override Resolver
   -> Validation / Overflow Checker
@@ -23,11 +24,12 @@ Markdown
 ```text
 packages/core
   Markdown parsing, Pandoc JSON adaptation into MDPR semantic blocks, outline
-  tree, split planning, density scoring, intent detection, and Presentation IR.
+  tree, split planning, density scoring, intent score profiles, coherence
+  groups, and Presentation IR.
 
 packages/layout
-  Layout presets, region planning, safe areas, typography, overflow policy,
-  and Layout IR.
+  Layout presets, deterministic candidate scoring, region planning, safe
+  areas, typography, text measurement, overflow policy, and Layout IR.
 
 packages/override
   Override manifest loading, schema validation, target resolution, operation
@@ -54,3 +56,5 @@ packages/cli
 4. Overrides are the final exception layer after automatic planning.
 5. PPT templates provide brand and background assets; body placement is recalculated by MDPR.
 6. Optional agent hints may annotate intent, but deterministic MDPR rules own final output.
+7. Quality improvements preserve source semantics; they classify, group,
+   measure, reflow, and validate content without summarizing or rewriting it.

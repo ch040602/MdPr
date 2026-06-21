@@ -1,5 +1,5 @@
 import type { Config, PresentationIR, SlideIR } from "@mdpresent/core";
-import type { LayoutIR, LayoutRegion, LayoutSlide, LayoutSpec, ThemeTokens } from "./ir/types.js";
+import type { LayoutCandidateScore, LayoutIR, LayoutRegion, LayoutSlide, LayoutSpec, ScoredLayoutCandidate, ThemeTokens } from "./ir/types.js";
 import { chooseItemLayout, titleRect, bodyRect } from "./presets/presets.js";
 
 export function planLayout(presentation: PresentationIR, config: Config): LayoutIR {
@@ -29,27 +29,152 @@ export function planLayout(presentation: PresentationIR, config: Config): Layout
 }
 
 export function chooseLayout(slide: SlideIR, config: Config): LayoutSpec {
-  if (slide.role === "cover") return { preset: "cover" };
-  if (slide.role === "toc") return { preset: "toc" };
-  if (slide.tags.includes("pipeline-one-page")) return { preset: "pipeline-one-page" };
-  if (slide.intent === "comparison") return { preset: "comparison", direction: "horizontal", columns: 2 };
-  if (slide.intent === "chart") return { preset: "chart-table", direction: "horizontal" };
-  if (slide.intent === "table") return { preset: "table-focus" };
-  if (slide.intent === "image") return { preset: "image-focus" };
-  if (slide.intent === "code") return { preset: "code-focus" };
+  return rankLayoutCandidates(slide, config)[0]?.layout ?? { preset: config.layout.defaultPreset as LayoutSpec["preset"] };
+}
+
+export function rankLayoutCandidates(slide: SlideIR, config: Config): ScoredLayoutCandidate[] {
+  return candidateLayoutsForSlide(slide, config)
+    .map((layout) => ({ layout, score: scoreLayoutCandidate(slide, layout, config) }))
+    .sort((a, b) => a.score.total - b.score.total || layoutOrder(a.layout.preset) - layoutOrder(b.layout.preset));
+}
+
+function candidateLayoutsForSlide(slide: SlideIR, config: Config): LayoutSpec[] {
+  if (slide.role === "cover") return [{ preset: "cover" }];
+  if (slide.role === "toc") return [{ preset: "toc" }];
+  if (slide.tags.includes("pipeline-one-page")) return [{ preset: "pipeline-one-page" }];
+  const candidates: LayoutSpec[] = [];
+  const add = (layout: LayoutSpec) => {
+    if (!candidates.some((candidate) => JSON.stringify(candidate) === JSON.stringify(layout))) candidates.push(layout);
+  };
+
+  if (slide.intent === "comparison") add({ preset: "comparison", direction: "horizontal", columns: 2 });
+  if (slide.intent === "evidence") for (const layout of evidenceLayouts(slide)) add(layout);
+  if (slide.intent === "metric") for (const layout of metricLayouts(slide)) add(layout);
+  if (slide.intent === "chart") add({ preset: "chart-table", direction: "horizontal" });
+  if (slide.intent === "table") add({ preset: "table-focus" });
+  if (slide.intent === "image") add({ preset: "image-focus" });
+  if (slide.intent === "code") add({ preset: "code-focus" });
   if (slide.intent === "quote") {
     const nonQuoteBlocks = slide.blocks.filter((block) => block.type !== "quote" && block.type !== "slideBreak");
-    return { preset: nonQuoteBlocks.length ? "key-message" : "quote" };
+    add({ preset: nonQuoteBlocks.length ? "key-message" : "quote" });
   }
-  if (slide.intent === "timeline") return { preset: "timeline", direction: "horizontal" };
-  if (slide.intent === "diagram") return { preset: "pipeline", direction: "horizontal" };
-  if (isTwoParagraphOpenLayout(slide)) return { preset: "comparison", direction: "horizontal", columns: 2 };
-  if (isTextOnlyReliefCandidate(slide)) return { preset: "text-icon-aside" };
+  if (slide.intent === "timeline") add({ preset: "timeline", direction: "horizontal" });
+  if (slide.intent === "diagram") add({ preset: "pipeline", direction: "horizontal" });
+  if (isTwoParagraphOpenLayout(slide)) add({ preset: "comparison", direction: "horizontal", columns: 2 });
+  if (isTextOnlyReliefCandidate(slide)) add({ preset: "text-icon-aside" });
 
   const itemCount = slide.primaryItemCount ?? 0;
-  if (itemCount > 0) return chooseItemLayout(itemCount);
+  if (itemCount > 0) add(chooseItemLayout(itemCount));
 
-  return { preset: config.layout.defaultPreset as LayoutSpec["preset"] };
+  add({ preset: config.layout.defaultPreset as LayoutSpec["preset"] });
+  add({ preset: "vertical-list" });
+  if (hasAny(slide, "table")) add({ preset: "table-focus" });
+  if (hasAny(slide, "image")) add({ preset: "image-focus" });
+  if (hasAny(slide, "chart") || (hasAny(slide, "table") && (hasAny(slide, "image") || hasText(slide)))) add({ preset: "chart-table", direction: "horizontal" });
+  return candidates;
+}
+
+function evidenceLayouts(slide: SlideIR): LayoutSpec[] {
+  const hasChart = slide.blocks.some((block) => block.type === "chart");
+  const hasTable = slide.blocks.some((block) => block.type === "table");
+  const hasImage = slide.blocks.some((block) => block.type === "image");
+  return [
+    ...(hasChart || (hasTable && hasImage) ? [{ preset: "chart-table" as const, direction: "horizontal" as const }] : []),
+    ...(hasTable ? [{ preset: "table-focus" as const }] : []),
+    ...(hasImage ? [{ preset: "image-focus" as const }] : []),
+    { preset: "vertical-list" as const },
+  ];
+}
+
+function metricLayouts(slide: SlideIR): LayoutSpec[] {
+  if (slide.blocks.some((block) => block.type === "chart" || block.type === "table")) return [{ preset: "chart-table", direction: "horizontal" }, { preset: "table-focus" }];
+  return [{ preset: "vertical-list" }];
+}
+
+function scoreLayoutCandidate(slide: SlideIR, layout: LayoutSpec, config: Config): LayoutCandidateScore {
+  const objectCoveragePenalty = objectCoveragePenaltyFor(slide, layout);
+  const readingOrderPenalty = readingOrderPenaltyFor(slide, layout);
+  const whitespacePenalty = whitespacePenaltyFor(slide, layout);
+  const emphasisPenalty = emphasisPenaltyFor(slide, layout);
+  const minFontPenalty = layout.preset === "grid" && (slide.primaryItemCount ?? 0) > 6 ? Math.max(0, config.typography.minFontSize - 14) : 0;
+  const overflowPenalty = roughOverflowPenaltyFor(slide, layout);
+  const alignmentPenalty = ["grid", "vertical-list", "chart-table", "table-focus", "image-focus", "comparison"].includes(layout.preset) ? 0 : 1;
+  const sectionConsistencyPenalty = 0;
+  const total = overflowPenalty + minFontPenalty + objectCoveragePenalty + readingOrderPenalty + whitespacePenalty + alignmentPenalty + emphasisPenalty + sectionConsistencyPenalty;
+  return { overflowPenalty, minFontPenalty, objectCoveragePenalty, readingOrderPenalty, whitespacePenalty, alignmentPenalty, emphasisPenalty, sectionConsistencyPenalty, total };
+}
+
+function objectCoveragePenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
+  const required = ["chart", "table", "image", "code", "diagram"].filter((type) => hasAny(slide, type));
+  if (!required.length) return 0;
+  const covered = required.filter((type) => layoutCoversObject(layout, type)).length;
+  return (required.length - covered) * 8;
+}
+
+function layoutCoversObject(layout: LayoutSpec, type: string): boolean {
+  if (type === "chart") return layout.preset === "chart-table";
+  if (type === "table") return layout.preset === "chart-table" || layout.preset === "table-focus";
+  if (type === "image") return layout.preset === "chart-table" || layout.preset === "image-focus";
+  if (type === "code") return layout.preset === "code-focus";
+  if (type === "diagram") return layout.preset === "pipeline";
+  return true;
+}
+
+function readingOrderPenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
+  if (slide.intent === "evidence" && hasText(slide) && layout.preset === "image-focus") return 3;
+  return 0;
+}
+
+function whitespacePenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
+  const objectCount = ["chart", "table", "image", "code", "diagram"].filter((type) => hasAny(slide, type)).length;
+  if (objectCount >= 2 && ["vertical-list", "title-body"].includes(layout.preset)) return 5;
+  return 0;
+}
+
+function emphasisPenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
+  if (slide.intent === "evidence" && layout.preset === "table-focus" && hasAny(slide, "image")) return 2;
+  if ((slide.primaryItemCount ?? 0) >= 5 && (slide.primaryItemCount ?? 0) <= 6 && layout.preset === "vertical-list") return 3;
+  if (slide.intent === "quote" && layout.preset !== "key-message" && layout.preset !== "quote") return 4;
+  if (isTwoParagraphOpenLayout(slide) && layout.preset !== "comparison") return 3;
+  if (isTextOnlyReliefCandidate(slide) && layout.preset !== "text-icon-aside") return 3;
+  return 0;
+}
+
+function roughOverflowPenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
+  const textLength = slide.blocks.reduce((sum, block) => sum + (block.text?.length ?? 0) + (block.items ?? []).join(" ").length, 0);
+  if (textLength > 420 && ["title-body", "vertical-list"].includes(layout.preset)) return 6;
+  return 0;
+}
+
+function hasAny(slide: SlideIR, type: string): boolean {
+  return slide.blocks.some((block) => block.type === type);
+}
+
+function hasText(slide: SlideIR): boolean {
+  return slide.blocks.some((block) => ["paragraph", "bulletList", "quote"].includes(block.type));
+}
+
+function layoutOrder(preset: string): number {
+  const order = [
+    "cover",
+    "toc",
+    "pipeline-one-page",
+    "chart-table",
+    "pipeline",
+    "key-message",
+    "quote",
+    "text-icon-aside",
+    "table-focus",
+    "image-focus",
+    "code-focus",
+    "comparison",
+    "pentagon",
+    "grid",
+    "vertical-list",
+    "title-body",
+  ];
+  const index = order.indexOf(preset);
+  return index >= 0 ? index : 999;
 }
 
 function isTwoParagraphOpenLayout(slide: SlideIR): boolean {

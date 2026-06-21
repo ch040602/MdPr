@@ -532,20 +532,18 @@ function surfaceVariantClass(style: string, role: string, id: string): string {
   if (id === "key-message" || id === "body-panel") return "two-corner-left";
   if (role !== "item") return "rounded";
 
-  const index = Number(/\d+$/.exec(id)?.[0] ?? 0);
-  const variantsByStyle: Record<string, string[]> = {
-    glass: ["rounded", "two-corner-right", "notched-corner", "flag-drop"],
-    newmorphism: ["rounded", "two-corner-left", "rounded", "two-corner-right"],
-    minimalism: ["rounded", "two-corner-left", "rounded", "notched-corner"],
-    grid: ["two-corner-left", "notched-corner", "two-corner-right", "rounded"],
-    data: ["notched-corner", "flag-drop", "two-corner-left", "rounded"],
-    magazine: ["flag-drop", "two-corner-right", "notched-corner", "two-corner-left"],
-    editorial: ["rounded", "flag-drop", "two-corner-left", "notched-corner"],
-    executive: ["two-corner-left", "rounded", "flag-drop", "notched-corner"],
-    technical: ["two-corner-right", "rounded", "notched-corner", "two-corner-left"],
+  const itemVariantByStyle: Record<string, string> = {
+    glass: "rounded",
+    newmorphism: "rounded",
+    minimalism: "rounded",
+    grid: "two-corner-left",
+    data: "notched-corner",
+    magazine: "flag-drop",
+    editorial: "rounded",
+    executive: "two-corner-left",
+    technical: "two-corner-right",
   };
-  const variants = variantsByStyle[style] ?? ["rounded", "two-corner-left", "flag-drop", "notched-corner"];
-  return variants[Math.abs(index - 1) % variants.length] ?? "rounded";
+  return itemVariantByStyle[style] ?? "rounded";
 }
 
 function normalizeTableCellText(value: string): string {

@@ -15,6 +15,13 @@ The parser preserves presentation-relevant Markdown structure:
 - One graph or diagram block stays on a single slide; MDPR does not split one diagram across continuation pages.
 - Chart slides may keep prose beside the chart, and chart-plus-table slides keep the graph and table in parallel regions.
 
+After splitting, MDPR also emits `coherenceGroups`. These groups classify
+blocks as claim, evidence, metric, example, risk, decision, action, caption,
+source, or appendix, then group compact slides as argument, comparison,
+workflow, evidence-pack, or summary. This layer preserves proximity between
+charts/tables/images and their explanations without asking an agent to rewrite
+the content.
+
 ## Design Selection
 
 `theme.designPreset` is the compatibility entry point for a named preset. `theme.decorationStyle` selects the visual grammar separately from color:
@@ -48,6 +55,9 @@ The derived palette feeds element accents, chart colors, and the generated Power
 ## Coherence Rules
 
 - Same-role objects use the same connector and surface family unless the content expresses a different flow.
+- Same-depth item objects use one surface variant per slide. Theme styles may
+  change the family, but sibling items should not rotate unrelated shape
+  grammars just to create decoration.
 - Parent object text is at least as large as child object text; bold weight may vary by emphasis.
 - Tables use middle vertical alignment, readable cell margins, coherent header fills, and a readable minimum font size.
 - Icons remain small, monotone, and secondary; they are not used to fill empty space.
