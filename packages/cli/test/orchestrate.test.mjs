@@ -795,6 +795,32 @@ test("planDeck splits very long four-item lists before unreadable grid overflow"
   }
 });
 
+test("buildDeck manifest records pre-split overflow continuation strategy", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-overflow-strategy-"));
+  const deckPath = join(outDir, "deck.md");
+  const sentence = "This item carries a deliberately long explanation with several clauses, enough words to make compact card layouts uncomfortable while a full-width continuation row can remain readable.";
+
+  try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Dense Items",
+      "",
+      ...Array.from({ length: 4 }, (_, index) => `- Item ${index + 1}: ${Array(4).fill(sentence).join(" ")}`),
+    ].join("\n"));
+
+    const result = await buildDeck(deckPath, { formats: ["html"], outDir });
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+
+    assert.equal(manifest.validation.overflowResolution.checked, true);
+    assert.equal(manifest.validation.overflowResolution.strategyCounts.preSplit > 0, true);
+    assert.equal(manifest.validation.overflowResolution.continuationReasons.list > 0, true);
+    assert.equal(manifest.validation.overflowResolution.graphOrDiagramBlocksSplit, false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("planDeck keeps auto-resolved body text above the readable font floor", () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-readable-font-floor-"));
   const deckPath = join(outDir, "deck.md");

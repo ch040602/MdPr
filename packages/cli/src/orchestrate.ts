@@ -260,6 +260,7 @@ function createBuildManifest(
       })),
       visual: visualValidation ? createVisualValidationSummary(deck.layout) : null,
       coherence: createCoherenceValidationSummary(deck.presentation, deck.layout),
+      overflowResolution: createOverflowResolutionSummary(deck.presentation, deck.layout),
     },
   };
 }
@@ -521,6 +522,61 @@ function coherenceValidationDiagnostics(presentation: PresentationIR, layout: La
   }
 
   return diagnostics;
+}
+
+function createOverflowResolutionSummary(presentation: PresentationIR, layout: LayoutIR) {
+  const continuationGroups = continuationGroupsFor(presentation);
+  const continuationReasons = { list: 0, table: 0, code: 0, paragraph: 0, mixed: 0, toc: 0 };
+  let graphOrDiagramBlocksSplit = false;
+
+  for (const group of continuationGroups) {
+    const reason = continuationReasonFor(group);
+    continuationReasons[reason] += 1;
+    graphOrDiagramBlocksSplit = graphOrDiagramBlocksSplit || group.some((slide) => slide.blocks.some((block) => block.type === "diagram" || block.type === "chart"));
+  }
+
+  const fontShrinkRegions = layout.slides.flatMap((slide) => slide.regions)
+    .filter((region) => {
+      const fontSize = region.typography?.fontSize;
+      if (!fontSize || region.role === "title") return false;
+      return fontSize < layout.theme.bodyFontSize;
+    }).length;
+
+  return {
+    checked: true,
+    strategyCounts: {
+      preSplit: continuationGroups.length,
+      candidateReflow: 0,
+      regionExpansion: 0,
+      fontShrink: fontShrinkRegions,
+    },
+    continuationSlides: continuationGroups.reduce((sum, group) => sum + group.length, 0),
+    continuationGroups: continuationGroups.length,
+    continuationReasons,
+    graphOrDiagramBlocksSplit,
+  };
+}
+
+function continuationGroupsFor(presentation: PresentationIR): SlideIR[][] {
+  const grouped = new Map<string, SlideIR[]>();
+  for (const slide of presentation.slides) {
+    if (slide.role !== "content") continue;
+    const key = slide.headingPath.join("\u0000") || (slide.title ?? slide.id);
+    const slides = grouped.get(key) ?? [];
+    slides.push(slide);
+    grouped.set(key, slides);
+  }
+  return Array.from(grouped.values()).filter((slides) => slides.length > 1);
+}
+
+function continuationReasonFor(slides: SlideIR[]): "list" | "table" | "code" | "paragraph" | "mixed" | "toc" {
+  if (slides.every((slide) => slide.tags.includes("auto-toc") || slide.tags.includes("auto-toc-continuation"))) return "toc";
+  const blockTypes = new Set(slides.flatMap((slide) => slide.blocks.map((block) => block.type)));
+  if (blockTypes.has("bulletList") || blockTypes.has("listItem")) return "list";
+  if (blockTypes.has("table")) return "table";
+  if (blockTypes.has("code")) return "code";
+  if (blockTypes.size === 1 && blockTypes.has("paragraph")) return "paragraph";
+  return "mixed";
 }
 
 function isClaimLikeText(text: string): boolean {

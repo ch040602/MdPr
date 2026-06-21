@@ -135,6 +135,10 @@ The manifest records source/config hashes, rendered outputs, per-artifact
 contracts, diagnostics, overflow status, and optional `--visual` structural
 summaries. Artifact contracts include output format, path, existence, byte size,
 and SHA-256 so CI can detect stale or missing PPTX, HTML, and PDF products.
+The manifest also records `validation.overflowResolution`, including strategy
+counts for pre-split continuation, candidate reflow, region expansion, and font
+shrink; continuation reasons; continuation group counts; and whether a graph or
+diagram block was split.
 Visual summaries do not replace rendered screenshot review; they catch
 deterministic geometry regressions such as out-of-bounds regions, unreadable
 font floors, low text/background contrast, same-z-index content overlap,

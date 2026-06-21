@@ -25,6 +25,8 @@ Implemented in the deterministic runtime:
   coverage.
 - Very long 4-item lists split into 2+2 continuation slides before they become
   unreadable 2x2 grid slides.
+- Manifest overflow-resolution summaries report pre-split continuation groups,
+  continuation reasons, font-shrink counts, and graph/diagram split protection.
 
 Remaining roadmap items are listed below.
 
