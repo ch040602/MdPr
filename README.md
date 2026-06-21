@@ -14,6 +14,8 @@
 
 Language variants: [Korean](README.ko.md), [Chinese](README.zh.md)
 
+Contributions: [Contributing guide](CONTRIBUTING.md)
+
 ## What It Does
 
 - **PPTX first**: produces editable PowerPoint slides, then exports PNG previews for review.
