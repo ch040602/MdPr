@@ -1,6 +1,6 @@
 # mdpresent
 
-![MDPR generated teaser summary slide preview](docs/theme-preview/slides/magazine/slide-04.png)
+![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page)
 
 `mdpresent`는 deterministic Markdown presentation runtime입니다.
 
@@ -8,8 +8,9 @@
 - **중간 모델**: `Presentation IR`, `Layout IR`
 - **출력**: editable `PPTX`, `HTML`, `PDF`
 - **런타임**: 파싱, 분할, 레이아웃, 검증, 테마 선택, 렌더링 모두 rule-based
+- **LLM-advised quality**: agent-side semantic hint, review loop, visual-quality advice가 필요하면 [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)을 사용합니다.
 - **Agent 경계**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)은 compact semantic hint만 제안할 수 있고, 최종 구조와 출력은 MDPR이 결정합니다.
-- **README asset**: 공통 `examples/theme-preview-en/deck.md` PPTX preview deck에서 추출하며 README 전용 renderer를 쓰지 않습니다.
+- **README asset**: 메인 teaser는 `examples/readme-teaser/deck.md`를 `--pipeline-one-page`로 빌드하고, gallery 이미지는 공통 theme preview deck에서 추출합니다. README 전용 renderer는 쓰지 않습니다.
 
 언어별 문서: [English](README.md), [Chinese](README.zh.md)
 
@@ -17,10 +18,12 @@
 
 - **PPTX-first**: editable PowerPoint 슬라이드를 먼저 만들고, 이를 PNG로 추출해 검수합니다.
 - **No LLM runtime**: 빌드 결과는 모델 호출 없이 재현 가능합니다.
+- **One-page teaser mode**: `--pipeline-one-page`는 pipeline, feature, chart, table 요약을 한 장의 slide에 유지합니다.
 - **Markdown semantics 보존**: heading, list, emphasis, table, chart, image, code, quote, pipeline diagram을 구조로 유지합니다.
 - **Design grammar**: 장식 스타일과 색상 seed를 분리하고, harmony 규칙으로 PPT theme/chart 색을 계산합니다.
 - **Object coverage**: native table, native chart, proof object, icon slot, SVG-backed surface, diagram connector를 지원합니다.
-- **Visual QA**: PPTX/PNG 산출물, slide count, surface marker, 언어, overflow, manifest drift를 검사합니다.
+- **Deterministic validation**: overflow, generated artifact contract, slide count, surface marker, 언어, manifest drift를 검사합니다.
+- **Skill-side review**: LLM 기반 레이아웃 비평, visual polish, high-quality deck guidance는 MDPR runtime이 아니라 `mdpr-skill`의 역할입니다.
 
 ## 미리보기
 
@@ -30,7 +33,7 @@
 
 | Teaser Summary | Pipeline Diagram |
 | --- | --- |
-| <img src="docs/theme-preview/slides/magazine/slide-04.png" alt="PPTX teaser summary slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-10.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
+| <img src="docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page" alt="PPTX one-page teaser slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-10.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
 
 | Markdown Semantics | Decoration Patterns |
 | --- | --- |
@@ -39,6 +42,18 @@
 | Editable Proof Objects | Mixed Object Packing |
 | --- | --- |
 | <img src="docs/theme-preview/slides/data/slide-16.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-23.png" alt="PPTX mixed object packing slide exported to PNG" width="100%"> |
+
+## 테마 스타일 예시
+
+같은 Markdown source를 pruned distinct theme style로 렌더링한 결과입니다. 아래 이미지는 모두 generated PPTX output에서 추출한 PNG입니다.
+
+| Clean | Editorial | Minimalism | Newmorphism |
+| --- | --- | --- | --- |
+| <img src="docs/theme-preview/slides/clean/slide-01.png" alt="Clean theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/editorial/slide-01.png" alt="Editorial theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/minimalism/slide-01.png" alt="Minimalism theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/newmorphism/slide-01.png" alt="Newmorphism theme cover slide exported from PPTX" width="100%"> |
+
+| Glass | Grid | Data | Magazine |
+| --- | --- | --- | --- |
+| <img src="docs/theme-preview/slides/glass/slide-01.png" alt="Glass theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-01.png" alt="Grid theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/data/slide-01.png" alt="Data theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/magazine/slide-01.png" alt="Magazine theme cover slide exported from PPTX" width="100%"> |
 
 ## 런타임 파이프라인
 
@@ -56,7 +71,7 @@ Markdown
   -> Presentation IR
   -> Layout Planner
   -> Override Engine
-  -> QA / Overflow Checker
+  -> Validation / Overflow Checker
   -> Renderer
       -> PPTX
       -> HTML
@@ -71,6 +86,7 @@ mdpresent plan examples/basic/deck.md --json > layout.plan.json
 mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
 mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual
+mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-teaser --theme-style grid --theme-color "#0F766E" --theme-harmony split-complementary --pipeline-one-page --visual
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
 ```
 
@@ -79,6 +95,7 @@ mdpresent build examples/basic/deck.md --to pptx --out dist --template company-m
 - `--theme-style`: `clean`, `executive`, `editorial`, `technical`, `minimalism`, `newmorphism`, `glass`, `grid`, `data`, `magazine`
 - `--theme-color`: `#8A4FFF` 같은 main color seed
 - `--theme-harmony`: `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, `triadic`
+- `--pipeline-one-page`: 여러 section의 Markdown을 한 장짜리 pipeline/teaser composition으로 만들되 parser, layout planner, validation, renderer는 동일 경로를 사용합니다.
 - `--theme-gallery`: 같은 Markdown을 여러 style로 반복 렌더링하여 비교합니다. README/Actions preview는 distinct style subset만 사용합니다.
 - `--design`: 기존 shared preset 선택과의 호환 옵션
 
@@ -93,7 +110,7 @@ mdpresent build examples/basic/deck.md --to pptx --out dist --template company-m
 ## 프로젝트 구조
 
 ```text
-docs/       설계, 렌더링, QA, 방법론 문서
+docs/       설계, 렌더링, 검증, 방법론 문서
 schemas/    Config, Override, Presentation IR, Layout IR schema
 packages/   core, layout, override, CLI, renderer
 examples/   예시 Markdown deck과 config

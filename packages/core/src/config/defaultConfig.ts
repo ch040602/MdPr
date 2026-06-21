@@ -4,6 +4,7 @@ export const defaultConfig: Config = {
   version: "1.0",
   deck: {
     titleFrom: "first-h1",
+    presentationMode: "normal",
     ratio: "16:9",
     language: "ko",
     defaultOutput: ["pptx", "pdf", "html"],

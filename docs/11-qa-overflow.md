@@ -1,6 +1,6 @@
-# 11. QA and Overflow Policy
+# 11. Validation and Overflow Policy
 
-## QA Checks
+## Validation Checks
 
 ```text
 - text overflow

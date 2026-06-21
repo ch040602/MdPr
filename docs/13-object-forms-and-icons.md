@@ -66,8 +66,9 @@ Coherence guards:
 Documentation preview images come from the shared MDPR theme-preview deck:
 
 ```text
+examples/readme-teaser/deck.md
+docs/assets/readme-teaser/slides/slide-01.png
 examples/theme-preview-en/deck.md
-docs/theme-preview/slides/magazine/slide-04.png
 docs/theme-preview/slides/grid/slide-10.png
 docs/theme-preview/slides/magazine/slide-11.png
 ```

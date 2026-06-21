@@ -21,7 +21,8 @@ export type LayoutPreset =
   | "quote"
   | "summary"
   | "single-card"
-  | "pipeline";
+  | "pipeline"
+  | "pipeline-one-page";
 
 export type Rect = { x: number; y: number; w: number; h: number };
 

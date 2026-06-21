@@ -11,7 +11,7 @@ Markdown
   -> Layout Planner
   -> Layout IR
   -> Override Resolver
-  -> QA / Overflow Checker
+  -> Validation / Overflow Checker
   -> Renderer
       -> PPTX
       -> HTML

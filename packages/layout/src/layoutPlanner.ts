@@ -31,6 +31,7 @@ export function planLayout(presentation: PresentationIR, config: Config): Layout
 export function chooseLayout(slide: SlideIR, config: Config): LayoutSpec {
   if (slide.role === "cover") return { preset: "cover" };
   if (slide.role === "toc") return { preset: "toc" };
+  if (slide.tags.includes("pipeline-one-page")) return { preset: "pipeline-one-page" };
   if (slide.intent === "comparison") return { preset: "comparison", direction: "horizontal", columns: 2 };
   if (slide.intent === "chart") return { preset: "chart-table", direction: "horizontal" };
   if (slide.intent === "table") return { preset: "table-focus" };
@@ -201,6 +202,10 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
     ];
   }
 
+  if (layout.preset === "pipeline-one-page") {
+    return createPipelineOnePageRegions(slide, titleRegion, config);
+  }
+
   if (layout.preset === "chart-table") {
     return createChartTableRegions(slide, titleRegion, config);
   }
@@ -219,6 +224,54 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   return [
     titleRegion,
     { id: "body", role: "body", blockIds: slide.blocks.map((b) => b.id), ...bodyRect, zIndex: 10, typography: bodyTypography(config) },
+  ];
+}
+
+function createPipelineOnePageRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
+  const diagramBlockIds = slide.blocks.filter((block) => block.type === "diagram").map((block) => block.id);
+  const chartBlockIds = slide.blocks.filter((block) => block.type === "chart").map((block) => block.id);
+  const tableBlockIds = slide.blocks.filter((block) => block.type === "table").map((block) => block.id);
+  const imageBlockIds = slide.blocks.filter((block) => block.type === "image").map((block) => block.id);
+  const bulletBlockIds = slide.blocks.filter((block) => block.type === "bulletList").map((block) => block.id);
+  const sectionLabelIds = new Set(slide.blocks
+    .filter((block) => block.type === "paragraph" && block.id.endsWith("-one-page-section"))
+    .map((block) => block.id));
+  const evidenceBlockIds = [...chartBlockIds.slice(0, 2), ...tableBlockIds.slice(0, 1), ...imageBlockIds.slice(0, 1)];
+  const evidenceSet = new Set(evidenceBlockIds);
+  const textBlockIds = slide.blocks
+    .filter((block) => !["diagram", "chart", "table", "image", "slideBreak"].includes(block.type) && !sectionLabelIds.has(block.id))
+    .map((block) => block.id);
+  const featureBlockIds = bulletBlockIds.length ? bulletBlockIds.slice(0, 1) : textBlockIds.slice(0, 4);
+  const compact = compactBodyTypography(config);
+
+  if (diagramBlockIds.length) {
+    return [
+      { ...titleRegion, y: 0.34, h: 0.66, typography: { ...titleRegion.typography, fontSize: Math.max(28, config.typography.titleFontSize - 2) } },
+      { id: "diagram", role: "diagram", blockIds: diagramBlockIds.slice(0, 1), x: 0.72, y: 1.16, w: 6.9, h: 2.08, zIndex: 10, typography: compact },
+      { id: "feature-summary", role: "body", blockIds: featureBlockIds, x: 0.72, y: 3.45, w: 6.9, h: 3.18, zIndex: 10, typography: { ...compact, fontSize: 14, minFontSize: 14 } },
+      ...(chartBlockIds.length ? [{ id: "chart", role: "chart" as const, blockIds: chartBlockIds.slice(0, 1), x: 8.02, y: 1.16, w: 4.55, h: 2.2, zIndex: 10, typography: compact }] : []),
+      ...(tableBlockIds.length ? [{ id: "table", role: "table" as const, blockIds: tableBlockIds.slice(0, 1), x: 8.02, y: 3.72, w: 4.55, h: 2.72, zIndex: 10, typography: { ...compact, fontSize: Math.max(14, compact.fontSize - 2), minFontSize: 14 } }] : []),
+      {
+        id: "object-summary",
+        role: "body",
+        blockIds: textBlockIds.slice(5).concat(evidenceBlockIds.filter((blockId) => !evidenceSet.has(blockId))),
+        x: 8.02,
+        y: 6.48,
+        w: 4.55,
+        h: 0.42,
+        zIndex: 10,
+        typography: compact,
+      },
+    ];
+  }
+
+  const primaryEvidence = evidenceBlockIds.slice(0, 2);
+  return [
+    { ...titleRegion, y: 0.34, h: 0.66, typography: { ...titleRegion.typography, fontSize: Math.max(28, config.typography.titleFontSize - 2) } },
+    { id: "feature-summary", role: "body", blockIds: textBlockIds.slice(0, 4), x: 0.82, y: 1.2, w: 5.65, h: 2.35, zIndex: 10, typography: compact },
+    { id: "object-summary", role: "body", blockIds: textBlockIds.slice(4, 8), x: 6.88, y: 1.2, w: 5.65, h: 2.35, zIndex: 10, typography: compact },
+    ...(primaryEvidence[0] ? [{ id: "evidence-1", role: chartBlockIds.includes(primaryEvidence[0]) ? "chart" as const : tableBlockIds.includes(primaryEvidence[0]) ? "table" as const : "image" as const, blockIds: [primaryEvidence[0]], x: 0.82, y: 3.92, w: 5.65, h: 2.45, zIndex: 10, typography: compact }] : []),
+    ...(primaryEvidence[1] ? [{ id: "evidence-2", role: chartBlockIds.includes(primaryEvidence[1]) ? "chart" as const : tableBlockIds.includes(primaryEvidence[1]) ? "table" as const : "image" as const, blockIds: [primaryEvidence[1]], x: 6.88, y: 3.92, w: 5.65, h: 2.45, zIndex: 10, typography: compact }] : []),
   ];
 }
 

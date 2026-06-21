@@ -2,10 +2,24 @@
   "ok": true,
   "issues": [],
   "source": "examples/theme-preview-en/deck.md",
-  "mainImage": "docs/theme-preview/slides/magazine/slide-04.png",
+  "teaserSource": "examples/readme-teaser/deck.md",
+  "teaserSourceSha256": "79f42181a4f637b78784bb48a5a6d7a577db4429978ecf7470017cf293aacfc6",
+  "teaserSourceSha256Matches": true,
+  "teaserPresentationMode": "pipeline-one-page",
+  "teaserSlideCount": 1,
+  "mainImage": "docs/assets/readme-teaser/slides/slide-01.png",
   "pipelineImage": "docs/theme-preview/slides/grid/slide-10.png",
+  "selectedPreviewImagesByTitle": {
+    "Pipeline Diagram": "docs/theme-preview/slides/grid/slide-10.png",
+    "Semantic Blocks": "docs/theme-preview/slides/grid/slide-09.png",
+    "Decoration Pattern Catalog": "docs/theme-preview/slides/magazine/slide-11.png",
+    "Editable Proof Objects": "docs/theme-preview/slides/data/slide-16.png",
+    "Image Safe Frame": "docs/theme-preview/slides/glass/slide-22.png",
+    "Mixed Object Packing": "docs/theme-preview/slides/grid/slide-23.png",
+    "Chart and Table Pair (Cont. 2/2)": "docs/theme-preview/slides/magazine/slide-15.png"
+  },
   "checkedImages": [
-    "docs/theme-preview/slides/magazine/slide-04.png",
+    "docs/assets/readme-teaser/slides/slide-01.png",
     "docs/theme-preview/slides/grid/slide-10.png",
     "docs/theme-preview/slides/grid/slide-09.png",
     "docs/theme-preview/slides/magazine/slide-11.png",
@@ -15,9 +29,9 @@
     "docs/theme-preview/slides/magazine/slide-15.png"
   ],
   "visualFingerprints": {
-    "docs/theme-preview/slides/magazine/slide-04.png": {
-      "sha256": "30091b9b556869feda5cf79df4caf96ccbe7616d467486a5ede882e0d958ca79",
-      "bytes": 34901,
+    "docs/assets/readme-teaser/slides/slide-01.png": {
+      "sha256": "1ceb1be6e3af2113eadef0e839a82f95cea0a3e7de46fccd8ca09bc670e7e515",
+      "bytes": 69296,
       "size": [
         1600,
         900

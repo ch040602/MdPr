@@ -1,4 +1,4 @@
-import type { Config, MarkdownDocument, OutlineNode, PresentationIR, SlideIR } from "../ir/types.js";
+import type { BlockIR, Config, MarkdownDocument, OutlineNode, PresentationIR, SlideIR } from "../ir/types.js";
 import { buildOutlineTree } from "../outline/buildOutlineTree.js";
 import { calculateDensity } from "./density.js";
 import { detectSlideIntent, countPrimaryItems } from "../intent/detectSlideIntent.js";
@@ -101,6 +101,10 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
     }
   }
 
+  if (config.deck.presentationMode === "pipeline-one-page") {
+    slides.splice(0, slides.length, createPipelineOnePageSlide(doc, config, slides));
+  }
+
   slides.forEach((slide, idx) => {
     slide.index = idx + 1;
   });
@@ -116,6 +120,48 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
     slides,
     assets: [],
     diagnostics: [],
+  };
+}
+
+function createPipelineOnePageSlide(doc: MarkdownDocument, config: Config, plannedSlides: SlideIR[]): SlideIR {
+  const contentSlides = plannedSlides.filter((slide) => slide.role !== "cover" && slide.role !== "toc");
+  const title = doc.title ?? config.deck.title ?? contentSlides[0]?.title ?? "Pipeline Overview";
+  const source = contentSlides[0]?.source ?? {};
+  const blocks = contentSlides.flatMap((slide, index) => [
+    createSectionLabelBlock(slide, index),
+    ...slide.blocks.filter((block) => block.type !== "slideBreak"),
+  ]);
+  const fallbackBlocks = plannedSlides.flatMap((slide) => slide.blocks.filter((block) => block.type !== "slideBreak"));
+  const sourceBlocks = doc.blocks.filter((block) => block.type !== "heading" && block.type !== "slideBreak");
+  const finalBlocks = blocks.length ? blocks : fallbackBlocks.length ? fallbackBlocks : sourceBlocks;
+  const base: Omit<SlideIR, "intent" | "tags"> = {
+    id: createStableId(["pipeline-one-page", title], "pipeline-one-page"),
+    index: 1,
+    role: "content",
+    title,
+    headingPath: [title],
+    source,
+    blocks: finalBlocks,
+    primaryItemCount: countPrimaryItems(finalBlocks),
+    density: calculateDensity(finalBlocks).total,
+  };
+
+  return {
+    ...base,
+    intent: "summary",
+    tags: ["auto", "pipeline-one-page"],
+  };
+}
+
+function createSectionLabelBlock(slide: SlideIR, index: number): BlockIR {
+  const text = slide.title ?? `Section ${index + 1}`;
+  return {
+    id: `${slide.id}-one-page-section`,
+    type: "paragraph",
+    text,
+    lines: [text],
+    inlineRuns: [{ text, bold: true }],
+    source: slide.source,
   };
 }
 

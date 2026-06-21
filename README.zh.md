@@ -1,6 +1,6 @@
 # mdpresent
 
-![MDPR generated teaser summary slide preview](docs/theme-preview/slides/magazine/slide-04.png)
+![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page)
 
 `mdpresent` 是 deterministic Markdown presentation runtime。
 
@@ -8,8 +8,9 @@
 - **Intermediate model**：`Presentation IR` and `Layout IR`
 - **Outputs**：editable `PPTX`, `HTML`, and `PDF`
 - **Runtime**：rule-based parsing, splitting, layout, validation, theme selection, and rendering
+- **LLM-advised quality**：use [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) for agent-side semantic hints, review loops, or visual-quality advice before MDPR builds the deck.
 - **Agent boundary**：[`mdpr-skill`](https://github.com/ch040602/mdpr-skill) may suggest compact semantic hints, but MDPR owns final structure and output.
-- **README assets**：exported from the shared `examples/theme-preview-en/deck.md` PPTX preview deck, with no README-only renderer.
+- **README assets**：main teaser is built from `examples/readme-teaser/deck.md` with `--pipeline-one-page`; gallery images come from the shared theme preview deck. There is no README-only renderer.
 
 语言版本：[English](README.md), [Korean](README.ko.md)
 
@@ -17,10 +18,12 @@
 
 - **PPTX first**：先生成可编辑 PowerPoint，再导出 PNG 进行检查。
 - **No LLM runtime**：构建结果不依赖模型调用，可重复生成。
+- **One-page teaser mode**：`--pipeline-one-page` keeps pipeline, feature, chart, and table summaries on one rendered slide.
 - **Markdown semantics**：保留 heading、list、emphasis、table、chart、image、code、quote 和 pipeline diagram。
 - **Design grammar**：将 decoration style 与 color seed 分离，并根据 harmony 规则生成 PPT theme/chart colors。
 - **Object coverage**：支持 native table、native chart、proof object、icon slot、SVG-backed surface 和 diagram connector。
-- **Visual QA**：检查 PPTX/PNG artifact、slide count、surface marker、语言、overflow 和 manifest drift。
+- **Deterministic validation**：检查 overflow、generated artifact contract、slide count、surface marker、语言和 manifest drift。
+- **Skill-side review**：LLM-advised layout critique, visual polish, and high-quality deck guidance belong in `mdpr-skill`, not MDPR runtime.
 
 ## 预览
 
@@ -30,7 +33,7 @@
 
 | Teaser Summary | Pipeline Diagram |
 | --- | --- |
-| <img src="docs/theme-preview/slides/magazine/slide-04.png" alt="PPTX teaser summary slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-10.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
+| <img src="docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page" alt="PPTX one-page teaser slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-10.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
 
 | Markdown Semantics | Decoration Patterns |
 | --- | --- |
@@ -39,6 +42,18 @@
 | Editable Proof Objects | Mixed Object Packing |
 | --- | --- |
 | <img src="docs/theme-preview/slides/data/slide-16.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-23.png" alt="PPTX mixed object packing slide exported to PNG" width="100%"> |
+
+## 主题风格示例
+
+同一个 Markdown source 会通过 pruned distinct theme styles 渲染。下面的图片都来自 generated PPTX output 导出的 PNG。
+
+| Clean | Editorial | Minimalism | Newmorphism |
+| --- | --- | --- | --- |
+| <img src="docs/theme-preview/slides/clean/slide-01.png" alt="Clean theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/editorial/slide-01.png" alt="Editorial theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/minimalism/slide-01.png" alt="Minimalism theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/newmorphism/slide-01.png" alt="Newmorphism theme cover slide exported from PPTX" width="100%"> |
+
+| Glass | Grid | Data | Magazine |
+| --- | --- | --- | --- |
+| <img src="docs/theme-preview/slides/glass/slide-01.png" alt="Glass theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-01.png" alt="Grid theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/data/slide-01.png" alt="Data theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/magazine/slide-01.png" alt="Magazine theme cover slide exported from PPTX" width="100%"> |
 
 ## Runtime Pipeline
 
@@ -56,7 +71,7 @@ Markdown
   -> Presentation IR
   -> Layout Planner
   -> Override Engine
-  -> QA / Overflow Checker
+  -> Validation / Overflow Checker
   -> Renderer
       -> PPTX
       -> HTML
@@ -71,6 +86,7 @@ mdpresent plan examples/basic/deck.md --json > layout.plan.json
 mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
 mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual
+mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-teaser --theme-style grid --theme-color "#0F766E" --theme-harmony split-complementary --pipeline-one-page --visual
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
 ```
 
@@ -79,6 +95,7 @@ mdpresent build examples/basic/deck.md --to pptx --out dist --template company-m
 - `--theme-style`: `clean`, `executive`, `editorial`, `technical`, `minimalism`, `newmorphism`, `glass`, `grid`, `data`, `magazine`
 - `--theme-color`: main color seed，例如 `#8A4FFF`
 - `--theme-harmony`: `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, `triadic`
+- `--pipeline-one-page`: creates a single-slide pipeline/teaser composition from multi-section Markdown while keeping the shared parser, layout planner, validation, and renderers.
 - `--theme-gallery`: 用多个 style 重复渲染同一个 Markdown 以便比较。README/Actions preview 只使用 distinct style subset。
 - `--design`: legacy/shared preset 兼容选项
 
@@ -93,7 +110,7 @@ mdpresent build examples/basic/deck.md --to pptx --out dist --template company-m
 ## Project Map
 
 ```text
-docs/       design, rendering, QA, and methodology documents
+docs/       design, rendering, validation, and methodology documents
 schemas/    Config, Override, Presentation IR, and Layout IR schemas
 packages/   core, layout, override, CLI, and renderers
 examples/   example Markdown decks and configs

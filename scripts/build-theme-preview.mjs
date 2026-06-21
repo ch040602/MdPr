@@ -304,7 +304,7 @@ select {
 <body data-gallery-kind="pptx-png">
 <div class="app">
   <aside class="sidebar">
-    <h1>PPTX Theme QA Gallery</h1>
+    <h1>PPTX Theme Validation Gallery</h1>
     <p class="meta">Source: ${escapeHtml(source)}<br />Generated: ${escapeHtml(generatedAt)}<br />Each image is exported from a generated PPTX deck. HTML is only the gallery shell.</p>
     <div class="control-group">
       <label for="themeSelect">Selected PPT Theme Style</label>

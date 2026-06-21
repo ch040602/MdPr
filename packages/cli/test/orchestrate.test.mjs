@@ -103,6 +103,144 @@ test("buildDeck writes design lock and output manifest with visual validation su
   }
 });
 
+test("pipeline-one-page mode renders a multi-section teaser as one slide", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pipeline-one-page-"));
+  const deckPath = join(outDir, "teaser.md");
+
+  try {
+    writeFileSync(deckPath, [
+      "# MDPR Teaser",
+      "",
+      "## Theme Families",
+      "",
+      "- clean, editorial, glass, grid, data, magazine",
+      "- main color seed derives harmony, contrast, and chart slots",
+      "",
+      "## Object Coverage",
+      "",
+      "| Family | Examples |",
+      "| --- | --- |",
+      "| Diagrams | pipeline, timeline, proof object |",
+      "| Evidence | table, chart, metric dots |",
+      "",
+      "## Runtime Pipeline",
+      "",
+      "```mermaid",
+      "graph LR",
+      "  A[Markdown] --> B[Semantic split]",
+      "  B --> C[Layout grammar]",
+      "  C --> D[Editable PPTX]",
+      "```",
+    ].join("\n"));
+
+    const result = await buildDeck(deckPath, {
+      formats: ["html"],
+      outDir,
+      cliConfig: {
+        deck: { presentationMode: "pipeline-one-page" },
+      },
+    });
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+
+    assert.equal(result.presentation.slides.length, 1);
+    assert.equal(result.layout.slides.length, 1);
+    assert.equal(result.presentation.slides[0].title, "MDPR Teaser");
+    assert.equal(result.presentation.slides[0].tags.includes("pipeline-one-page"), true);
+    assert.equal(manifest.slideCount, 1);
+    assert.equal(manifest.presentationMode, "pipeline-one-page");
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("pipeline-one-page layout separates pipeline, feature text, chart, and table regions", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pipeline-one-page-layout-"));
+  const deckPath = join(outDir, "teaser.md");
+
+  try {
+    writeFileSync(deckPath, [
+      "# MDPR Teaser",
+      "",
+      "## Runtime Pipeline",
+      "",
+      "Markdown => Semantic IR => Layout Grammar => Editable PPTX",
+      "",
+      "## Feature Coverage",
+      "",
+      "- Themes: eight distinct style families.",
+      "- Objects: tables, charts, diagrams, image frames, icon slots.",
+      "- Decorations: card, rail, flag, ticket, notch, proof, and grid patterns.",
+      "- Validation: overflow, readable text, graph bounds, and table coherence.",
+      "",
+      "## Coverage Signal",
+      "",
+      "```chart",
+      "labels: Themes, Objects, Decorations, Checks",
+      "Current: 8, 12, 36, 9",
+      "```",
+      "",
+      "## Ownership",
+      "",
+      "| Layer | MDPR owns | Skill hints |",
+      "| --- | --- | --- |",
+      "| Content | parsing | semantic grouping |",
+      "| Output | editable PPTX | review notes |",
+    ].join("\n"));
+
+    const result = await buildDeck(deckPath, {
+      formats: ["html"],
+      outDir,
+      cliConfig: { deck: { presentationMode: "pipeline-one-page" } },
+    });
+    const regions = result.layout.slides[0].regions;
+    const diagram = regions.find((region) => region.role === "diagram");
+    const features = regions.find((region) => region.id === "feature-summary");
+    const chart = regions.find((region) => region.role === "chart");
+    const table = regions.find((region) => region.role === "table");
+
+    assert.ok(diagram);
+    assert.ok(features);
+    assert.ok(chart);
+    assert.ok(table);
+    assert.equal(features.y > diagram.y + diagram.h, true);
+    assert.equal(features.x, diagram.x);
+    assert.equal(features.w, diagram.w);
+    assert.equal(chart.x > diagram.x + diagram.w, true);
+    assert.equal(table.x, chart.x);
+    assert.equal(table.y > chart.y + chart.h, true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("pipeline-one-page mode keeps h1-only body content instead of creating a blank slide", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pipeline-one-page-h1-"));
+  const deckPath = join(outDir, "one-page.md");
+
+  try {
+    writeFileSync(deckPath, [
+      "# Single Page Note",
+      "",
+      "Markdown => Layout => PPTX",
+      "",
+      "- Themes: deterministic style selection.",
+      "- Objects: diagrams and lists remain editable.",
+    ].join("\n"));
+
+    const result = await buildDeck(deckPath, {
+      formats: ["html"],
+      outDir,
+      cliConfig: { deck: { presentationMode: "pipeline-one-page" } },
+    });
+
+    assert.equal(result.presentation.slides.length, 1);
+    assert.ok(result.presentation.slides[0].blocks.length >= 2);
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "VISUAL_BACKGROUND_OVERLAP"), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("buildDeck rejects design lock drift unless explicitly updated", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-lock-drift-"));
   const lockPath = join(outDir, "lock.json");

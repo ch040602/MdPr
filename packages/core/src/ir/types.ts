@@ -68,6 +68,7 @@ export type SourceRange = {
 };
 
 export type ParserMode = "simple" | "pandoc";
+export type PresentationMode = "normal" | "pipeline-one-page";
 
 export type PandocAttr = {
   identifier?: string;
@@ -219,6 +220,7 @@ export type Config = {
   deck: {
     titleFrom: "first-h1" | "frontmatter" | "filename" | "manual";
     title?: string;
+    presentationMode?: PresentationMode;
     ratio: "16:9" | "4:3";
     language?: string;
     defaultOutput: OutputFormat[];

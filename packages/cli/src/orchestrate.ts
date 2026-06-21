@@ -227,6 +227,7 @@ function createBuildManifest(
       sha256: sha256(stableJson(deck.config)),
       sources: deck.configSources,
     },
+    presentationMode: deck.config.deck.presentationMode ?? "normal",
     slideCount: deck.presentation.slides.length,
     outputs: writtenFiles,
     designLock: designLockPath,

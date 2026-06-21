@@ -9,18 +9,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 THEME_PREVIEW_DIR = ROOT / "docs" / "theme-preview"
-EXPECTED_MAIN_IMAGE = "docs/theme-preview/slides/magazine/slide-04.png"
-EXPECTED_PIPELINE_IMAGE = "docs/theme-preview/slides/grid/slide-10.png"
-REQUIRED_PREVIEW_IMAGES = [
-    EXPECTED_MAIN_IMAGE,
-    EXPECTED_PIPELINE_IMAGE,
-    "docs/theme-preview/slides/grid/slide-09.png",
-    "docs/theme-preview/slides/magazine/slide-11.png",
-    "docs/theme-preview/slides/data/slide-16.png",
-    "docs/theme-preview/slides/glass/slide-22.png",
-    "docs/theme-preview/slides/grid/slide-23.png",
-    "docs/theme-preview/slides/magazine/slide-15.png",
-]
+README_TEASER_DIR = ROOT / "docs" / "assets" / "readme-teaser"
+EXPECTED_MAIN_IMAGE = "docs/assets/readme-teaser/slides/slide-01.png"
+SELECTED_THEME_PREVIEW_TITLES = {
+    "Pipeline Diagram": "grid",
+    "Semantic Blocks": "grid",
+    "Decoration Pattern Catalog": "magazine",
+    "Editable Proof Objects": "data",
+    "Image Safe Frame": "glass",
+    "Mixed Object Packing": "grid",
+    "Chart and Table Pair (Cont. 2/2)": "magazine",
+}
 
 
 def png_size(path: Path) -> tuple[int, int] | None:
@@ -50,6 +49,27 @@ def visual_fingerprints(images: list[str]) -> dict[str, dict[str, object]]:
     return fingerprints
 
 
+def sha256_text(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def selected_preview_images_by_title(manifest: dict[str, object], issues: list[str]) -> dict[str, str]:
+    themes = {theme.get("name"): theme for theme in manifest.get("themes", []) if isinstance(theme, dict)}
+    selected: dict[str, str] = {}
+    for title, preferred_theme in SELECTED_THEME_PREVIEW_TITLES.items():
+        theme = themes.get(preferred_theme)
+        if not theme:
+            issues.append(f"theme-preview:selected-title-theme-missing:{title}:{preferred_theme}")
+            continue
+        slides = theme.get("slides", [])
+        slide = next((item for item in slides if isinstance(item, dict) and item.get("title") == title), None)
+        if not slide:
+            issues.append(f"theme-preview:selected-title-slide-missing:{title}:{preferred_theme}")
+            continue
+        selected[title] = f"docs/theme-preview/{slide.get('file')}"
+    return selected
+
+
 def main() -> None:
     readmes = {
         "README.md": read_text(ROOT / "README.md"),
@@ -57,29 +77,46 @@ def main() -> None:
         "README.zh.md": read_text(ROOT / "README.zh.md"),
     }
     manifest = json.loads((THEME_PREVIEW_DIR / "preview-manifest.json").read_text(encoding="utf-8"))
+    teaser_manifest = json.loads((README_TEASER_DIR / "mdpresent-manifest.json").read_text(encoding="utf-8"))
     evaluation = json.loads((THEME_PREVIEW_DIR / "theme-preview-evaluation.json").read_text(encoding="utf-8"))
     issues: list[str] = []
 
     if manifest.get("source") != "examples/theme-preview-en/deck.md":
         issues.append("theme-preview:source-not-shared-md")
+    if teaser_manifest.get("source", {}).get("path") != "examples/readme-teaser/deck.md":
+        issues.append("readme-teaser:source-not-md")
+    if teaser_manifest.get("presentationMode") != "pipeline-one-page":
+        issues.append("readme-teaser:not-pipeline-one-page")
+    if teaser_manifest.get("slideCount") != 1:
+        issues.append("readme-teaser:not-single-slide")
+    teaser_source_path = teaser_manifest.get("source", {}).get("path")
+    teaser_source_text = read_text(ROOT / teaser_source_path) if teaser_source_path else ""
+    teaser_source_sha256 = sha256_text(teaser_source_text)
+    teaser_manifest_sha256 = teaser_manifest.get("source", {}).get("sha256")
+    teaser_source_sha256_matches = teaser_source_sha256 == teaser_manifest_sha256
+    if not teaser_source_sha256_matches:
+        issues.append("readme-teaser:source-sha256-stale")
     if int(manifest.get("styleCount", 0) or 0) < 8:
         issues.append("theme-preview:too-few-styles")
     if int(manifest.get("slideCount", 0) or 0) < 12:
         issues.append("theme-preview:too-few-slides")
     if evaluation.get("ok") is not True:
         issues.append("theme-preview:evaluation-not-ok")
+    selected_images_by_title = selected_preview_images_by_title(manifest, issues)
+    required_preview_images = [EXPECTED_MAIN_IMAGE, *selected_images_by_title.values()]
+    expected_pipeline_image = selected_images_by_title.get("Pipeline Diagram", "")
 
     for readme_name, content in readmes.items():
         if "docs/assets/readme-slides" in content:
             issues.append(f"{readme_name}:uses-retired-readme-assets")
         if EXPECTED_MAIN_IMAGE not in content:
             issues.append(f"{readme_name}:missing-main-preview")
-        if EXPECTED_PIPELINE_IMAGE not in content:
+        if expected_pipeline_image and expected_pipeline_image not in content:
             issues.append(f"{readme_name}:missing-pipeline-preview")
         if re.search(r"build-readme-slide-assets|readme-slide-assets-report|mdpr-showcase-teaser|mdpr-pipeline-teaser", content):
             issues.append(f"{readme_name}:mentions-retired-readme-teaser")
 
-    for image in REQUIRED_PREVIEW_IMAGES:
+    for image in required_preview_images:
         path = ROOT / image
         if not path.exists() or path.stat().st_size < 5000:
             issues.append(f"{image}:missing-or-too-small")
@@ -91,10 +128,16 @@ def main() -> None:
         "ok": not issues,
         "issues": issues,
         "source": manifest.get("source"),
+        "teaserSource": teaser_manifest.get("source", {}).get("path"),
+        "teaserSourceSha256": teaser_source_sha256,
+        "teaserSourceSha256Matches": teaser_source_sha256_matches,
+        "teaserPresentationMode": teaser_manifest.get("presentationMode"),
+        "teaserSlideCount": teaser_manifest.get("slideCount"),
         "mainImage": EXPECTED_MAIN_IMAGE,
-        "pipelineImage": EXPECTED_PIPELINE_IMAGE,
-        "checkedImages": REQUIRED_PREVIEW_IMAGES,
-        "visualFingerprints": visual_fingerprints(REQUIRED_PREVIEW_IMAGES),
+        "pipelineImage": expected_pipeline_image,
+        "selectedPreviewImagesByTitle": selected_images_by_title,
+        "checkedImages": required_preview_images,
+        "visualFingerprints": visual_fingerprints(required_preview_images),
         "styleCount": manifest.get("styleCount"),
         "slideCount": manifest.get("slideCount"),
     }

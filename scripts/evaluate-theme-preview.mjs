@@ -60,6 +60,8 @@ async function evaluateThemePreview() {
   const languageIssues = [];
 
   if (!/data-gallery-kind="pptx-png"/.test(indexHtml)) missingMarkers.push("index:pptx-png-gallery-marker");
+  if (!/PPTX Theme Validation Gallery/.test(indexHtml)) missingMarkers.push("index:missing-validation-gallery-title");
+  if (/PPTX Theme QA Gallery/.test(indexHtml)) missingMarkers.push("index:legacy-qa-gallery-title");
   if (/iframe|themes\/[^"']+\.html/.test(indexHtml)) missingMarkers.push("index:legacy-html-deck-preview");
   if (containsDisallowedLanguageScript(indexHtml)) languageIssues.push("index:contains-non-english-script");
   if (containsDisallowedLanguageScript(JSON.stringify(previewSource))) languageIssues.push("preview-manifest:contains-non-english-script");

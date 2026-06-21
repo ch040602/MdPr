@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "engine": "mdpresent",
+  "source": {
+    "path": "examples/readme-teaser/deck.md",
+    "sha256": "79f42181a4f637b78784bb48a5a6d7a577db4429978ecf7470017cf293aacfc6"
+  },
+  "config": {
+    "sha256": "4cb2cb1317434ec582caecae8b84d1957160dbf4259704ac9508554a92e2d89b",
+    "sources": [
+      {
+        "kind": "default"
+      },
+      {
+        "kind": "cli-args",
+        "values": {
+          "deck": {
+            "presentationMode": "pipeline-one-page"
+          },
+          "theme": {
+            "decorationStyle": "grid",
+            "colorSeed": "#0F766E",
+            "primaryColor": "#0F766E",
+            "colorCombination": "split-complementary"
+          }
+        }
+      }
+    ]
+  },
+  "presentationMode": "pipeline-one-page",
+  "slideCount": 1,
+  "outputs": [
+    "docs\\assets\\readme-teaser\\deck.html",
+    "docs\\assets\\readme-teaser\\deck.pptx"
+  ],
+  "designLock": "docs\\assets\\readme-teaser\\mdpresent-design-lock.json",
+  "diagnostics": [],
+  "validation": {
+    "layoutOverflow": [],
+    "visual": {
+      "checked": true,
+      "slideCount": 1,
+      "checks": {
+        "nonBlankSlides": true,
+        "regionBounds": true,
+        "minimumTextSize": true,
+        "backgroundContentOverlap": true
+      },
+      "diagnostics": []
+    }
+  }
+}

@@ -150,6 +150,6 @@ Example:
 mdpresent build deck.md --to html,pdf --background "#111827" --font Aptos
 ```
 
-## Generated Preview QA
+## Generated Preview Validation
 
 Actions theme preview is regenerated from PPTX output and checked by `scripts/evaluate-theme-preview.mjs`. The evaluator checks the 8-style pruned preview set, legacy deck removal, exported PNG count and size, manifest composition markers, proof object markers, rendered surface variants, required catalog slides, visible text language, and the absence of legacy iframe-based previews.

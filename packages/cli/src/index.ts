@@ -47,7 +47,7 @@ export async function runCli(args: string[]): Promise<number> {
       outDir: readOption(args, "--out") ?? "dist",
       templatePath: readOption(args, "--template"),
       designPreset: readDesignPreset(args),
-      cliConfig: readThemeCliConfig(args),
+      cliConfig: readCliConfig(args),
       themeGalleryPresets: readThemeGalleryPresets(args),
       designLockPath: readOption(args, "--design-lock"),
       updateDesignLock: args.includes("--update-design-lock"),
@@ -87,7 +87,7 @@ function readCommonOptions(args: string[]) {
     configPath: readOption(args, "--config"),
     overridePath: readOption(args, "--override"),
     parser: readParserMode(args),
-    cliConfig: readThemeCliConfig(args),
+    cliConfig: readCliConfig(args),
     visualValidation: args.includes("--visual"),
   };
 }
@@ -130,12 +130,14 @@ function readColorCombination(args: string[]): ColorCombinationName | undefined 
   throw new Error(`Unknown theme harmony: ${value}`);
 }
 
-function readThemeCliConfig(args: string[]) {
+function readCliConfig(args: string[]) {
   const decorationStyle = readDecorationStyle(args);
   const colorSeed = readOption(args, "--theme-color");
   const colorCombination = readColorCombination(args);
-  if (!decorationStyle && !colorSeed && !colorCombination) return undefined;
+  const pipelineOnePage = args.includes("--pipeline-one-page");
+  if (!decorationStyle && !colorSeed && !colorCombination && !pipelineOnePage) return undefined;
   return {
+    ...(pipelineOnePage ? { deck: { presentationMode: "pipeline-one-page" as const } } : {}),
     theme: {
       ...(decorationStyle ? { decorationStyle } : {}),
       ...(colorSeed ? { colorSeed, primaryColor: colorSeed } : {}),
@@ -165,7 +167,7 @@ Usage:
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
   mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--visual] [--json]
-  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--design executive] [--theme-style clean|executive|editorial|technical|minimalism|newmorphism|glass|grid|data|magazine] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,editorial] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual]
+  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style clean|executive|editorial|technical|minimalism|newmorphism|glass|grid|data|magazine] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,editorial] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual]
 
 Config and override file loading are still scaffold diagnostics. HTML and PPTX rendering are wired through the shared orchestration path.
 `);
