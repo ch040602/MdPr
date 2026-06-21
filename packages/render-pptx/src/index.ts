@@ -201,9 +201,7 @@ function coverBackgroundColor(preset: DesignTokens): string {
     "glass",
     "newmorphism",
     "minimalism",
-    "grid",
     "data",
-    "magazine",
     "dark",
     "nord",
     "dracula",
@@ -219,9 +217,7 @@ function coverTitleColor(preset: DesignTokens): string {
     "glass",
     "newmorphism",
     "minimalism",
-    "grid",
     "data",
-    "magazine",
     "dark",
     "nord",
     "dracula",
@@ -2252,8 +2248,8 @@ function addCoverTemplateDecorations(slide: PptxGenJS.Slide, preset: DesignToken
 
 function coverTemplateVariant(presetName: string): "none" | "top-rule" | "split-band" | "left-rail" | "frame" {
   if (["minimalism", "newmorphism"].includes(presetName)) return "none";
-  if (["editorial", "magazine", "solarized", "gruvbox"].includes(presetName)) return "split-band";
-  if (["technical", "grid", "material", "tableau"].includes(presetName)) return "left-rail";
+  if (["solarized", "gruvbox"].includes(presetName)) return "split-band";
+  if (["technical", "material", "tableau"].includes(presetName)) return "left-rail";
   if (["glass", "data", "dark", "nord", "dracula", "monokai", "tokyo-night"].includes(presetName)) return "frame";
   return "top-rule";
 }

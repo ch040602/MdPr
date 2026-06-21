@@ -6,7 +6,7 @@
     "sha256": "79f42181a4f637b78784bb48a5a6d7a577db4429978ecf7470017cf293aacfc6"
   },
   "config": {
-    "sha256": "4cb2cb1317434ec582caecae8b84d1957160dbf4259704ac9508554a92e2d89b",
+    "sha256": "94939bd01f963954a554421a089cf3929699344c0ec47d647253e87f0c3653dd",
     "sources": [
       {
         "kind": "default"
@@ -18,7 +18,7 @@
             "presentationMode": "pipeline-one-page"
           },
           "theme": {
-            "decorationStyle": "grid",
+            "decorationStyle": "clean",
             "colorSeed": "#0F766E",
             "primaryColor": "#0F766E",
             "colorCombination": "split-complementary"
@@ -27,11 +27,28 @@
       }
     ]
   },
+  "override": null,
   "presentationMode": "pipeline-one-page",
   "slideCount": 1,
   "outputs": [
     "docs\\assets\\readme-teaser\\deck.html",
     "docs\\assets\\readme-teaser\\deck.pptx"
+  ],
+  "artifacts": [
+    {
+      "path": "docs\\assets\\readme-teaser\\deck.html",
+      "format": "html",
+      "exists": true,
+      "bytes": 14423,
+      "sha256": "d2e54a04598febfd4e13d19cc1a8772ba2b858074a1ed51200610ccc6d5cde83"
+    },
+    {
+      "path": "docs\\assets\\readme-teaser\\deck.pptx",
+      "format": "pptx",
+      "exists": true,
+      "bytes": 104995,
+      "sha256": "35420122659c156c8230184e64feab88c6e3c39537940dc4439e4e445db3ad6f"
+    }
   ],
   "designLock": "docs\\assets\\readme-teaser\\mdpresent-design-lock.json",
   "diagnostics": [],
@@ -40,13 +57,71 @@
     "visual": {
       "checked": true,
       "slideCount": 1,
+      "thresholds": {
+        "minimumTextContrastRatio": 4.5,
+        "maximumSameLayerOverlapRatio": 0.08,
+        "minimumReadableFontSize": 8,
+        "imageAspectRatioRange": [
+          0.25,
+          4
+        ],
+        "minimumDiagramConnectorSpace": {
+          "width": 2,
+          "height": 1
+        }
+      },
       "checks": {
         "nonBlankSlides": true,
         "regionBounds": true,
         "minimumTextSize": true,
+        "textContrast": true,
+        "sameLayerOverlap": true,
+        "imageAspectRatio": true,
+        "connectorClearance": true,
         "backgroundContentOverlap": true
       },
       "diagnostics": []
+    },
+    "coherence": {
+      "checked": true,
+      "thresholds": {
+        "minimumMixedObjectGroupingScore": 0.75,
+        "minimumObjectCoverageRatio": 0.2
+      },
+      "orphanEvidenceBlocks": 0,
+      "captionDetached": 0,
+      "claimlessSlides": 0,
+      "sectionMotifDrift": 0,
+      "continuationTitleQuality": "ok",
+      "mixedObjectGroupingScore": 1,
+      "checks": {
+        "claimlessEvidenceSlides": true,
+        "detachedCaptions": true,
+        "orphanTables": true,
+        "lowObjectCoverage": true,
+        "sectionMotifDrift": true
+      },
+      "diagnostics": []
+    },
+    "overflowResolution": {
+      "checked": true,
+      "strategyCounts": {
+        "preSplit": 0,
+        "candidateReflow": 0,
+        "regionExpansion": 0,
+        "fontShrink": 0
+      },
+      "continuationSlides": 0,
+      "continuationGroups": 0,
+      "continuationReasons": {
+        "list": 0,
+        "table": 0,
+        "code": 0,
+        "paragraph": 0,
+        "mixed": 0,
+        "toc": 0
+      },
+      "graphOrDiagramBlocksSplit": false
     }
   }
 }

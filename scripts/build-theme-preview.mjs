@@ -16,13 +16,10 @@ const sourceMarkdown = readFileSync(inputPath, "utf-8");
 const generatedAt = "source-controlled";
 const previewStyleNames = [
   "clean",
-  "editorial",
   "minimalism",
   "newmorphism",
   "glass",
-  "grid",
   "data",
-  "magazine",
 ].filter((name) => DECORATION_STYLE_NAMES.includes(name));
 
 assertEnglishOnlyText(sourceMarkdown, inputPath);
@@ -128,7 +125,7 @@ function slideTitle(index) {
 
 function renderPreviewShell({ title, source, generatedAt, themes }) {
   const themesJson = JSON.stringify(themes);
-  const defaultTheme = themes.find((theme) => theme.name === "magazine") ?? themes[0];
+  const defaultTheme = themes.find((theme) => theme.name === "clean") ?? themes[0];
   return `<!doctype html>
 <html lang="en">
 <head>

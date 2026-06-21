@@ -61,17 +61,14 @@ Implemented baseline:
 ```text
 clean       light background, card surfaces, simple title rule
 executive   business deck with blue accent, title rule, card surfaces, corner accent
-editorial   warm editorial palette with card surfaces and accent bars
 technical   green-accent technical deck with clean card surfaces
 minimalism  restrained rules, transparent surfaces, sparse composition
 newmorphism soft raised surfaces with paired light/dark shadows
 glass       translucent dark-field surfaces with PPT shadow/glow effects
-grid        modular grid, restrained type, hairline columns, red-accent structure
 data        dark data-journalism grammar with proof surfaces
-magazine    editorial rhythm with issue label, rules, column rail, and warm surfaces
 ```
 
-Legacy color-only presets remain available through `--design` and `theme.designPreset` for compatibility. They are not listed in the Actions theme-style preview because they do not add distinct layout, surface, or page grammar.
+Palette-only or background-only swaps are pruned from `--theme-style` and the Actions preview. Existing layout presets such as `grid` remain layout grammar, not theme style.
 
 ## Color and Theme Policy
 

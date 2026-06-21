@@ -12,13 +12,13 @@ THEME_PREVIEW_DIR = ROOT / "docs" / "theme-preview"
 README_TEASER_DIR = ROOT / "docs" / "assets" / "readme-teaser"
 EXPECTED_MAIN_IMAGE = "docs/assets/readme-teaser/slides/slide-01.png"
 SELECTED_THEME_PREVIEW_TITLES = {
-    "Pipeline Diagram": "grid",
-    "Semantic Blocks": "grid",
-    "Decoration Pattern Catalog": "magazine",
+    "Pipeline Diagram": "clean",
+    "Semantic Blocks": "clean",
+    "Decoration Pattern Catalog": "minimalism",
     "Editable Proof Objects": "data",
     "Image Safe Frame": "glass",
-    "Mixed Object Packing": "grid",
-    "Chart and Table Pair (Cont. 2/2)": "magazine",
+    "Mixed Object Packing": "newmorphism",
+    "Chart and Table Pair (Cont. 2/2)": "data",
 }
 
 README_ROLE_CONTRACTS = {
@@ -117,7 +117,7 @@ def main() -> None:
     teaser_source_sha256_matches = teaser_source_sha256 == teaser_manifest_sha256
     if not teaser_source_sha256_matches:
         issues.append("readme-teaser:source-sha256-stale")
-    if int(manifest.get("styleCount", 0) or 0) < 8:
+    if int(manifest.get("styleCount", 0) or 0) < 5:
         issues.append("theme-preview:too-few-styles")
     if int(manifest.get("slideCount", 0) or 0) < 12:
         issues.append("theme-preview:too-few-slides")

@@ -27,22 +27,22 @@ the content.
 `theme.designPreset` is the compatibility entry point for a named preset. `theme.decorationStyle` selects the visual grammar separately from color:
 
 ```text
-clean, executive, editorial, technical,
-minimalism, newmorphism, glass, grid, data, magazine
+clean, executive, technical,
+minimalism, newmorphism, glass, data
 ```
 
-Legacy color-only presets remain available through `theme.designPreset` and `--design` for existing decks, but Actions previews only enumerate decoration styles that alter layout, surfaces, or page grammar.
+Palette-only or background-only swaps are pruned from `theme.decorationStyle`, `--theme-style`, and Actions previews. Layout presets such as `grid` remain available as composition grammar, not theme style.
 
 The generated Actions/README preview is intentionally pruned to these distinct
 style grammars:
 
 ```text
-clean, editorial, minimalism, newmorphism, glass, grid, data, magazine
+clean, minimalism, newmorphism, glass, data
 ```
 
-`executive` and `technical` remain valid CLI styles for compatibility and
-specific deck use, but they are not part of the generated preview gallery when
-their output would read as a palette or background variation of another style.
+`executive` and `technical` remain valid CLI styles for specific deck use, but
+they are not part of the generated README gallery when their output would read
+as a palette or background variation of another style.
 
 `theme.colorSeed` provides the main color. `theme.colorCombination` derives the supporting palette using Adobe Color Wheel-style harmony rules:
 

@@ -8,13 +8,10 @@ const pptxDir = join(outDir, "pptx");
 const slidesDir = join(outDir, "slides");
 const expectedStyles = [
   "clean",
-  "editorial",
   "minimalism",
   "newmorphism",
   "glass",
-  "grid",
   "data",
-  "magazine",
 ].sort();
 const legacyColorOnly = ["dark", "nord", "solarized", "dracula", "tableau", "gruvbox", "monokai", "material", "tokyo-night"];
 const expectedPngSize = { w: 1600, h: 900 };

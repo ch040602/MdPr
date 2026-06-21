@@ -321,7 +321,7 @@ test("paragraph-heavy continuation chunks use open two-column structure", () => 
     "",
     "## Design Presets",
     "",
-    "`--design` and `theme.designPreset` use one shared catalog across PPTX and HTML. Current presets include plain, clean, executive, editorial, technical, dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, and tokyo-night.",
+    "`--design` and `theme.designPreset` use one shared catalog across PPTX and HTML. Current presets include plain, clean, executive, technical, dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, and tokyo-night.",
     "",
     "For visual QA, `--theme-gallery executive,nord,dracula,solarized` repeats the planned slides under multiple design presets in one PPTX.",
     "",

@@ -1,21 +1,18 @@
 {
   "ok": true,
   "outDir": "docs/theme-preview",
-  "styleCount": 8,
+  "styleCount": 5,
   "styleNames": [
     "clean",
     "data",
-    "editorial",
     "glass",
-    "grid",
-    "magazine",
     "minimalism",
     "newmorphism"
   ],
   "missingStyles": [],
   "extraStyles": [],
   "legacyPages": [],
-  "slideCount": 24,
+  "slideCount": 25,
   "compositionClasses": [
     "chart-table",
     "comparison",
@@ -25,7 +22,6 @@
     "key-message",
     "pipeline",
     "table-focus",
-    "timeline",
     "toc",
     "vertical-list"
   ],
@@ -45,8 +41,7 @@
     "notched-corner",
     "rounded",
     "ticket",
-    "two-corner-left",
-    "two-corner-right"
+    "two-corner-left"
   ],
   "missingRenderedSurfaces": [],
   "proofKinds": [

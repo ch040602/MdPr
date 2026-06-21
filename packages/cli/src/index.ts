@@ -200,7 +200,7 @@ Usage:
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
   mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--visual] [--coherence] [--json]
-  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style clean|executive|editorial|technical|minimalism|newmorphism|glass|grid|data|magazine] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,editorial] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence]
+  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style clean|executive|technical|minimalism|newmorphism|glass|data] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,glass] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence]
 
 Config files are validated against schemas/config.schema.json before merging. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
 `);

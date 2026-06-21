@@ -234,18 +234,18 @@ test("renderHtml renders table blocks as bounded HTML tables", () => {
 
 test("renderHtml keeps same-depth item surfaces coherent in Actions previews", () => {
   const config = structuredClone(defaultConfig);
-  config.theme.decorationStyle = "magazine";
+  config.theme.decorationStyle = "technical";
   const doc = parseMarkdown("# Demo Deck\n\n## Cards\n\n- Alpha\n- Beta\n- Gamma\n- Delta");
   const presentation = planPresentation(doc, config);
   const layout = planLayout(presentation, config);
 
   const html = renderHtml({ presentation, layout });
 
-  assert.match(html, /body data-theme-style="magazine"/);
+  assert.match(html, /body data-theme-style="technical"/);
   const itemSurfaceClasses = [...html.matchAll(/class="region item surface ([^" ]+)/g)].map((match) => match[1]);
-  assert.deepEqual(new Set(itemSurfaceClasses), new Set(["flag-drop"]));
-  assert.match(html, /body\[data-theme-style="magazine"\] \.slide::before/);
+  assert.deepEqual(new Set(itemSurfaceClasses), new Set(["two-corner-right"]));
   assert.doesNotMatch(html, /circle-vine/);
+  assert.doesNotMatch(html, /body\[data-theme-style="magazine"\]/);
 });
 
 test("renderHtml exposes composition classes for stronger Actions previews", () => {

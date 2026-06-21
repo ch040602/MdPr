@@ -21,12 +21,8 @@ export function addPresetBackground(
     addNewmorphismBackground(slide, preset, slideSize);
   } else if (preset.decorationStyle === "minimalism") {
     addMinimalismBackground(slide, preset, slideSize);
-  } else if (preset.decorationStyle === "grid") {
-    addGridBackground(slide, preset, slideSize);
   } else if (preset.decorationStyle === "data") {
     addDataBackground(slide, preset, slideSize);
-  } else if (preset.decorationStyle === "magazine") {
-    addMagazineBackground(slide, preset, slideSize);
   }
 
   if (preset.cornerAccent) {
@@ -131,41 +127,6 @@ function addGlassBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideS
   });
 }
 
-function addGridBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
-  const marginX = 0.72;
-  const top = 0.46;
-  const bottom = slideSize.height - 0.42;
-  const columns = 6;
-  for (let index = 0; index <= columns; index++) {
-    const x = marginX + ((slideSize.width - marginX * 2) / columns) * index;
-    slide.addShape("line" as never, {
-      x,
-      y: top,
-      w: 0,
-      h: bottom - top,
-      line: { color: preset.surfaceLine, transparency: index % 2 === 0 ? 30 : 62, pt: 0.45 },
-    });
-  }
-  for (let index = 0; index < 5; index++) {
-    const y = top + ((bottom - top) / 4) * index;
-    slide.addShape("line" as never, {
-      x: marginX,
-      y,
-      w: slideSize.width - marginX * 2,
-      h: 0,
-      line: { color: preset.surfaceLine, transparency: 68, pt: 0.35 },
-    });
-  }
-  slide.addShape("rect", {
-    x: marginX,
-    y: top,
-    w: 0.16,
-    h: 0.16,
-    fill: { color: preset.primaryColor },
-    line: { color: preset.primaryColor, transparency: 100 },
-  });
-}
-
 function addDataBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
   slide.addText("DATA", {
     x: 0.66,
@@ -198,52 +159,6 @@ function addDataBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSi
     w: slideSize.width - 1.28,
     h: 0,
     line: { color: preset.surfaceLine, transparency: 28, pt: 0.8 },
-  });
-}
-
-function addMagazineBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
-  slide.addText("ISSUE", {
-    x: slideSize.width - 1.72,
-    y: 0.34,
-    w: 1.0,
-    h: 0.22,
-    fontSize: 8,
-    bold: true,
-    color: preset.primaryColor,
-    charSpace: 2.0,
-    margin: 0,
-    breakLine: false,
-    isTextBox: true,
-    align: "right",
-  } as never);
-  slide.addShape("line" as never, {
-    x: 0.72,
-    y: 0.72,
-    w: slideSize.width - 1.44,
-    h: 0,
-    line: { color: preset.textColor, transparency: 48, pt: 0.7 },
-  });
-  slide.addShape("line" as never, {
-    x: 0.72,
-    y: slideSize.height - 0.72,
-    w: slideSize.width - 1.44,
-    h: 0,
-    line: { color: preset.textColor, transparency: 64, pt: 0.5 },
-  });
-  slide.addShape("line" as never, {
-    x: 0.9,
-    y: 1.02,
-    w: 0,
-    h: slideSize.height - 2.04,
-    line: { color: preset.primaryColor, transparency: 40, pt: 0.7 },
-  });
-  slide.addShape("rect", {
-    x: 0.72,
-    y: 0.82,
-    w: 0.12,
-    h: slideSize.height - 1.64,
-    fill: { color: preset.primaryColor, transparency: 10 },
-    line: { color: preset.primaryColor, transparency: 100 },
   });
 }
 
@@ -399,7 +314,7 @@ function surfaceRadius(preset: DesignPreset, region: LayoutRegion): number {
 }
 
 function surfaceVariant(preset: DesignPreset, region: LayoutRegion): SurfaceVariant {
-  if (region.role === "table") return preset.decorationStyle === "grid" ? "two-corner-left" : "ticket";
+  if (region.role === "table") return "ticket";
   if (region.role === "chart") return preset.decorationStyle === "data" ? "notched-corner" : "flag-drop";
   if (region.role === "code") return "notched-corner";
   if (region.id === "key-message" || region.id === "body-panel") return "two-corner-left";
@@ -409,10 +324,7 @@ function surfaceVariant(preset: DesignPreset, region: LayoutRegion): SurfaceVari
     glass: "rounded",
     newmorphism: "rounded",
     minimalism: "rounded",
-    grid: "two-corner-left",
     data: "notched-corner",
-    magazine: "flag-drop",
-    editorial: "rounded",
     executive: "two-corner-left",
     technical: "two-corner-right",
   };

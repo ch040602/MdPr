@@ -240,7 +240,7 @@ test("renderPptx gives wrapped item text enough height to avoid PowerPoint overl
   ];
 
   try {
-    await renderPptx(deck, { outPath, designPreset: "editorial" });
+    await renderPptx(deck, { outPath, designPreset: "clean" });
 
     const expanded = join(outDir, "expanded");
     execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
@@ -398,7 +398,7 @@ test("renderPptx renders plain lists as separate editable text boxes to avoid co
   ];
 
   try {
-    await renderPptx(deck, { outPath, designPreset: "editorial" });
+    await renderPptx(deck, { outPath, designPreset: "clean" });
 
     const expanded = join(outDir, "expanded");
     execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
@@ -858,7 +858,7 @@ test("SVG surfaces diversify card shape grammar without moving layout regions", 
   ];
 
   try {
-    await renderPptx(deck, { outPath, designPreset: "magazine" });
+    await renderPptx(deck, { outPath, designPreset: "technical" });
 
     const zip = await JSZip.loadAsync(readFileSync(outPath));
     const slideXml = await zip.file("ppt/slides/slide1.xml").async("string");
@@ -874,21 +874,21 @@ test("SVG surfaces diversify card shape grammar without moving layout regions", 
     assert.match(slideXml, /<a:off x="822960" y="1463040"\/><a:ext cx="4754880" cy="1234440"\/>/);
     const itemSurfaceVariants = [...combinedSvg.matchAll(/data-mdpr-surface="([^"]+)"/g)].map((match) => match[1]);
     assert.equal(itemSurfaceVariants.length >= 4, true);
-    assert.deepEqual(new Set(itemSurfaceVariants), new Set(["flag-drop"]));
+    assert.deepEqual(new Set(itemSurfaceVariants), new Set(["two-corner-right"]));
     assert.doesNotMatch(combinedSvg, /data-mdpr-surface="ticket"/);
     assert.doesNotMatch(combinedSvg, /data-mdpr-surface="circle-vine"/);
     assert.doesNotMatch(combinedSvg, /data-mdpr-surface-accent="circle-vine-(?:dot|line)"/);
-    assert.match(combinedSvg, /data-mdpr-surface-accent="flag-drop"/);
+    assert.doesNotMatch(combinedSvg, /data-mdpr-surface-accent="flag-drop"/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
 });
 
-test("renderPptx renders distinct native decoration grammar for glass grid data and magazine styles", async () => {
+test("renderPptx renders distinct native decoration grammar for remaining rich styles", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-style-grammar-"));
 
   try {
-    for (const style of ["glass", "grid", "data", "magazine"]) {
+    for (const style of ["glass", "newmorphism", "minimalism", "data"]) {
       const outPath = join(outDir, `${style}.pptx`);
       const deck = structuredClone(sampleDeck);
       deck.layout.theme.decorationStyle = style;
@@ -910,16 +910,15 @@ test("renderPptx renders distinct native decoration grammar for glass grid data 
         assert.match(xml, /outerShdw/);
         assert.match(xml, /glow/);
       }
-      if (style === "grid") {
-        assert.equal((xml.match(/prst="line"/g) ?? []).length >= 7, true);
+      if (style === "newmorphism") {
+        assert.match(xml, /outerShdw/);
+      }
+      if (style === "minimalism") {
+        assert.equal((xml.match(/prst="line"/g) ?? []).length >= 2, true);
       }
       if (style === "data") {
         assert.match(xml, /DATA/);
         assert.equal((xml.match(/prst="rect"/g) ?? []).length >= 4, true);
-      }
-      if (style === "magazine") {
-        assert.match(xml, /ISSUE/);
-        assert.equal((xml.match(/prst="line"/g) ?? []).length >= 3, true);
       }
     }
   } finally {
@@ -1128,7 +1127,7 @@ test("renderPptx renders chart proof objects as editable shapes without native c
   ]);
 
   try {
-    await renderPptx(deck, { outPath, designPreset: "editorial" });
+    await renderPptx(deck, { outPath, designPreset: "clean" });
     const zip = await JSZip.loadAsync(readFileSync(outPath));
     const chartPaths = Object.keys(zip.files).filter((path) => /^ppt\/charts\/chart\d+\.xml$/.test(path));
     assert.equal(chartPaths.length, 0);
@@ -1292,7 +1291,7 @@ test("renderPptx renders text-only slides with a restrained monotone icon aside"
   ];
 
   try {
-    await renderPptx(deck, { outPath, designPreset: "editorial" });
+    await renderPptx(deck, { outPath, designPreset: "clean" });
 
     const expanded = join(outDir, "expanded");
     execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);

@@ -1,6 +1,6 @@
 # mdpresent
 
-![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page)
+![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=clean-pipeline-one-page)
 
 `mdpresent` is a deterministic Markdown presentation runtime.
 
@@ -31,32 +31,32 @@ Contributions: [Contributing guide](CONTRIBUTING.md)
 ## Preview Gallery
 
 - [Open the PPT-generated theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/)
-- Preview scope: 8 pruned decoration styles, excluding palette-only or background-only swaps.
+- Preview scope: 5 pruned decoration styles, excluding palette-only or background-only swaps.
 - Gallery artifacts: generated PPTX decks plus PNG slides extracted from PowerPoint output.
 
 | Teaser Summary | Pipeline Diagram |
 | --- | --- |
-| <img src="docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page" alt="PPTX one-page teaser slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-10.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
+| <img src="docs/assets/readme-teaser/slides/slide-01.png?v=clean-pipeline-one-page" alt="PPTX one-page teaser slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/clean/slide-11.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
 
 | Markdown Semantics | Decoration Patterns |
 | --- | --- |
-| <img src="docs/theme-preview/slides/grid/slide-09.png" alt="PPTX semantic blocks slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/magazine/slide-11.png" alt="PPTX decoration pattern catalog slide exported to PNG" width="100%"> |
+| <img src="docs/theme-preview/slides/clean/slide-09.png" alt="PPTX semantic blocks slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/minimalism/slide-12.png" alt="PPTX decoration pattern catalog slide exported to PNG" width="100%"> |
 
 | Editable Proof Objects | Mixed Object Packing |
 | --- | --- |
-| <img src="docs/theme-preview/slides/data/slide-16.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-23.png" alt="PPTX mixed object packing slide exported to PNG" width="100%"> |
+| <img src="docs/theme-preview/slides/data/slide-17.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/newmorphism/slide-24.png" alt="PPTX mixed object packing slide exported to PNG" width="100%"> |
 
 ## Theme Style Examples
 
 The same Markdown source is rendered through the pruned distinct theme styles. Each image below is exported from generated PPTX output.
 
-| Clean | Editorial | Minimalism | Newmorphism |
-| --- | --- | --- | --- |
-| <img src="docs/theme-preview/slides/clean/slide-01.png" alt="Clean theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/editorial/slide-01.png" alt="Editorial theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/minimalism/slide-01.png" alt="Minimalism theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/newmorphism/slide-01.png" alt="Newmorphism theme cover slide exported from PPTX" width="100%"> |
+| Clean | Minimalism | Newmorphism |
+| --- | --- | --- |
+| <img src="docs/theme-preview/slides/clean/slide-01.png" alt="Clean theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/minimalism/slide-01.png" alt="Minimalism theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/newmorphism/slide-01.png" alt="Newmorphism theme cover slide exported from PPTX" width="100%"> |
 
-| Glass | Grid | Data | Magazine |
-| --- | --- | --- | --- |
-| <img src="docs/theme-preview/slides/glass/slide-01.png" alt="Glass theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-01.png" alt="Grid theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/data/slide-01.png" alt="Data theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/magazine/slide-01.png" alt="Magazine theme cover slide exported from PPTX" width="100%"> |
+| Glass | Data |
+| --- | --- |
+| <img src="docs/theme-preview/slides/glass/slide-01.png" alt="Glass theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/data/slide-01.png" alt="Data theme cover slide exported from PPTX" width="100%"> |
 
 ## Runtime Pipeline
 
@@ -64,7 +64,7 @@ The same Markdown source is rendered through the pruned distinct theme styles. E
 - MDPR owns parsing, splitting, graph preservation, layout, theme color derivation, icon search, z-order, overflow checks, and renderer output.
 - A single graph or diagram block stays on one slide.
 
-<img src="docs/theme-preview/slides/grid/slide-10.png" alt="MDPR deterministic presentation pipeline slide exported to PNG" width="100%">
+<img src="docs/theme-preview/slides/clean/slide-11.png" alt="MDPR deterministic presentation pipeline slide exported to PNG" width="100%">
 
 ```text
 Markdown
@@ -106,9 +106,9 @@ mdpresent plan examples/basic/deck.md --json > layout.plan.json
 mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml --coherence
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
 mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual --coherence
-mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-teaser --theme-style grid --theme-color "#0F766E" --theme-harmony split-complementary --pipeline-one-page --visual
+mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-teaser --theme-style clean --theme-color "#0F766E" --theme-harmony split-complementary --pipeline-one-page --visual
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
-mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery clean,editorial,glass,grid,data,magazine
+mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery clean,minimalism,newmorphism,glass,data
 ```
 
 `--parser pandoc` is an advanced compatibility mode for users who need Pandoc
@@ -120,7 +120,7 @@ Pandoc and uses the built-in CommonMark/GFM AST path.
 
 ## Design Controls
 
-- `--theme-style`: `clean`, `executive`, `editorial`, `technical`, `minimalism`, `newmorphism`, `glass`, `grid`, `data`, `magazine`
+- `--theme-style`: `clean`, `executive`, `technical`, `minimalism`, `newmorphism`, `glass`, `data`
 - `--theme-color`: main color seed such as `#8A4FFF`
 - `--theme-harmony`: `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, `triadic`
 - `--pipeline-one-page`: creates a single-slide pipeline/teaser composition from multi-section Markdown while keeping the shared parser, layout planner, validation, and renderers
@@ -167,9 +167,9 @@ These checks must pass without an LLM or external API key.
 
 - README preview source: `examples/theme-preview-en/deck.md`
 - One-page teaser source: `examples/readme-teaser/deck.md`
-- Main teaser image: `docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page`
+- Main teaser image: `docs/assets/readme-teaser/slides/slide-01.png?v=clean-pipeline-one-page`
 - Main teaser PPTX: `docs/assets/readme-teaser/deck.pptx`
-- Pipeline image: `docs/theme-preview/slides/grid/slide-10.png`
+- Pipeline image: `docs/theme-preview/slides/clean/slide-11.png`
 
 References:
 

@@ -769,7 +769,7 @@ test("planPresentation forces paragraph-heavy sections into continuation slides 
     "",
     "## Design Presets",
     "",
-    "`--design` and `theme.designPreset` use one shared catalog across PPTX and HTML. Current presets include plain, clean, executive, editorial, technical, dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, and tokyo-night.",
+    "`--design` and `theme.designPreset` use one shared catalog across PPTX and HTML. Current presets include plain, clean, executive, technical, dark, nord, solarized, dracula, tableau, gruvbox, monokai, material, and tokyo-night.",
     "",
     "For visual QA, `--theme-gallery executive,nord,dracula,solarized` repeats the planned slides under multiple design presets in one PPTX.",
     "",
@@ -1339,32 +1339,19 @@ test("design tokens separate decoration style from main color seed", () => {
   assert.equal(tokens.surfacePolicy.cornerScale, "fixed");
 });
 
-test("design tokens expose grid data and magazine decoration styles", () => {
-  const grid = resolveDesignTokens("grid", {
-    ...defaultConfig.theme,
-    colorSeed: "#DC2626",
-    colorCombination: "complementary",
-  });
+test("design tokens expose the data decoration style without pruned palette swaps", () => {
   const data = resolveDesignTokens("data", {
     ...defaultConfig.theme,
     colorSeed: "#F59E0B",
     colorCombination: "monochromatic",
   });
-  const magazine = resolveDesignTokens("magazine", {
-    ...defaultConfig.theme,
-    colorSeed: "#C2410C",
-    colorCombination: "triadic",
-  });
 
-  assert.equal(grid.decorationStyle, "grid");
   assert.equal(data.decorationStyle, "data");
-  assert.equal(magazine.decorationStyle, "magazine");
-  assert.equal(grid.surfacePolicy.shadow, "none");
   assert.equal(data.surfacePolicy.shadow, "none");
-  assert.equal(magazine.surfacePolicy.cornerScale, "fixed");
-  assert.equal(grid.primaryColor, "DC2626");
   assert.equal(data.paletteSeed.base, "F59E0B");
-  assert.equal(magazine.colorCombination, "triadic");
+  assert.equal(DECORATION_STYLE_NAMES.includes("grid"), false);
+  assert.equal(DECORATION_STYLE_NAMES.includes("magazine"), false);
+  assert.equal(DESIGN_PRESET_NAMES.includes("editorial"), false);
 });
 
 test("design tokens expose minimalism and newmorphism decoration styles", () => {
@@ -1392,14 +1379,11 @@ test("decoration style catalog omits legacy color-only design presets", () => {
   assert.deepEqual(DECORATION_STYLE_NAMES, [
     "clean",
     "executive",
-    "editorial",
     "technical",
     "minimalism",
     "newmorphism",
     "glass",
-    "grid",
     "data",
-    "magazine",
   ]);
   assert.equal(DECORATION_STYLE_NAMES.includes("plain"), false);
   assert.equal(DECORATION_STYLE_NAMES.includes("simple"), false);

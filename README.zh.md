@@ -1,6 +1,6 @@
 # mdpresent
 
-![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page)
+![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=clean-pipeline-one-page)
 
 `mdpresent` 是 deterministic Markdown presentation runtime。
 
@@ -33,27 +33,27 @@
 
 | Teaser Summary | Pipeline Diagram |
 | --- | --- |
-| <img src="docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page" alt="PPTX one-page teaser slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-10.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
+| <img src="docs/assets/readme-teaser/slides/slide-01.png?v=clean-pipeline-one-page" alt="PPTX one-page teaser slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/clean/slide-11.png" alt="PPTX pipeline diagram slide exported to PNG" width="100%"> |
 
 | Markdown Semantics | Decoration Patterns |
 | --- | --- |
-| <img src="docs/theme-preview/slides/grid/slide-09.png" alt="PPTX semantic blocks slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/magazine/slide-11.png" alt="PPTX decoration pattern catalog slide exported to PNG" width="100%"> |
+| <img src="docs/theme-preview/slides/clean/slide-09.png" alt="PPTX semantic blocks slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/minimalism/slide-12.png" alt="PPTX decoration pattern catalog slide exported to PNG" width="100%"> |
 
 | Editable Proof Objects | Mixed Object Packing |
 | --- | --- |
-| <img src="docs/theme-preview/slides/data/slide-16.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-23.png" alt="PPTX mixed object packing slide exported to PNG" width="100%"> |
+| <img src="docs/theme-preview/slides/data/slide-17.png" alt="PPTX editable proof object slide exported to PNG" width="100%"> | <img src="docs/theme-preview/slides/newmorphism/slide-24.png" alt="PPTX mixed object packing slide exported to PNG" width="100%"> |
 
 ## 主题风格示例
 
 同一个 Markdown source 会通过 pruned distinct theme styles 渲染。下面的图片都来自 generated PPTX output 导出的 PNG。
 
-| Clean | Editorial | Minimalism | Newmorphism |
-| --- | --- | --- | --- |
-| <img src="docs/theme-preview/slides/clean/slide-01.png" alt="Clean theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/editorial/slide-01.png" alt="Editorial theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/minimalism/slide-01.png" alt="Minimalism theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/newmorphism/slide-01.png" alt="Newmorphism theme cover slide exported from PPTX" width="100%"> |
+| Clean | Minimalism | Newmorphism |
+| --- | --- | --- |
+| <img src="docs/theme-preview/slides/clean/slide-01.png" alt="Clean theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/minimalism/slide-01.png" alt="Minimalism theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/newmorphism/slide-01.png" alt="Newmorphism theme cover slide exported from PPTX" width="100%"> |
 
-| Glass | Grid | Data | Magazine |
-| --- | --- | --- | --- |
-| <img src="docs/theme-preview/slides/glass/slide-01.png" alt="Glass theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/grid/slide-01.png" alt="Grid theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/data/slide-01.png" alt="Data theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/magazine/slide-01.png" alt="Magazine theme cover slide exported from PPTX" width="100%"> |
+| Glass | Data |
+| --- | --- |
+| <img src="docs/theme-preview/slides/glass/slide-01.png" alt="Glass theme cover slide exported from PPTX" width="100%"> | <img src="docs/theme-preview/slides/data/slide-01.png" alt="Data theme cover slide exported from PPTX" width="100%"> |
 
 ## Runtime Pipeline
 
@@ -61,7 +61,7 @@
 - MDPR 负责 parsing、splitting、graph preservation、layout、theme color、icon search、z-order、overflow check 和 renderer output。
 - 一个 graph 或 diagram block 不会被拆成两页以上。
 
-<img src="docs/theme-preview/slides/grid/slide-10.png" alt="MDPR deterministic presentation pipeline slide exported to PNG" width="100%">
+<img src="docs/theme-preview/slides/clean/slide-11.png" alt="MDPR deterministic presentation pipeline slide exported to PNG" width="100%">
 
 ```text
 Markdown
@@ -86,13 +86,13 @@ mdpresent plan examples/basic/deck.md --json > layout.plan.json
 mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
 mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual
-mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-teaser --theme-style grid --theme-color "#0F766E" --theme-harmony split-complementary --pipeline-one-page --visual
+mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-teaser --theme-style clean --theme-color "#0F766E" --theme-harmony split-complementary --pipeline-one-page --visual
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
 ```
 
 ## Design Controls
 
-- `--theme-style`: `clean`, `executive`, `editorial`, `technical`, `minimalism`, `newmorphism`, `glass`, `grid`, `data`, `magazine`
+- `--theme-style`: `clean`, `executive`, `technical`, `minimalism`, `newmorphism`, `glass`, `data`
 - `--theme-color`: main color seed，例如 `#8A4FFF`
 - `--theme-harmony`: `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, `triadic`
 - `--pipeline-one-page`: creates a single-slide pipeline/teaser composition from multi-section Markdown while keeping the shared parser, layout planner, validation, and renderers.

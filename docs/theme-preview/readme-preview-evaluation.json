@@ -8,60 +8,60 @@
   "teaserPresentationMode": "pipeline-one-page",
   "teaserSlideCount": 1,
   "mainImage": "docs/assets/readme-teaser/slides/slide-01.png",
-  "pipelineImage": "docs/theme-preview/slides/grid/slide-10.png",
+  "pipelineImage": "docs/theme-preview/slides/clean/slide-11.png",
   "selectedPreviewImagesByTitle": {
-    "Pipeline Diagram": "docs/theme-preview/slides/grid/slide-10.png",
-    "Semantic Blocks": "docs/theme-preview/slides/grid/slide-09.png",
-    "Decoration Pattern Catalog": "docs/theme-preview/slides/magazine/slide-11.png",
-    "Editable Proof Objects": "docs/theme-preview/slides/data/slide-16.png",
-    "Image Safe Frame": "docs/theme-preview/slides/glass/slide-22.png",
-    "Mixed Object Packing": "docs/theme-preview/slides/grid/slide-23.png",
-    "Chart and Table Pair (Cont. 2/2)": "docs/theme-preview/slides/magazine/slide-15.png"
+    "Pipeline Diagram": "docs/theme-preview/slides/clean/slide-11.png",
+    "Semantic Blocks": "docs/theme-preview/slides/clean/slide-09.png",
+    "Decoration Pattern Catalog": "docs/theme-preview/slides/minimalism/slide-12.png",
+    "Editable Proof Objects": "docs/theme-preview/slides/data/slide-17.png",
+    "Image Safe Frame": "docs/theme-preview/slides/glass/slide-23.png",
+    "Mixed Object Packing": "docs/theme-preview/slides/newmorphism/slide-24.png",
+    "Chart and Table Pair (Cont. 2/2)": "docs/theme-preview/slides/data/slide-16.png"
   },
   "checkedImages": [
     "docs/assets/readme-teaser/slides/slide-01.png",
-    "docs/theme-preview/slides/grid/slide-10.png",
-    "docs/theme-preview/slides/grid/slide-09.png",
-    "docs/theme-preview/slides/magazine/slide-11.png",
-    "docs/theme-preview/slides/data/slide-16.png",
-    "docs/theme-preview/slides/glass/slide-22.png",
-    "docs/theme-preview/slides/grid/slide-23.png",
-    "docs/theme-preview/slides/magazine/slide-15.png"
+    "docs/theme-preview/slides/clean/slide-11.png",
+    "docs/theme-preview/slides/clean/slide-09.png",
+    "docs/theme-preview/slides/minimalism/slide-12.png",
+    "docs/theme-preview/slides/data/slide-17.png",
+    "docs/theme-preview/slides/glass/slide-23.png",
+    "docs/theme-preview/slides/newmorphism/slide-24.png",
+    "docs/theme-preview/slides/data/slide-16.png"
   ],
   "visualFingerprints": {
     "docs/assets/readme-teaser/slides/slide-01.png": {
-      "sha256": "1ceb1be6e3af2113eadef0e839a82f95cea0a3e7de46fccd8ca09bc670e7e515",
-      "bytes": 69296,
+      "sha256": "f4caf5b84ef70bc1db4251d6366094b2a73d0ef4cfd1110f478c7d20085d5e81",
+      "bytes": 61486,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/grid/slide-10.png": {
-      "sha256": "527f2a0d761ff127af5cd44fc3542c79ddae25ef7aae934deb836f80ef7f5ecf",
-      "bytes": 40544,
+    "docs/theme-preview/slides/clean/slide-11.png": {
+      "sha256": "e71af3d5ac3161e2830aab5c7c33fe2d5a0d78666e2ec766df814c54a2b7d6d1",
+      "bytes": 17204,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/grid/slide-09.png": {
-      "sha256": "972fb846eaef429e1d0eb4a4760652e0eb8b27bc141f381b4629d9bbc67e123d",
-      "bytes": 54070,
+    "docs/theme-preview/slides/clean/slide-09.png": {
+      "sha256": "eaaf16f5554f0dd7eb76740cf2d7fedbfd75bb91d3b5062cfbf92eebfa5f44b0",
+      "bytes": 10254,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/magazine/slide-11.png": {
-      "sha256": "e48625f03a5dce7ebf040f91309d073d105ca0478f5a2ef37e1802c155c1e498",
-      "bytes": 41248,
+    "docs/theme-preview/slides/minimalism/slide-12.png": {
+      "sha256": "f2610d966b7fed2df0909b48a46b41a476fa43138711aaa96b78ba34d8fb5044",
+      "bytes": 46111,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/data/slide-16.png": {
+    "docs/theme-preview/slides/data/slide-17.png": {
       "sha256": "48447c7650e755fff387a1ee5e4e382f515666d4f469c1a93224e6ffc9fc8be3",
       "bytes": 41497,
       "size": [
@@ -69,31 +69,31 @@
         900
       ]
     },
-    "docs/theme-preview/slides/glass/slide-22.png": {
-      "sha256": "2637e1428787b3f40b54383804797b51f1bc86357d55a3a9c9aa99cdad026a4a",
-      "bytes": 132833,
+    "docs/theme-preview/slides/glass/slide-23.png": {
+      "sha256": "8fba02f261bc6add91fd08998f966d54c144e77a324f670e15bd54042ba0752d",
+      "bytes": 132842,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/grid/slide-23.png": {
-      "sha256": "1ee632f008807db6779a8cbc3dddb048b5af83f50eafa5e95f68a4e5726ac218",
-      "bytes": 61933,
+    "docs/theme-preview/slides/newmorphism/slide-24.png": {
+      "sha256": "ac60e5d36661570a54c13eda43b59640eaaf8d872b315029bba046495c8bcb3b",
+      "bytes": 120344,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/magazine/slide-15.png": {
-      "sha256": "f481d85ea6a922c94bef729da48166b04cefa67d4e1daa63fe5ca0a6274702b2",
-      "bytes": 18528,
+    "docs/theme-preview/slides/data/slide-16.png": {
+      "sha256": "8bf7399fd1dd0d907e6cbedb91a9ab305d5712dfe929cf884d7d92ecbb2f6821",
+      "bytes": 19553,
       "size": [
         1600,
         900
       ]
     }
   },
-  "styleCount": 8,
-  "slideCount": 24
+  "styleCount": 5,
+  "slideCount": 25
 }

@@ -106,11 +106,8 @@ body[data-theme-style="glass"] .surface.flag-drop::before { background: color-mi
 body[data-theme-style="glass"] .surface.ticket { background-image: linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.04)), radial-gradient(circle at left 50%, var(--bg) 0 .11in, transparent .115in), radial-gradient(circle at right 50%, var(--bg) 0 .11in, transparent .115in); }
 body[data-theme-style="newmorphism"] .surface { border-color: color-mix(in srgb, #ffffff 65%, var(--surface-line)); box-shadow: .06in .07in .16in rgba(100,116,139,.25), -.04in -.04in .12in rgba(255,255,255,.76); }
 body[data-theme-style="minimalism"] .surface { background: transparent; border-color: var(--surface-line); box-shadow: none; }
-body[data-theme-style="grid"] .slide { background-image: linear-gradient(to right, color-mix(in srgb, var(--surface-line) 44%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in srgb, var(--surface-line) 34%, transparent) 1px, transparent 1px); background-size: 1.72in 1.72in, 1.72in 1.72in; }
 body[data-theme-style="data"] .slide::before { content: "DATA"; left: .66in; top: .34in; color: var(--primary); font-size: 8pt; font-weight: 800; letter-spacing: .08in; }
 body[data-theme-style="data"] .slide::after { left: .66in; right: .66in; bottom: .62in; height: .04in; background: var(--surface-line); opacity: .62; }
-body[data-theme-style="magazine"] .slide::before { content: "ISSUE"; right: .72in; top: .34in; color: var(--primary); font-size: 8pt; font-weight: 800; letter-spacing: .08in; }
-body[data-theme-style="magazine"] .slide::after { left: .72in; right: .72in; top: .72in; height: .012in; background: var(--text); opacity: .42; }
 `;
 
   const slides = layout.slides.map((slide) => {
@@ -526,7 +523,7 @@ function surfaceRole(role: string, blockIds: string[], slide?: SlideIR): string 
 }
 
 function surfaceVariantClass(style: string, role: string, id: string): string {
-  if (role === "table") return style === "grid" ? "two-corner-left" : "ticket";
+  if (role === "table") return "ticket";
   if (role === "chart") return style === "data" ? "notched-corner" : "flag-drop";
   if (role === "code") return "notched-corner";
   if (id === "key-message" || id === "body-panel") return "two-corner-left";
@@ -536,10 +533,7 @@ function surfaceVariantClass(style: string, role: string, id: string): string {
     glass: "rounded",
     newmorphism: "rounded",
     minimalism: "rounded",
-    grid: "two-corner-left",
     data: "notched-corner",
-    magazine: "flag-drop",
-    editorial: "rounded",
     executive: "two-corner-left",
     technical: "two-corner-right",
   };

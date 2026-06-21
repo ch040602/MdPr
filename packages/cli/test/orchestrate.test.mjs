@@ -175,7 +175,7 @@ test("pipeline-one-page mode renders a multi-section teaser as one slide", async
       "",
       "## Theme Families",
       "",
-      "- clean, editorial, glass, grid, data, magazine",
+      "- clean, executive, technical, glass, data",
       "- main color seed derives harmony, contrast, and chart slots",
       "",
       "## Object Coverage",

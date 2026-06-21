@@ -104,8 +104,8 @@ Validation reports:
 --config mdpresent.config.yaml
 --override deck.override.yaml
 --template company-template.pptx
---design plain|clean|executive|editorial|technical|dark|nord|solarized|dracula|tableau|gruvbox|monokai|material|tokyo-night
---theme-style clean|executive|editorial|technical|minimalism|newmorphism|glass|grid|data|magazine
+--design plain|clean|executive|technical|dark|nord|solarized|dracula|tableau|gruvbox|monokai|material|tokyo-night
+--theme-style clean|executive|technical|minimalism|newmorphism|glass|data
 --theme-color "#2563EB"
 --theme-harmony preset|monochromatic|analogous|complementary|split-complementary|triadic
 --design-lock dist/mdpresent-design-lock.json
