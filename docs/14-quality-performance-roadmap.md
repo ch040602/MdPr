@@ -35,6 +35,9 @@ Implemented in the deterministic runtime:
   current external dependency ranges are pinned from the lockfile.
 - Runtime slide-intent and layout-preset constants are exported and checked
   against JSON schemas to prevent schema/type drift.
+- `test:pack` builds workspace packages, packs each runtime package, installs
+  those tarballs in a clean project, and verifies the installed `mdpresent`
+  binary can generate PPTX and HTML outputs.
 
 Remaining roadmap items are listed below.
 
@@ -189,4 +192,4 @@ Add or strengthen:
 - Coherence fixtures for claim/evidence/caption grouping.
 - Benchmark regression tests.
 - Additional schema generation automation.
-- Clean package smoke tests.
+- Clean package smoke tests (implemented).

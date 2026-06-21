@@ -7,6 +7,7 @@
     "build": "corepack pnpm -r build",
     "test": "corepack pnpm -r test",
     "typecheck": "corepack pnpm -r typecheck",
+    "test:pack": "node scripts/pack-smoke.mjs",
     "cli": "tsx packages/cli/src/index.ts",
     "perf:check": "node scripts/check-performance-regression.mjs",
     "preview:themes": "node scripts/build-theme-preview.mjs && node scripts/evaluate-theme-preview.mjs",

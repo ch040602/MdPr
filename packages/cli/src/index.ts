@@ -107,7 +107,11 @@ function readFormats(args: string[]): OutputFormat[] {
 
 function readOption(args: string[], name: string): string | undefined {
   const index = args.indexOf(name);
-  return index >= 0 ? args[index + 1] : undefined;
+  if (index >= 0) return args[index + 1];
+
+  const prefix = `${name}=`;
+  const inline = args.find((arg) => arg.startsWith(prefix));
+  return inline ? inline.slice(prefix.length) : undefined;
 }
 
 function readParserMode(args: string[]): ParserMode | undefined {

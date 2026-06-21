@@ -62,6 +62,12 @@ For CLI orchestration, theme, or pipeline-one-page changes, run:
 node --test packages/cli/test/orchestrate.test.mjs
 ```
 
+For packaging, installable CLI behavior, or publish metadata changes, run:
+
+```bash
+corepack pnpm test:pack
+```
+
 For theme preview changes, regenerate and evaluate the preview artifacts:
 
 ```bash

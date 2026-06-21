@@ -54,6 +54,9 @@ test("workspace package metadata declares exports and publish files", () => {
 });
 
 test("workspace package metadata pins external dependency versions", () => {
+  const rootPackage = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf-8"));
+  assert.equal(rootPackage.scripts["test:pack"], "node scripts/pack-smoke.mjs");
+
   const packageJsonPaths = [
     join(repoRoot, "package.json"),
     ...readdirSync(join(repoRoot, "packages"), { withFileTypes: true })

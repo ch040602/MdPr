@@ -584,6 +584,32 @@ test("CLI build rejects unknown output formats", () => {
   }
 });
 
+test("CLI build accepts equals-style option values", () => {
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-equals-options-"));
+
+  try {
+    const output = execFileSync(process.execPath, [
+      cliPath,
+      "build",
+      basicDeck,
+      "--to=pptx,html",
+      `--out=${outDir}`,
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    assert.match(output, /deck\.pptx/);
+    assert.match(output, /deck\.html/);
+    assert.equal(existsSync(join(outDir, "deck.pptx")), true);
+    assert.equal(existsSync(join(outDir, "deck.html")), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("validateDeck returns structured diagnostics and validity", () => {
   const result = validateDeck(basicDeck, { overridePath: "examples/basic/deck.override.yaml" });
 
