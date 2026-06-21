@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -161,6 +162,134 @@ test("buildDeck records generated PPTX HTML and PDF artifact contracts in the ma
   } finally {
     if (originalExporter === undefined) delete process.env.MDPRESENT_PDF_EXPORT_COMMAND;
     else process.env.MDPRESENT_PDF_EXPORT_COMMAND = originalExporter;
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("buildDeck accepts schema-valid agent hints as weak metadata only", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-agent-hints-"));
+  const deckPath = join(outDir, "deck.md");
+  const hintPath = join(outDir, "deck.mdpr-hints.json");
+  const markdown = [
+    "# Demo",
+    "",
+    "## Adoption Funnel",
+    "",
+    "Activation evidence should keep the table and claim together.",
+    "",
+    "| Stage | Users |",
+    "|---|---:|",
+    "| Awareness | 8000 |",
+    "| Activation | 4000 |",
+  ].join("\n");
+
+  try {
+    writeFileSync(deckPath, markdown);
+    writeFileSync(hintPath, JSON.stringify({
+      schemaVersion: "mdpr-agent-hint-v1",
+      sourceSha256: sha256(markdown),
+      generatedBy: "mdpr-skill",
+      hints: [
+        {
+          slideId: "slide-adoption-funnel",
+          intentCandidate: "evidence",
+          confidence: 0.86,
+          groupCandidates: [
+            {
+              elementIds: ["b2", "b3"],
+              role: "evidence-pack",
+              confidence: 0.8,
+            },
+          ],
+          importanceCandidates: [
+            {
+              elementId: "b2",
+              importance: "primary",
+              confidence: 0.82,
+            },
+          ],
+          iconKeywordCandidates: ["funnel", "activation"],
+          rationale: "Human review note only.",
+        },
+      ],
+    }, null, 2));
+
+    const result = await buildDeck(deckPath, { formats: ["html"], outDir, hintPath });
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code?.startsWith("AGENT_HINT")), false);
+    assert.equal(manifest.agentHints.enabled, true);
+    assert.equal(manifest.agentHints.accepted, 1);
+    assert.equal(manifest.agentHints.rejected, 0);
+    assert.equal(manifest.agentHints.ignoredBecauseStale, 0);
+    assert.equal(manifest.agentHints.forbiddenFieldCount, 0);
+    assert.equal(manifest.agentHints.sourceSha256, sha256(markdown));
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("validateDeck rejects forbidden final-decision fields in agent hints", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-agent-hints-forbidden-"));
+  const deckPath = join(outDir, "deck.md");
+  const hintPath = join(outDir, "deck.mdpr-hints.json");
+  const markdown = "# Demo\n\n## Slide\n\nBody";
+
+  try {
+    writeFileSync(deckPath, markdown);
+    writeFileSync(hintPath, JSON.stringify({
+      schemaVersion: "mdpr-agent-hint-v1",
+      sourceSha256: sha256(markdown),
+      hints: [
+        {
+          slideId: "slide-slide",
+          confidence: 0.9,
+          color: "#FF0000",
+          box: { x: 1, y: 1, w: 4, h: 3 },
+        },
+      ],
+    }, null, 2));
+
+    const result = validateDeck(deckPath, { hintPath });
+
+    assert.equal(result.valid, false);
+    assert.ok(result.agentHints);
+    assert.equal(result.agentHints.forbiddenFieldCount >= 2, true);
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_FORBIDDEN_FIELD"), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("stale agent hints are ignored unless strict mode is enabled", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-agent-hints-stale-"));
+  const deckPath = join(outDir, "deck.md");
+  const hintPath = join(outDir, "deck.mdpr-hints.json");
+  const markdown = "# Demo\n\n## Slide\n\nBody";
+
+  try {
+    writeFileSync(deckPath, markdown);
+    writeFileSync(hintPath, JSON.stringify({
+      schemaVersion: "mdpr-agent-hint-v1",
+      sourceSha256: sha256("old source"),
+      hints: [
+        {
+          slideId: "slide-slide",
+          confidence: 0.8,
+          intentCandidate: "summary",
+        },
+      ],
+    }, null, 2));
+
+    const ignored = validateDeck(deckPath, { hintPath });
+    const strict = validateDeck(deckPath, { hintPath, strict: true });
+
+    assert.equal(ignored.valid, true);
+    assert.equal(ignored.agentHints?.ignoredBecauseStale, 1);
+    assert.equal(ignored.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_STALE"), true);
+    assert.equal(strict.valid, false);
+    assert.equal(strict.diagnostics.some((diagnostic) => diagnostic.level === "error" && diagnostic.code === "AGENT_HINT_STALE"), true);
+  } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
 });
@@ -649,6 +778,45 @@ test("CLI build rejects unknown output formats", () => {
   }
 });
 
+test("CLI build wires --hints into the manifest", () => {
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-hints-"));
+  const deckPath = join(outDir, "deck.md");
+  const hintPath = join(outDir, "deck.mdpr-hints.json");
+  const markdown = "# Demo\n\n## Slide\n\nBody";
+
+  try {
+    writeFileSync(deckPath, markdown);
+    writeFileSync(hintPath, JSON.stringify({
+      schemaVersion: "mdpr-agent-hint-v1",
+      sourceSha256: sha256(markdown),
+      hints: [{ slideId: "slide-slide", confidence: 0.75, intentCandidate: "summary" }],
+    }));
+
+    execFileSync(process.execPath, [
+      cliPath,
+      "build",
+      deckPath,
+      "--to",
+      "html",
+      "--out",
+      outDir,
+      "--hints",
+      hintPath,
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const manifest = JSON.parse(readFileSync(join(outDir, "mdpresent-manifest.json"), "utf-8"));
+
+    assert.equal(manifest.agentHints.enabled, true);
+    assert.equal(manifest.agentHints.accepted, 1);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("CLI build accepts equals-style option values", () => {
   const cliPath = join(repoRoot, "packages/cli/dist/index.js");
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-equals-options-"));
@@ -1115,3 +1283,7 @@ test("CLI validate exposes a user-facing acceptance path", () => {
   assert.equal(result.valid, true);
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "OVERRIDE_FILE_NOT_IMPLEMENTED"), false);
 });
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}

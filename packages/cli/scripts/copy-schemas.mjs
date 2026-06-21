@@ -8,3 +8,4 @@ const outDir = join(packageRoot, "dist", "schemas");
 
 mkdirSync(outDir, { recursive: true });
 copyFileSync(join(repoRoot, "schemas", "config.schema.json"), join(outDir, "config.schema.json"));
+copyFileSync(join(repoRoot, "schemas", "agent-hint.schema.json"), join(outDir, "agent-hint.schema.json"));

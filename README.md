@@ -9,7 +9,7 @@
 - **Outputs**: editable `PPTX`, plus `HTML` and `PDF`.
 - **Runtime**: rule-based parsing, splitting, layout, validation, theme selection, and rendering.
 - **LLM-advised quality**: use [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) when you want agent-side semantic hints, review loops, or visual-quality advice before MDPR builds the deck.
-- **Agent boundary**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) may suggest compact semantic hints, but MDPR owns final structure and output.
+- **Agent boundary**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) may pass compact semantic hints through `--hints`, but MDPR rejects final layout/style decisions. MDPR owns final structure and output.
 - **README assets**: the main teaser is built from `examples/readme-teaser/deck.md` with `--pipeline-one-page`; gallery images come from the shared theme preview deck. There is no README-only renderer.
 
 Language variants: [Korean](README.ko.md), [Chinese](README.zh.md)
@@ -26,7 +26,7 @@ Contributions: [Contributing guide](CONTRIBUTING.md)
 - **Design grammar**: separates decoration style from color seed and derives PPT theme/chart colors from the selected harmony.
 - **Object coverage**: supports native tables, native charts, proof objects, icon slots, SVG-backed surfaces, and bounded diagram connectors.
 - **Deterministic validation**: checks overflow, generated artifact contracts, slide counts, surface markers, language, and manifest drift.
-- **Skill-side review**: LLM-advised layout critique, visual polish, and high-quality deck guidance belong in [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage), not MDPR runtime.
+- **Skill-side review**: LLM-advised layout critique, visual polish, icon keyword ideas, and high-quality deck guidance belong in [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage), not MDPR runtime.
 
 ## Preview Gallery
 
@@ -61,6 +61,7 @@ The same Markdown source is rendered through the pruned distinct theme styles. E
 ## Runtime Pipeline
 
 - Optional agent hints may suggest semantic tags or icon-search keywords.
+- Hint files are validated as weak metadata; coordinates, colors, font sizes, z-order, component choices, and renderer object IDs are rejected.
 - MDPR owns parsing, splitting, graph preservation, layout, theme color derivation, icon search, z-order, overflow checks, and renderer output.
 - A single graph or diagram block stays on one slide.
 
@@ -104,6 +105,7 @@ Common commands:
 mdpresent inspect examples/basic/deck.md --json > deck.plan.json
 mdpresent plan examples/basic/deck.md --json > layout.plan.json
 mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml --coherence
+mdpresent validate examples/basic/deck.md --hints examples/basic/deck.mdpr-hints.json --strict
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
 mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual --coherence
 mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-teaser --theme-style clean --theme-color "#0F766E" --theme-harmony split-complementary --pipeline-one-page --visual

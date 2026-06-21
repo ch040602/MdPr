@@ -3,7 +3,7 @@
   "engine": "mdpresent",
   "source": {
     "path": "examples/readme-teaser/deck.md",
-    "sha256": "79f42181a4f637b78784bb48a5a6d7a577db4429978ecf7470017cf293aacfc6"
+    "sha256": "df49c588a5fb27b41fd381ade8a125823272faf3c167d0c342ab705332ed9b7d"
   },
   "config": {
     "sha256": "94939bd01f963954a554421a089cf3929699344c0ec47d647253e87f0c3653dd",
@@ -28,6 +28,15 @@
     ]
   },
   "override": null,
+  "agentHints": {
+    "enabled": false,
+    "source": null,
+    "sourceSha256": null,
+    "accepted": 0,
+    "rejected": 0,
+    "ignoredBecauseStale": 0,
+    "forbiddenFieldCount": 0
+  },
   "presentationMode": "pipeline-one-page",
   "slideCount": 1,
   "outputs": [
@@ -39,15 +48,15 @@
       "path": "docs\\assets\\readme-teaser\\deck.html",
       "format": "html",
       "exists": true,
-      "bytes": 14423,
-      "sha256": "d2e54a04598febfd4e13d19cc1a8772ba2b858074a1ed51200610ccc6d5cde83"
+      "bytes": 14430,
+      "sha256": "ced9be3c9232654017ac5275ecfafaca14433d22da15abc85b9fdbe22c0c0957"
     },
     {
       "path": "docs\\assets\\readme-teaser\\deck.pptx",
       "format": "pptx",
       "exists": true,
-      "bytes": 104995,
-      "sha256": "35420122659c156c8230184e64feab88c6e3c39537940dc4439e4e445db3ad6f"
+      "bytes": 105002,
+      "sha256": "e3e0fbb44dad75deaf40b7bd175ffb43928d0a83b55bc00a5e2c074bc7c909d4"
     }
   ],
   "designLock": "docs\\assets\\readme-teaser\\mdpresent-design-lock.json",

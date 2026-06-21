@@ -9,7 +9,7 @@
 - **출력**: editable `PPTX`, `HTML`, `PDF`
 - **런타임**: 파싱, 분할, 레이아웃, 검증, 테마 선택, 렌더링 모두 rule-based
 - **LLM-advised quality**: agent-side semantic hint, review loop, visual-quality advice가 필요하면 [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)을 사용합니다.
-- **Agent 경계**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)은 compact semantic hint만 제안할 수 있고, 최종 구조와 출력은 MDPR이 결정합니다.
+- **Agent 경계**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)은 `--hints`로 compact semantic hint만 전달할 수 있고, 좌표/색상/폰트/객체 선택 같은 최종 결정은 MDPR이 거부하며 최종 구조와 출력은 MDPR이 결정합니다.
 - **README asset**: 메인 teaser는 `examples/readme-teaser/deck.md`를 `--pipeline-one-page`로 빌드하고, gallery 이미지는 공통 theme preview deck에서 추출합니다. README 전용 renderer는 쓰지 않습니다.
 
 언어별 문서: [English](README.md), [Chinese](README.zh.md)
@@ -58,6 +58,7 @@
 ## 런타임 파이프라인
 
 - Agent hint는 semantic tag나 icon keyword 같은 작은 힌트만 줄 수 있습니다.
+- Hint 파일은 weak metadata로 검증되며 좌표, 색상, font size, z-order, component choice, renderer object ID는 거부됩니다.
 - MDPR은 parsing, splitting, graph preservation, layout, theme color, icon search, z-order, overflow check, renderer output을 직접 결정합니다.
 - 하나의 graph 또는 diagram block은 두 페이지 이상으로 쪼개지지 않습니다.
 

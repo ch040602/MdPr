@@ -16,6 +16,7 @@ test("CLI package metadata exposes an installable mdpresent binary and packed ru
   assert.equal(pkg.exports["."].types, "./dist/index.d.ts");
   assert.ok(pkg.files.includes("dist"));
   assert.equal(existsSync(join(packageRoot, "dist/schemas/config.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/agent-hint.schema.json")), true);
 
   assert.ok(process.env.npm_execpath);
   const output = execFileSync(process.execPath, [process.env.npm_execpath, "--dir", packageRoot, "pack", "--dry-run", "--json"], {
@@ -30,6 +31,7 @@ test("CLI package metadata exposes an installable mdpresent binary and packed ru
   assert.equal(files.has("dist/index.js"), true);
   assert.equal(files.has("dist/index.d.ts"), true);
   assert.equal(files.has("dist/schemas/config.schema.json"), true);
+  assert.equal(files.has("dist/schemas/agent-hint.schema.json"), true);
   assert.equal(files.has("package.json"), true);
 });
 

@@ -106,10 +106,12 @@ function readCommonOptions(args: string[]) {
   return {
     configPath: readOption(args, "--config"),
     overridePath: readOption(args, "--override"),
+    hintPath: readOption(args, "--hints"),
     parser: readParserMode(args),
     cliConfig: readCliConfig(args),
     visualValidation: args.includes("--visual"),
     coherenceValidation: args.includes("--coherence"),
+    strict: args.includes("--strict"),
   };
 }
 
@@ -199,9 +201,9 @@ Usage:
   mdpresent doctor --pdf
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
-  mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--visual] [--coherence] [--json]
-  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style clean|executive|technical|minimalism|newmorphism|glass|data] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,glass] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence]
+  mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--hints deck.mdpr-hints.json] [--visual] [--coherence] [--strict] [--json]
+  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style clean|executive|technical|minimalism|newmorphism|glass|data] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,glass] [--hints deck.mdpr-hints.json] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence] [--strict]
 
-Config files are validated against schemas/config.schema.json before merging. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
+Config files are validated against schemas/config.schema.json before merging. Optional agent hints are validated against schemas/agent-hint.schema.json and cannot set final layout/style decisions. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
 `);
 }

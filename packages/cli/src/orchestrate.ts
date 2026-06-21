@@ -24,13 +24,30 @@ export type OverrideSource = {
   path: string;
 };
 
+export type AgentHintSource = {
+  path: string;
+};
+
+export type AgentHintSummary = {
+  enabled: boolean;
+  source?: AgentHintSource;
+  sourceSha256?: string;
+  accepted: number;
+  rejected: number;
+  ignoredBecauseStale: number;
+  forbiddenFieldCount: number;
+  diagnostics: Diagnostic[];
+};
+
 export type OrchestrationOptions = {
   configPath?: string;
   overridePath?: string;
+  hintPath?: string;
   cliConfig?: DeepPartial<Config>;
   parser?: ParserMode;
   visualValidation?: boolean;
   coherenceValidation?: boolean;
+  strict?: boolean;
 };
 
 export type DeckPlan = {
@@ -40,6 +57,7 @@ export type DeckPlan = {
   presentation: PresentationIR;
   layout: LayoutIR;
   overrideDiff?: LayoutDiff[];
+  agentHints: AgentHintSummary;
   diagnostics: Diagnostic[];
 };
 
@@ -67,6 +85,8 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
   const configDiagnostics: Diagnostic[] = [];
   const config = resolveEffectiveConfig(options, configDiagnostics);
   const markdown = readFileSync(inputPath, "utf-8");
+  const sourceSha256 = sha256(markdown);
+  const agentHints = readAgentHints(options.hintPath, sourceSha256, Boolean(options.strict));
   const doc = options.parser === "pandoc"
     ? parseMarkdownWithPandoc(markdown, { sourcePath: inputPath })
     : parseMarkdown(markdown, inputPath);
@@ -81,6 +101,7 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
     ...presentation.diagnostics,
     ...layout.diagnostics,
     ...configDiagnostics,
+    ...agentHints.diagnostics,
   ];
 
   return {
@@ -94,6 +115,7 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
     presentation,
     layout,
     overrideDiff,
+    agentHints,
     diagnostics,
   };
 }
@@ -264,6 +286,15 @@ function createBuildManifest(
       source: deck.overrideSource,
       diff: deck.overrideDiff ?? [],
     } : null,
+    agentHints: {
+      enabled: deck.agentHints.enabled,
+      source: deck.agentHints.source ?? null,
+      sourceSha256: deck.agentHints.sourceSha256 ?? null,
+      accepted: deck.agentHints.accepted,
+      rejected: deck.agentHints.rejected,
+      ignoredBecauseStale: deck.agentHints.ignoredBecauseStale,
+      forbiddenFieldCount: deck.agentHints.forbiddenFieldCount,
+    },
     presentationMode: deck.config.deck.presentationMode ?? "normal",
     slideCount: deck.presentation.slides.length,
     outputs: writtenFiles,
@@ -301,6 +332,132 @@ function inferOutputFormat(path: string): OutputFormat | "unknown" {
   if (path.endsWith(".html")) return "html";
   if (path.endsWith(".pdf")) return "pdf";
   return "unknown";
+}
+
+type AgentHintManifest = {
+  schemaVersion: "mdpr-agent-hint-v1";
+  sourceSha256: string;
+  hints: unknown[];
+};
+
+const forbiddenAgentHintFields = new Set([
+  "recipeId",
+  "variantId",
+  "box",
+  "x",
+  "y",
+  "w",
+  "h",
+  "color",
+  "fontSize",
+  "fontFamily",
+  "typography",
+  "zOrder",
+  "radius",
+  "shadow",
+  "effect",
+  "arrow",
+  "component",
+  "style",
+  "iconAsset",
+  "iconPath",
+  "iconName",
+  "coordinates",
+  "geometry",
+  "rendererObjectId",
+]);
+
+function readAgentHints(hintPath: string | undefined, sourceSha256: string, strict: boolean): AgentHintSummary {
+  const summary: AgentHintSummary = {
+    enabled: Boolean(hintPath),
+    source: hintPath ? { path: hintPath } : undefined,
+    accepted: 0,
+    rejected: 0,
+    ignoredBecauseStale: 0,
+    forbiddenFieldCount: 0,
+    diagnostics: [],
+  };
+
+  if (!hintPath) return summary;
+
+  if (!existsSync(hintPath)) {
+    summary.diagnostics.push({
+      level: strict ? "error" : "warning",
+      code: "AGENT_HINT_FILE_NOT_FOUND",
+      message: `Agent hint file was requested but not found: ${hintPath}`,
+    });
+    return summary;
+  }
+
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(readFileSync(hintPath, "utf-8"));
+  } catch (error) {
+    summary.diagnostics.push({
+      level: strict ? "error" : "warning",
+      code: "AGENT_HINT_FILE_INVALID",
+      message: `Agent hint file could not be parsed: ${hintPath}. ${error instanceof Error ? error.message : String(error)}`,
+    });
+    return summary;
+  }
+
+  const forbiddenPaths = collectForbiddenAgentHintFields(manifest);
+  summary.forbiddenFieldCount = forbiddenPaths.length;
+  if (forbiddenPaths.length) {
+    summary.rejected = countAgentHintItems(manifest);
+    summary.diagnostics.push({
+      level: "error",
+      code: "AGENT_HINT_FORBIDDEN_FIELD",
+      message: `Agent hint file contains final design fields that MDPR will not accept: ${forbiddenPaths.join(", ")}`,
+    });
+    return summary;
+  }
+
+  const validate = getAgentHintSchemaValidator();
+  if (!validate(manifest)) {
+    summary.rejected = countAgentHintItems(manifest);
+    summary.diagnostics.push({
+      level: strict ? "error" : "warning",
+      code: "AGENT_HINT_FILE_INVALID",
+      message: `Agent hint file is invalid: ${hintPath}. ${formatSchemaErrors(validate.errors)}`,
+    });
+    return summary;
+  }
+
+  const typed = manifest as AgentHintManifest;
+  summary.sourceSha256 = typed.sourceSha256;
+  if (typed.sourceSha256 !== sourceSha256) {
+    summary.ignoredBecauseStale = 1;
+    summary.diagnostics.push({
+      level: strict ? "error" : "warning",
+      code: "AGENT_HINT_STALE",
+      message: `Agent hint file source hash does not match the Markdown source: ${hintPath}`,
+    });
+    return summary;
+  }
+
+  summary.accepted = typed.hints.length;
+  return summary;
+}
+
+function collectForbiddenAgentHintFields(value: unknown, path = "$"): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry, index) => collectForbiddenAgentHintFields(entry, `${path}[${index}]`));
+  }
+  if (!isPlainObject(value)) return [];
+
+  const matches: string[] = [];
+  for (const [key, nested] of Object.entries(value)) {
+    const nextPath = `${path}.${key}`;
+    if (forbiddenAgentHintFields.has(key)) matches.push(nextPath);
+    matches.push(...collectForbiddenAgentHintFields(nested, nextPath));
+  }
+  return matches;
+}
+
+function countAgentHintItems(value: unknown): number {
+  if (!isPlainObject(value) || !Array.isArray(value.hints)) return 0;
+  return value.hints.length;
 }
 
 function readOverrideFile(overridePath: string, diagnostics: Diagnostic[]): OverrideManifest | undefined {
@@ -750,6 +907,7 @@ type DeepPartial<T> = {
 };
 
 let configSchemaValidator: ValidateFunction | undefined;
+let agentHintSchemaValidator: ValidateFunction | undefined;
 
 function mergeConfig(base: Config, override?: DeepPartial<Config>): Config {
   if (!override) return structuredClone(base);
@@ -814,6 +972,15 @@ function getConfigSchemaValidator(): ValidateFunction {
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   configSchemaValidator = ajv.compile(schema);
   return configSchemaValidator;
+}
+
+function getAgentHintSchemaValidator(): ValidateFunction {
+  if (agentHintSchemaValidator) return agentHintSchemaValidator;
+  const schemaPath = resolveSchemaPath("agent-hint.schema.json");
+  const schema = JSON.parse(readFileSync(schemaPath, "utf-8")) as object;
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  agentHintSchemaValidator = ajv.compile(schema);
+  return agentHintSchemaValidator;
 }
 
 function resolveSchemaPath(fileName: string): string {

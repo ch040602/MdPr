@@ -7,7 +7,7 @@ mdpresent init
 mdpresent doctor --pdf
 mdpresent inspect deck.md --json
 mdpresent plan deck.md --json > layout.plan.json
-mdpresent validate deck.md --override deck.override.yaml --coherence
+mdpresent validate deck.md --override deck.override.yaml --hints deck.mdpr-hints.json --coherence
 mdpresent build deck.md --to pptx,pdf,html --out dist
 mdpresent diff deck.md --override deck.override.yaml
 ```
@@ -20,12 +20,14 @@ mdpresent build deck.md \
   --out dist \
   --config mdpresent.config.yaml \
   --override deck.override.yaml \
+  --hints deck.mdpr-hints.json \
   --design executive \
   --theme-style glass \
   --theme-color "#8A4FFF" \
   --theme-harmony analogous \
   --visual \
   --coherence \
+  --strict \
   --template company-master.pptx
 ```
 
@@ -38,6 +40,7 @@ createDeckPlan(inputPath, options)
   - resolves config sources
   - validates config files against schemas/config.schema.json
   - parses Markdown
+  - validates optional agent hint files against schemas/agent-hint.schema.json
   - plans Presentation IR
   - plans Layout IR
   - collects diagnostics
@@ -66,6 +69,9 @@ default config < config file < CLI args
 - Build writes `mdpresent-design-lock.json` and `mdpresent-manifest.json`.
 - Build fails before rendering when config, layout overflow, or requested
   visual/coherence validation produces error diagnostics.
+- `--hints` accepts optional `mdpr-skill` semantic/icon/importance candidates as weak metadata only.
+- Hint files with final layout or style fields such as coordinates, color, font, z-order, component, or renderer object IDs are rejected.
+- Stale hint files are ignored by default and fail validation when `--strict` is set.
 - `--theme-style` selects decoration grammar separately from color.
 - `--theme-color` provides the main color seed.
 - `--theme-harmony` derives `monochromatic`, `analogous`, `complementary`, `split-complementary`, or `triadic` palettes.
@@ -103,6 +109,7 @@ Validation reports:
 --out dist
 --config mdpresent.config.yaml
 --override deck.override.yaml
+--hints deck.mdpr-hints.json
 --template company-template.pptx
 --design plain|clean|executive|technical|dark|nord|solarized|dracula|tableau|gruvbox|monokai|material|tokyo-night
 --theme-style clean|executive|technical|minimalism|newmorphism|glass|data
@@ -112,6 +119,7 @@ Validation reports:
 --update-design-lock
 --visual
 --coherence
+--strict
 --background "#0B1020"
 --font Aptos
 --font-size 22

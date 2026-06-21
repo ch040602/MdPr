@@ -3,7 +3,7 @@
   "issues": [],
   "source": "examples/theme-preview-en/deck.md",
   "teaserSource": "examples/readme-teaser/deck.md",
-  "teaserSourceSha256": "79f42181a4f637b78784bb48a5a6d7a577db4429978ecf7470017cf293aacfc6",
+  "teaserSourceSha256": "df49c588a5fb27b41fd381ade8a125823272faf3c167d0c342ab705332ed9b7d",
   "teaserSourceSha256Matches": true,
   "teaserPresentationMode": "pipeline-one-page",
   "teaserSlideCount": 1,
@@ -30,8 +30,8 @@
   ],
   "visualFingerprints": {
     "docs/assets/readme-teaser/slides/slide-01.png": {
-      "sha256": "f4caf5b84ef70bc1db4251d6366094b2a73d0ef4cfd1110f478c7d20085d5e81",
-      "bytes": 61486,
+      "sha256": "0726c222be9213c439e0f6909ad9baa1c4f73a21f3f389729fec5a743c0d0006",
+      "bytes": 61754,
       "size": [
         1600,
         900

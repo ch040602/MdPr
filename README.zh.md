@@ -9,7 +9,7 @@
 - **Outputs**：editable `PPTX`, `HTML`, and `PDF`
 - **Runtime**：rule-based parsing, splitting, layout, validation, theme selection, and rendering
 - **LLM-advised quality**：use [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) for agent-side semantic hints, review loops, or visual-quality advice before MDPR builds the deck.
-- **Agent boundary**：[`mdpr-skill`](https://github.com/ch040602/mdpr-skill) may suggest compact semantic hints, but MDPR owns final structure and output.
+- **Agent boundary**：[`mdpr-skill`](https://github.com/ch040602/mdpr-skill) may pass compact semantic hints through `--hints`, but MDPR rejects final coordinates, colors, fonts, object choices, and renderer decisions. MDPR owns final structure and output.
 - **README assets**：main teaser is built from `examples/readme-teaser/deck.md` with `--pipeline-one-page`; gallery images come from the shared theme preview deck. There is no README-only renderer.
 
 语言版本：[English](README.md), [Korean](README.ko.md)
@@ -58,6 +58,7 @@
 ## Runtime Pipeline
 
 - Agent hint 只能提供 compact semantic tag 或 icon keyword。
+- Hint files are validated as weak metadata; coordinates, colors, font sizes, z-order, component choices, and renderer object IDs are rejected.
 - MDPR 负责 parsing、splitting、graph preservation、layout、theme color、icon search、z-order、overflow check 和 renderer output。
 - 一个 graph 或 diagram block 不会被拆成两页以上。
 

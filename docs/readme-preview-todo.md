@@ -56,7 +56,7 @@ from generated PPTX files.
   to `docs/assets/readme-teaser/slides/slide-01.png`, and only then evaluates
   README preview contracts.
 - The main teaser source is intentionally compact and names the key proof
-  points: PPTX-first output, no agent runtime, 8 themes, 36+ patterns, 12 object
+  points: PPTX-first output, no agent runtime, 5 pruned styles, 36+ patterns, 12 object
   families, and deterministic coherence checks.
 
 ## Prioritized TODO
