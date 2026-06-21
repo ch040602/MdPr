@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Config, Diagnostic, OutputFormat, ParserMode, PresentationIR, SlideIR } from "@mdpresent/core";
@@ -244,6 +244,7 @@ function createBuildManifest(
     presentationMode: deck.config.deck.presentationMode ?? "normal",
     slideCount: deck.presentation.slides.length,
     outputs: writtenFiles,
+    artifacts: writtenFiles.map(createArtifactContract),
     designLock: designLockPath,
     diagnostics: deck.diagnostics,
     validation: {
@@ -256,6 +257,25 @@ function createBuildManifest(
       visual: visualValidation ? createVisualValidationSummary(deck.layout) : null,
     },
   };
+}
+
+function createArtifactContract(path: string) {
+  const exists = existsSync(path);
+  const content = exists ? readFileSync(path) : Buffer.from("");
+  return {
+    path,
+    format: inferOutputFormat(path),
+    exists,
+    bytes: exists ? statSync(path).size : 0,
+    sha256: sha256(content),
+  };
+}
+
+function inferOutputFormat(path: string): OutputFormat | "unknown" {
+  if (path.endsWith(".pptx")) return "pptx";
+  if (path.endsWith(".html")) return "html";
+  if (path.endsWith(".pdf")) return "pdf";
+  return "unknown";
 }
 
 function readOverrideFile(overridePath: string, diagnostics: Diagnostic[]): OverrideManifest | undefined {
@@ -356,7 +376,7 @@ function stableJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function sha256(value: string): string {
+function sha256(value: string | Buffer): string {
   return createHash("sha256").update(value).digest("hex");
 }
 

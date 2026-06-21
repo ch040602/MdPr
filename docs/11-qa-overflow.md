@@ -104,7 +104,13 @@ mdpresent-manifest.json
 
 The design lock records the resolved decoration style, color seed, harmony rule, palette seed, PowerPoint theme colors, typography, and surface policy. A supplied `--design-lock` path must match the resolved contract unless `--update-design-lock` is used.
 
-The manifest records source/config hashes, rendered outputs, diagnostics, overflow status, and optional `--visual` structural summaries. Visual summaries do not replace rendered screenshot review; they catch deterministic geometry regressions such as out-of-bounds regions, unreadable font floors, and region-count drift.
+The manifest records source/config hashes, rendered outputs, per-artifact
+contracts, diagnostics, overflow status, and optional `--visual` structural
+summaries. Artifact contracts include output format, path, existence, byte size,
+and SHA-256 so CI can detect stale or missing PPTX, HTML, and PDF products.
+Visual summaries do not replace rendered screenshot review; they catch
+deterministic geometry regressions such as out-of-bounds regions, unreadable
+font floors, and region-count drift.
 
 ## Actions Preview Evaluation
 

@@ -126,7 +126,7 @@ lightweight validation, and a separate push.
   key detection, invalid enum/unit diagnostics, and schema/type drift tests.
 - [x] Strengthen CLI output format validation: `--to` now accepts only `pptx`,
   `html`, and `pdf`, and unknown formats fail with a non-zero CLI exit.
-- [ ] Expand tests to match README product goals: parser-to-IR-to-layout-to-
+- [x] Expand tests to match README product goals: parser-to-IR-to-layout-to-
   renderer fixtures, PPTX XML contracts, and HTML/PDF artifact contracts.
 - [ ] Deepen visual validation beyond shallow metadata checks: overlap, z-order,
   contrast, clipping, image aspect ratio, connector crossing, and per-check

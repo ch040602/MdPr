@@ -132,6 +132,37 @@ test("buildDeck writes design lock and output manifest with visual validation su
   }
 });
 
+test("buildDeck records generated PPTX HTML and PDF artifact contracts in the manifest", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-artifacts-"));
+  const exporterPath = join(outDir, "fake-pdf-exporter.mjs");
+  const originalExporter = process.env.MDPRESENT_PDF_EXPORT_COMMAND;
+
+  try {
+    writeFileSync(exporterPath, [
+      "import { writeFileSync } from 'node:fs';",
+      "const [, pdfPath] = process.argv.slice(2);",
+      "writeFileSync(pdfPath, '%PDF-1.4\\n%%EOF\\n');",
+    ].join("\n"));
+    process.env.MDPRESENT_PDF_EXPORT_COMMAND = JSON.stringify([process.execPath, exporterPath, "{pptx}", "{pdf}"]);
+
+    const result = await buildDeck(basicDeck, { formats: ["pptx", "html", "pdf"], outDir });
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+    const artifacts = manifest.artifacts;
+
+    assert.equal(Array.isArray(artifacts), true);
+    assert.deepEqual(artifacts.map((artifact) => artifact.format).sort(), ["html", "pdf", "pptx"]);
+    for (const artifact of artifacts) {
+      assert.equal(existsSync(artifact.path), true);
+      assert.equal(artifact.bytes > 0, true);
+      assert.match(artifact.sha256, /^[a-f0-9]{64}$/);
+    }
+  } finally {
+    if (originalExporter === undefined) delete process.env.MDPRESENT_PDF_EXPORT_COMMAND;
+    else process.env.MDPRESENT_PDF_EXPORT_COMMAND = originalExporter;
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("pipeline-one-page mode renders a multi-section teaser as one slide", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pipeline-one-page-"));
   const deckPath = join(outDir, "teaser.md");
