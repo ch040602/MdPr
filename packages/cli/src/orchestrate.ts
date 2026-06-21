@@ -564,6 +564,7 @@ function resolveSchemaPath(fileName: string): string {
   const moduleDir = dirname(fileURLToPath(import.meta.url));
   const candidates = [
     join(process.cwd(), "schemas", fileName),
+    join(moduleDir, "schemas", fileName),
     join(moduleDir, "../../../schemas", fileName),
     join(moduleDir, "../schemas", fileName),
   ];

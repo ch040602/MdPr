@@ -83,6 +83,23 @@ Markdown
 
 ## Quick Usage
 
+Installable CLI package:
+
+```bash
+npm install -g @mdpresent/cli
+mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
+```
+
+Repository development:
+
+```bash
+corepack pnpm install
+corepack pnpm --filter @mdpresent/cli build
+node packages/cli/dist/index.js build examples/basic/deck.md --to pptx --out dist
+```
+
+Common commands:
+
 ```bash
 mdpresent inspect examples/basic/deck.md --json > deck.plan.json
 mdpresent plan examples/basic/deck.md --json > layout.plan.json

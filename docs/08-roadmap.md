@@ -131,5 +131,5 @@ lightweight validation, and a separate push.
 - [x] Deepen visual validation beyond shallow metadata checks: overlap, z-order,
   contrast, clipping, image aspect ratio, connector crossing, and per-check
   manifest thresholds.
-- [ ] Harden packaging and installable CLI behavior: add a `mdpresent` bin,
+- [x] Harden packaging and installable CLI behavior: add a `mdpresent` bin,
   package exports/files, and an `npm pack` clean-project smoke test.
