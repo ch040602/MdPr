@@ -9,13 +9,13 @@ importers:
   .:
     devDependencies:
       '@types/node':
-        specifier: '*'
+        specifier: ^25.9.2
         version: 25.9.2
       tsx:
-        specifier: '*'
+        specifier: ^4.22.4
         version: 4.22.4
       typescript:
-        specifier: '*'
+        specifier: ~6.0.3
         version: 6.0.3
 
   packages/cli:
@@ -42,7 +42,7 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
       yaml:
-        specifier: '*'
+        specifier: ^2.9.0
         version: 2.9.0
 
   packages/core:
@@ -92,10 +92,10 @@ importers:
         specifier: workspace:*
         version: link:../layout
       jszip:
-        specifier: '*'
+        specifier: ^3.10.1
         version: 3.10.1
       pptxgenjs:
-        specifier: '*'
+        specifier: ^4.0.1
         version: 4.0.1
 
 packages:

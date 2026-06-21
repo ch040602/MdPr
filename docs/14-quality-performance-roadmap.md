@@ -31,6 +31,8 @@ Implemented in the deterministic runtime:
 - Code continuation reasons are covered by a build manifest fixture.
 - Post-layout candidate retry can replace an overflowing automatic text layout
   before font shrink while preserving explicit override layouts.
+- Workspace package metadata rejects wildcard external dependency versions, and
+  current external dependency ranges are pinned from the lockfile.
 
 Remaining roadmap items are listed below.
 
@@ -185,4 +187,4 @@ Add or strengthen:
 - Coherence fixtures for claim/evidence/caption grouping.
 - Benchmark regression tests.
 - Schema drift tests.
-- Dependency pinning and clean package smoke tests.
+- Clean package smoke tests.

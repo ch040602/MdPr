@@ -22,7 +22,7 @@
   "dependencies": {
     "@mdpresent/core": "workspace:*",
     "@mdpresent/layout": "workspace:*",
-    "jszip": "*",
-    "pptxgenjs": "*"
+    "jszip": "^3.10.1",
+    "pptxgenjs": "^4.0.1"
   }
 }

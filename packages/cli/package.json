@@ -30,6 +30,6 @@
     "@mdpresent/render-pdf": "workspace:*",
     "@mdpresent/render-pptx": "workspace:*",
     "ajv": "^8.20.0",
-    "yaml": "*"
+    "yaml": "^2.9.0"
   }
 }

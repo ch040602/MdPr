@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -51,4 +51,28 @@ test("workspace package metadata declares exports and publish files", () => {
     assert.equal(pkg.exports["."].types, "./dist/index.d.ts", packageName);
     assert.ok(pkg.files.includes("dist"), packageName);
   }
+});
+
+test("workspace package metadata pins external dependency versions", () => {
+  const packageJsonPaths = [
+    join(repoRoot, "package.json"),
+    ...readdirSync(join(repoRoot, "packages"), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => join(repoRoot, "packages", entry.name, "package.json"))
+      .filter((packageJsonPath) => existsSync(packageJsonPath)),
+  ];
+  const wildcardDependencies = [];
+
+  for (const packageJsonPath of packageJsonPaths) {
+    const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+    for (const section of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"]) {
+      for (const [name, range] of Object.entries(pkg[section] ?? {})) {
+        if (range === "*" && !String(name).startsWith("@mdpresent/")) {
+          wildcardDependencies.push(`${pkg.name}:${section}:${name}`);
+        }
+      }
+    }
+  }
+
+  assert.deepEqual(wildcardDependencies, []);
 });
