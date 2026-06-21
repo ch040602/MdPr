@@ -383,11 +383,12 @@ function splitParagraphSequence(blocks: SlideIR["blocks"]): SlideIR["blocks"][] 
 function shouldSplitListBlock(block: SlideIR["blocks"][number]): boolean {
   const itemCount = block.listItems?.length ?? block.items?.length ?? 0;
   if (itemCount > 6) return true;
-  if (itemCount < 5) return false;
 
   const items = block.listItems?.length
     ? block.listItems.map((item) => `${item.label ?? ""} ${item.description ?? ""} ${item.text}`.trim())
     : block.items ?? [];
+  if (itemCount === 4) return items.some((item) => item.length > 220 || item.includes("\n"));
+  if (itemCount < 5) return false;
   return items.some((item) => item.length > 72 || item.includes("\n"));
 }
 
@@ -395,7 +396,10 @@ function splitListBlock(block: SlideIR["blocks"][number]): SlideIR["blocks"][num
   const items = block.items ?? [];
   const listItems = block.listItems ?? [];
   const itemCount = listItems.length || items.length;
-  const chunkSize = itemCount === 5 && listItems.some((item) => item.description || item.text.length > 72) ? 3 : 4;
+  const itemTexts = listItems.length ? listItems.map((item) => `${item.label ?? ""} ${item.description ?? ""} ${item.text}`.trim()) : items;
+  const chunkSize = itemTexts.some((item) => item.length > 220 || item.includes("\n"))
+    ? 2
+    : itemCount === 5 && listItems.some((item) => item.description || item.text.length > 72) ? 3 : 4;
   const chunks: SlideIR["blocks"][number][] = [];
 
   for (let index = 0; index < itemCount; index += chunkSize) {

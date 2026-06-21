@@ -770,6 +770,31 @@ test("validateDeck resolves default text overflow before reporting diagnostics",
   }
 });
 
+test("planDeck splits very long four-item lists before unreadable grid overflow", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-long-list-continuation-"));
+  const deckPath = join(outDir, "deck.md");
+  const sentence = "This item carries a deliberately long explanation with several clauses, enough words to make compact card layouts uncomfortable while a full-width continuation row can remain readable.";
+
+  try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Dense Items",
+      "",
+      ...Array.from({ length: 4 }, (_, index) => `- Item ${index + 1}: ${Array(4).fill(sentence).join(" ")}`),
+    ].join("\n"));
+
+    const plan = planDeck(deckPath);
+    const contentSlides = plan.presentation.slides.filter((slide) => slide.title?.startsWith("Dense Items"));
+    const result = validateDeck(deckPath);
+
+    assert.equal(contentSlides.length > 1, true);
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "TEXT_OVERFLOW"), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("planDeck keeps auto-resolved body text above the readable font floor", () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-readable-font-floor-"));
   const deckPath = join(outDir, "deck.md");

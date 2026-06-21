@@ -23,6 +23,8 @@ Implemented in the deterministic runtime:
 - Manifest coherence summaries and `validate --coherence` diagnostics for
   claimless evidence, detached captions, orphan tables, and low object
   coverage.
+- Very long 4-item lists split into 2+2 continuation slides before they become
+  unreadable 2x2 grid slides.
 
 Remaining roadmap items are listed below.
 
@@ -47,9 +49,12 @@ Remaining roadmap items are listed below.
 
 3. Resolve overflow through reflow and deterministic splitting before font
    shrink.
-   - Try alternate layout candidates.
-   - Reposition regions.
-   - Split table/list/code continuation blocks when needed.
+   - Split very long 4-item lists before grid layout forces unreadable shrink
+     (implemented).
+   - Try alternate layout candidates (partially implemented through candidate
+     scoring; post-layout retry remains planned).
+   - Reposition regions (planned).
+   - Split table/code continuation blocks when needed (planned).
    - Shrink fonts only as a late fallback.
    - Emit diagnostics when content still cannot fit.
 

@@ -21,10 +21,10 @@
 
 ```text
 1. Place content with the default font size.
-2. Measure overflow.
-3. Try a layout variant.
-4. Shrink down to the configured readable font floor.
-5. Create continuation slides.
+2. Split known high-risk content groups such as very long lists into continuation slides.
+3. Measure overflow.
+4. Try a layout variant where the candidate set already provides one.
+5. Shrink down to the configured readable font floor.
 6. Emit warn or fail diagnostics if content still does not fit.
 ```
 
@@ -81,6 +81,10 @@ Before validation and rendering, the CLI applies a conservative text containment
 ```
 
 The resolver does not change slide order, drop content, or move unrelated regions. If it cannot make text fit without violating minimum font size or slide bounds, the normal overflow diagnostic remains.
+
+Known high-risk split rules run before this resolver. For example, four very
+long list items are split into two continuation slides instead of forcing a
+2x2 grid to shrink to the font floor and still overflow.
 
 ## Text Measurement
 

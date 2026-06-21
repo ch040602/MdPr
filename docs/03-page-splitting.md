@@ -115,6 +115,24 @@ type SplitStrategy =
   | "continuation";
 ```
 
+## Long List Continuation
+
+MDPR preserves compact 4-item grids when the item text is short. If a 4-item
+list contains very long item text, it is split into 2-item continuation slides
+before layout validation has to force text down to the readable font floor.
+
+Longer lists keep the existing chunking behavior:
+
+```text
+4 very long items  -> 2 + 2 continuation
+5 long items       -> 3 + 2 continuation
+6 short items      -> 3x2 grid
+7+ items           -> list chunks
+```
+
+The rule applies to list blocks only. A single diagram or graph block remains a
+single slide-level object and is not split across continuation pages.
+
 ## Split Override Example
 
 ```yaml
