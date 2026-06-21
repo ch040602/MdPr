@@ -128,7 +128,7 @@ lightweight validation, and a separate push.
   `html`, and `pdf`, and unknown formats fail with a non-zero CLI exit.
 - [x] Expand tests to match README product goals: parser-to-IR-to-layout-to-
   renderer fixtures, PPTX XML contracts, and HTML/PDF artifact contracts.
-- [ ] Deepen visual validation beyond shallow metadata checks: overlap, z-order,
+- [x] Deepen visual validation beyond shallow metadata checks: overlap, z-order,
   contrast, clipping, image aspect ratio, connector crossing, and per-check
   manifest thresholds.
 - [ ] Harden packaging and installable CLI behavior: add a `mdpresent` bin,

@@ -616,6 +616,105 @@ test("validateDeck includes title text in overflow diagnostics", () => {
   }
 });
 
+test("validateDeck visual validation reports low contrast and same-layer region overlap", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-visual-validation-"));
+  const deckPath = join(outDir, "deck.md");
+  const overridePath = join(outDir, "deck.override.yaml");
+
+  try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Items",
+      "",
+      "- Alpha",
+      "- Beta",
+    ].join("\n"));
+    writeFileSync(overridePath, [
+      'version: "1.0"',
+      "operations:",
+      "  - op: setSlot",
+      "    target:",
+      "      title: Items",
+      "      slot: right",
+      "    value:",
+      "      x: 0.9",
+      "      y: 1.7",
+      "      w: 5.4",
+      "      h: 4.8",
+    ].join("\n"));
+
+    const result = validateDeck(deckPath, {
+      overridePath,
+      visualValidation: true,
+      cliConfig: {
+        theme: {
+          backgroundColor: "#FFFFFF",
+          textColor: "#FFFFFF",
+        },
+      },
+    });
+    const codes = result.diagnostics.map((diagnostic) => diagnostic.code);
+
+    assert.equal(result.valid, false);
+    assert.equal(codes.includes("VISUAL_CONTRAST"), true);
+    assert.equal(codes.includes("VISUAL_REGION_OVERLAP"), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("validateDeck visual validation reports image aspect and connector clearance risks", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-visual-validation-media-"));
+  const deckPath = join(outDir, "deck.md");
+  const overridePath = join(outDir, "deck.override.yaml");
+
+  try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Evidence Image",
+      "",
+      "![Evidence](evidence.png)",
+      "",
+      "## Flow",
+      "",
+      "Draft => Review => Render",
+    ].join("\n"));
+    writeFileSync(overridePath, [
+      'version: "1.0"',
+      "operations:",
+      "  - op: setSlot",
+      "    target:",
+      "      title: Evidence Image",
+      "      slot: image-1",
+      "    value:",
+      "      x: 1.0",
+      "      y: 1.6",
+      "      w: 0.55",
+      "      h: 4.8",
+      "  - op: setSlot",
+      "    target:",
+      "      title: Flow",
+      "      slot: diagram",
+      "    value:",
+      "      x: 1.0",
+      "      y: 1.7",
+      "      w: 1.0",
+      "      h: 0.5",
+    ].join("\n"));
+
+    const result = validateDeck(deckPath, { overridePath, visualValidation: true });
+    const codes = result.diagnostics.map((diagnostic) => diagnostic.code);
+
+    assert.equal(result.valid, false);
+    assert.equal(codes.includes("VISUAL_IMAGE_ASPECT_RATIO"), true);
+    assert.equal(codes.includes("VISUAL_CONNECTOR_CLEARANCE"), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("validateDeck resolves default text overflow before reporting diagnostics", () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-resolve-overflow-"));
   const deckPath = join(outDir, "deck.md");

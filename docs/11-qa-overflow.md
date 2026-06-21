@@ -110,7 +110,11 @@ summaries. Artifact contracts include output format, path, existence, byte size,
 and SHA-256 so CI can detect stale or missing PPTX, HTML, and PDF products.
 Visual summaries do not replace rendered screenshot review; they catch
 deterministic geometry regressions such as out-of-bounds regions, unreadable
-font floors, and region-count drift.
+font floors, low text/background contrast, same-z-index content overlap,
+extreme image frame ratios, and diagram regions too small for connector
+routing. The manifest records the current thresholds for minimum contrast,
+maximum same-layer overlap ratio, readable font size, image aspect range, and
+minimum diagram connector space.
 
 ## Actions Preview Evaluation
 
