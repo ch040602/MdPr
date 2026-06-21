@@ -95,6 +95,35 @@ test("parseMarkdown extracts tables, block quotes, and explicit slide breaks", (
   ]);
 });
 
+test("parseMarkdown follows CommonMark/GFM AST semantics for links, escaped table cells, and HTML blocks", () => {
+  const doc = parseMarkdown([
+    "# Deck",
+    "",
+    "## Semantics",
+    "",
+    "See [API docs](https://example.test) and `inline code`.",
+    "",
+    "| Name | Meaning |",
+    "| --- | --- |",
+    "| A\\|B | Escaped pipe |",
+    "",
+    "<div class=\"note\">",
+    "HTML content",
+    "</div>",
+  ].join("\n"), "deck.md");
+
+  const paragraph = doc.blocks.find((block) => block.type === "paragraph");
+  const table = doc.blocks.find((block) => block.type === "table");
+  const html = doc.blocks.find((block) => block.type === "html");
+
+  assert.equal(paragraph.text, "See API docs and inline code.");
+  assert.deepEqual(table.rows, [
+    ["Name", "Meaning"],
+    ["A|B", "Escaped pipe"],
+  ]);
+  assert.equal(html.text, "<div class=\"note\">\nHTML content\n</div>");
+});
+
 test("parseMarkdown canonicalizes long spaces before validation and rendering", () => {
   const doc = parseMarkdown([
     "# Deck",

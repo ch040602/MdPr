@@ -22,7 +22,7 @@ Contributions: [Contributing guide](CONTRIBUTING.md)
 - **Deterministic runtime**: no API key, model call, or external LLM is required for build output.
 - **PDF export**: creates PPTX first, then saves that PPTX as PDF with PowerPoint on Windows or LibreOffice in CI/Linux.
 - **One-page teaser mode**: `--pipeline-one-page` keeps dense pipeline, feature, chart, and table summaries on one rendered slide.
-- **Markdown semantics**: preserves headings, lists, emphasis, tables, charts, images, code, quotes, and pipeline diagrams.
+- **Markdown semantics**: parses CommonMark/GFM Markdown into an AST, then preserves headings, lists, links, emphasis, tables, HTML blocks, charts, images, code, quotes, and pipeline diagrams.
 - **Design grammar**: separates decoration style from color seed and derives PPT theme/chart colors from the selected harmony.
 - **Object coverage**: supports native tables, native charts, proof objects, icon slots, SVG-backed surfaces, and bounded diagram connectors.
 - **Deterministic validation**: checks overflow, generated artifact contracts, slide counts, surface markers, language, and manifest drift.
@@ -68,7 +68,7 @@ The same Markdown source is rendered through the pruned distinct theme styles. E
 
 ```text
 Markdown
-  -> Markdown AST / Simple AST
+  -> CommonMark / GFM Markdown AST
   -> Outline Tree
   -> Split Planner
   -> Presentation IR
@@ -93,6 +93,10 @@ mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-tease
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
 mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery clean,editorial,glass,grid,data,magazine
 ```
+
+`--parser pandoc` is an advanced compatibility mode for users who need Pandoc
+Markdown normalization. It requires `pandoc` on `PATH`; MDPR's default parser
+does not require Pandoc and uses the built-in CommonMark/GFM AST path.
 
 ## Design Controls
 

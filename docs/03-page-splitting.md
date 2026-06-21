@@ -12,20 +12,22 @@
 ## Procedure
 
 ```text
-1. Parse Markdown.
-2. Normalize Pandoc JSON into BlockIR when `--parser pandoc` is selected.
-3. Build the heading tree.
-4. Create slide candidates from h2 sections.
-5. Calculate density for each candidate.
-6. Keep candidates below the density threshold together.
-7. Split explicit `---` slide separators first.
-8. Split overloaded candidates by h3 sections.
-9. Split candidates without h3 sections by block groups.
-10. Split long paragraphs by Markdown lines and sentence chunks.
-11. Split long lists by list chunks.
-12. Move tables, images, and code into dedicated slide candidates when needed.
-13. Insert cover and table-of-contents slides.
-14. Split generated table-of-contents slides into continuation slides when the
+1. Parse CommonMark/GFM Markdown into an AST.
+2. Convert the AST into MDPR `BlockIR` while preserving presentation-relevant
+   semantics.
+3. Normalize Pandoc JSON into `BlockIR` when `--parser pandoc` is selected.
+4. Build the heading tree.
+5. Create slide candidates from h2 sections.
+6. Calculate density for each candidate.
+7. Keep candidates below the density threshold together.
+8. Split explicit `---` slide separators first.
+9. Split overloaded candidates by h3 sections.
+10. Split candidates without h3 sections by block groups.
+11. Split long paragraphs by Markdown lines and sentence chunks.
+12. Split long lists by list chunks.
+13. Move tables, images, and code into dedicated slide candidates when needed.
+14. Insert cover and table-of-contents slides.
+15. Split generated table-of-contents slides into continuation slides when the
     entry count exceeds the bounded TOC capacity.
 ```
 
@@ -54,12 +56,13 @@
 ## Preserved Block Structure
 
 ```text
-paragraph  text, Markdown lines, sentence units, inline emphasis runs
+paragraph  text, Markdown lines, sentence units, links, inline emphasis runs
 bulletList fallback text and structured listItems
 quote      blockquote text
-table      pipe table rows
+table      GFM table rows, including escaped cell delimiters
 code       fenced code with language
 image      Markdown image references
+html       raw HTML blocks for downstream renderers/validators
 diagram    pipeline nodes and edges
 slideBreak explicit `---` separator
 ```
@@ -70,7 +73,9 @@ slideBreak explicit `---` separator
 mdpresent build deck.md --parser pandoc --to pptx,html --out dist
 ```
 
-Pandoc mode performs richer Markdown normalization only:
+Pandoc mode is an advanced compatibility path and requires `pandoc` on `PATH`.
+The default parser already uses a built-in CommonMark/GFM AST path and does not
+shell out to Pandoc. Pandoc mode performs Markdown normalization only:
 
 ```text
 Markdown

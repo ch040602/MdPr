@@ -1,260 +1,342 @@
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { gfmFromMarkdown } from "mdast-util-gfm";
+import { gfm } from "micromark-extension-gfm";
 import type { BlockIR, ChartIR, HeadingLevel, InlineRunIR, ListItemIR, MarkdownDocument } from "../ir/types.js";
 
-/**
- * MVP용 단순 Markdown parser.
- * 실제 구현에서는 remark/unified AST 기반으로 교체한다.
- */
-export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDocument {
-  const lines = markdown.split(/\r?\n/);
-  const blocks: BlockIR[] = [];
-  let paragraph: string[] = [];
-  let list: ListItemIR[] = [];
-  let quote: string[] = [];
-  let table: string[][] = [];
-  let inCode = false;
-  let codeLang = "";
-  let codeLines: string[] = [];
+type MdastNode = {
+  type: string;
+  value?: string;
+  depth?: number;
+  lang?: string;
+  meta?: string;
+  url?: string;
+  alt?: string;
+  ordered?: boolean;
+  start?: number;
+  children?: MdastNode[];
+  position?: {
+    start?: { line?: number };
+    end?: { line?: number };
+  };
+};
 
-  const flushParagraph = (lineNo: number) => {
-    if (!paragraph.length) return;
-    const lines = paragraph.map(normalizeInlineSpacing).filter(Boolean);
-    const text = normalizeInlineSpacing(stripInlineMarkdown(lines.join(" ")));
-    const richText = lines.join("\n").trim();
-    blocks.push({
-      id: `block-${blocks.length + 1}`,
-      type: "paragraph",
-      text,
-      lines,
-      sentences: splitSentences(text),
-      inlineRuns: parseInlineRuns(richText),
-      source: { file: sourcePath, startLine: Math.max(1, lineNo - paragraph.length), endLine: lineNo },
-    });
-    paragraph = [];
+export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDocument {
+  const sourceLines = markdown.split(/\r?\n/);
+  const astMarkdown = markdown.replace(/^(\s*)[•·][ \t]+/gm, "$1- ");
+  const tree = fromMarkdown(astMarkdown, {
+    extensions: [gfm()],
+    mdastExtensions: [gfmFromMarkdown()],
+  }) as MdastNode;
+  const blocks: BlockIR[] = [];
+
+  const pushBlock = (block: Omit<BlockIR, "id">) => {
+    blocks.push({ id: `block-${blocks.length + 1}`, ...block });
   };
 
-  const flushList = (lineNo: number) => {
-    if (!list.length) return;
-    const pipeline = parsePipelineList(list);
-    if (pipeline) {
-      blocks.push({
-        id: `block-${blocks.length + 1}`,
-        type: "diagram",
-        text: pipeline.nodes.map((node) => node.label).join(" => "),
-        diagram: pipeline,
-        source: { file: sourcePath, startLine: Math.max(1, lineNo - list.length), endLine: lineNo },
+  const appendNode = (node: MdastNode) => {
+    if (node.type === "heading") {
+      pushBlock({
+        type: "heading",
+        level: Math.min(6, Math.max(1, node.depth ?? 1)) as HeadingLevel,
+        text: normalizeInlineSpacing(inlineText(node.children)),
+        source: sourceFromNode(node, sourcePath),
       });
-      list = [];
       return;
     }
-    blocks.push({
-      id: `block-${blocks.length + 1}`,
-      type: "bulletList",
-      items: list.map((item) => item.text),
-      listItems: [...list],
-      listKind: list.every((item) => item.ordered) ? "ordered" : list.every((item) => !item.ordered) ? "unordered" : "mixed",
-      source: { file: sourcePath, startLine: Math.max(1, lineNo - list.length), endLine: lineNo },
-    });
-    list = [];
-  };
 
-  const flushQuote = (lineNo: number) => {
-    if (!quote.length) return;
-    const lines = quote.map(normalizeInlineSpacing).filter(Boolean);
-    const text = normalizeInlineSpacing(lines.join(" "));
-    blocks.push({
-      id: `block-${blocks.length + 1}`,
-      type: "quote",
-      text,
-      lines,
-      sentences: splitSentences(text),
-      inlineRuns: parseInlineRuns(text),
-      source: { file: sourcePath, startLine: Math.max(1, lineNo - quote.length), endLine: lineNo },
-    });
-    quote = [];
-  };
-
-  const flushTable = (lineNo: number) => {
-    if (!table.length) return;
-    const rows = table.map((row) => row.map(normalizeInlineSpacing));
-    blocks.push({
-      id: `block-${blocks.length + 1}`,
-      type: "table",
-      rows,
-      text: rows.map((row) => row.join(" | ")).join("\n"),
-      source: { file: sourcePath, startLine: Math.max(1, lineNo - table.length), endLine: lineNo },
-    });
-    table = [];
-  };
-
-  const flushInlineBlocks = (lineNo: number) => {
-    flushParagraph(lineNo);
-    flushList(lineNo);
-    flushQuote(lineNo);
-    flushTable(lineNo);
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i] ?? "";
-    const lineNo = i + 1;
-    const line = raw.trimEnd();
-
-    if (line.startsWith("```")) {
-      if (!inCode) {
-        flushInlineBlocks(lineNo);
-        inCode = true;
-        codeLang = line.slice(3).trim();
-        codeLines = [];
-      } else {
-        const chart = parseFencedChart(codeLang, codeLines);
-        const pipeline = parseFencedPipelineDiagram(codeLang, codeLines);
-        blocks.push(chart
-          ? {
-              id: `block-${blocks.length + 1}`,
-              type: "chart",
-              text: chart.series.map((series) => `${series.name}: ${series.values.join(", ")}`).join("\n"),
-              chart,
-              source: { file: sourcePath, endLine: lineNo },
-            }
-          : pipeline
-          ? {
-              id: `block-${blocks.length + 1}`,
-              type: "diagram",
-              text: pipeline.nodes.map((node) => node.label).join(" => "),
-              diagram: pipeline,
-              source: { file: sourcePath, endLine: lineNo },
-            }
-          : {
-              id: `block-${blocks.length + 1}`,
-              type: "code",
-              text: codeLines.join("\n"),
-              language: codeLang,
-              source: { file: sourcePath, endLine: lineNo },
-            });
-        inCode = false;
+    if (node.type === "paragraph") {
+      const image = singleParagraphImage(node);
+      if (image) {
+        pushBlock({
+          type: "image",
+          alt: image.alt,
+          src: image.src,
+          source: sourceFromNode(node, sourcePath),
+        });
+        return;
       }
-      continue;
+
+      const text = normalizePlainText(inlineText(node.children));
+      if (isDecorativeListText(text)) return;
+
+      const pipeline = parsePipelineDiagram(text);
+      if (pipeline) {
+        pushBlock({
+          type: "diagram",
+          text: pipeline.nodes.map((pipelineNode) => pipelineNode.label).join(" => "),
+          diagram: pipeline,
+          source: sourceFromNode(node, sourcePath),
+        });
+        return;
+      }
+
+      const lines = sourceTextLines(node, sourceLines).map(normalizeInlineSpacing).filter(Boolean);
+      pushBlock({
+        type: "paragraph",
+        text,
+        lines: lines.length ? lines : [text],
+        sentences: splitSentences(text),
+        inlineRuns: inlineRunsFromMdast(node.children),
+        source: sourceFromNode(node, sourcePath),
+      });
+      return;
     }
 
-    if (inCode) {
-      codeLines.push(raw);
-      continue;
+    if (node.type === "list") {
+      const listItems = collectListItems(node, 0).filter((item) => !isDecorativeListText(item.text));
+      if (!listItems.length) return;
+      const pipeline = parsePipelineList(listItems);
+      if (pipeline) {
+        pushBlock({
+          type: "diagram",
+          text: pipeline.nodes.map((pipelineNode) => pipelineNode.label).join(" => "),
+          diagram: pipeline,
+          source: sourceFromNode(node, sourcePath),
+        });
+        return;
+      }
+      const listBlock: Omit<BlockIR, "id"> = {
+        type: "bulletList",
+        items: listItems.map((item) => item.text),
+        listItems,
+        listKind: listItems.every((item) => item.ordered) ? "ordered" : listItems.every((item) => !item.ordered) ? "unordered" : "mixed",
+        source: sourceFromNode(node, sourcePath),
+      };
+      const previous = blocks[blocks.length - 1];
+      if (previous?.type === "bulletList") {
+        previous.items = [...(previous.items ?? []), ...(listBlock.items ?? [])];
+        previous.listItems = [...(previous.listItems ?? []), ...(listBlock.listItems ?? [])];
+        previous.listKind = previous.listItems.every((item) => item.ordered)
+          ? "ordered"
+          : previous.listItems.every((item) => !item.ordered)
+          ? "unordered"
+          : "mixed";
+        previous.source = {
+          file: previous.source?.file ?? listBlock.source?.file,
+          startLine: previous.source?.startLine,
+          endLine: listBlock.source?.endLine ?? previous.source?.endLine,
+        };
+      } else {
+        pushBlock(listBlock);
+      }
+      return;
     }
 
-    if (!line.trim()) {
-      flushInlineBlocks(lineNo);
-      continue;
+    if (node.type === "blockquote") {
+      const lines = blockText(node.children).split(/\n/g).map(normalizeInlineSpacing).filter(Boolean);
+      const text = normalizeInlineSpacing(lines.join(" "));
+      pushBlock({
+        type: "quote",
+        text,
+        lines,
+        sentences: splitSentences(text),
+        inlineRuns: parseInlineRuns(text),
+        source: sourceFromNode(node, sourcePath),
+      });
+      return;
     }
 
-    if (/^---+$/.test(line.trim())) {
-      flushInlineBlocks(lineNo);
-      blocks.push({
-        id: `block-${blocks.length + 1}`,
+    if (node.type === "table") {
+      const rows = tableRowsFromMdast(node);
+      pushBlock({
+        type: "table",
+        rows,
+        text: rows.map((row) => row.join(" | ")).join("\n"),
+        source: sourceFromNode(node, sourcePath),
+      });
+      return;
+    }
+
+    if (node.type === "code") {
+      const codeLines = (node.value ?? "").split(/\r?\n/);
+      const language = normalizeInlineSpacing(node.lang ?? "");
+      const chart = parseFencedChart(language, codeLines);
+      const pipeline = parseFencedPipelineDiagram(language, codeLines);
+      pushBlock(chart
+        ? {
+            type: "chart",
+            text: chart.series.map((series) => `${series.name}: ${series.values.join(", ")}`).join("\n"),
+            chart,
+            source: sourceFromNode(node, sourcePath),
+          }
+        : pipeline
+        ? {
+            type: "diagram",
+            text: pipeline.nodes.map((pipelineNode) => pipelineNode.label).join(" => "),
+            diagram: pipeline,
+            source: sourceFromNode(node, sourcePath),
+          }
+        : {
+            type: "code",
+            text: node.value ?? "",
+            language: [node.lang, node.meta].filter(Boolean).join(" ").trim(),
+            source: sourceFromNode(node, sourcePath),
+          });
+      return;
+    }
+
+    if (node.type === "html") {
+      pushBlock({
+        type: "html",
+        text: (node.value ?? "").trim(),
+        source: sourceFromNode(node, sourcePath),
+      });
+      return;
+    }
+
+    if (node.type === "thematicBreak") {
+      pushBlock({
         type: "slideBreak",
-        source: { file: sourcePath, startLine: lineNo, endLine: lineNo },
+        source: sourceFromNode(node, sourcePath),
       });
-      continue;
+      return;
     }
+  };
 
-    const headingMatch = /^(#{1,6})\s+(.+)$/.exec(line);
-    if (headingMatch) {
-      flushInlineBlocks(lineNo);
-      blocks.push({
-        id: `block-${blocks.length + 1}`,
-        type: "heading",
-        level: headingMatch[1]!.length as HeadingLevel,
-        text: normalizeInlineSpacing(headingMatch[2]!.trim()),
-        source: { file: sourcePath, startLine: lineNo, endLine: lineNo },
-      });
-      continue;
-    }
-
-    const listItem = parseListItem(raw);
-    if (listItem) {
-      flushParagraph(lineNo);
-      flushQuote(lineNo);
-      flushTable(lineNo);
-      if (!isDecorativeListText(listItem.text)) list.push(listItem);
-      continue;
-    }
-
-    const listContinuation = parseListContinuation(raw);
-    if (list.length && listContinuation) {
-      appendListContinuation(list[list.length - 1]!, listContinuation);
-      continue;
-    }
-
-    const quoteMatch = /^>\s?(.*)$/.exec(line.trim());
-    if (quoteMatch) {
-      flushParagraph(lineNo);
-      flushList(lineNo);
-      flushTable(lineNo);
-      quote.push(normalizeInlineSpacing(quoteMatch[1]!.trim()));
-      continue;
-    }
-
-    const imageMatch = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(line.trim());
-    if (imageMatch) {
-      flushInlineBlocks(lineNo);
-      blocks.push({
-        id: `block-${blocks.length + 1}`,
-        type: "image",
-        alt: imageMatch[1],
-        src: imageMatch[2],
-        source: { file: sourcePath, startLine: lineNo, endLine: lineNo },
-      });
-      continue;
-    }
-
-    const pipeline = parsePipelineDiagram(line.trim());
-    if (pipeline) {
-      flushInlineBlocks(lineNo);
-      blocks.push({
-        id: `block-${blocks.length + 1}`,
-        type: "diagram",
-        text: pipeline.nodes.map((node) => node.label).join(" => "),
-        diagram: pipeline,
-        source: { file: sourcePath, startLine: lineNo, endLine: lineNo },
-      });
-      continue;
-    }
-
-    if (isTableRow(line)) {
-      flushParagraph(lineNo);
-      flushList(lineNo);
-      flushQuote(lineNo);
-      const cells = parseTableRow(line);
-      if (!isTableDelimiterRow(cells)) table.push(cells);
-      continue;
-    }
-
-    flushTable(lineNo);
-    flushQuote(lineNo);
-    paragraph.push(normalizeInlineSpacing(line.trim()));
-  }
-
-  flushInlineBlocks(lines.length);
+  for (const child of tree.children ?? []) appendNode(child);
 
   const headings = blocks.filter((b) => b.type === "heading");
   const title = headings.find((h) => h.level === 1)?.text;
 
-  return { sourcePath, title, blocks, headings };
+  return { sourcePath, title, parser: "simple", blocks, headings };
 }
 
-function isTableRow(line: string): boolean {
-  return line.includes("|") && parseTableRow(line).length > 1;
+function sourceFromNode(node: MdastNode, sourcePath?: string) {
+  return {
+    file: sourcePath,
+    startLine: node.position?.start?.line,
+    endLine: node.position?.end?.line,
+  };
 }
 
-function parseTableRow(line: string): string[] {
-  return line
-    .trim()
-    .replace(/^\|/, "")
-    .replace(/\|$/, "")
-    .split("|")
-    .map((cell) => normalizeInlineSpacing(cell));
+function sourceTextLines(node: MdastNode, sourceLines: string[]): string[] {
+  const start = node.position?.start?.line;
+  const end = node.position?.end?.line;
+  if (!start || !end) return [];
+  return sourceLines.slice(start - 1, end).map((line) => line.trim());
 }
 
-function isTableDelimiterRow(cells: string[]): boolean {
-  return cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+function singleParagraphImage(node: MdastNode): { src: string; alt: string } | undefined {
+  const children = node.children ?? [];
+  if (children.length !== 1 || children[0]?.type !== "image") return undefined;
+  return { src: children[0].url ?? "", alt: children[0].alt ?? "" };
+}
+
+function collectListItems(listNode: MdastNode, level: number): ListItemIR[] {
+  const items: ListItemIR[] = [];
+  const ordered = Boolean(listNode.ordered);
+  const start = listNode.start ?? 1;
+
+  (listNode.children ?? []).forEach((itemNode, index) => {
+    if (itemNode.type !== "listItem") return;
+    const ownChildren = itemNode.children ?? [];
+    const ownBlocks = ownChildren.filter((child) => child.type !== "list");
+    const nestedLists = ownChildren.filter((child) => child.type === "list");
+    const ownText = normalizeStructuredText(blockText(ownBlocks));
+    const runs = inlineRunsFromListBlocks(ownBlocks);
+
+    if (ownText) {
+      const item: ListItemIR = {
+        text: normalizeStructuredText(stripInlineMarkdown(ownText)),
+        level,
+        ordered,
+        number: ordered ? start + index : undefined,
+        marker: ordered ? `${start + index}.` : "-",
+        runs,
+        ...deriveListItemStructure(ownText, runs),
+      };
+      items.push(item);
+    }
+
+    for (const nestedList of nestedLists) items.push(...collectListItems(nestedList, level + 1));
+  });
+
+  return items;
+}
+
+function inlineRunsFromListBlocks(nodes: MdastNode[]): InlineRunIR[] {
+  const runs: InlineRunIR[] = [];
+  for (const node of nodes) {
+    if (node.type === "paragraph" || node.type === "heading") {
+      if (runs.length) runs.push({ text: "\n" });
+      runs.push(...inlineRunsFromMdast(node.children));
+    } else {
+      const text = blockText([node]);
+      if (text) {
+        if (runs.length) runs.push({ text: "\n" });
+        runs.push({ text });
+      }
+    }
+  }
+  return runs.filter((run) => run.text.length > 0);
+}
+
+function tableRowsFromMdast(node: MdastNode): string[][] {
+  return (node.children ?? [])
+    .filter((row) => row.type === "tableRow")
+    .map((row) => (row.children ?? [])
+      .filter((cell) => cell.type === "tableCell")
+      .map((cell) => normalizeInlineSpacing(blockText(cell.children))));
+}
+
+function blockText(nodes: MdastNode[] | undefined): string {
+  return (nodes ?? [])
+    .map((node) => {
+      if (node.type === "paragraph" || node.type === "heading" || node.type === "tableCell") return inlineText(node.children);
+      if (node.type === "code" || node.type === "html") return node.value ?? "";
+      if (node.type === "list") return collectListItems(node, 0).map((item) => item.text).join("\n");
+      if (node.children) return blockText(node.children);
+      return inlineText([node]);
+    })
+    .map((text) => text.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+function inlineText(nodes: MdastNode[] | undefined): string {
+  return (nodes ?? [])
+    .map((node) => {
+      if (node.type === "text" || node.type === "inlineCode") return node.value ?? "";
+      if (node.type === "break") return "\n";
+      if (node.type === "image") return node.alt ?? "";
+      if (node.children) return inlineText(node.children);
+      return "";
+    })
+    .join("");
+}
+
+function inlineRunsFromMdast(nodes: MdastNode[] | undefined, style: Partial<InlineRunIR> = {}): InlineRunIR[] {
+  const runs: InlineRunIR[] = [];
+  for (const node of nodes ?? []) {
+    if (node.type === "text" || node.type === "inlineCode") {
+      runs.push({ text: normalizeRunText(node.value ?? ""), ...style });
+    } else if (node.type === "break") {
+      runs.push({ text: "\n", ...style });
+    } else if (node.type === "image") {
+      const alt = normalizeRunText(node.alt ?? "");
+      if (alt) runs.push({ text: alt, ...style });
+    } else if (node.type === "strong") {
+      runs.push(...inlineRunsFromMdast(node.children, { ...style, bold: true }));
+    } else if (node.type === "emphasis") {
+      runs.push(...inlineRunsFromMdast(node.children, { ...style, italic: true }));
+    } else if (node.children) {
+      runs.push(...inlineRunsFromMdast(node.children, style));
+    }
+  }
+  return mergeAdjacentRuns(runs).filter((run) => run.text.length > 0);
+}
+
+function mergeAdjacentRuns(runs: InlineRunIR[]): InlineRunIR[] {
+  const merged: InlineRunIR[] = [];
+  for (const run of runs) {
+    const previous = merged[merged.length - 1];
+    if (previous && Boolean(previous.bold) === Boolean(run.bold) && Boolean(previous.italic) === Boolean(run.italic)) {
+      previous.text += run.text;
+    } else {
+      merged.push({ ...run });
+    }
+  }
+  return merged;
 }
 
 export function splitSentences(text: string): string[] {
@@ -272,48 +354,8 @@ export function splitSentences(text: string): string[] {
   return sentences.length ? sentences : [normalized];
 }
 
-function parseListItem(raw: string): ListItemIR | undefined {
-  const match = /^(\s*)(?:(\d+)[.)]|[-*+•·])\s*(.*)$/.exec(raw);
-  if (!match) return undefined;
-
-  const marker = match[2] ? `${match[2]}.` : raw.trim().slice(0, 1);
-  const text = normalizeInlineSpacing((match[3] ?? "").trim());
-  const level = Math.floor((match[1] ?? "").replace(/\t/g, "    ").length / 2);
-  const number = match[2] ? Number(match[2]) : undefined;
-  const cleanText = normalizeStructuredText(stripInlineMarkdown(text));
-  const runs = parseInlineRuns(text);
-
-  return {
-    text: cleanText,
-    level,
-    ordered: number !== undefined,
-    number,
-    marker,
-    runs,
-    ...deriveListItemStructure(text, runs),
-  };
-}
-
 function isDecorativeListText(text: string): boolean {
   return !text.trim() || /^[\-.•·*+]+$/.test(text.trim());
-}
-
-function parseListContinuation(raw: string): string | undefined {
-  if (!/^\s{2,}\S/.test(raw) && !/^\t+\S/.test(raw)) return undefined;
-  const text = raw.trim();
-  if (/^(#{1,6})\s+/.test(text)) return undefined;
-  if (/^(?:\d+[.)]|[-*+•·])\s+/.test(text)) return undefined;
-  return text;
-}
-
-function appendListContinuation(item: ListItemIR, rawContinuation: string): void {
-  const continuationText = normalizeStructuredText(stripInlineMarkdown(rawContinuation));
-  item.text = normalizeStructuredText(`${item.text}\n${continuationText}`);
-  item.runs = [...(item.runs ?? []), { text: "\n" }, ...parseInlineRuns(rawContinuation)];
-  const structure = deriveListItemStructure(item.text, item.runs);
-  item.label = structure.label;
-  item.description = structure.description;
-  item.descriptionRuns = structure.descriptionRuns;
 }
 
 export function parseInlineRuns(text: string): InlineRunIR[] {
@@ -358,6 +400,10 @@ function normalizeStructuredText(text: string): string {
 
 function normalizeInlineSpacing(text: string): string {
   return text.replace(/[ \t\f\v]+/g, " ").trim();
+}
+
+function normalizePlainText(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
 function normalizeRunText(text: string): string {

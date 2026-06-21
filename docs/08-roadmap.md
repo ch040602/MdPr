@@ -119,7 +119,7 @@ lightweight validation, and a separate push.
 - [x] Wire the Override Engine into CLI orchestration: apply overrides after
   layout planning, validate targets/conflicts, and make `validate --override`
   validate the overridden result.
-- [ ] Upgrade the default Markdown parser from the MVP parser to a
+- [x] Upgrade the default Markdown parser from the MVP parser to a
   CommonMark-compatible AST path while documenting Pandoc install/fallback
   policy.
 - [ ] Attach JSON schema validation to runtime config loading, including unknown
