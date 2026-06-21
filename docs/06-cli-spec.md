@@ -48,7 +48,8 @@ planDeck(inputPath, options)
   - returns Presentation IR, Layout IR, and diagnostics
 
 buildDeck(inputPath, options)
-  - renders requested outputs from the shared plan
+  - validates the shared plan
+  - renders requested outputs only when error diagnostics are absent
 ```
 
 Config precedence:
@@ -62,6 +63,8 @@ default config < config file < CLI args
 - `html` writes `dist/deck.html` through `@mdpresent/render-html`.
 - `pptx` writes `dist/deck.pptx` through `@mdpresent/render-pptx`.
 - Build writes `mdpresent-design-lock.json` and `mdpresent-manifest.json`.
+- Build fails before rendering when config, layout overflow, or requested
+  visual/coherence validation produces error diagnostics.
 - `--theme-style` selects decoration grammar separately from color.
 - `--theme-color` provides the main color seed.
 - `--theme-harmony` derives `monochromatic`, `analogous`, `complementary`, `split-complementary`, or `triadic` palettes.

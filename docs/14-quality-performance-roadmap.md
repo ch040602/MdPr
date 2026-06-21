@@ -40,6 +40,8 @@ Implemented in the deterministic runtime:
   binary can generate PPTX and HTML outputs.
 - Post-layout override operations `moveBlock`, `hideBlock`, and `pinBlock`
   operate on Layout IR region membership with missing block/slot diagnostics.
+- Build uses the same error-diagnostic gate as validation before rendering;
+  config, layout overflow, and requested visual/coherence errors stop output.
 
 Remaining roadmap items are listed below.
 
@@ -181,7 +183,8 @@ Rules:
 - Implement or reject override operations consistently. `moveBlock`,
   `hideBlock`, and `pinBlock` are implemented; `setSplit` remains explicitly
   pre-layout only.
-- Make build use the same validation gate as validate before rendering.
+- Make build use the same validation gate as validate before rendering
+  (implemented for error diagnostics).
 - Add `--strict`, `--allow-warnings`, `--visual`, and `--coherence` policies.
 
 ## Test and CI Follow-Up

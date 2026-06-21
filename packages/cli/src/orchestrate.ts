@@ -108,6 +108,7 @@ export function planDeck(inputPath: string, options: OrchestrationOptions = {}):
 
 export async function buildDeck(inputPath: string, options: BuildOptions = {}): Promise<BuildResult> {
   const deck = createDeckPlan(inputPath, options);
+  assertBuildCanRender(deck, options);
   const formats = options.formats ?? ["html"];
   const outDir = options.outDir ?? "dist";
   const renderJobs: Promise<string>[] = [];
@@ -169,6 +170,22 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
 
   return { ...deck, writtenFiles: [...writtenFiles, manifestPath, designLockPath], manifestPath, designLockPath };
+}
+
+function assertBuildCanRender(deck: DeckPlan, options: BuildOptions): void {
+  const diagnostics = [
+    ...deck.diagnostics,
+    ...validateLayoutOverflow(deck.layout, createContentIndex(deck.presentation)),
+    ...(options.visualValidation ? visualValidationDiagnostics(deck.layout) : []),
+    ...(options.coherenceValidation ? coherenceValidationDiagnostics(deck.presentation, deck.layout) : []),
+  ];
+  const errors = diagnostics.filter((diagnostic) => diagnostic.level === "error");
+  if (!errors.length) return;
+
+  const summary = errors
+    .map((diagnostic) => `${diagnostic.code ?? "ERROR"}: ${diagnostic.message}`)
+    .join("; ");
+  throw new Error(`Build validation failed: ${summary}`);
 }
 
 export function validateDeck(inputPath: string, options: OrchestrationOptions = {}): ValidationResult {

@@ -329,6 +329,51 @@ test("buildDeck rejects design lock drift unless explicitly updated", async () =
   }
 });
 
+test("buildDeck fails before rendering when config diagnostics contain errors", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-build-invalid-config-"));
+  const configPath = join(outDir, "mdpresent.config.yaml");
+
+  try {
+    writeFileSync(configPath, [
+      'version: "1.0"',
+      "deck:",
+      "  ratio: 1:1",
+    ].join("\n"));
+
+    await assert.rejects(
+      () => buildDeck(basicDeck, { formats: ["html"], outDir, configPath }),
+      /Build validation failed: CONFIG_FILE_INVALID/,
+    );
+    assert.equal(existsSync(join(outDir, "deck.html")), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("buildDeck fails visual builds when visual validation reports errors", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-build-visual-error-"));
+
+  try {
+    await assert.rejects(
+      () => buildDeck(basicDeck, {
+        formats: ["html"],
+        outDir,
+        visualValidation: true,
+        cliConfig: {
+          theme: {
+            backgroundColor: "#FFFFFF",
+            textColor: "#FFFFFF",
+          },
+        },
+      }),
+      /Build validation failed: VISUAL_CONTRAST/,
+    );
+    assert.equal(existsSync(join(outDir, "deck.html")), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("CLI theme style and color seed stay independently selectable", () => {
   const cliPath = join(repoRoot, "packages/cli/dist/index.js");
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-style-color-"));
