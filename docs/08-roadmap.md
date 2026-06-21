@@ -116,7 +116,7 @@ lightweight validation, and a separate push.
 - [x] Align PDF output promise with implementation: either wire
   `@mdpresent/render-pdf` into `buildDeck()` with fixture coverage, or mark PDF
   as experimental/TODO in user-facing examples.
-- [ ] Wire the Override Engine into CLI orchestration: apply overrides after
+- [x] Wire the Override Engine into CLI orchestration: apply overrides after
   layout planning, validate targets/conflicts, and make `validate --override`
   validate the overridden result.
 - [ ] Upgrade the default Markdown parser from the MVP parser to a

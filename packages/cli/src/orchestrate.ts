@@ -10,6 +10,7 @@ import { renderHtml } from "@mdpresent/render-html";
 import { renderPdf } from "@mdpresent/render-pdf";
 import type { DesignPresetName } from "@mdpresent/render-pptx";
 import { renderPptx } from "@mdpresent/render-pptx";
+import { applyOverrides, diffLayout, type LayoutDiff, type OverrideManifest } from "@mdpresent/override";
 import { parse as parseYaml } from "yaml";
 
 export type ConfigSource =
@@ -35,6 +36,7 @@ export type DeckPlan = {
   overrideSource?: OverrideSource;
   presentation: PresentationIR;
   layout: LayoutIR;
+  overrideDiff?: LayoutDiff[];
   diagnostics: Diagnostic[];
 };
 
@@ -66,20 +68,15 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
     ? parseMarkdownWithPandoc(markdown, { sourcePath: inputPath })
     : parseMarkdown(markdown, inputPath);
   const presentation = planPresentation(doc, config);
-  const layout = resolveLayoutTextOverflow(planLayout(presentation, config), presentation);
+  const initialLayout = resolveLayoutTextOverflow(planLayout(presentation, config), presentation);
+  const overrideManifest = options.overridePath ? readOverrideFile(options.overridePath, configDiagnostics) : undefined;
+  const layout = overrideManifest ? applyOverrides(initialLayout, overrideManifest, presentation) : initialLayout;
+  const overrideDiff = overrideManifest ? diffLayout(initialLayout, layout) : undefined;
   const diagnostics: Diagnostic[] = [
     ...presentation.diagnostics,
     ...layout.diagnostics,
     ...configDiagnostics,
   ];
-
-  if (options.overridePath) {
-    diagnostics.push({
-      level: "warning",
-      code: "OVERRIDE_FILE_NOT_IMPLEMENTED",
-      message: `Override loading is not implemented yet: ${options.overridePath}`,
-    });
-  }
 
   return {
     config,
@@ -91,6 +88,7 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
     overrideSource: options.overridePath ? { path: options.overridePath } : undefined,
     presentation,
     layout,
+    overrideDiff,
     diagnostics,
   };
 }
@@ -237,6 +235,10 @@ function createBuildManifest(
       sha256: sha256(stableJson(deck.config)),
       sources: deck.configSources,
     },
+    override: deck.overrideSource ? {
+      source: deck.overrideSource,
+      diff: deck.overrideDiff ?? [],
+    } : null,
     presentationMode: deck.config.deck.presentationMode ?? "normal",
     slideCount: deck.presentation.slides.length,
     outputs: writtenFiles,
@@ -252,6 +254,51 @@ function createBuildManifest(
       visual: visualValidation ? createVisualValidationSummary(deck.layout) : null,
     },
   };
+}
+
+function readOverrideFile(overridePath: string, diagnostics: Diagnostic[]): OverrideManifest | undefined {
+  if (!existsSync(overridePath)) {
+    diagnostics.push({
+      level: "warning",
+      code: "OVERRIDE_FILE_NOT_FOUND",
+      message: `Override file was requested but not found: ${overridePath}`,
+    });
+    return undefined;
+  }
+
+  try {
+    const raw = readFileSync(overridePath, "utf-8");
+    const manifest = overridePath.endsWith(".json") ? JSON.parse(raw) as OverrideManifest : parseYaml(raw) as OverrideManifest;
+    const validation = validateOverrideManifest(manifest);
+    if (validation) {
+      diagnostics.push({
+        level: "error",
+        code: "OVERRIDE_FILE_INVALID",
+        message: `Override file is invalid: ${overridePath}. ${validation}`,
+      });
+      return undefined;
+    }
+    return manifest;
+  } catch (error) {
+    diagnostics.push({
+      level: "error",
+      code: "OVERRIDE_FILE_INVALID",
+      message: `Override file could not be parsed: ${overridePath}. ${error instanceof Error ? error.message : String(error)}`,
+    });
+    return undefined;
+  }
+}
+
+function validateOverrideManifest(manifest: OverrideManifest): string | null {
+  if (!manifest || manifest.version !== "1.0") return "version must be \"1.0\".";
+  const hasOperations = Array.isArray(manifest.operations);
+  const hasOverrides = Array.isArray(manifest.overrides);
+  if (hasOperations === hasOverrides) return "provide exactly one of operations or overrides.";
+  const operations = manifest.operations ?? [];
+  for (const [index, operation] of operations.entries()) {
+    if (!operation.op || !operation.target || !operation.value) return `operations[${index}] must include op, target, and value.`;
+  }
+  return null;
 }
 
 function createVisualValidationSummary(layout: LayoutIR) {

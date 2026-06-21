@@ -394,7 +394,7 @@ test("buildDeck passes theme-gallery presets to PPTX output", async () => {
 });
 
 
-test("createDeckPlan reports config and override paths as requested but unapplied scaffold hooks", () => {
+test("createDeckPlan reports missing config and override files as diagnostics", () => {
   const deck = planDeck(basicDeck, {
     configPath: "mdpresent.config.yaml",
     overridePath: "deck.override.yaml",
@@ -407,7 +407,7 @@ test("createDeckPlan reports config and override paths as requested but unapplie
   assert.deepEqual(deck.overrideSource, { path: "deck.override.yaml" });
   assert.deepEqual(
     deck.diagnostics.map((diagnostic) => diagnostic.code),
-    ["CONFIG_FILE_NOT_FOUND", "OVERRIDE_FILE_NOT_IMPLEMENTED"],
+    ["CONFIG_FILE_NOT_FOUND", "OVERRIDE_FILE_NOT_FOUND"],
   );
 });
 
@@ -434,6 +434,21 @@ test("createDeckPlan applies config file values including PPTX template settings
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
+});
+
+test("createDeckPlan applies override files to title-targeted slides", () => {
+  const result = planDeck(basicDeck, { overridePath: join(repoRoot, "examples/basic/deck.override.yaml") });
+  const sourceSlide = result.presentation.slides.find((slide) => slide.title === "주요 기능");
+  assert.ok(sourceSlide);
+  const layoutSlide = result.layout.slides.find((slide) => slide.sourceSlideId === sourceSlide.id);
+  assert.ok(layoutSlide);
+
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "OVERRIDE_FILE_NOT_IMPLEMENTED"), false);
+  assert.equal(layoutSlide.layout.preset, "grid");
+  assert.equal(layoutSlide.layout.columns, 2);
+  assert.equal(layoutSlide.layout.rows, 2);
+  assert.equal(layoutSlide.regions.some((region) => region.typography?.fontSize === 21), true);
+  assert.equal(result.overrideDiff?.some((diff) => diff.path.endsWith("typography.fontSize") && diff.after === 21), true);
 });
 
 test("CLI entrypoint delegates inspect and build commands through the shared path", () => {
@@ -508,7 +523,7 @@ test("validateDeck returns structured diagnostics and validity", () => {
   const result = validateDeck(basicDeck, { overridePath: "examples/basic/deck.override.yaml" });
 
   assert.equal(result.valid, true);
-  assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "OVERRIDE_FILE_NOT_IMPLEMENTED"));
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "OVERRIDE_FILE_NOT_IMPLEMENTED"), false);
 });
 
 test("validateDeck includes title text in overflow diagnostics", () => {
@@ -612,5 +627,5 @@ test("CLI validate exposes a user-facing acceptance path", () => {
   const result = JSON.parse(output);
 
   assert.equal(result.valid, true);
-  assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "OVERRIDE_FILE_NOT_IMPLEMENTED"));
+  assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "OVERRIDE_FILE_NOT_IMPLEMENTED"), false);
 });

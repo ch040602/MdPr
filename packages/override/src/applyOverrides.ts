@@ -1,13 +1,14 @@
+import type { PresentationIR } from "@mdpresent/core";
 import type { LayoutIR, LayoutSpec, Rect } from "@mdpresent/layout";
 import type { OverrideManifest, OverrideOperation } from "./types.js";
 import { resolveTarget } from "./resolveTarget.js";
 
-export function applyOverrides(layout: LayoutIR, manifest: OverrideManifest): LayoutIR {
+export function applyOverrides(layout: LayoutIR, manifest: OverrideManifest, presentation?: PresentationIR): LayoutIR {
   const next: LayoutIR = structuredClone(layout);
   const operations = normalizeOperations(manifest);
 
   for (const operation of operations) {
-    const targets = resolveTarget(next, operation.target);
+    const targets = resolveTarget(next, operation.target, presentation);
     if (!targets.length) {
       next.diagnostics.push({
         level: "warning",
@@ -24,7 +25,7 @@ export function applyOverrides(layout: LayoutIR, manifest: OverrideManifest): La
           break;
         case "setTypography":
           for (const region of slide.regions) {
-            region.typography = { ...region.typography, ...(operation.value as Record<string, unknown>) } as typeof region.typography;
+            region.typography = { ...region.typography, ...normalizeTypography(operation.value) } as typeof region.typography;
           }
           break;
         case "setBackground":
@@ -67,6 +68,17 @@ export function applyOverrides(layout: LayoutIR, manifest: OverrideManifest): La
     }
   }
 
+  return next;
+}
+
+function normalizeTypography(value: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...value };
+  if (typeof next.bodyFontSize === "number" && next.fontSize === undefined) {
+    next.fontSize = next.bodyFontSize;
+  }
+  delete next.bodyFontSize;
+  delete next.titleFontSize;
+  delete next.captionFontSize;
   return next;
 }
 
