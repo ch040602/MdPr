@@ -94,7 +94,14 @@ function readCommonOptions(args: string[]) {
 
 function readFormats(args: string[]): OutputFormat[] {
   const value = readOption(args, "--to") ?? "html";
-  return value.split(",").map((format) => format.trim()).filter(Boolean) as OutputFormat[];
+  const formats = value.split(",").map((format) => format.trim()).filter(Boolean);
+  const allowed: OutputFormat[] = ["pptx", "html", "pdf"];
+  for (const format of formats) {
+    if (!allowed.includes(format as OutputFormat)) {
+      throw new Error(`Unknown output format: ${format}. Allowed formats: ${allowed.join(", ")}`);
+    }
+  }
+  return formats as OutputFormat[];
 }
 
 function readOption(args: string[], name: string): string | undefined {

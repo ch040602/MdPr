@@ -106,3 +106,30 @@ corepack pnpm preview:themes
 corepack pnpm preview:readme
 corepack pnpm test
 ```
+
+## Runtime Gap Closure TODOs
+
+These items track gaps between current implementation and the public README/API
+promises. They should be completed one step at a time with a focused test,
+lightweight validation, and a separate push.
+
+- [ ] Align PDF output promise with implementation: either wire
+  `@mdpresent/render-pdf` into `buildDeck()` with fixture coverage, or mark PDF
+  as experimental/TODO in user-facing examples.
+- [ ] Wire the Override Engine into CLI orchestration: apply overrides after
+  layout planning, validate targets/conflicts, and make `validate --override`
+  validate the overridden result.
+- [ ] Upgrade the default Markdown parser from the MVP parser to a
+  CommonMark-compatible AST path while documenting Pandoc install/fallback
+  policy.
+- [ ] Attach JSON schema validation to runtime config loading, including unknown
+  key detection, invalid enum/unit diagnostics, and schema/type drift tests.
+- [x] Strengthen CLI output format validation: `--to` now accepts only `pptx`,
+  `html`, and `pdf`, and unknown formats fail with a non-zero CLI exit.
+- [ ] Expand tests to match README product goals: parser-to-IR-to-layout-to-
+  renderer fixtures, PPTX XML contracts, and HTML/PDF artifact contracts.
+- [ ] Deepen visual validation beyond shallow metadata checks: overlap, z-order,
+  contrast, clipping, image aspect ratio, connector crossing, and per-check
+  manifest thresholds.
+- [ ] Harden packaging and installable CLI behavior: add a `mdpresent` bin,
+  package exports/files, and an `npm pack` clean-project smoke test.

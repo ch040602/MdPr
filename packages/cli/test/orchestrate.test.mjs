@@ -444,6 +444,37 @@ test("CLI entrypoint delegates inspect and build commands through the shared pat
   }
 });
 
+test("CLI build rejects unknown output formats", () => {
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-bad-format-"));
+
+  try {
+    assert.throws(
+      () => execFileSync(process.execPath, [
+        cliPath,
+        "build",
+        basicDeck,
+        "--to",
+        "html,docx",
+        "--out",
+        outDir,
+      ], {
+        cwd: repoRoot,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "pipe"],
+      }),
+      (error) => {
+        assert.equal(error.status, 1);
+        assert.match(error.stderr, /Unknown output format: docx/);
+        assert.match(error.stderr, /Allowed formats: pptx, html, pdf/);
+        return true;
+      },
+    );
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("validateDeck returns structured diagnostics and validity", () => {
   const result = validateDeck(basicDeck, { overridePath: "examples/basic/deck.override.yaml" });
 
