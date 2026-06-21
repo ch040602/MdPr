@@ -133,6 +133,20 @@ Longer lists keep the existing chunking behavior:
 The rule applies to list blocks only. A single diagram or graph block remains a
 single slide-level object and is not split across continuation pages.
 
+## Long Table Continuation
+
+Long Markdown tables split before layout so cell text and row spacing remain
+readable. The header row is repeated on each continuation slide.
+
+```text
+header + 1-6 data rows   -> one table slide
+header + 7+ data rows    -> table continuation chunks
+chunk size               -> header + 6 data rows
+```
+
+This keeps native PPTX table rendering editable while avoiding tiny table text
+or off-slide rows.
+
 ## Split Override Example
 
 ```yaml

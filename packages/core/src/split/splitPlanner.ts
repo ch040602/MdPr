@@ -330,6 +330,20 @@ function splitForcedContinuationBlocks(blocks: SlideIR["blocks"]): SlideIR["bloc
     return splitParagraphSequence(blocks);
   }
 
+  const tableIndex = blocks.findIndex((block) => block.type === "table" && shouldSplitTableBlock(block));
+  if (tableIndex >= 0) {
+    const tableBlock = blocks[tableIndex]!;
+    const beforeTable = blocks.slice(0, tableIndex);
+    const afterTable = blocks.slice(tableIndex + 1);
+    const chunks = splitTableBlock(tableBlock);
+    if (chunks.length <= 1) return [];
+    return chunks.map((chunk, index) => [
+      ...(index === 0 ? beforeTable : []),
+      chunk,
+      ...(index === chunks.length - 1 ? afterTable : []),
+    ]);
+  }
+
   const listIndex = blocks.findIndex((block) => block.type === "bulletList" && shouldSplitListBlock(block));
   if (listIndex >= 0) {
     const listBlock = blocks[listIndex]!;
@@ -412,6 +426,27 @@ function splitListBlock(block: SlideIR["blocks"][number]): SlideIR["blocks"][num
       id: `${block.id}-chunk-${chunks.length + 1}`,
       items: chunkItems,
       listItems: chunkListItems,
+    });
+  }
+
+  return chunks;
+}
+
+function shouldSplitTableBlock(block: SlideIR["blocks"][number]): boolean {
+  return (block.rows?.length ?? 0) > 7;
+}
+
+function splitTableBlock(block: SlideIR["blocks"][number]): SlideIR["blocks"][number][] {
+  const rows = block.rows ?? [];
+  if (rows.length <= 7) return [block];
+  const [header, ...dataRows] = rows;
+  const chunks: SlideIR["blocks"][number][] = [];
+
+  for (let index = 0; index < dataRows.length; index += 6) {
+    chunks.push({
+      ...block,
+      id: `${block.id}-chunk-${chunks.length + 1}`,
+      rows: [header ?? [], ...dataRows.slice(index, index + 6)],
     });
   }
 

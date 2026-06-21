@@ -25,6 +25,7 @@ Implemented in the deterministic runtime:
   coverage.
 - Very long 4-item lists split into 2+2 continuation slides before they become
   unreadable 2x2 grid slides.
+- Long Markdown tables split into continuation slides with repeated headers.
 - Manifest overflow-resolution summaries report pre-split continuation groups,
   continuation reasons, font-shrink counts, and graph/diagram split protection.
 
@@ -53,10 +54,12 @@ Remaining roadmap items are listed below.
    shrink.
    - Split very long 4-item lists before grid layout forces unreadable shrink
      (implemented).
+   - Split long Markdown tables with repeated headers before table layout
+     forces unreadable shrink (implemented).
    - Try alternate layout candidates (partially implemented through candidate
      scoring; post-layout retry remains planned).
    - Reposition regions (planned).
-   - Split table/code continuation blocks when needed (planned).
+   - Add code-specific manifest strategy fixtures (planned).
    - Shrink fonts only as a late fallback.
    - Emit diagnostics when content still cannot fit.
 

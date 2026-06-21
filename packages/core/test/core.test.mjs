@@ -912,6 +912,32 @@ test("planPresentation splits long shell code blocks into continuation slides", 
   assert.deepEqual(contentSlides.map((slide) => slide.blocks[0].text.split(/\r?\n/).length), [4, 2]);
 });
 
+test("planPresentation splits long tables into continuation slides with repeated headers", () => {
+  const rows = Array.from({ length: 10 }, (_, index) => `| Stage ${index + 1} | ${1000 - index * 50} | ${index % 2 ? "Hold" : "Grow"} |`);
+  const doc = parseMarkdown([
+    "# Product",
+    "",
+    "## Adoption Table",
+    "",
+    "| Stage | Users | Signal |",
+    "|---|---:|---|",
+    ...rows,
+  ].join("\n"));
+
+  const presentation = planPresentation(doc, defaultConfig);
+  const contentSlides = presentation.slides.filter((slide) => slide.role === "content");
+
+  assert.deepEqual(contentSlides.map((slide) => slide.title), [
+    "Adoption Table",
+    "Adoption Table (Cont. 2/2)",
+  ]);
+  assert.deepEqual(contentSlides.map((slide) => slide.blocks[0].rows.length), [7, 5]);
+  assert.deepEqual(contentSlides.map((slide) => slide.blocks[0].rows[0]), [
+    ["Stage", "Users", "Signal"],
+    ["Stage", "Users", "Signal"],
+  ]);
+});
+
 test("planPresentation keeps one diagram and its supporting content on the same slide", () => {
   const doc = parseMarkdown([
     "# Product",
