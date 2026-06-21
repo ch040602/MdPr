@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { exportPptxToPdf } from "../dist/index.js";
+import { exportPptxToPdf, inspectPdfExporterEnvironment } from "../dist/index.js";
 
 test("exportPptxToPdf uses an injected exporter command with PPTX and PDF paths", async () => {
   const dir = mkdtempSync(join(tmpdir(), "mdpresent-render-pdf-"));
@@ -44,4 +44,37 @@ test("exportPptxToPdf rejects a missing PPTX source", async () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("inspectPdfExporterEnvironment reports injected exporter commands", async () => {
+  const result = await inspectPdfExporterEnvironment({
+    env: {
+      MDPRESENT_PDF_EXPORT_COMMAND: JSON.stringify(["node", "exporter.mjs", "{pptx}", "{pdf}"]),
+    },
+    platform: "linux",
+  });
+
+  assert.equal(result.available, true);
+  assert.equal(result.preferred, "injected");
+  assert.equal(result.candidates[0].label, "MDPRESENT_PDF_EXPORT_COMMAND");
+  assert.equal(result.candidates[0].found, true);
+});
+
+test("inspectPdfExporterEnvironment probes default LibreOffice commands", async () => {
+  const seen = [];
+  const result = await inspectPdfExporterEnvironment({
+    env: {},
+    platform: "linux",
+    commandProbe: async (executable, args) => {
+      seen.push([executable, args]);
+      return executable === "libreoffice"
+        ? { found: true, version: "LibreOffice 25.2" }
+        : { found: false };
+    },
+  });
+
+  assert.deepEqual(seen.map(([executable]) => executable), ["soffice", "libreoffice"]);
+  assert.equal(result.available, true);
+  assert.equal(result.preferred, "libreoffice");
+  assert.equal(result.candidates.find((candidate) => candidate.executable === "libreoffice").version, "LibreOffice 25.2");
 });

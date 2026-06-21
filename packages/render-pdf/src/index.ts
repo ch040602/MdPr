@@ -8,6 +8,28 @@ export type RenderPdfOptions = {
   outPath: string;
 };
 
+export type PdfExporterCandidateStatus = {
+  label: string;
+  executable: string;
+  found: boolean;
+  version?: string;
+  message?: string;
+};
+
+export type PdfExporterEnvironment = {
+  available: boolean;
+  preferred: string | null;
+  injected: boolean;
+  platform: string;
+  candidates: PdfExporterCandidateStatus[];
+};
+
+export type PdfExporterProbeOptions = {
+  env?: Record<string, string | undefined>;
+  platform?: NodeJS.Platform;
+  commandProbe?: (executable: string, args: string[]) => Promise<{ found: boolean; version?: string; message?: string }>;
+};
+
 const execFileAsync = promisify(execFile);
 
 export async function renderPdf(options: RenderPdfOptions): Promise<void> {
@@ -41,6 +63,67 @@ export async function exportPptxToPdf(pptxPath: string, outPath: string): Promis
   }
 
   throw new Error(`PDF export failed. Install PowerPoint on Windows or LibreOffice on CI/Linux. ${errors.join(" | ")}`);
+}
+
+export async function inspectPdfExporterEnvironment(options: PdfExporterProbeOptions = {}): Promise<PdfExporterEnvironment> {
+  const env = options.env ?? process.env;
+  const platform = options.platform ?? process.platform;
+  const injected = env.MDPRESENT_PDF_EXPORT_COMMAND;
+  if (injected) {
+    try {
+      const parts = JSON.parse(injected) as unknown;
+      if (!Array.isArray(parts) || !parts.every((part) => typeof part === "string") || parts.length === 0) {
+        throw new Error("expected a JSON string array");
+      }
+      return {
+        available: true,
+        preferred: "injected",
+        injected: true,
+        platform,
+        candidates: [{
+          label: "MDPRESENT_PDF_EXPORT_COMMAND",
+          executable: parts[0]!,
+          found: true,
+          message: "Injected exporter command is configured.",
+        }],
+      };
+    } catch (error) {
+      return {
+        available: false,
+        preferred: null,
+        injected: true,
+        platform,
+        candidates: [{
+          label: "MDPRESENT_PDF_EXPORT_COMMAND",
+          executable: "unknown",
+          found: false,
+          message: error instanceof Error ? error.message : String(error),
+        }],
+      };
+    }
+  }
+
+  const probe = options.commandProbe ?? defaultCommandProbe;
+  const candidates: PdfExporterCandidateStatus[] = [];
+  for (const candidate of defaultProbeCommands(platform)) {
+    const status = await probe(candidate.executable, candidate.args);
+    candidates.push({
+      label: candidate.label,
+      executable: candidate.executable,
+      found: status.found,
+      version: status.version,
+      message: status.message,
+    });
+  }
+  const preferred = candidates.find((candidate) => candidate.found)?.executable ?? null;
+
+  return {
+    available: Boolean(preferred),
+    preferred,
+    injected: false,
+    platform,
+    candidates,
+  };
 }
 
 type PdfCommand = {
@@ -110,6 +193,36 @@ function defaultExportCommands(pptxPath: string, outPath: string): PdfCommand[] 
     });
   }
   return commands;
+}
+
+function defaultProbeCommands(platform: NodeJS.Platform): Array<{ label: string; executable: string; args: string[] }> {
+  const commands: Array<{ label: string; executable: string; args: string[] }> = [];
+  if (platform === "win32") {
+    commands.push({
+      label: "PowerPoint COM",
+      executable: "powershell",
+      args: ["-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"],
+    });
+  }
+  commands.push(
+    { label: "soffice", executable: "soffice", args: ["--version"] },
+    { label: "libreoffice", executable: "libreoffice", args: ["--version"] },
+  );
+  return commands;
+}
+
+async function defaultCommandProbe(executable: string, args: string[]): Promise<{ found: boolean; version?: string; message?: string }> {
+  try {
+    const result = await execFileAsync(executable, args, { windowsHide: true, timeout: 2500, maxBuffer: 1024 * 1024 });
+    const version = firstLine(result.stdout || result.stderr);
+    return { found: true, ...(version ? { version } : {}) };
+  } catch (error) {
+    return { found: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function firstLine(value: string): string | undefined {
+  return value.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
 }
 
 async function run(executable: string, args: string[]): Promise<void> {

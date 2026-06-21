@@ -9,6 +9,7 @@ import {
   type OutputFormat,
   type ParserMode,
 } from "@mdpresent/core";
+import { inspectPdfExporterEnvironment } from "@mdpresent/render-pdf";
 
 const args = process.argv.slice(2);
 const exitCode = await runCli(args);
@@ -16,8 +17,14 @@ if (exitCode !== 0) process.exit(exitCode);
 
 export async function runCli(args: string[]): Promise<number> {
   const command = args[0];
-  const input = args[1];
 
+  if (command === "doctor") {
+    if (args.includes("--pdf")) return doctorPdf();
+    printHelp();
+    return 1;
+  }
+
+  const input = args[1];
   if (!command || !input) {
     printHelp();
     return 1;
@@ -80,6 +87,19 @@ export async function runCli(args: string[]): Promise<number> {
 
   printHelp();
   return 1;
+}
+
+async function doctorPdf(): Promise<number> {
+  const status = await inspectPdfExporterEnvironment();
+  console.log("PDF exporter:");
+  console.log(`  platform: ${status.platform}`);
+  console.log(`  preferred: ${status.preferred ?? "none"}`);
+  console.log(`  injected: ${status.injected ? "yes" : "no"}`);
+  for (const candidate of status.candidates) {
+    const suffix = candidate.version ? ` (${candidate.version})` : candidate.message ? ` (${candidate.message})` : "";
+    console.log(`  - ${candidate.label}: ${candidate.found ? "found" : "missing"} ${candidate.executable}${suffix}`);
+  }
+  return status.available ? 0 : 1;
 }
 
 function readCommonOptions(args: string[]) {
@@ -176,6 +196,7 @@ function printHelp() {
   console.log(`mdpresent scaffold CLI
 
 Usage:
+  mdpresent doctor --pdf
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
   mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--visual] [--coherence] [--json]

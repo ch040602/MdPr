@@ -598,6 +598,26 @@ test("CLI entrypoint delegates inspect and build commands through the shared pat
   }
 });
 
+test("CLI doctor reports PDF exporter status", () => {
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+  const output = execFileSync(process.execPath, [
+    cliPath,
+    "doctor",
+    "--pdf",
+  ], {
+    cwd: repoRoot,
+    encoding: "utf-8",
+    env: {
+      ...process.env,
+      MDPRESENT_PDF_EXPORT_COMMAND: JSON.stringify([process.execPath, "fake-exporter.mjs", "{pptx}", "{pdf}"]),
+    },
+  });
+
+  assert.match(output, /PDF exporter:/);
+  assert.match(output, /preferred: injected/);
+  assert.match(output, /MDPRESENT_PDF_EXPORT_COMMAND/);
+});
+
 test("CLI build rejects unknown output formats", () => {
   const cliPath = join(repoRoot, "packages/cli/dist/index.js");
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-bad-format-"));

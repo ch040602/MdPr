@@ -4,6 +4,7 @@
 
 ```bash
 mdpresent init
+mdpresent doctor --pdf
 mdpresent inspect deck.md --json
 mdpresent plan deck.md --json > layout.plan.json
 mdpresent validate deck.md --override deck.override.yaml --coherence
@@ -73,6 +74,8 @@ default config < config file < CLI args
 - `--coherence` adds claim/evidence/caption/table grouping diagnostics.
 - PPTX can reuse positioned image assets from a template/master deck as a background layer.
 - PDF is exported from the generated PPTX with PowerPoint on Windows or LibreOffice in CI/Linux.
+- `doctor --pdf` reports the configured or discoverable PDF exporter before a
+  PDF build is attempted.
 
 ## Validation
 

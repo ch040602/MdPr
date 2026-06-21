@@ -44,6 +44,8 @@ Implemented in the deterministic runtime:
   config, layout overflow, and requested visual/coherence errors stop output.
 - Coherence validation reports section-level layout motif drift and
   continuation-title quality from generated Presentation/Layout IR.
+- `mdpresent doctor --pdf` reports injected, PowerPoint, and LibreOffice PDF
+  exporter availability before users attempt PDF builds.
 
 Remaining roadmap items are listed below.
 
@@ -108,7 +110,7 @@ Remaining roadmap items are listed below.
 
 ## PDF Export Follow-Up
 
-- Add `mdpresent doctor --pdf`.
+- Add `mdpresent doctor --pdf` (implemented).
 - Record exporter engine, version, command hash, source PPTX hash, and duration
   in the manifest.
 - Add a real LibreOffice smoke test in the Ubuntu CI path used by theme preview.
