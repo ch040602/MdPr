@@ -816,6 +816,66 @@ test("validateDeck coherence validation reports claimless evidence and orphan ta
   }
 });
 
+test("validateDeck coherence validation reports section style drift", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-coherence-style-drift-"));
+  const deckPath = join(outDir, "deck.md");
+  const overridePath = join(outDir, "deck.override.yaml");
+
+  try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Product",
+      "",
+      "This section introduces multiple evidence styles that should still keep a coherent section motif.",
+      "",
+      "### Claim",
+      "",
+      "The product keeps Markdown structure editable.",
+      "",
+      "### Evidence",
+      "",
+      "| Feature | Result |",
+      "|---|---|",
+      "| Native table | Editable |",
+      "",
+      "### Flow",
+      "",
+      "Markdown => Layout => PPTX",
+    ].join("\n"));
+    writeFileSync(overridePath, [
+      'version: "1.0"',
+      "operations:",
+      "  - op: setLayout",
+      "    target:",
+      "      title: Product — Claim",
+      "    value:",
+      "      preset: title-body",
+      "  - op: setLayout",
+      "    target:",
+      "      title: Product — Evidence",
+      "    value:",
+      "      preset: table-focus",
+      "  - op: setLayout",
+      "    target:",
+      "      title: Product — Flow",
+      "    value:",
+      "      preset: pipeline",
+    ].join("\n"));
+
+    const result = validateDeck(deckPath, {
+      overridePath,
+      coherenceValidation: true,
+      cliConfig: { split: { autosplit: { enabled: true, maxDensity: 0.5 } } },
+    });
+    const codes = result.diagnostics.map((diagnostic) => diagnostic.code);
+
+    assert.equal(codes.includes("SECTION_STYLE_DRIFT"), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("validateDeck resolves default text overflow before reporting diagnostics", () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-resolve-overflow-"));
   const deckPath = join(outDir, "deck.md");

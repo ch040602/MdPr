@@ -42,6 +42,8 @@ Implemented in the deterministic runtime:
   operate on Layout IR region membership with missing block/slot diagnostics.
 - Build uses the same error-diagnostic gate as validation before rendering;
   config, layout overflow, and requested visual/coherence errors stop output.
+- Coherence validation reports section-level layout motif drift and
+  continuation-title quality from generated Presentation/Layout IR.
 
 Remaining roadmap items are listed below.
 
@@ -143,14 +145,12 @@ Add diagnostics for:
 - `DETACHED_CAPTION` (implemented)
 - `ORPHAN_TABLE` (implemented)
 - `LOW_OBJECT_COVERAGE` (implemented)
-- `SECTION_STYLE_DRIFT` (planned)
-- `DENSE_CONTINUATION_WITHOUT_TITLE` (planned)
+- `SECTION_STYLE_DRIFT` (implemented)
+- `DENSE_CONTINUATION_WITHOUT_TITLE` (implemented)
 
 The manifest includes counts for orphan evidence blocks, detached captions,
 claimless slides, section motif drift, continuation title quality, and mixed
-object grouping score. Section motif drift and continuation title quality are
-currently structural placeholders until section-state tracking and continuation
-split naming are implemented.
+object grouping score.
 
 ## Section-Level Design Continuity
 
