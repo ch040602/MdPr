@@ -92,6 +92,16 @@ Post-layout phase:
 ```
 
 `setSplit` changes slide generation, so it must run before `Presentation IR` is planned and before `Layout IR` exists.
+`moveBlock`, `hideBlock`, and `pinBlock` operate on Layout IR region
+membership. They do not rewrite Markdown content.
+
+Block-level post-layout semantics:
+
+- `hideBlock` removes `target.blockId` from all regions on the matched slide.
+- `moveBlock` removes `target.blockId` from its current region and appends it
+  to `value.slot`.
+- `pinBlock` removes `target.blockId` from its current region, prepends it to
+  `value.slot`, and raises that region above peer regions.
 
 ## Examples
 
@@ -113,6 +123,13 @@ operations:
       y: 1.6
       w: 5.6
       h: 4.8
+
+  - op: pinBlock
+    target:
+      slideId: evidence-pack-73a91
+      blockId: key-claim-4b12
+    value:
+      slot: body
 ```
 
 ## Guardrails

@@ -87,6 +87,59 @@ test("unresolved targets produce diagnostics", () => {
   ]);
 });
 
+test("post-layout block overrides move hide and pin region block ids", () => {
+  const next = applyOverrides(createLayout(), {
+    version: "1.0",
+    operations: [
+      {
+        op: "moveBlock",
+        target: { slideId: "slide-1", blockId: "block-2" },
+        value: { slot: "sidebar" },
+      },
+      {
+        op: "pinBlock",
+        target: { slideId: "slide-1", blockId: "block-3" },
+        value: { slot: "sidebar" },
+      },
+      {
+        op: "hideBlock",
+        target: { slideId: "slide-1", blockId: "block-4" },
+        value: {},
+      },
+    ],
+  });
+  const body = next.slides[0].regions.find((region) => region.id === "body");
+  const sidebar = next.slides[0].regions.find((region) => region.id === "sidebar");
+
+  assert.deepEqual(body.blockIds, ["block-1"]);
+  assert.deepEqual(sidebar.blockIds, ["block-3", "block-2"]);
+  assert.equal(sidebar.zIndex > body.zIndex, true);
+  assert.deepEqual(next.diagnostics, []);
+});
+
+test("post-layout block overrides report missing block and slot targets", () => {
+  const next = applyOverrides(createLayout(), {
+    version: "1.0",
+    operations: [
+      {
+        op: "moveBlock",
+        target: { slideId: "slide-1", blockId: "missing-block" },
+        value: { slot: "sidebar" },
+      },
+      {
+        op: "pinBlock",
+        target: { slideId: "slide-1", blockId: "block-1" },
+        value: { slot: "missing-slot" },
+      },
+    ],
+  });
+
+  assert.deepEqual(next.diagnostics.map((diagnostic) => diagnostic.code), [
+    "OVERRIDE_BLOCK_NOT_FOUND",
+    "OVERRIDE_SLOT_NOT_FOUND",
+  ]);
+});
+
 function createLayout() {
   return {
     version: "1.0",
@@ -113,13 +166,24 @@ function createLayout() {
           {
             id: "body",
             role: "body",
-            blockIds: ["block-1"],
+            blockIds: ["block-1", "block-2", "block-3", "block-4"],
             x: 1,
             y: 1,
             w: 4,
             h: 3,
             zIndex: 10,
             typography: { fontSize: 20, minFontSize: 16, lineHeight: 1.2 },
+          },
+          {
+            id: "sidebar",
+            role: "body",
+            blockIds: [],
+            x: 6,
+            y: 1,
+            w: 3,
+            h: 3,
+            zIndex: 8,
+            typography: { fontSize: 18, minFontSize: 16, lineHeight: 1.2 },
           },
         ],
         overflowPolicy: { action: "split", minFontSize: 18, maxShrinkSteps: 2 },

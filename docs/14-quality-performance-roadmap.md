@@ -38,6 +38,8 @@ Implemented in the deterministic runtime:
 - `test:pack` builds workspace packages, packs each runtime package, installs
   those tarballs in a clean project, and verifies the installed `mdpresent`
   binary can generate PPTX and HTML outputs.
+- Post-layout override operations `moveBlock`, `hideBlock`, and `pinBlock`
+  operate on Layout IR region membership with missing block/slot diagnostics.
 
 Remaining roadmap items are listed below.
 
@@ -176,7 +178,9 @@ Rules:
 - Treat TypeScript unions as the source of truth.
 - Generate JSON schemas from exported unions where practical.
 - Add schema drift tests for layout presets and slide intents.
-- Implement or reject override operations consistently.
+- Implement or reject override operations consistently. `moveBlock`,
+  `hideBlock`, and `pinBlock` are implemented; `setSplit` remains explicitly
+  pre-layout only.
 - Make build use the same validation gate as validate before rendering.
 - Add `--strict`, `--allow-warnings`, `--visual`, and `--coherence` policies.
 

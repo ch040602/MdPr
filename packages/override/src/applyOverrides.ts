@@ -57,6 +57,15 @@ export function applyOverrides(layout: LayoutIR, manifest: OverrideManifest, pre
           }
           break;
         }
+        case "hideBlock":
+          applyHideBlock(slide, operation, next.diagnostics);
+          break;
+        case "moveBlock":
+          applyMoveBlock(slide, operation, next.diagnostics, false);
+          break;
+        case "pinBlock":
+          applyMoveBlock(slide, operation, next.diagnostics, true);
+          break;
         default:
           next.diagnostics.push({
             level: "warning",
@@ -69,6 +78,67 @@ export function applyOverrides(layout: LayoutIR, manifest: OverrideManifest, pre
   }
 
   return next;
+}
+
+function applyHideBlock(slide: LayoutIR["slides"][number], operation: OverrideOperation, diagnostics: LayoutIR["diagnostics"]): void {
+  const blockId = operation.target.blockId;
+  if (!blockId) {
+    pushBlockDiagnostic(slide, diagnostics, "OVERRIDE_BLOCK_NOT_FOUND", "hideBlock requires target.blockId");
+    return;
+  }
+
+  const found = slide.regions.some((region) => region.blockIds.includes(blockId));
+  if (!found) {
+    pushBlockDiagnostic(slide, diagnostics, "OVERRIDE_BLOCK_NOT_FOUND", `Block not found: ${blockId}`);
+    return;
+  }
+
+  for (const region of slide.regions) {
+    region.blockIds = region.blockIds.filter((id) => id !== blockId);
+  }
+}
+
+function applyMoveBlock(slide: LayoutIR["slides"][number], operation: OverrideOperation, diagnostics: LayoutIR["diagnostics"], pin: boolean): void {
+  const blockId = operation.target.blockId;
+  const slot = typeof operation.value.slot === "string" ? operation.value.slot : operation.target.slot;
+  if (!blockId) {
+    pushBlockDiagnostic(slide, diagnostics, "OVERRIDE_BLOCK_NOT_FOUND", `${operation.op} requires target.blockId`);
+    return;
+  }
+  if (!slot) {
+    pushBlockDiagnostic(slide, diagnostics, "OVERRIDE_SLOT_NOT_FOUND", `${operation.op} requires value.slot or target.slot`);
+    return;
+  }
+
+  const destination = slide.regions.find((region) => region.id === slot);
+  if (!destination) {
+    pushBlockDiagnostic(slide, diagnostics, "OVERRIDE_SLOT_NOT_FOUND", `Slot not found: ${slot}`);
+    return;
+  }
+
+  const found = slide.regions.some((region) => region.blockIds.includes(blockId));
+  if (!found) {
+    pushBlockDiagnostic(slide, diagnostics, "OVERRIDE_BLOCK_NOT_FOUND", `Block not found: ${blockId}`);
+    return;
+  }
+
+  for (const region of slide.regions) {
+    region.blockIds = region.blockIds.filter((id) => id !== blockId);
+  }
+
+  destination.blockIds = pin ? [blockId, ...destination.blockIds] : [...destination.blockIds, blockId];
+  if (pin) {
+    destination.zIndex = Math.max(destination.zIndex, ...slide.regions.map((region) => region.zIndex)) + 1;
+  }
+}
+
+function pushBlockDiagnostic(slide: LayoutIR["slides"][number], diagnostics: LayoutIR["diagnostics"], code: string, message: string): void {
+  diagnostics.push({
+    level: "warning",
+    code,
+    message,
+    slideId: slide.sourceSlideId,
+  });
 }
 
 function normalizeTypography(value: Record<string, unknown>): Record<string, unknown> {
