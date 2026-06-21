@@ -420,6 +420,7 @@ test("createDeckPlan applies config file values including PPTX template settings
       'version: "1.0"',
       "deck:",
       "  language: en",
+      "  presentationMode: pipeline-one-page",
       "pptx:",
       "  template: company-master.pptx",
       "  designPreset: executive",
@@ -428,9 +429,40 @@ test("createDeckPlan applies config file values including PPTX template settings
     const deck = planDeck(basicDeck, { configPath });
 
     assert.equal(deck.config.deck.language, "en");
+    assert.equal(deck.config.deck.presentationMode, "pipeline-one-page");
     assert.equal(deck.config.pptx.template, join(outDir, "company-master.pptx"));
     assert.equal(deck.config.pptx.designPreset, "executive");
     assert.equal(deck.diagnostics.some((diagnostic) => diagnostic.code === "CONFIG_FILE_NOT_IMPLEMENTED"), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("createDeckPlan rejects config files that violate the JSON schema", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-invalid-config-"));
+  const configPath = join(outDir, "mdpresent.config.yaml");
+
+  try {
+    writeFileSync(configPath, [
+      'version: "1.0"',
+      "deck:",
+      "  ratio: 1:1",
+      "theme:",
+      "  accentBlob: true",
+      "typography:",
+      "  minFontSize: -2",
+    ].join("\n"));
+
+    const deck = planDeck(basicDeck, { configPath });
+    const diagnostic = deck.diagnostics.find((item) => item.code === "CONFIG_FILE_INVALID");
+
+    assert.ok(diagnostic);
+    assert.equal(diagnostic.level, "error");
+    assert.match(diagnostic.message, /deck\.ratio/);
+    assert.match(diagnostic.message, /theme/);
+    assert.match(diagnostic.message, /typography\.minFontSize/);
+    assert.equal(deck.config.deck.ratio, "16:9");
+    assert.equal("accentBlob" in deck.config.theme, false);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

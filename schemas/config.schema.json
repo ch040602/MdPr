@@ -24,6 +24,12 @@
         "title": {
           "type": "string"
         },
+        "presentationMode": {
+          "enum": [
+            "normal",
+            "pipeline-one-page"
+          ]
+        },
         "ratio": {
           "enum": [
             "16:9",

@@ -122,7 +122,7 @@ lightweight validation, and a separate push.
 - [x] Upgrade the default Markdown parser from the MVP parser to a
   CommonMark-compatible AST path while documenting Pandoc install/fallback
   policy.
-- [ ] Attach JSON schema validation to runtime config loading, including unknown
+- [x] Attach JSON schema validation to runtime config loading, including unknown
   key detection, invalid enum/unit diagnostics, and schema/type drift tests.
 - [x] Strengthen CLI output format validation: `--to` now accepts only `pptx`,
   `html`, and `pdf`, and unknown formats fail with a non-zero CLI exit.

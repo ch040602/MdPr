@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Config, Diagnostic, OutputFormat, ParserMode, PresentationIR, SlideIR } from "@mdpresent/core";
 import { defaultConfig, parseMarkdown, parseMarkdownWithPandoc, planPresentation } from "@mdpresent/core";
 import { resolveDesignTokens } from "@mdpresent/core";
@@ -11,6 +12,7 @@ import { renderPdf } from "@mdpresent/render-pdf";
 import type { DesignPresetName } from "@mdpresent/render-pptx";
 import { renderPptx } from "@mdpresent/render-pptx";
 import { applyOverrides, diffLayout, type LayoutDiff, type OverrideManifest } from "@mdpresent/override";
+import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import { parse as parseYaml } from "yaml";
 
 export type ConfigSource =
@@ -371,6 +373,8 @@ type DeepPartial<T> = {
       : T[K];
 };
 
+let configSchemaValidator: ValidateFunction | undefined;
+
 function mergeConfig(base: Config, override?: DeepPartial<Config>): Config {
   if (!override) return structuredClone(base);
   return mergeObjects(structuredClone(base), override) as Config;
@@ -404,6 +408,15 @@ function readConfigFile(configPath: string, diagnostics: Diagnostic[]): Partial<
   try {
     const raw = readFileSync(configPath, "utf-8");
     const config = configPath.endsWith(".json") ? JSON.parse(raw) as Partial<Config> : parseYaml(raw) as Partial<Config>;
+    const validate = getConfigSchemaValidator();
+    if (!validate(config)) {
+      diagnostics.push({
+        level: "error",
+        code: "CONFIG_FILE_INVALID",
+        message: `Config file is invalid: ${configPath}. ${formatSchemaErrors(validate.errors)}`,
+      });
+      return undefined;
+    }
     if (config.pptx?.template && !isAbsolute(config.pptx.template)) {
       config.pptx.template = join(dirname(configPath), config.pptx.template);
     }
@@ -416,6 +429,44 @@ function readConfigFile(configPath: string, diagnostics: Diagnostic[]): Partial<
     });
     return undefined;
   }
+}
+
+function getConfigSchemaValidator(): ValidateFunction {
+  if (configSchemaValidator) return configSchemaValidator;
+  const schemaPath = resolveSchemaPath("config.schema.json");
+  const schema = JSON.parse(readFileSync(schemaPath, "utf-8")) as object;
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  configSchemaValidator = ajv.compile(schema);
+  return configSchemaValidator;
+}
+
+function resolveSchemaPath(fileName: string): string {
+  const moduleDir = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    join(process.cwd(), "schemas", fileName),
+    join(moduleDir, "../../../schemas", fileName),
+    join(moduleDir, "../schemas", fileName),
+  ];
+  const found = candidates.find((candidate) => existsSync(candidate));
+  if (!found) throw new Error(`Unable to locate schema file: ${fileName}`);
+  return found;
+}
+
+function formatSchemaErrors(errors: ValidateFunction["errors"]): string {
+  return (errors ?? [])
+    .map((error) => {
+      const path = schemaErrorPath(error.instancePath);
+      if (error.keyword === "additionalProperties" && "additionalProperty" in error.params) {
+        return `${path}.${String(error.params.additionalProperty)} is not allowed`;
+      }
+      return `${path} ${error.message ?? "is invalid"}`;
+    })
+    .join("; ");
+}
+
+function schemaErrorPath(instancePath: string): string {
+  const path = instancePath.replace(/^\//, "").replace(/\//g, ".");
+  return path || "$";
 }
 
 function createContentIndex(presentation: PresentationIR): Map<string, string> {

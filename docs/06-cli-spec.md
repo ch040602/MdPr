@@ -34,6 +34,7 @@ CLI commands delegate to a reusable orchestration layer.
 ```text
 createDeckPlan(inputPath, options)
   - resolves config sources
+  - validates config files against schemas/config.schema.json
   - parses Markdown
   - plans Presentation IR
   - plans Layout IR
@@ -66,7 +67,7 @@ default config < config file < CLI args
 - `--design-lock` checks the resolved design contract unless `--update-design-lock` is used.
 - `--visual` adds structural visual-validation summaries.
 - PPTX can reuse positioned image assets from a template/master deck as a background layer.
-- PDF remains an export-path TODO diagnostic where implementation is incomplete.
+- PDF is exported from the generated PPTX with PowerPoint on Windows or LibreOffice in CI/Linux.
 
 ## Validation
 
@@ -75,6 +76,7 @@ Validation reports:
 ```text
 - missing override targets
 - invalid presets
+- invalid config schema fields
 - slot coordinates outside slide bounds
 - minimum font size violations
 - missing assets

@@ -176,6 +176,6 @@ Usage:
   mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--visual] [--json]
   mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style clean|executive|editorial|technical|minimalism|newmorphism|glass|grid|data|magazine] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,editorial] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual]
 
-Config and override file loading are still scaffold diagnostics. HTML and PPTX rendering are wired through the shared orchestration path.
+Config files are validated against schemas/config.schema.json before merging. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
 `);
 }
