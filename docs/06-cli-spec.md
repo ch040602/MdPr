@@ -6,7 +6,7 @@
 mdpresent init
 mdpresent inspect deck.md --json
 mdpresent plan deck.md --json > layout.plan.json
-mdpresent validate deck.md --override deck.override.yaml
+mdpresent validate deck.md --override deck.override.yaml --coherence
 mdpresent build deck.md --to pptx,pdf,html --out dist
 mdpresent diff deck.md --override deck.override.yaml
 ```
@@ -24,6 +24,7 @@ mdpresent build deck.md \
   --theme-color "#8A4FFF" \
   --theme-harmony analogous \
   --visual \
+  --coherence \
   --template company-master.pptx
 ```
 
@@ -66,6 +67,7 @@ default config < config file < CLI args
 - `--theme-harmony` derives `monochromatic`, `analogous`, `complementary`, `split-complementary`, or `triadic` palettes.
 - `--design-lock` checks the resolved design contract unless `--update-design-lock` is used.
 - `--visual` adds structural visual-validation summaries.
+- `--coherence` adds claim/evidence/caption/table grouping diagnostics.
 - PPTX can reuse positioned image assets from a template/master deck as a background layer.
 - PDF is exported from the generated PPTX with PowerPoint on Windows or LibreOffice in CI/Linux.
 
@@ -81,6 +83,10 @@ Validation reports:
 - minimum font size violations
 - missing assets
 - possible overflow
+- claimless evidence slides
+- detached captions
+- orphan tables
+- low object coverage
 - design lock drift
 ```
 
@@ -99,6 +105,7 @@ Validation reports:
 --design-lock dist/mdpresent-design-lock.json
 --update-design-lock
 --visual
+--coherence
 --background "#0B1020"
 --font Aptos
 --font-size 22

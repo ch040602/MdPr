@@ -14,6 +14,7 @@
 - slot coordinates outside slide bounds
 - design lock drift
 - manifest visual-validation summary
+- manifest coherence-validation summary
 ```
 
 ## Overflow Resolution Order
@@ -137,6 +138,21 @@ extreme image frame ratios, and diagram regions too small for connector
 routing. The manifest records the current thresholds for minimum contrast,
 maximum same-layer overlap ratio, readable font size, image aspect range, and
 minimum diagram connector space.
+
+Coherence summaries are always recorded in the manifest. `validate --coherence`
+promotes the same checks into user-facing diagnostics:
+
+```text
+CLAIMLESS_EVIDENCE_SLIDE
+DETACHED_CAPTION
+ORPHAN_TABLE
+LOW_OBJECT_COVERAGE
+```
+
+The summary records claimless slide count, detached caption count, orphan table
+count, section motif drift count, continuation title quality, and mixed object
+grouping score. These checks use `Presentation IR.coherenceGroups` and Layout
+IR block coverage; they do not rewrite or summarize source content.
 
 ## Actions Preview Evaluation
 

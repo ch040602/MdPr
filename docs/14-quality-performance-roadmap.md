@@ -20,6 +20,9 @@ Implemented in the deterministic runtime:
 - Same-depth item surface coherence for HTML and PPTX decoration output.
 - Baseline-relative performance regression checks for timing and quality
   counters.
+- Manifest coherence summaries and `validate --coherence` diagnostics for
+  claimless evidence, detached captions, orphan tables, and low object
+  coverage.
 
 Remaining roadmap items are listed below.
 
@@ -111,16 +114,18 @@ Supported directive goals:
 
 Add diagnostics for:
 
-- `CLAIMLESS_EVIDENCE_SLIDE`
-- `DETACHED_CAPTION`
-- `ORPHAN_TABLE`
-- `SECTION_STYLE_DRIFT`
-- `DENSE_CONTINUATION_WITHOUT_TITLE`
-- `LOW_OBJECT_COVERAGE`
+- `CLAIMLESS_EVIDENCE_SLIDE` (implemented)
+- `DETACHED_CAPTION` (implemented)
+- `ORPHAN_TABLE` (implemented)
+- `LOW_OBJECT_COVERAGE` (implemented)
+- `SECTION_STYLE_DRIFT` (planned)
+- `DENSE_CONTINUATION_WITHOUT_TITLE` (planned)
 
-The manifest should include counts for orphan evidence blocks, detached
-captions, claimless slides, section motif drift, continuation title quality,
-and mixed object grouping score.
+The manifest includes counts for orphan evidence blocks, detached captions,
+claimless slides, section motif drift, continuation title quality, and mixed
+object grouping score. Section motif drift and continuation title quality are
+currently structural placeholders until section-state tracking and continuation
+split naming are implemented.
 
 ## Section-Level Design Continuity
 

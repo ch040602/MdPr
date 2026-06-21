@@ -30,6 +30,7 @@ export type OrchestrationOptions = {
   cliConfig?: DeepPartial<Config>;
   parser?: ParserMode;
   visualValidation?: boolean;
+  coherenceValidation?: boolean;
 };
 
 export type DeckPlan = {
@@ -176,6 +177,9 @@ export function validateDeck(inputPath: string, options: OrchestrationOptions = 
   if (options.visualValidation) {
     diagnostics.push(...visualValidationDiagnostics(deck.layout));
   }
+  if (options.coherenceValidation) {
+    diagnostics.push(...coherenceValidationDiagnostics(deck.presentation, deck.layout));
+  }
 
   return {
     ...deck,
@@ -255,6 +259,7 @@ function createBuildManifest(
         slideId: diagnostic.slideId,
       })),
       visual: visualValidation ? createVisualValidationSummary(deck.layout) : null,
+      coherence: createCoherenceValidationSummary(deck.presentation, deck.layout),
     },
   };
 }
@@ -419,6 +424,113 @@ function visualValidationDiagnostics(layout: LayoutIR): Diagnostic[] {
     }
   }
   return diagnostics;
+}
+
+function createCoherenceValidationSummary(presentation: PresentationIR, layout: LayoutIR) {
+  const diagnostics = coherenceValidationDiagnostics(presentation, layout);
+  const claimlessSlides = diagnostics.filter((diagnostic) => diagnostic.code === "CLAIMLESS_EVIDENCE_SLIDE").length;
+  const captionDetached = diagnostics.filter((diagnostic) => diagnostic.code === "DETACHED_CAPTION").length;
+  const orphanTables = diagnostics.filter((diagnostic) => diagnostic.code === "ORPHAN_TABLE").length;
+  const lowObjectCoverage = diagnostics.filter((diagnostic) => diagnostic.code === "LOW_OBJECT_COVERAGE").length;
+  const evidenceGroups = presentation.coherenceGroups.filter((group) => group.role === "evidence-pack").length;
+  const groupedEvidence = presentation.coherenceGroups.filter((group) => group.role === "evidence-pack" && group.supportingBlockIds.length > 0).length;
+
+  return {
+    checked: true,
+    thresholds: {
+      minimumMixedObjectGroupingScore: 0.75,
+      minimumObjectCoverageRatio: 0.2,
+    },
+    orphanEvidenceBlocks: orphanTables,
+    captionDetached,
+    claimlessSlides,
+    sectionMotifDrift: 0,
+    continuationTitleQuality: diagnostics.some((diagnostic) => diagnostic.code === "DENSE_CONTINUATION_WITHOUT_TITLE") ? "needs-review" : "ok",
+    mixedObjectGroupingScore: evidenceGroups ? Number((groupedEvidence / evidenceGroups).toFixed(2)) : 1,
+    checks: {
+      claimlessEvidenceSlides: claimlessSlides === 0,
+      detachedCaptions: captionDetached === 0,
+      orphanTables: orphanTables === 0,
+      lowObjectCoverage: lowObjectCoverage === 0,
+    },
+    diagnostics,
+  };
+}
+
+function coherenceValidationDiagnostics(presentation: PresentationIR, layout: LayoutIR): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const layoutBySlideId = new Map(layout.slides.map((slide) => [slide.sourceSlideId, slide]));
+
+  for (const slide of presentation.slides) {
+    if (slide.role !== "content") continue;
+    const group = presentation.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
+    const blockRoles = group?.blockRoles ?? {};
+    const blockTypes = new Set(slide.blocks.map((block) => block.type));
+    const hasEvidenceObject = ["table", "chart", "image", "diagram"].some((type) => blockTypes.has(type as never));
+    const hasClaim = Object.values(blockRoles).includes("claim") || slide.blocks.some((block) => block.type === "paragraph" && isClaimLikeText(block.text ?? block.sentences?.join(" ") ?? ""));
+    const hasEvidenceRole = Object.values(blockRoles).some((role) => role === "evidence" || role === "metric");
+
+    if (hasEvidenceObject && !hasClaim) {
+      diagnostics.push({
+        level: "warning",
+        code: "CLAIMLESS_EVIDENCE_SLIDE",
+        slideId: slide.id,
+        message: `Slide "${slide.title ?? slide.id}" contains evidence objects without a claim-like explanatory block.`,
+      });
+    }
+
+    const firstMeaningfulBlock = slide.blocks.find((block) => block.type !== "heading");
+    if (firstMeaningfulBlock?.type === "table" && !hasClaim) {
+      diagnostics.push({
+        level: "warning",
+        code: "ORPHAN_TABLE",
+        slideId: slide.id,
+        message: `Slide "${slide.title ?? slide.id}" starts with a table that is not attached to an explanatory paragraph.`,
+      });
+    }
+
+    const imageBlocks = slide.blocks.filter((block) => block.type === "image");
+    for (const image of imageBlocks) {
+      const imageIndex = slide.blocks.indexOf(image);
+      const nextBlock = slide.blocks[imageIndex + 1];
+      const hasCaption = nextBlock?.type === "paragraph" && isCaptionLikeText(nextBlock.text ?? nextBlock.sentences?.join(" ") ?? "");
+      if (!hasCaption && image.alt && image.alt.length > 0 && slide.blocks.length > 2) {
+        diagnostics.push({
+          level: "warning",
+          code: "DETACHED_CAPTION",
+          slideId: slide.id,
+          message: `Image "${image.alt}" has no adjacent short caption paragraph.`,
+        });
+      }
+    }
+
+    const layoutSlide = layoutBySlideId.get(slide.id);
+    if (layoutSlide && hasEvidenceRole) {
+      const coveredBlockIds = new Set(layoutSlide.regions.flatMap((region) => region.blockIds.map((blockId) => blockId.split("#")[0])));
+      const contentBlockIds = slide.blocks.filter((block) => block.type !== "heading").map((block) => block.id);
+      const coverage = contentBlockIds.length ? contentBlockIds.filter((blockId) => coveredBlockIds.has(blockId)).length / contentBlockIds.length : 1;
+      if (coverage < 0.2) {
+        diagnostics.push({
+          level: "warning",
+          code: "LOW_OBJECT_COVERAGE",
+          slideId: slide.id,
+          message: `Slide "${slide.title ?? slide.id}" maps only ${(coverage * 100).toFixed(0)}% of source blocks to visible layout regions.`,
+        });
+      }
+    }
+  }
+
+  return diagnostics;
+}
+
+function isClaimLikeText(text: string): boolean {
+  return /\b(should|must|because|therefore|shows|means|indicates|suggests|result|impact|why|goal|purpose|objective)\b/i.test(text) ||
+    /목적|이유|결과|의미|따라서|때문|필요|개선/.test(text);
+}
+
+function isCaptionLikeText(text: string): boolean {
+  const normalized = text.trim();
+  return normalized.length > 0 && normalized.length <= 120 && /^(figure|fig\.|image|source|caption|그림|출처)[:\s]/i.test(normalized);
 }
 
 function isContentRegion(region: LayoutIR["slides"][number]["regions"][number]): boolean {

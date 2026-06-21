@@ -103,9 +103,9 @@ Common commands:
 ```bash
 mdpresent inspect examples/basic/deck.md --json > deck.plan.json
 mdpresent plan examples/basic/deck.md --json > layout.plan.json
-mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml
+mdpresent validate examples/basic/deck.md --override examples/basic/deck.override.yaml --coherence
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
-mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual
+mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual --coherence
 mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-teaser --theme-style grid --theme-color "#0F766E" --theme-harmony split-complementary --pipeline-one-page --visual
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
 mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery clean,editorial,glass,grid,data,magazine

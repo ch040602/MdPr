@@ -124,6 +124,8 @@ test("buildDeck writes design lock and output manifest with visual validation su
     assert.equal(manifest.engine, "mdpresent");
     assert.equal(manifest.validation.visual.checked, true);
     assert.equal(manifest.validation.visual.checks.regionBounds, true);
+    assert.equal(manifest.validation.coherence.checked, true);
+    assert.equal(typeof manifest.validation.coherence.mixedObjectGroupingScore, "number");
     assert.equal(designLock.decorationStyle, "glass");
     assert.equal(designLock.colorSeed, "#8A4FFF");
     assert.equal(designLock.paletteSeed.base, "8A4FFF");
@@ -710,6 +712,34 @@ test("validateDeck visual validation reports image aspect and connector clearanc
     assert.equal(result.valid, false);
     assert.equal(codes.includes("VISUAL_IMAGE_ASPECT_RATIO"), true);
     assert.equal(codes.includes("VISUAL_CONNECTOR_CLEARANCE"), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("validateDeck coherence validation reports claimless evidence and orphan tables", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-coherence-validation-"));
+  const deckPath = join(outDir, "deck.md");
+
+  try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Evidence",
+      "",
+      "| Stage | Users |",
+      "|---|---:|",
+      "| Awareness | 8000 |",
+      "| Activation | 4000 |",
+      "",
+      "![Funnel](funnel.png)",
+    ].join("\n"));
+
+    const result = validateDeck(deckPath, { coherenceValidation: true });
+    const codes = result.diagnostics.map((diagnostic) => diagnostic.code);
+
+    assert.equal(codes.includes("CLAIMLESS_EVIDENCE_SLIDE"), true);
+    assert.equal(codes.includes("ORPHAN_TABLE"), true);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
