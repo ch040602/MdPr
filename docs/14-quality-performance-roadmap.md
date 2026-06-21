@@ -29,6 +29,8 @@ Implemented in the deterministic runtime:
 - Manifest overflow-resolution summaries report pre-split continuation groups,
   continuation reasons, font-shrink counts, and graph/diagram split protection.
 - Code continuation reasons are covered by a build manifest fixture.
+- Post-layout candidate retry can replace an overflowing automatic text layout
+  before font shrink while preserving explicit override layouts.
 
 Remaining roadmap items are listed below.
 
@@ -57,8 +59,9 @@ Remaining roadmap items are listed below.
      (implemented).
    - Split long Markdown tables with repeated headers before table layout
      forces unreadable shrink (implemented).
-   - Try alternate layout candidates (partially implemented through candidate
-     scoring; post-layout retry remains planned).
+   - Try alternate layout candidates before shrink when no explicit override is
+     active and the slide is not a chart/diagram slide (implemented for safe
+     automatic text layouts).
    - Reposition regions (planned).
    - Add code-specific manifest strategy fixtures (implemented).
    - Shrink fonts only as a late fallback.

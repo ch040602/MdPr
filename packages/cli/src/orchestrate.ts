@@ -6,7 +6,7 @@ import type { Config, Diagnostic, OutputFormat, ParserMode, PresentationIR, Slid
 import { defaultConfig, parseMarkdown, parseMarkdownWithPandoc, planPresentation } from "@mdpresent/core";
 import { resolveDesignTokens } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
-import { planLayout, validateLayoutOverflow } from "@mdpresent/layout";
+import { planLayout, planSlideLayoutWithSpec, rankLayoutCandidates, validateLayoutOverflow } from "@mdpresent/layout";
 import { renderHtml } from "@mdpresent/render-html";
 import { renderPdf } from "@mdpresent/render-pdf";
 import type { DesignPresetName } from "@mdpresent/render-pptx";
@@ -71,8 +71,10 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
     ? parseMarkdownWithPandoc(markdown, { sourcePath: inputPath })
     : parseMarkdown(markdown, inputPath);
   const presentation = planPresentation(doc, config);
-  const initialLayout = resolveLayoutTextOverflow(planLayout(presentation, config), presentation);
   const overrideManifest = options.overridePath ? readOverrideFile(options.overridePath, configDiagnostics) : undefined;
+  const initialLayout = resolveLayoutTextOverflow(planLayout(presentation, config), presentation, config, {
+    allowCandidateReflow: !overrideManifest,
+  });
   const layout = overrideManifest ? applyOverrides(initialLayout, overrideManifest, presentation) : initialLayout;
   const overrideDiff = overrideManifest ? diffLayout(initialLayout, layout) : undefined;
   const diagnostics: Diagnostic[] = [
@@ -546,9 +548,9 @@ function createOverflowResolutionSummary(presentation: PresentationIR, layout: L
     checked: true,
     strategyCounts: {
       preSplit: continuationGroups.length,
-      candidateReflow: 0,
-      regionExpansion: 0,
-      fontShrink: fontShrinkRegions,
+      candidateReflow: layout.overflowResolution?.candidateReflow ?? 0,
+      regionExpansion: layout.overflowResolution?.regionExpansion ?? 0,
+      fontShrink: layout.overflowResolution?.fontShrink ?? fontShrinkRegions,
     },
     continuationSlides: continuationGroups.reduce((sum, group) => sum + group.length, 0),
     continuationGroups: continuationGroups.length,
@@ -781,18 +783,38 @@ function createContentIndex(presentation: PresentationIR): Map<string, string> {
   return index;
 }
 
-function resolveLayoutTextOverflow(layout: LayoutIR, presentation: PresentationIR): LayoutIR {
+function resolveLayoutTextOverflow(
+  layout: LayoutIR,
+  presentation: PresentationIR,
+  config: Config,
+  options: { allowCandidateReflow: boolean },
+): LayoutIR {
   const contentByBlockId = createContentIndex(presentation);
   const resolved = structuredClone(layout);
+  resolved.overflowResolution = {
+    candidateReflow: layout.overflowResolution?.candidateReflow ?? 0,
+    regionExpansion: layout.overflowResolution?.regionExpansion ?? 0,
+    fontShrink: layout.overflowResolution?.fontShrink ?? 0,
+  };
 
   for (let iteration = 0; iteration < 12; iteration++) {
     const diagnostics = validateLayoutOverflow(resolved, contentByBlockId).filter((diagnostic) => diagnostic.code === "TEXT_OVERFLOW");
     if (!diagnostics.length) break;
 
     let changed = false;
+    const reflowedSlideIds = new Set<string>();
     for (const diagnostic of diagnostics) {
       const slide = resolved.slides.find((candidate) => candidate.sourceSlideId === diagnostic.slideId);
       if (!slide || slide.overflowPolicy.action === "fail" || slide.overflowPolicy.action === "warn") continue;
+
+      if (options.allowCandidateReflow && iteration === 0 && !reflowedSlideIds.has(slide.sourceSlideId)) {
+        const reflowed = tryCandidateReflow(resolved, presentation, config, slide.sourceSlideId, contentByBlockId);
+        if (reflowed) {
+          reflowedSlideIds.add(slide.sourceSlideId);
+          changed = true;
+          continue;
+        }
+      }
 
       const region = slide.regions.find((candidate) => candidate.id === diagnostic.regionId);
       if (!region) continue;
@@ -807,6 +829,7 @@ function resolveLayoutTextOverflow(layout: LayoutIR, presentation: PresentationI
 
       if (fontSize > minFontSize) {
         region.typography.fontSize = Math.max(minFontSize, fontSize - 1);
+        resolved.overflowResolution.fontShrink += 1;
         changed = true;
         continue;
       }
@@ -814,6 +837,7 @@ function resolveLayoutTextOverflow(layout: LayoutIR, presentation: PresentationI
       const maxHeight = Math.max(region.h, resolved.slideSize.height - region.y - 0.35);
       if (region.h < maxHeight) {
         region.h = Math.min(maxHeight, Number((region.h + 0.18).toFixed(2)));
+        resolved.overflowResolution.regionExpansion += 1;
         changed = true;
       }
     }
@@ -822,6 +846,60 @@ function resolveLayoutTextOverflow(layout: LayoutIR, presentation: PresentationI
   }
 
   return resolved;
+}
+
+function tryCandidateReflow(
+  layout: LayoutIR,
+  presentation: PresentationIR,
+  config: Config,
+  sourceSlideId: string,
+  contentByBlockId: ReadonlyMap<string, string>,
+): boolean {
+  const layoutSlideIndex = layout.slides.findIndex((slide) => slide.sourceSlideId === sourceSlideId);
+  const currentSlide = layout.slides[layoutSlideIndex];
+  const sourceSlide = presentation.slides.find((slide) => slide.id === sourceSlideId);
+  if (layoutSlideIndex < 0 || !currentSlide || !sourceSlide) return false;
+  if (sourceSlide.role !== "content") return false;
+  if (sourceSlide.blocks.some((block) => block.type === "chart" || block.type === "diagram")) return false;
+
+  const currentOverflowCount = countSlideTextOverflow(layout, sourceSlideId, contentByBlockId);
+  if (!currentOverflowCount) return false;
+
+  for (const candidate of rankLayoutCandidates(sourceSlide, config)) {
+    if (sameLayoutSpec(candidate.layout, currentSlide.layout)) continue;
+    const candidateSlide = planSlideLayoutWithSpec(sourceSlide, config, candidate.layout);
+    const candidateLayout = {
+      ...layout,
+      slides: layout.slides.map((slide, index) => index === layoutSlideIndex ? candidateSlide : slide),
+    };
+    const candidateDiagnostics = validateLayoutOverflow(candidateLayout, contentByBlockId)
+      .filter((diagnostic) => diagnostic.slideId === sourceSlideId);
+    const candidateOverflowCount = candidateDiagnostics.filter((diagnostic) => diagnostic.code === "TEXT_OVERFLOW").length;
+    const hasBoundsError = candidateDiagnostics.some((diagnostic) => diagnostic.code === "LAYOUT_REGION_OUT_OF_BOUNDS");
+    const hasMinFontError = candidateDiagnostics.some((diagnostic) => diagnostic.code === "LAYOUT_MIN_FONT_SIZE_VIOLATION");
+    if (!hasBoundsError && !hasMinFontError && candidateOverflowCount < currentOverflowCount) {
+      layout.slides[layoutSlideIndex] = candidateSlide;
+      layout.overflowResolution ??= { candidateReflow: 0, regionExpansion: 0, fontShrink: 0 };
+      layout.overflowResolution.candidateReflow += 1;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function countSlideTextOverflow(
+  layout: LayoutIR,
+  sourceSlideId: string,
+  contentByBlockId: ReadonlyMap<string, string>,
+): number {
+  return validateLayoutOverflow(layout, contentByBlockId)
+    .filter((diagnostic) => diagnostic.slideId === sourceSlideId && diagnostic.code === "TEXT_OVERFLOW")
+    .length;
+}
+
+function sameLayoutSpec(left: object, right: object): boolean {
+  return stableJson(left) === stableJson(right);
 }
 
 function readableMinimumFontSize(regionId: string): number {

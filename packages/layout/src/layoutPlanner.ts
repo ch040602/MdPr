@@ -194,6 +194,10 @@ function isTextOnlyReliefCandidate(slide: SlideIR): boolean {
 
 function planSlideLayout(slide: SlideIR, config: Config): LayoutSlide {
   const layout = chooseLayout(slide, config);
+  return planSlideLayoutWithSpec(slide, config, layout);
+}
+
+export function planSlideLayoutWithSpec(slide: SlideIR, config: Config, layout: LayoutSpec): LayoutSlide {
   const regions = createRegionsForLayout(slide, layout, config);
 
   return {

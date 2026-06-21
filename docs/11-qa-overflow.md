@@ -74,13 +74,21 @@ Before validation and rendering, the CLI applies a conservative text containment
 ```text
 1. Build Presentation IR and initial Layout IR.
 2. Measure region text with the same overflow validator used by `validate`.
-3. For TEXT_OVERFLOW under reflow/shrink/split policies, reduce region font size down to the configured minimum.
-4. If the font is already at minimum and slide bounds allow it, expand region height slightly.
-5. Re-run measurement for a bounded number of iterations.
-6. Do not auto-resolve `fail` or `warn`; those remain explicit diagnostics.
+3. For TEXT_OVERFLOW under reflow/shrink/split policies, try another ranked
+   layout candidate when the slide has no explicit override.
+4. If no candidate improves fit, reduce region font size down to the
+   configured minimum.
+5. If the font is already at minimum and slide bounds allow it, expand region
+   height slightly.
+6. Re-run measurement for a bounded number of iterations.
+7. Do not auto-resolve `fail` or `warn`; those remain explicit diagnostics.
 ```
 
-The resolver does not change slide order, drop content, or move unrelated regions. If it cannot make text fit without violating minimum font size or slide bounds, the normal overflow diagnostic remains.
+The resolver does not change slide order, drop content, or move unrelated
+regions. Candidate retry is disabled when an override manifest is applied, and
+it does not run on chart or diagram slides so graph-like objects stay intact. If
+it cannot make text fit without violating minimum font size or slide bounds, the
+normal overflow diagnostic remains.
 
 Known high-risk split rules run before this resolver. For example, four very
 long list items are split into two continuation slides instead of forcing a

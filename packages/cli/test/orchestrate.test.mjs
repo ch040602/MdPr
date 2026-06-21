@@ -852,6 +852,67 @@ test("buildDeck manifest records code continuation reasons", async () => {
   }
 });
 
+test("buildDeck retries an overflowing automatic layout candidate before font shrink", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-candidate-reflow-"));
+  const deckPath = join(outDir, "deck.md");
+  const phrase = "deterministic layout planning preserves readable markdown semantics and avoids panel overflow through candidate reflow ";
+
+  try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Dense Insight",
+      "",
+      phrase.repeat(9).trim(),
+    ].join("\n"));
+
+    const result = await buildDeck(deckPath, { formats: ["html"], outDir });
+    const contentSlide = result.layout.slides.find((slide) => slide.layout.preset !== "cover" && slide.layout.preset !== "toc");
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+
+    assert.equal(contentSlide?.layout.preset, "title-body");
+    assert.equal(manifest.validation.overflowResolution.strategyCounts.candidateReflow > 0, true);
+    assert.equal(contentSlide.regions.some((region) => region.typography?.fontSize === 18 && region.role === "body"), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("buildDeck preserves explicit override layouts when candidate retry could fit better", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-candidate-reflow-override-"));
+  const deckPath = join(outDir, "deck.md");
+  const overridePath = join(outDir, "deck.override.yaml");
+  const phrase = "deterministic layout planning preserves readable markdown semantics and avoids panel overflow through candidate reflow ";
+
+  try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Dense Insight",
+      "",
+      phrase.repeat(9).trim(),
+    ].join("\n"));
+    writeFileSync(overridePath, [
+      'version: "1.0"',
+      "operations:",
+      "  - op: setLayout",
+      "    target:",
+      "      title: Dense Insight",
+      "    value:",
+      "      preset: text-icon-aside",
+    ].join("\n"));
+
+    const result = await buildDeck(deckPath, { formats: ["html"], outDir, overridePath });
+    const contentSlide = result.layout.slides.find((slide) => slide.layout.preset !== "cover" && slide.layout.preset !== "toc");
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+
+    assert.equal(contentSlide?.layout.preset, "text-icon-aside");
+    assert.equal(manifest.validation.overflowResolution.strategyCounts.candidateReflow, 0);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("planDeck keeps auto-resolved body text above the readable font floor", () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-readable-font-floor-"));
   const deckPath = join(outDir, "deck.md");

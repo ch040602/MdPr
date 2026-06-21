@@ -115,4 +115,9 @@ export type LayoutIR = {
   theme: ThemeTokens;
   slides: LayoutSlide[];
   diagnostics: Diagnostic[];
+  overflowResolution?: {
+    candidateReflow: number;
+    regionExpansion: number;
+    fontShrink: number;
+  };
 };
