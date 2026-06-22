@@ -15,12 +15,22 @@ The parser preserves presentation-relevant Markdown structure:
 - One graph or diagram block stays on a single slide; MDPR does not split one diagram across continuation pages.
 - Chart slides may keep prose beside the chart, and chart-plus-table slides keep the graph and table in parallel regions.
 
-After splitting, MDPR also emits `coherenceGroups`. These groups classify
+After splitting, `packages/core/src/coherence` emits `coherenceGroups`. These groups classify
 blocks as claim, evidence, metric, example, risk, decision, action, caption,
 source, or appendix, then group compact slides as argument, comparison,
 workflow, evidence-pack, or summary. This layer preserves proximity between
 charts/tables/images and their explanations without asking an agent to rewrite
 the content.
+
+Caption classification treats the short paragraph after an image, chart, table,
+or diagram as the caption. The object remains evidence; the caption paragraph
+gets the `caption` role and the group receives keep-together priority.
+
+When `--hints` is provided, accepted `mdpr-skill` hints are merged only into this
+coherence metadata layer. They may add secondary intent candidates, block-role
+signals, keep-together evidence groups, primary/supporting importance metadata,
+or icon-search keywords. They do not choose layout coordinates, theme colors,
+typography, z-order, component variants, renderer object IDs, or final output.
 
 ## Design Selection
 
@@ -55,6 +65,10 @@ The derived palette feeds element accents, chart colors, and the generated Power
 ## Coherence Rules
 
 - Same-role objects use the same connector and surface family unless the content expresses a different flow.
+- Layout candidates are scored against coherence groups. Evidence packs prefer
+  layouts that keep chart/table/image objects and their explanation together;
+  workflow groups prefer diagram layouts; same-section slides receive a small
+  continuity penalty when their layout family changes abruptly.
 - Same-depth item objects use one surface variant per slide. Theme styles may
   change the family, but sibling items should not rotate unrelated shape
   grammars just to create decoration.

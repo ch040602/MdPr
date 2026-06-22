@@ -10,6 +10,7 @@ import {
   detectSlideIntent,
   detectSlideIntentProfile,
   DESIGN_PRESET_NAMES,
+  applyAgentHintsToPresentation,
   parseMarkdown,
   parsePandocJson,
   planPresentation,
@@ -1163,6 +1164,31 @@ test("planPresentation emits coherence groups for compact evidence packs", () =>
   assert.deepEqual(group.supportingBlockIds.map((id) => slide.blocks.find((block) => block.id === id)?.type), ["bulletList", "table", "image"]);
 });
 
+test("coherence groups assign caption role to adjacent caption paragraphs, not image objects", () => {
+  const config = structuredClone(defaultConfig);
+  config.toc.enabled = false;
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Figure Evidence",
+    "",
+    "The figure shows the retained layout boundary.",
+    "",
+    "![Layout](layout.png)",
+    "",
+    "Figure: rendered PowerPoint preview.",
+  ].join("\n")), config);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Figure Evidence");
+  const group = presentation.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
+  const image = slide.blocks.find((block) => block.type === "image");
+  const caption = slide.blocks.find((block) => block.text === "Figure: rendered PowerPoint preview.");
+
+  assert.equal(group.blockRoles[caption.id], "caption");
+  assert.equal(group.blockRoles[image.id], "evidence");
+  assert.equal(group.keepTogether, true);
+  assert.equal(group.splitPriority, 1);
+});
+
 test("coherence groups classify Korean purpose usage condition reason and improvement cues", () => {
   const presentation = planPresentation(parseMarkdown([
     "# Demo",
@@ -1185,6 +1211,99 @@ test("coherence groups classify Korean purpose usage condition reason and improv
   assert.equal(group.semanticSignals.includes("risk"), true);
   assert.equal(group.semanticSignals.includes("decision"), true);
   assert.equal(group.semanticSignals.includes("metric"), true);
+});
+
+test("agent hints weakly merge into coherence metadata without changing slide content", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Release Decision",
+    "",
+    "The runtime must preserve Markdown semantics.",
+    "",
+    "Validation evidence should stay near the claim.",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Release Decision");
+  const claim = slide.blocks[0];
+  const evidence = slide.blocks[1];
+  const hinted = applyAgentHintsToPresentation(presentation, [
+    {
+      slideId: slide.id,
+      confidence: 0.88,
+      intentCandidate: "evidence",
+      groupCandidates: [
+        {
+          elementIds: [claim.id, evidence.id],
+          role: "evidence-pack",
+          confidence: 0.84,
+        },
+      ],
+      importanceCandidates: [
+        {
+          elementId: evidence.id,
+          importance: "primary",
+          confidence: 0.86,
+        },
+      ],
+      iconKeywordCandidates: ["validation", "evidence"],
+      rationale: "Review note only.",
+    },
+  ]);
+  const hintedSlide = hinted.slides.find((candidate) => candidate.id === slide.id);
+  const group = hinted.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
+
+  assert.equal(hintedSlide.intent, slide.intent);
+  assert.deepEqual(hintedSlide.blocks, slide.blocks);
+  assert.equal(hintedSlide.tags.includes("agent-hint-semantic"), true);
+  assert.equal(hintedSlide.secondaryIntents.includes("evidence"), true);
+  assert.equal(group.role, "evidence-pack");
+  assert.equal(group.keepTogether, true);
+  assert.equal(group.primaryBlockId, evidence.id);
+  assert.equal(group.supportingBlockIds.includes(claim.id), true);
+  assert.equal(group.blockRoles[evidence.id], "evidence");
+  assert.equal(group.semanticSignals.includes("evidence"), true);
+  assert.equal(group.semanticSignals.includes("claim"), true);
+});
+
+test("low-confidence agent hints are ignored by coherence metadata merge", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Notes",
+    "",
+    "Plain text.",
+    "",
+    "More plain text.",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Notes");
+  const beforeGroup = presentation.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
+  const hinted = applyAgentHintsToPresentation(presentation, [
+    {
+      slideId: slide.id,
+      confidence: 0.2,
+      intentCandidate: "evidence",
+      groupCandidates: [
+        {
+          elementIds: slide.blocks.map((block) => block.id),
+          role: "evidence-pack",
+          confidence: 0.2,
+        },
+      ],
+      importanceCandidates: [
+        {
+          elementId: slide.blocks[1].id,
+          importance: "primary",
+          confidence: 0.2,
+        },
+      ],
+      iconKeywordCandidates: ["ignored"],
+    },
+  ]);
+  const afterSlide = hinted.slides.find((candidate) => candidate.id === slide.id);
+  const afterGroup = hinted.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
+
+  assert.equal(afterSlide.tags.includes("agent-hint-semantic"), false);
+  assert.deepEqual(afterGroup, beforeGroup);
 });
 
 test("detectSlideIntent routes block quotes to quote intent for key-message layouts", () => {

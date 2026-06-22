@@ -5,6 +5,7 @@ export * from "./parser/parsePandoc.js";
 export * from "./outline/buildOutlineTree.js";
 export * from "./split/density.js";
 export * from "./split/splitPlanner.js";
+export * from "./coherence/index.js";
 export * from "./intent/detectSlideIntent.js";
 export * from "./utils/stableId.js";
 export * from "./theme/designPresets.js";

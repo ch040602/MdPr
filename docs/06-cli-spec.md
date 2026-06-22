@@ -41,6 +41,7 @@ createDeckPlan(inputPath, options)
   - validates config files against schemas/config.schema.json
   - parses Markdown
   - validates optional agent hint files against schemas/agent-hint.schema.json
+  - weakly merges accepted hints into coherence metadata
   - plans Presentation IR
   - plans Layout IR
   - collects diagnostics
@@ -70,6 +71,7 @@ default config < config file < CLI args
 - Build fails before rendering when config, layout overflow, or requested
   visual/coherence validation produces error diagnostics.
 - `--hints` accepts optional `mdpr-skill` semantic/icon/importance candidates as weak metadata only.
+- Accepted hints may add secondary intent candidates, block-role hints, keep-together evidence groups, and primary/supporting importance metadata.
 - Hint files with final layout or style fields such as coordinates, color, font, z-order, component, or renderer object IDs are rejected.
 - Stale hint files are ignored by default and fail validation when `--strict` is set.
 - `--theme-style` selects decoration grammar separately from color.

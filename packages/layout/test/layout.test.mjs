@@ -492,6 +492,34 @@ test("layout candidate scoring ranks mixed evidence coverage above single-object
   assert.equal(ranked[0].score.total < ranked.find((candidate) => candidate.layout.preset === "table-focus").score.total, true);
 });
 
+test("layout candidate scoring uses coherence group semantics and section continuity", () => {
+  const config = structuredClone(defaultConfig);
+  config.toc.enabled = false;
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Figure Evidence",
+    "",
+    "The preview shows bounded output.",
+    "",
+    "![Preview](preview.png)",
+    "",
+    "Figure: generated slide preview.",
+  ].join("\n")), config);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Figure Evidence");
+  const group = presentation.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
+  const ranked = rankLayoutCandidates(slide, config, group, "table-focus");
+  const imageFocus = ranked.find((candidate) => candidate.layout.preset === "image-focus");
+  const verticalList = ranked.find((candidate) => candidate.layout.preset === "vertical-list");
+
+  assert.ok(imageFocus);
+  assert.ok(verticalList);
+  assert.equal(verticalList.score.semanticGroupPenalty > 0, true);
+  assert.equal(imageFocus.score.semanticGroupPenalty, 0);
+  assert.equal(imageFocus.score.sectionConsistencyPenalty > 0, true);
+  assert.equal(ranked[0].layout.preset, "image-focus");
+});
+
 test("table-focus slides expose a table role region for native table rendering and decoration", () => {
   const layout = layoutFor([
     "# Demo",

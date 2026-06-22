@@ -38,7 +38,7 @@ design review: warn
 
 ## Diagnostics
 
-Executable validation checks must emit diagnostics for:
+Executable validation checks live in `@mdpresent/validation` and must emit diagnostics for:
 
 ```text
 TEXT_OVERFLOW
@@ -168,7 +168,9 @@ LOW_OBJECT_COVERAGE
 The summary records claimless slide count, detached caption count, orphan table
 count, section motif drift count, continuation title quality, and mixed object
 grouping score. These checks use `Presentation IR.coherenceGroups` and Layout
-IR block coverage; they do not rewrite or summarize source content.
+IR block coverage; they do not rewrite or summarize source content. Caption
+roles are assigned to adjacent caption paragraphs, not to the image/chart/table
+object itself, so validators can check object-caption proximity explicitly.
 
 ## Actions Preview Evaluation
 

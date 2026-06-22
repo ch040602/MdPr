@@ -229,6 +229,72 @@ test("buildDeck accepts schema-valid agent hints as weak metadata only", async (
   }
 });
 
+test("buildDeck applies accepted agent hints to coherence metadata only", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-agent-hints-coherence-"));
+  const deckPath = join(outDir, "deck.md");
+  const hintPath = join(outDir, "deck.mdpr-hints.json");
+  const markdown = [
+    "# Demo",
+    "",
+    "## Release Decision",
+    "",
+    "The runtime keeps Markdown authoritative.",
+    "",
+    "Validation evidence should stay attached.",
+  ].join("\n");
+
+  try {
+    writeFileSync(deckPath, markdown);
+    const baseline = planDeck(deckPath);
+    const slide = baseline.presentation.slides.find((candidate) => candidate.title === "Release Decision");
+    const claim = slide.blocks[0];
+    const evidence = slide.blocks[1];
+
+    writeFileSync(hintPath, JSON.stringify({
+      schemaVersion: "mdpr-agent-hint-v1",
+      sourceSha256: sha256(markdown),
+      generatedBy: "mdpr-skill",
+      hints: [
+        {
+          slideId: slide.id,
+          intentCandidate: "evidence",
+          confidence: 0.9,
+          groupCandidates: [
+            {
+              elementIds: [claim.id, evidence.id],
+              role: "evidence-pack",
+              confidence: 0.88,
+            },
+          ],
+          importanceCandidates: [
+            {
+              elementId: evidence.id,
+              importance: "primary",
+              confidence: 0.87,
+            },
+          ],
+          iconKeywordCandidates: ["validation", "evidence"],
+        },
+      ],
+    }, null, 2));
+
+    const result = await buildDeck(deckPath, { formats: ["html"], outDir, hintPath });
+    const hintedSlide = result.presentation.slides.find((candidate) => candidate.id === slide.id);
+    const group = result.presentation.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
+
+    assert.equal(result.agentHints.accepted, 1);
+    assert.equal(hintedSlide.intent, slide.intent);
+    assert.deepEqual(hintedSlide.blocks, slide.blocks);
+    assert.equal(hintedSlide.secondaryIntents.includes("evidence"), true);
+    assert.equal(group.role, "evidence-pack");
+    assert.equal(group.primaryBlockId, evidence.id);
+    assert.equal(group.supportingBlockIds.includes(claim.id), true);
+    assert.equal(group.blockRoles[evidence.id], "evidence");
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("validateDeck rejects forbidden final-decision fields in agent hints", () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-agent-hints-forbidden-"));
   const deckPath = join(outDir, "deck.md");

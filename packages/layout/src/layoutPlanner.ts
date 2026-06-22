@@ -1,4 +1,4 @@
-import type { Config, PresentationIR, SlideIR } from "@mdpresent/core";
+import type { CoherenceGroup, Config, PresentationIR, SlideIR } from "@mdpresent/core";
 import type { LayoutCandidateScore, LayoutIR, LayoutRegion, LayoutSlide, LayoutSpec, ScoredLayoutCandidate, ThemeTokens } from "./ir/types.js";
 import { chooseItemLayout, titleRect, bodyRect } from "./presets/presets.js";
 
@@ -23,18 +23,18 @@ export function planLayout(presentation: PresentationIR, config: Config): Layout
     version: "1.0",
     slideSize: config.deck.ratio === "4:3" ? { width: 10, height: 7.5, unit: "in" } : { width: 13.333, height: 7.5, unit: "in" },
     theme,
-    slides: presentation.slides.map((slide) => planSlideLayout(slide, config)),
+    slides: planSlidesWithContinuity(presentation, config),
     diagnostics: [...presentation.diagnostics],
   };
 }
 
-export function chooseLayout(slide: SlideIR, config: Config): LayoutSpec {
-  return rankLayoutCandidates(slide, config)[0]?.layout ?? { preset: config.layout.defaultPreset as LayoutSpec["preset"] };
+export function chooseLayout(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string): LayoutSpec {
+  return rankLayoutCandidates(slide, config, coherenceGroup, previousPresetInSection)[0]?.layout ?? { preset: config.layout.defaultPreset as LayoutSpec["preset"] };
 }
 
-export function rankLayoutCandidates(slide: SlideIR, config: Config): ScoredLayoutCandidate[] {
+export function rankLayoutCandidates(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string): ScoredLayoutCandidate[] {
   return candidateLayoutsForSlide(slide, config)
-    .map((layout) => ({ layout, score: scoreLayoutCandidate(slide, layout, config) }))
+    .map((layout) => ({ layout, score: scoreLayoutCandidate(slide, layout, config, coherenceGroup, previousPresetInSection) }))
     .sort((a, b) => a.score.total - b.score.total || layoutOrder(a.layout.preset) - layoutOrder(b.layout.preset));
 }
 
@@ -91,17 +91,24 @@ function metricLayouts(slide: SlideIR): LayoutSpec[] {
   return [{ preset: "vertical-list" }];
 }
 
-function scoreLayoutCandidate(slide: SlideIR, layout: LayoutSpec, config: Config): LayoutCandidateScore {
+function scoreLayoutCandidate(
+  slide: SlideIR,
+  layout: LayoutSpec,
+  config: Config,
+  coherenceGroup?: CoherenceGroup,
+  previousPresetInSection?: string,
+): LayoutCandidateScore {
   const objectCoveragePenalty = objectCoveragePenaltyFor(slide, layout);
+  const semanticGroupPenalty = semanticGroupPenaltyFor(slide, layout, coherenceGroup);
   const readingOrderPenalty = readingOrderPenaltyFor(slide, layout);
   const whitespacePenalty = whitespacePenaltyFor(slide, layout);
   const emphasisPenalty = emphasisPenaltyFor(slide, layout);
   const minFontPenalty = layout.preset === "grid" && (slide.primaryItemCount ?? 0) > 6 ? Math.max(0, config.typography.minFontSize - 14) : 0;
   const overflowPenalty = roughOverflowPenaltyFor(slide, layout);
   const alignmentPenalty = ["grid", "vertical-list", "chart-table", "table-focus", "image-focus", "comparison"].includes(layout.preset) ? 0 : 1;
-  const sectionConsistencyPenalty = 0;
-  const total = overflowPenalty + minFontPenalty + objectCoveragePenalty + readingOrderPenalty + whitespacePenalty + alignmentPenalty + emphasisPenalty + sectionConsistencyPenalty;
-  return { overflowPenalty, minFontPenalty, objectCoveragePenalty, readingOrderPenalty, whitespacePenalty, alignmentPenalty, emphasisPenalty, sectionConsistencyPenalty, total };
+  const sectionConsistencyPenalty = sectionConsistencyPenaltyFor(layout, previousPresetInSection);
+  const total = overflowPenalty + minFontPenalty + objectCoveragePenalty + semanticGroupPenalty + readingOrderPenalty + whitespacePenalty + alignmentPenalty + emphasisPenalty + sectionConsistencyPenalty;
+  return { overflowPenalty, minFontPenalty, objectCoveragePenalty, semanticGroupPenalty, readingOrderPenalty, whitespacePenalty, alignmentPenalty, emphasisPenalty, sectionConsistencyPenalty, total };
 }
 
 function objectCoveragePenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
@@ -123,6 +130,35 @@ function layoutCoversObject(layout: LayoutSpec, type: string): boolean {
 function readingOrderPenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
   if (slide.intent === "evidence" && hasText(slide) && layout.preset === "image-focus") return 3;
   return 0;
+}
+
+function semanticGroupPenaltyFor(slide: SlideIR, layout: LayoutSpec, group?: CoherenceGroup): number {
+  if (!group) return 0;
+  const roles = Object.values(group.blockRoles ?? {});
+  const hasCaption = roles.includes("caption");
+  if (group.role === "workflow" && layout.preset !== "pipeline") return 10;
+  if (group.role === "evidence-pack") {
+    const objectCount = ["chart", "table", "image"].filter((type) => hasAny(slide, type)).length;
+    if (objectCount >= 2 && layout.preset !== "chart-table") return 8;
+    if (hasAny(slide, "table") && layout.preset === "image-focus") return 6;
+    if (hasAny(slide, "image") && layout.preset === "table-focus") return 4;
+  }
+  if (hasCaption && ["vertical-list", "title-body"].includes(layout.preset)) return 4;
+  return 0;
+}
+
+function sectionConsistencyPenaltyFor(layout: LayoutSpec, previousPresetInSection?: string): number {
+  if (!previousPresetInSection) return 0;
+  if (previousPresetInSection === layout.preset) return 0;
+  return layoutFamily(previousPresetInSection) === layoutFamily(layout.preset) ? 1 : 3;
+}
+
+function layoutFamily(preset: string): string {
+  if (["chart-table", "table-focus", "image-focus", "image-left", "image-right"].includes(preset)) return "evidence";
+  if (["grid", "vertical-list", "pentagon", "comparison", "text-icon-aside"].includes(preset)) return "list";
+  if (["pipeline", "pipeline-one-page"].includes(preset)) return "workflow";
+  if (["key-message", "quote"].includes(preset)) return "message";
+  return preset;
 }
 
 function whitespacePenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
@@ -192,8 +228,26 @@ function isTextOnlyReliefCandidate(slide: SlideIR): boolean {
   return textLength >= 120;
 }
 
-function planSlideLayout(slide: SlideIR, config: Config): LayoutSlide {
-  const layout = chooseLayout(slide, config);
+function planSlidesWithContinuity(presentation: PresentationIR, config: Config): LayoutSlide[] {
+  const groupsBySlideId = new Map((presentation.coherenceGroups ?? []).map((group) => [group.slideId, group]));
+  const previousPresetBySection = new Map<string, string>();
+  return presentation.slides.map((slide) => {
+    const sectionKey = sectionKeyForSlide(slide);
+    const previousPreset = sectionKey ? previousPresetBySection.get(sectionKey) : undefined;
+    const layoutSlide = planSlideLayout(slide, config, groupsBySlideId.get(slide.id), previousPreset);
+    if (sectionKey && slide.role === "content") previousPresetBySection.set(sectionKey, layoutSlide.layout.preset);
+    return layoutSlide;
+  });
+}
+
+function sectionKeyForSlide(slide: SlideIR): string | undefined {
+  if (slide.section) return slide.section;
+  if (slide.headingPath.length > 2) return slide.headingPath.slice(0, -1).join(" / ");
+  return undefined;
+}
+
+function planSlideLayout(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string): LayoutSlide {
+  const layout = chooseLayout(slide, config, coherenceGroup, previousPresetInSection);
   return planSlideLayoutWithSpec(slide, config, layout);
 }
 

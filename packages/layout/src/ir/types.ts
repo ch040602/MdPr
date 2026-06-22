@@ -41,6 +41,7 @@ export type LayoutCandidateScore = {
   overflowPenalty: number;
   minFontPenalty: number;
   objectCoveragePenalty: number;
+  semanticGroupPenalty: number;
   readingOrderPenalty: number;
   whitespacePenalty: number;
   alignmentPenalty: number;

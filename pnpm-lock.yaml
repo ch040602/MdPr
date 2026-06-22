@@ -38,6 +38,9 @@ importers:
       '@mdpresent/render-pptx':
         specifier: workspace:*
         version: link:../render-pptx
+      '@mdpresent/validation':
+        specifier: workspace:*
+        version: link:../validation
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -97,6 +100,15 @@ importers:
       pptxgenjs:
         specifier: ^4.0.1
         version: 4.0.1
+
+  packages/validation:
+    dependencies:
+      '@mdpresent/core':
+        specifier: workspace:*
+        version: link:../core
+      '@mdpresent/layout':
+        specifier: workspace:*
+        version: link:../layout
 
 packages:
 

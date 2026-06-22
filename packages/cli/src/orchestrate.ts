@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { Config, Diagnostic, OutputFormat, ParserMode, PresentationIR, SlideIR } from "@mdpresent/core";
 import { defaultConfig, parseMarkdown, parseMarkdownWithPandoc, planPresentation } from "@mdpresent/core";
 import { resolveDesignTokens } from "@mdpresent/core";
+import { applyAgentHintsToPresentation, type AcceptedAgentHint } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 import { planLayout, planSlideLayoutWithSpec, rankLayoutCandidates, validateLayoutOverflow } from "@mdpresent/layout";
 import { renderHtml } from "@mdpresent/render-html";
@@ -12,6 +13,7 @@ import { renderPdf } from "@mdpresent/render-pdf";
 import type { DesignPresetName } from "@mdpresent/render-pptx";
 import { renderPptx } from "@mdpresent/render-pptx";
 import { applyOverrides, diffLayout, type LayoutDiff, type OverrideManifest } from "@mdpresent/override";
+import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createVisualValidationSummary, visualValidationDiagnostics } from "@mdpresent/validation";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import { parse as parseYaml } from "yaml";
 
@@ -32,6 +34,7 @@ export type AgentHintSummary = {
   enabled: boolean;
   source?: AgentHintSource;
   sourceSha256?: string;
+  acceptedHints: AcceptedAgentHint[];
   accepted: number;
   rejected: number;
   ignoredBecauseStale: number;
@@ -90,7 +93,7 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
   const doc = options.parser === "pandoc"
     ? parseMarkdownWithPandoc(markdown, { sourcePath: inputPath })
     : parseMarkdown(markdown, inputPath);
-  const presentation = planPresentation(doc, config);
+  const presentation = applyAgentHintsToPresentation(planPresentation(doc, config), agentHints.acceptedHints);
   const overrideManifest = options.overridePath ? readOverrideFile(options.overridePath, configDiagnostics) : undefined;
   const initialLayout = resolveLayoutTextOverflow(planLayout(presentation, config), presentation, config, {
     allowCandidateReflow: !overrideManifest,
@@ -371,6 +374,7 @@ function readAgentHints(hintPath: string | undefined, sourceSha256: string, stri
   const summary: AgentHintSummary = {
     enabled: Boolean(hintPath),
     source: hintPath ? { path: hintPath } : undefined,
+    acceptedHints: [],
     accepted: 0,
     rejected: 0,
     ignoredBecauseStale: 0,
@@ -437,6 +441,7 @@ function readAgentHints(hintPath: string | undefined, sourceSha256: string, stri
   }
 
   summary.accepted = typed.hints.length;
+  summary.acceptedHints = typed.hints as AcceptedAgentHint[];
   return summary;
 }
 
@@ -505,270 +510,6 @@ function validateOverrideManifest(manifest: OverrideManifest): string | null {
   return null;
 }
 
-function createVisualValidationSummary(layout: LayoutIR) {
-  const diagnostics = visualValidationDiagnostics(layout);
-  return {
-    checked: true,
-    slideCount: layout.slides.length,
-    thresholds: {
-      minimumTextContrastRatio: 4.5,
-      maximumSameLayerOverlapRatio: 0.08,
-      minimumReadableFontSize: 8,
-      imageAspectRatioRange: [0.25, 4.0],
-      minimumDiagramConnectorSpace: { width: 2.0, height: 1.0 },
-    },
-    checks: {
-      nonBlankSlides: layout.slides.every((slide) => slide.regions.some((region) => region.blockIds.length || region.role === "title")),
-      regionBounds: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_REGION_BOUNDS"),
-      minimumTextSize: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_FONT_FLOOR"),
-      textContrast: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_CONTRAST"),
-      sameLayerOverlap: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_REGION_OVERLAP"),
-      imageAspectRatio: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_IMAGE_ASPECT_RATIO"),
-      connectorClearance: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_CONNECTOR_CLEARANCE"),
-      backgroundContentOverlap: diagnostics.every((diagnostic) => !["VISUAL_BACKGROUND_OVERLAP", "VISUAL_REGION_OVERLAP"].includes(diagnostic.code ?? "")),
-    },
-    diagnostics,
-  };
-}
-
-function visualValidationDiagnostics(layout: LayoutIR): Diagnostic[] {
-  const diagnostics: Diagnostic[] = [];
-  const contrast = contrastRatio(layout.theme.textColor, layout.theme.backgroundColor);
-  if (contrast !== undefined && contrast < 4.5) {
-    diagnostics.push({
-      level: "error",
-      code: "VISUAL_CONTRAST",
-      message: `Theme text/background contrast ratio ${contrast.toFixed(2)} is below the 4.5 readable threshold.`,
-    });
-  }
-
-  for (const slide of layout.slides) {
-    for (const region of slide.regions) {
-      if (region.x < 0 || region.y < 0 || region.x + region.w > layout.slideSize.width || region.y + region.h > layout.slideSize.height) {
-        diagnostics.push({
-          level: "error",
-          code: "VISUAL_REGION_BOUNDS",
-          slideId: slide.sourceSlideId,
-          message: `Region ${region.id} is outside the slide bounds.`,
-        });
-      }
-      const minFontSize = region.typography?.minFontSize ?? layout.theme.minFontSize;
-      const fontSize = region.typography?.fontSize ?? layout.theme.bodyFontSize;
-      if (region.role !== "image" && Math.min(fontSize, minFontSize) < 8) {
-        diagnostics.push({
-          level: "error",
-          code: "VISUAL_FONT_FLOOR",
-          slideId: slide.sourceSlideId,
-          message: `Region ${region.id} falls below the 8pt visual readability floor.`,
-        });
-      }
-      if (region.role === "image") {
-        const ratio = region.w / Math.max(0.0001, region.h);
-        if (ratio < 0.25 || ratio > 4.0) {
-          diagnostics.push({
-            level: "error",
-            code: "VISUAL_IMAGE_ASPECT_RATIO",
-            slideId: slide.sourceSlideId,
-            message: `Image region ${region.id} has an extreme frame aspect ratio (${ratio.toFixed(2)}).`,
-          });
-        }
-      }
-      if (region.role === "diagram" && (region.w < 2.0 || region.h < 1.0)) {
-        diagnostics.push({
-          level: "error",
-          code: "VISUAL_CONNECTOR_CLEARANCE",
-          slideId: slide.sourceSlideId,
-          message: `Diagram region ${region.id} is too small for readable connector routing.`,
-        });
-      }
-    }
-
-    const contentRegions = slide.regions.filter(isContentRegion);
-    for (let leftIndex = 0; leftIndex < contentRegions.length; leftIndex++) {
-      for (let rightIndex = leftIndex + 1; rightIndex < contentRegions.length; rightIndex++) {
-        const left = contentRegions[leftIndex]!;
-        const right = contentRegions[rightIndex]!;
-        if (left.zIndex !== right.zIndex) continue;
-        const overlapRatio = regionOverlapRatio(left, right);
-        if (overlapRatio <= 0.08) continue;
-        diagnostics.push({
-          level: "error",
-          code: "VISUAL_REGION_OVERLAP",
-          slideId: slide.sourceSlideId,
-          message: `Regions ${left.id} and ${right.id} overlap on the same z-index layer (${overlapRatio.toFixed(2)} area ratio).`,
-        });
-      }
-    }
-  }
-  return diagnostics;
-}
-
-function createCoherenceValidationSummary(presentation: PresentationIR, layout: LayoutIR) {
-  const diagnostics = coherenceValidationDiagnostics(presentation, layout);
-  const claimlessSlides = diagnostics.filter((diagnostic) => diagnostic.code === "CLAIMLESS_EVIDENCE_SLIDE").length;
-  const captionDetached = diagnostics.filter((diagnostic) => diagnostic.code === "DETACHED_CAPTION").length;
-  const orphanTables = diagnostics.filter((diagnostic) => diagnostic.code === "ORPHAN_TABLE").length;
-  const lowObjectCoverage = diagnostics.filter((diagnostic) => diagnostic.code === "LOW_OBJECT_COVERAGE").length;
-  const sectionMotifDrift = diagnostics.filter((diagnostic) => diagnostic.code === "SECTION_STYLE_DRIFT").length;
-  const evidenceGroups = presentation.coherenceGroups.filter((group) => group.role === "evidence-pack").length;
-  const groupedEvidence = presentation.coherenceGroups.filter((group) => group.role === "evidence-pack" && group.supportingBlockIds.length > 0).length;
-
-  return {
-    checked: true,
-    thresholds: {
-      minimumMixedObjectGroupingScore: 0.75,
-      minimumObjectCoverageRatio: 0.2,
-    },
-    orphanEvidenceBlocks: orphanTables,
-    captionDetached,
-    claimlessSlides,
-    sectionMotifDrift,
-    continuationTitleQuality: diagnostics.some((diagnostic) => diagnostic.code === "DENSE_CONTINUATION_WITHOUT_TITLE") ? "needs-review" : "ok",
-    mixedObjectGroupingScore: evidenceGroups ? Number((groupedEvidence / evidenceGroups).toFixed(2)) : 1,
-    checks: {
-      claimlessEvidenceSlides: claimlessSlides === 0,
-      detachedCaptions: captionDetached === 0,
-      orphanTables: orphanTables === 0,
-      lowObjectCoverage: lowObjectCoverage === 0,
-      sectionMotifDrift: sectionMotifDrift === 0,
-    },
-    diagnostics,
-  };
-}
-
-function coherenceValidationDiagnostics(presentation: PresentationIR, layout: LayoutIR): Diagnostic[] {
-  const diagnostics: Diagnostic[] = [];
-  const layoutBySlideId = new Map(layout.slides.map((slide) => [slide.sourceSlideId, slide]));
-
-  for (const slide of presentation.slides) {
-    if (slide.role !== "content") continue;
-    const group = presentation.coherenceGroups.find((candidate) => candidate.slideId === slide.id);
-    const blockRoles = group?.blockRoles ?? {};
-    const blockTypes = new Set(slide.blocks.map((block) => block.type));
-    const hasEvidenceObject = ["table", "chart", "image", "diagram"].some((type) => blockTypes.has(type as never));
-    const hasClaim = Object.values(blockRoles).includes("claim") || slide.blocks.some((block) => block.type === "paragraph" && isClaimLikeText(block.text ?? block.sentences?.join(" ") ?? ""));
-    const hasEvidenceRole = Object.values(blockRoles).some((role) => role === "evidence" || role === "metric");
-
-    if (hasEvidenceObject && !hasClaim) {
-      diagnostics.push({
-        level: "warning",
-        code: "CLAIMLESS_EVIDENCE_SLIDE",
-        slideId: slide.id,
-        message: `Slide "${slide.title ?? slide.id}" contains evidence objects without a claim-like explanatory block.`,
-      });
-    }
-
-    const firstMeaningfulBlock = slide.blocks.find((block) => block.type !== "heading");
-    if (firstMeaningfulBlock?.type === "table" && !hasClaim) {
-      diagnostics.push({
-        level: "warning",
-        code: "ORPHAN_TABLE",
-        slideId: slide.id,
-        message: `Slide "${slide.title ?? slide.id}" starts with a table that is not attached to an explanatory paragraph.`,
-      });
-    }
-
-    const imageBlocks = slide.blocks.filter((block) => block.type === "image");
-    for (const image of imageBlocks) {
-      const imageIndex = slide.blocks.indexOf(image);
-      const nextBlock = slide.blocks[imageIndex + 1];
-      const hasCaption = nextBlock?.type === "paragraph" && isCaptionLikeText(nextBlock.text ?? nextBlock.sentences?.join(" ") ?? "");
-      if (!hasCaption && image.alt && image.alt.length > 0 && slide.blocks.length > 2) {
-        diagnostics.push({
-          level: "warning",
-          code: "DETACHED_CAPTION",
-          slideId: slide.id,
-          message: `Image "${image.alt}" has no adjacent short caption paragraph.`,
-        });
-      }
-    }
-
-    const layoutSlide = layoutBySlideId.get(slide.id);
-    if (layoutSlide && hasEvidenceRole) {
-      const coveredBlockIds = new Set(layoutSlide.regions.flatMap((region) => region.blockIds.map((blockId) => blockId.split("#")[0])));
-      const contentBlockIds = slide.blocks.filter((block) => block.type !== "heading").map((block) => block.id);
-      const coverage = contentBlockIds.length ? contentBlockIds.filter((blockId) => coveredBlockIds.has(blockId)).length / contentBlockIds.length : 1;
-      if (coverage < 0.2) {
-        diagnostics.push({
-          level: "warning",
-          code: "LOW_OBJECT_COVERAGE",
-          slideId: slide.id,
-          message: `Slide "${slide.title ?? slide.id}" maps only ${(coverage * 100).toFixed(0)}% of source blocks to visible layout regions.`,
-        });
-      }
-    }
-  }
-
-  diagnostics.push(...sectionStyleDriftDiagnostics(presentation, layout));
-  diagnostics.push(...continuationTitleDiagnostics(presentation));
-
-  return diagnostics;
-}
-
-function sectionStyleDriftDiagnostics(presentation: PresentationIR, layout: LayoutIR): Diagnostic[] {
-  const diagnostics: Diagnostic[] = [];
-  const layoutBySlideId = new Map(layout.slides.map((slide) => [slide.sourceSlideId, slide]));
-  const groups = new Map<string, Array<{ slide: SlideIR; preset: string }>>();
-
-  for (const slide of presentation.slides) {
-    if (slide.role !== "content") continue;
-    const sectionKey = sectionKeyForStyleDrift(slide);
-    if (!sectionKey) continue;
-    const layoutSlide = layoutBySlideId.get(slide.id);
-    if (!layoutSlide) continue;
-    const group = groups.get(sectionKey) ?? [];
-    group.push({ slide, preset: layoutSlide.layout.preset });
-    groups.set(sectionKey, group);
-  }
-
-  for (const [section, entries] of groups) {
-    const distinctPresets = Array.from(new Set(entries.map((entry) => entry.preset)));
-    if (entries.length < 3 || distinctPresets.length < 3) continue;
-    diagnostics.push({
-      level: "warning",
-      code: "SECTION_STYLE_DRIFT",
-      slideId: entries[0]?.slide.id,
-      message: `Section "${section}" uses ${distinctPresets.length} layout motifs across ${entries.length} content slides (${distinctPresets.join(", ")}).`,
-    });
-  }
-
-  return diagnostics;
-}
-
-function sectionKeyForStyleDrift(slide: SlideIR): string | undefined {
-  if (slide.section) return slide.section;
-  if (slide.headingPath.length > 2) return slide.headingPath.slice(0, -1).join(" / ");
-  return undefined;
-}
-
-function continuationTitleDiagnostics(presentation: PresentationIR): Diagnostic[] {
-  const diagnostics: Diagnostic[] = [];
-  const groups = new Map<string, SlideIR[]>();
-
-  for (const slide of presentation.slides) {
-    if (slide.role !== "content") continue;
-    const key = stableJson(slide.headingPath);
-    const group = groups.get(key) ?? [];
-    group.push(slide);
-    groups.set(key, group);
-  }
-
-  for (const slides of groups.values()) {
-    if (slides.length < 2) continue;
-    for (const slide of slides.slice(1)) {
-      if (/\(Cont\.\s+\d+\/\d+\)/.test(slide.title ?? "")) continue;
-      diagnostics.push({
-        level: "warning",
-        code: "DENSE_CONTINUATION_WITHOUT_TITLE",
-        slideId: slide.id,
-        message: `Continuation slide "${slide.title ?? slide.id}" should include a continuation marker in its title.`,
-      });
-    }
-  }
-
-  return diagnostics;
-}
-
 function createOverflowResolutionSummary(presentation: PresentationIR, layout: LayoutIR) {
   const continuationGroups = continuationGroupsFor(presentation);
   const continuationReasons = { list: 0, table: 0, code: 0, paragraph: 0, mixed: 0, toc: 0 };
@@ -822,60 +563,6 @@ function continuationReasonFor(slides: SlideIR[]): "list" | "table" | "code" | "
   if (blockTypes.has("code")) return "code";
   if (blockTypes.size === 1 && blockTypes.has("paragraph")) return "paragraph";
   return "mixed";
-}
-
-function isClaimLikeText(text: string): boolean {
-  return /\b(should|must|because|therefore|shows|means|indicates|suggests|result|impact|why|goal|purpose|objective)\b/i.test(text) ||
-    /목적|이유|결과|의미|따라서|때문|필요|개선/.test(text);
-}
-
-function isCaptionLikeText(text: string): boolean {
-  const normalized = text.trim();
-  return normalized.length > 0 && normalized.length <= 120 && /^(figure|fig\.|image|source|caption|그림|출처)[:\s]/i.test(normalized);
-}
-
-function isContentRegion(region: LayoutIR["slides"][number]["regions"][number]): boolean {
-  if (["icon", "footer", "pageNumber"].includes(region.role)) return false;
-  return region.role === "title" || region.blockIds.length > 0;
-}
-
-function regionOverlapRatio(left: LayoutIR["slides"][number]["regions"][number], right: LayoutIR["slides"][number]["regions"][number]): number {
-  const x = Math.max(0, Math.min(left.x + left.w, right.x + right.w) - Math.max(left.x, right.x));
-  const y = Math.max(0, Math.min(left.y + left.h, right.y + right.h) - Math.max(left.y, right.y));
-  const overlap = x * y;
-  if (overlap <= 0) return 0;
-  const smallerArea = Math.max(0.0001, Math.min(left.w * left.h, right.w * right.h));
-  return overlap / smallerArea;
-}
-
-function contrastRatio(foreground: string, background: string): number | undefined {
-  const fg = parseHexColor(foreground);
-  const bg = parseHexColor(background);
-  if (!fg || !bg) return undefined;
-  const lighter = Math.max(relativeLuminance(fg), relativeLuminance(bg));
-  const darker = Math.min(relativeLuminance(fg), relativeLuminance(bg));
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
-function parseHexColor(value: string): [number, number, number] | undefined {
-  const normalized = value.trim().replace(/^#/, "");
-  const full = /^[0-9a-fA-F]{3}$/.test(normalized)
-    ? normalized.split("").map((part) => `${part}${part}`).join("")
-    : normalized;
-  if (!/^[0-9a-fA-F]{6}$/.test(full)) return undefined;
-  return [
-    Number.parseInt(full.slice(0, 2), 16),
-    Number.parseInt(full.slice(2, 4), 16),
-    Number.parseInt(full.slice(4, 6), 16),
-  ];
-}
-
-function relativeLuminance([red, green, blue]: [number, number, number]): number {
-  const [r, g, b] = [red, green, blue].map((channel) => {
-    const value = channel / 255;
-    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 }
 
 function stableJson(value: unknown): string {

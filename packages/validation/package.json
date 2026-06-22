@@ -1,12 +1,9 @@
 {
-  "name": "@mdpresent/cli",
+  "name": "@mdpresent/validation",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": {
-    "mdpresent": "dist/index.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,19 +15,12 @@
     "package.json"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/copy-schemas.mjs",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node --test test/*.test.mjs"
   },
   "dependencies": {
     "@mdpresent/core": "workspace:*",
-    "@mdpresent/layout": "workspace:*",
-    "@mdpresent/override": "workspace:*",
-    "@mdpresent/render-html": "workspace:*",
-    "@mdpresent/render-pdf": "workspace:*",
-    "@mdpresent/render-pptx": "workspace:*",
-    "@mdpresent/validation": "workspace:*",
-    "ajv": "^8.20.0",
-    "yaml": "^2.9.0"
+    "@mdpresent/layout": "workspace:*"
   }
 }
