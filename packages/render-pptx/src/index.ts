@@ -859,17 +859,12 @@ function renderItemNumberBadge(
   const x = region.x + Math.min(0.24, Math.max(0.14, region.w * 0.04));
   const y = region.y + (region.h - size) / 2;
   const shape = number % 2 === 0 ? "roundRect" : "ellipse";
-  slide.addShape(shape as never, {
-    x,
-    y,
-    w: size,
-    h: size,
+  slide.addText(String(number), {
+    ...centeredMarkerTextOptions(common, x, y, size, Math.max(7.2, Math.min(10.5, (region.typography?.fontSize ?? 18) - 7)), readableTextColor(preset.primaryColor)),
+    shape: shape as never,
     rectRadius: 0.05,
     fill: { color: preset.primaryColor },
     line: { color: preset.primaryColor, transparency: 100 },
-  } as never);
-  slide.addText(String(number), {
-    ...centeredMarkerTextOptions(common, x, y, size, Math.max(7.2, Math.min(10.5, (region.typography?.fontSize ?? 18) - 7)), readableTextColor(preset.primaryColor)),
   });
   return { x, y, size, right: x + size };
 }

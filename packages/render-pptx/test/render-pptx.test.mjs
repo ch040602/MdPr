@@ -1786,6 +1786,10 @@ test("renderPptx serializes marker badges with matching shape and text centers",
       const preceding = xml.slice(Math.max(0, markerIndex - 900), markerIndex);
       assert.match(preceding, /<a:bodyPr[^>]*anchor="ctr"/);
       assert.match(preceding, /<a:pPr[^>]*algn="ctr"/);
+      const markerShape = shapeXmlContainingText(xml, marker);
+      assert.match(markerShape, /<a:prstGeom prst="(?:ellipse|roundRect)"/);
+      const markerBox = shapeTransform(markerShape);
+      assert.equal(Math.abs(markerBox.w - markerBox.h) < 0.001, true, `marker ${marker} must use a square text-owning shape`);
     }
   } finally {
     rmSync(outDir, { recursive: true, force: true });
