@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ch040602.github.io/MdPr/sitemap.xml

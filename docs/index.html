@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MDPR - Editable PowerPoint decks from Markdown</title>
+  <meta name="description" content="MDPR generates editable, visually checked PowerPoint decks from Markdown with deterministic layout rules, PPTX-first output, and optional LLM-advised review.">
+  <link rel="canonical" href="https://ch040602.github.io/MdPr/">
+  <meta property="og:title" content="MDPR - Editable PowerPoint decks from Markdown">
+  <meta property="og:description" content="Deterministic Markdown-to-editable-PPTX runtime with layout validation, theme grammar, tables, charts, diagrams, icon slots, and generated previews.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ch040602.github.io/MdPr/">
+  <meta property="og:image" content="https://ch040602.github.io/MdPr/assets/readme-teaser/slides/slide-01.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="MDPR - Editable PowerPoint decks from Markdown">
+  <meta name="twitter:description" content="PPTX-first Markdown presentation runtime with deterministic layout validation and optional LLM-advised review.">
+  <meta name="twitter:image" content="https://ch040602.github.io/MdPr/assets/readme-teaser/slides/slide-01.png">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8f7;
+      --ink: #101917;
+      --muted: #586762;
+      --line: #d8e2de;
+      --panel: #ffffff;
+      --accent: #0f766e;
+      --accent-2: #8a4fff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 20px 64px;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(340px, 1.1fr);
+      gap: 32px;
+      align-items: center;
+      min-height: 72vh;
+    }
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: clamp(38px, 7vw, 72px);
+      line-height: .98;
+      letter-spacing: 0;
+    }
+    .lead {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: clamp(18px, 2.2vw, 23px);
+      max-width: 640px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 22px 0;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--ink);
+      background: #fff;
+      font-weight: 750;
+      text-decoration: none;
+    }
+    .button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+    .button.secondary {
+      border-color: color-mix(in srgb, var(--accent-2) 44%, var(--line));
+      color: var(--accent-2);
+    }
+    .preview {
+      margin: 0;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 18px 40px rgba(16, 25, 23, .08);
+    }
+    .preview img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 5px;
+    }
+    .caption {
+      margin: 10px 2px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin: 28px 0;
+    }
+    .feature {
+      min-height: 160px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 18px;
+    }
+    .feature strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 17px;
+    }
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .compare {
+      border-top: 1px solid var(--line);
+      padding-top: 28px;
+      margin-top: 34px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #edf5f2; }
+    tr:last-child td { border-bottom: 0; }
+    code {
+      background: #eaf2ef;
+      border-radius: 5px;
+      padding: 2px 5px;
+    }
+    @media (max-width: 840px) {
+      .hero { grid-template-columns: 1fr; min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <div>
+      <p class="eyebrow">Markdown to editable PPTX</p>
+      <h1>PowerPoint decks from Markdown, without losing editability.</h1>
+      <p class="lead">MDPR is a deterministic presentation runtime that turns Markdown into visually checked, editable PPTX decks with layout validation, theme grammar, and optional LLM-advised review.</p>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/ch040602/MdPr">Star on GitHub</a>
+        <a class="button secondary" href="theme-preview/">Open preview gallery</a>
+        <a class="button" href="https://github.com/ch040602/MdPr/releases/tag/v0.1.0-preview">Download preview PPTX</a>
+      </div>
+      <p class="caption">Best for engineering reports, research notes, product updates, and Markdown workflows that need real PowerPoint editing after generation.</p>
+    </div>
+    <figure class="preview">
+      <img src="assets/readme-teaser/slides/slide-01.png" alt="MDPR generated PowerPoint teaser slide exported to PNG">
+      <figcaption class="caption">Generated from Markdown through the same MDPR runtime, then exported from PPTX to PNG.</figcaption>
+    </figure>
+  </section>
+
+  <section class="features" aria-label="MDPR features">
+    <div class="feature">
+      <strong>Editable PPTX first</strong>
+      <p>Text boxes, tables, charts, diagrams, proof objects, and icon slots are rendered as PowerPoint surfaces where possible.</p>
+    </div>
+    <div class="feature">
+      <strong>Deterministic runtime</strong>
+      <p>No API key or model call is required for normal builds. Markdown is planned through Presentation IR and Layout IR.</p>
+    </div>
+    <div class="feature">
+      <strong>Visual validation</strong>
+      <p>Overflow, object bounds, marker alignment, graph preservation, theme drift, and generated artifacts are checked.</p>
+    </div>
+    <div class="feature">
+      <strong>Optional LLM review</strong>
+      <p>mdpr-skill can suggest semantic hints and critique notes, while MDPR owns final layout, colors, z-order, and output.</p>
+    </div>
+  </section>
+
+  <section class="compare">
+    <h2>How MDPR differs</h2>
+    <table>
+      <thead>
+        <tr><th>Compared with</th><th>MDPR focus</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Pandoc</td><td>PPTX-first layout planning, editability, overflow validation, object preservation, and preview QA.</td></tr>
+        <tr><td>Marp / Slidev</td><td>PowerPoint editing workflows instead of primarily web slide rendering.</td></tr>
+        <tr><td>LLM slide generators</td><td>Deterministic ownership of parsing, splitting, coordinates, theme colors, z-order, and renderer output.</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>
