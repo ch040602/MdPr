@@ -172,10 +172,11 @@
     <div>
       <p class="eyebrow">Markdown to editable PPTX</p>
       <h1>PowerPoint decks from Markdown, without losing editability.</h1>
-      <p class="lead">MDPR is a deterministic presentation runtime that turns Markdown into visually checked, editable PPTX decks with layout validation, theme grammar, and optional LLM-advised review.</p>
+      <p class="lead">MDPR is a deterministic presentation runtime that turns Markdown into visually checked, editable PPTX decks. mdpr-skill adds optional Codex review hints without giving the agent final slide control.</p>
       <div class="actions">
         <a class="button primary" href="https://github.com/ch040602/MdPr">Star on GitHub</a>
         <a class="button secondary" href="https://www.npmjs.com/package/@mdpresent/cli">Install from npm</a>
+        <a class="button secondary" href="https://github.com/ch040602/mdpr-skill">Use mdpr-skill</a>
         <a class="button secondary" href="theme-preview/">Open preview gallery</a>
         <a class="button" href="https://github.com/ch040602/MdPr/releases/tag/v0.1.0-preview">Download preview PPTX</a>
       </div>
@@ -203,8 +204,21 @@
     </div>
     <div class="feature">
       <strong>Optional LLM review</strong>
-      <p>mdpr-skill can suggest semantic hints and critique notes, while MDPR owns final layout, colors, z-order, and output.</p>
+      <p>mdpr-skill can suggest semantic hints, icon-keyword ideas, and critique notes, while MDPR owns final layout, colors, z-order, and output.</p>
     </div>
+  </section>
+
+  <section class="compare">
+    <h2>Runtime plus review layer</h2>
+    <table>
+      <thead>
+        <tr><th>Layer</th><th>Role</th><th>Install</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>MDPR</td><td>Deterministic Markdown parser, splitter, layout planner, validator, and PPTX renderer.</td><td><code>npm install -g @mdpresent/cli</code></td></tr>
+        <tr><td>mdpr-skill</td><td>Optional Codex companion for semantic hints, icon keyword ideas, visual review, and QA notes.</td><td><a href="https://github.com/ch040602/mdpr-skill">GitHub skill repository</a></td></tr>
+      </tbody>
+    </table>
   </section>
 
   <section class="compare">

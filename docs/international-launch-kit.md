@@ -11,6 +11,27 @@ MDPR generates editable, visually checked PowerPoint decks from Markdown with a
 deterministic runtime. It focuses on PPTX layout quality, slide splitting,
 tables/charts/diagrams, icon slots, theme rules, overflow validation, and
 repeatable output without requiring an LLM at runtime.
+
+mdpr-skill is the optional Codex review layer. It can suggest semantic hints,
+icon-keyword ideas, Markdown cleanup notes, and visual QA concerns, but MDPR
+still owns final parsing, splitting, layout, theme colors, z-order, validation,
+and renderer output.
+```
+
+## Combined Positioning
+
+```text
+MDPR is the deterministic runtime. mdpr-skill is the optional agent review
+companion. The LLM can suggest; MDPR renders.
+```
+
+Use this framing when talking to LLM/tooling communities:
+
+```text
+I built MDPR + mdpr-skill as a split-responsibility presentation workflow:
+agents can review Markdown and suggest compact semantic hints, but the runtime
+keeps deterministic ownership of slide splitting, layout, theme colors,
+z-order, validation, and editable PPTX rendering.
 ```
 
 ## Show HN
@@ -44,6 +65,10 @@ and renderer output.
 I am especially looking for Markdown edge cases: tables, diagrams, chart/table
 pairs, mixed-language text, and docs that usually break when converted into
 PowerPoint.
+
+If you are interested in agent workflows, mdpr-skill is the optional companion:
+the agent can suggest semantic hints and review notes, but MDPR still owns the
+final layout and renderer output.
 ```
 
 ## DEV / Hashnode Article
@@ -72,6 +97,8 @@ Outline:
    LLM coherence failures.
 5. What feedback is needed: real Markdown files that break layout, overflow, or
    editability.
+6. How mdpr-skill fits: optional agent review hints before deterministic MDPR
+   rendering.
 
 Call to action:
 
@@ -117,6 +144,43 @@ previews.
 
 If anyone has a Markdown file that usually breaks when converted into slides, I
 would be interested in seeing the smallest reproducible snippet.
+```
+
+## LLM / Agent Tooling Post
+
+Title:
+
+```text
+Using LLMs for slide review, not slide layout: MDPR + mdpr-skill
+```
+
+Body:
+
+```text
+I have been building a split-responsibility presentation workflow:
+
+- MDPR: deterministic Markdown-to-editable-PPTX runtime
+- mdpr-skill: optional Codex companion for semantic hints, icon-keyword ideas,
+  visual review, and QA notes
+
+The design goal is to avoid a common problem I see in LLM-generated slide
+decks: the agent makes final decisions about coordinates, colors, emphasis,
+spacing, and object geometry, so coherence drifts from slide to slide.
+
+In this workflow the LLM can suggest; MDPR renders.
+
+MDPR owns parsing, slide splitting, layout selection, theme colors, z-order,
+overflow checks, and editable PPTX output. mdpr-skill can only provide weak
+metadata and review notes before MDPR builds the deck.
+
+Runtime:
+https://github.com/ch040602/MdPr
+
+Optional skill:
+https://github.com/ch040602/mdpr-skill
+
+Install:
+npm install -g @mdpresent/cli
 ```
 
 ## Where To Share

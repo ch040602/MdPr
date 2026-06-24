@@ -12,6 +12,7 @@ runtime.
 
 [Preview gallery](https://ch040602.github.io/MdPr/theme-preview/) ·
 [Download preview PPTX](https://github.com/ch040602/MdPr/releases/tag/v0.1.0-preview) ·
+[Optional agent review](https://github.com/ch040602/mdpr-skill) ·
 [Quick usage](#quick-usage) ·
 [How it differs](#how-mdpr-differs) ·
 [Report a broken deck](https://github.com/ch040602/MdPr/issues/new/choose)
@@ -22,6 +23,7 @@ runtime.
 - **Runtime**: rule-based parsing, splitting, layout, validation, theme selection, and rendering.
 - **LLM-advised quality**: use [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) when you want agent-side semantic hints, review loops, or visual-quality advice before MDPR builds the deck.
 - **Agent boundary**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) may pass compact semantic hints through `--hints`, but MDPR rejects final layout/style decisions. MDPR owns final structure and output.
+- **Install path**: install MDPR with `npm install -g @mdpresent/cli`; use `mdpr-skill` only when you want optional Codex-assisted review before rendering.
 - **README assets**: the main teaser is built from `examples/readme-teaser/deck.md` with `--pipeline-one-page`; gallery images come from the shared theme preview deck. There is no README-only renderer.
 
 Language variants: [Korean](README.ko.md), [Chinese](README.zh.md)
@@ -49,6 +51,26 @@ Best fit:
 - research notes that need tables, diagrams, and claims preserved
 - data/product updates that need repeatable PPTX output in CI
 - teams that want optional LLM review without giving an agent final slide geometry
+
+## MDPR + mdpr-skill
+
+MDPR is the product runtime. It parses Markdown, plans slides, validates visual
+constraints, and writes editable PPTX/HTML/PDF artifacts. It does not need an
+LLM, API key, or agent process for normal builds.
+
+[`mdpr-skill`](https://github.com/ch040602/mdpr-skill) is the optional Codex
+review companion. It can suggest compact semantic hints, icon-search keywords,
+Markdown cleanup notes, and visual QA concerns before MDPR builds or rebuilds a
+deck. The skill is useful when you want LLM-advised polish without letting the
+agent own final coordinates, colors, z-order, shape geometry, exact icons, or
+renderer object IDs.
+
+```text
+Markdown
+  -> optional mdpr-skill review hints
+  -> MDPR deterministic parsing, splitting, layout, validation
+  -> editable PPTX / HTML / PDF
+```
 
 ## How MDPR Differs
 
