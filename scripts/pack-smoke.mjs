@@ -6,7 +6,16 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const packageNames = ["core", "layout", "override", "render-html", "render-pdf", "render-pptx", "cli"];
+const packageNames = [
+  "core",
+  "layout",
+  "override",
+  "render-html",
+  "render-pdf",
+  "render-pptx",
+  "validation",
+  "cli",
+];
 const tempRoot = mkdtempSync(join(tmpdir(), "mdpresent-pack-smoke-"));
 const packDir = join(tempRoot, "packs");
 const smokeDir = join(tempRoot, "smoke");
