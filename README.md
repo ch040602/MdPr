@@ -1,5 +1,9 @@
 # mdpresent
 
+[![npm version](https://img.shields.io/npm/v/@mdpresent/cli.svg)](https://www.npmjs.com/package/@mdpresent/cli)
+[![Preview gallery](https://img.shields.io/badge/preview-gallery-0f766e)](https://ch040602.github.io/MdPr/theme-preview/)
+[![Download PPTX](https://img.shields.io/badge/download-preview%20PPTX-8a4fff)](https://github.com/ch040602/MdPr/releases/tag/v0.1.0-preview)
+
 ![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=clean-pipeline-one-page)
 
 `mdpresent` / **MDPR** generates editable, visually checked PowerPoint decks
