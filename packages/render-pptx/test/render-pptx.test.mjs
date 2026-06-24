@@ -44,7 +44,7 @@ function shapeXmlContainingText(xml, text) {
 }
 
 function shapeTransform(shapeXml) {
-  const xfrm = /<a:off x="(-?\d+)" y="(-?\d+)"\/><a:ext cx="(-?\d+)" cy="(-?\d+)"\/>/.exec(shapeXml ?? "");
+  const xfrm = /<a:off x="(-?\d+)" y="(-?\d+)"\/>\s*<a:ext cx="(-?\d+)" cy="(-?\d+)"\/>/.exec(shapeXml ?? "");
   assert.ok(xfrm, `missing transform for shape: ${shapeXml?.slice(0, 180)}`);
   return {
     x: Number(xfrm[1]) / EMU_PER_INCH,
@@ -52,6 +52,15 @@ function shapeTransform(shapeXml) {
     w: Number(xfrm[3]) / EMU_PER_INCH,
     h: Number(xfrm[4]) / EMU_PER_INCH,
   };
+}
+
+function slideObjectsWithTransforms(xml) {
+  return [...xml.matchAll(/<p:(sp|pic|cxnSp)\b[\s\S]*?<\/p:\1>/g)]
+    .map((match, index) => ({ tag: match[1], index, xml: match[0], ...shapeTransform(match[0]) }));
+}
+
+function sameNumber(left, right, tolerance = 0.01) {
+  return Math.abs(left - right) <= tolerance;
 }
 
 test("icon catalog searches keyword candidates before choosing a semantic icon", () => {
@@ -1745,6 +1754,62 @@ test("renderPptx adds editable number badges and accent-colored key text for ite
     const itemCenterY = itemText.y + itemText.h / 2;
     assert.equal(Math.abs(markerCenterY - itemCenterY) < 0.01, true);
     assert.equal(itemText.h < 0.75, true, `item text box should be compact and centered, got ${itemText.h}`);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx places foreground decorations above region background surfaces", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-decoration-zorder-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].title = "Layering";
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "list-1",
+      type: "bulletList",
+      items: ["Alpha", "Beta"],
+      listItems: [
+        { text: "Alpha", ordered: false, level: 0, runs: [{ text: "Alpha" }] },
+        { text: "Beta", ordered: false, level: 0, runs: [{ text: "Beta" }] },
+      ],
+    },
+  ];
+  deck.layout.slides[0].layout = { preset: "grid", columns: 2, rows: 1 };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    { id: "item-1", role: "item", blockIds: ["list-1#0"], x: 0.9, y: 1.7, w: 5.5, h: 1.7, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 } },
+    { id: "item-2", role: "item", blockIds: ["list-1#1"], x: 6.9, y: 1.7, w: 5.5, h: 1.7, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 } },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "executive" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+    const objects = slideObjectsWithTransforms(xml);
+    const surface = objects.find((object) =>
+      object.tag === "pic"
+      && sameNumber(object.x, 0.9)
+      && sameNumber(object.y, 1.7)
+      && sameNumber(object.w, 5.5)
+      && sameNumber(object.h, 1.7)
+    );
+    const accent = objects.find((object) =>
+      object.tag === "sp"
+      && sameNumber(object.x, 0.9)
+      && sameNumber(object.y, 1.7)
+      && sameNumber(object.w, 0.08)
+      && sameNumber(object.h, 1.7)
+    );
+    const text = objects.find((object) => object.xml.includes("<a:t>Alpha</a:t>"));
+
+    assert.ok(surface, "expected an SVG-backed region surface for item-1");
+    assert.ok(accent, "expected a foreground accent shape for item-1");
+    assert.ok(text, "expected item text for item-1");
+    assert.equal(accent.index > surface.index, true, "accent must be created after the background surface so it remains visible");
+    assert.equal(text.index > accent.index, true, "content must remain above foreground decorations");
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

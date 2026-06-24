@@ -63,9 +63,11 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
       const roleFontSizes = fontSizesByRole(layoutSlide, layout.theme.bodyFontSize);
 
       slide.background = { color: isCover ? coverBackgroundColor(designPreset) : designPreset.backgroundColor };
+      // PowerPoint z-order follows creation order: background, surfaces,
+      // foreground decorations, then content.
       addPresetBackground(slide, designPreset, layout.slideSize);
       if (isCover) addCoverTemplateDecorations(slide, designPreset, layout.slideSize);
-      addLayoutDecorations(slide, layoutSlide, designPreset, sourceSlide);
+      addLayoutBackgroundDecorations(slide, layoutSlide, designPreset);
       addThemeGalleryLabel(slide, designPreset, layout.slideSize, options.themeGalleryPresets);
       for (const asset of templateAssets.images) {
         slide.addImage({ path: asset.path, x: asset.x, y: asset.y, w: asset.w, h: asset.h });
@@ -77,6 +79,8 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
         if (layoutSlide.layout.preset === "toc" && region.role === "item") continue;
         addRegionSurface(slide, designPreset, region);
       }
+
+      addLayoutForegroundDecorations(slide, layoutSlide, designPreset, sourceSlide);
 
       for (const region of [...layoutSlide.regions].sort((left, right) => left.zIndex - right.zIndex)) {
         if (region.role !== "title" && region.blockIds.length === 0) continue;
@@ -2021,11 +2025,7 @@ function uniformDiagramLabelFontSize(boxes: DiagramNodeBox[], baseFontSize: numb
   return Math.min(...boxes.map((box) => diagramLabelFontSize(box.node.label, box.w, box.h, baseFontSize)));
 }
 
-function addLayoutDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens, sourceSlide?: SlideIR): void {
-  addTocDecorations(slide, layoutSlide, preset);
-  addVerticalListDecorations(slide, layoutSlide, preset);
-  addRegionAccents(slide, layoutSlide, preset);
-  addTextIconAsideDecoration(slide, layoutSlide, preset, sourceSlide);
+function addLayoutBackgroundDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
   if (layoutSlide.layout.preset !== "pentagon") return;
   const itemRegions = layoutSlide.regions
     .filter((region) => region.role === "item")
@@ -2039,6 +2039,13 @@ function addLayoutDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["sli
     const to = { x: next.x + next.w / 2, y: next.y + next.h / 2 };
     addNormalizedLine(slide, from, to, preset.secondaryColor, false, { pt: 1.2, transparency: 12 });
   }
+}
+
+function addLayoutForegroundDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens, sourceSlide?: SlideIR): void {
+  addTocDecorations(slide, layoutSlide, preset);
+  addVerticalListDecorations(slide, layoutSlide, preset);
+  addRegionAccents(slide, layoutSlide, preset);
+  addTextIconAsideDecoration(slide, layoutSlide, preset, sourceSlide);
 }
 
 function addTocDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
