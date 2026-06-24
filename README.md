@@ -7,6 +7,7 @@ from Markdown with deterministic layout rules instead of a black-box LLM
 runtime.
 
 [Preview gallery](https://ch040602.github.io/MdPr/theme-preview/) ·
+[Download preview PPTX](https://github.com/ch040602/MdPr/releases/tag/v0.1.0-preview) ·
 [Quick usage](#quick-usage) ·
 [How it differs](#how-mdpr-differs) ·
 [Report a broken deck](https://github.com/ch040602/MdPr/issues/new/choose)
