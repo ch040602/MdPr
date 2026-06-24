@@ -2,7 +2,14 @@
 
 ![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=clean-pipeline-one-page)
 
-`mdpresent` is a deterministic Markdown presentation runtime.
+`mdpresent` / **MDPR** generates editable, visually checked PowerPoint decks
+from Markdown with deterministic layout rules instead of a black-box LLM
+runtime.
+
+[Preview gallery](https://ch040602.github.io/MdPr/theme-preview/) ·
+[Quick usage](#quick-usage) ·
+[How it differs](#how-mdpr-differs) ·
+[Report a broken deck](https://github.com/ch040602/MdPr/issues/new/choose)
 
 - **Input**: Markdown documents.
 - **Intermediate model**: `Presentation IR` and `Layout IR`.
@@ -14,7 +21,10 @@
 
 Language variants: [Korean](README.ko.md), [Chinese](README.zh.md)
 
-Contributions: [Contributing guide](CONTRIBUTING.md)
+Contributions: [Contributing guide](CONTRIBUTING.md) ·
+[Community feedback guide](docs/community-feedback.md) ·
+[International launch kit](docs/international-launch-kit.md) ·
+[Open a Markdown/PPTX issue](https://github.com/ch040602/MdPr/issues/new/choose)
 
 ## What It Does
 
@@ -27,6 +37,27 @@ Contributions: [Contributing guide](CONTRIBUTING.md)
 - **Object coverage**: supports native tables, native charts, proof objects, icon slots, SVG-backed surfaces, and bounded diagram connectors.
 - **Deterministic validation**: checks overflow, generated artifact contracts, slide counts, surface markers, language, and manifest drift.
 - **Skill-side review**: LLM-advised layout critique, visual polish, icon keyword ideas, and high-quality deck guidance belong in [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage), not MDPR runtime.
+
+Best fit:
+
+- engineering reports that must become editable PowerPoint decks
+- research notes that need tables, diagrams, and claims preserved
+- data/product updates that need repeatable PPTX output in CI
+- teams that want optional LLM review without giving an agent final slide geometry
+
+## How MDPR Differs
+
+| Compared with | MDPR focus |
+| --- | --- |
+| **Pandoc** | Pandoc is a broad document converter. MDPR is narrower: PPTX-first layout planning, editability, overflow validation, object preservation, and generated preview QA. |
+| **Marp / Slidev** | HTML/CSS slide tools are excellent for web decks. MDPR targets editable PowerPoint objects and downstream PPTX workflows. |
+| **LLM slide generators** | MDPR keeps deterministic ownership of parsing, splitting, layout, colors, z-order, and renderer output. [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) can suggest hints, but it cannot own final coordinates or style. |
+| **Template-only automation** | MDPR derives slide structure from Markdown semantics, then applies reusable layout and theme grammar rather than filling a fixed master slide. |
+
+If a Markdown file breaks the layout, opens as non-editable PPTX, clips text,
+or loses graph/table structure, please open a
+[Markdown edge-case issue](https://github.com/ch040602/MdPr/issues/new/choose)
+with the smallest reproducible Markdown snippet.
 
 ## Preview Gallery
 

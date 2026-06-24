@@ -1,0 +1,24 @@
+name: Showcase / real-world deck
+description: Share a deck, workflow, or example that MDPR should support well.
+title: "[Showcase]: "
+labels: ["showcase", "community"]
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow
+      description: What kind of document are you turning into PPTX?
+      placeholder: Research notes, weekly product update, data report, teaching deck, internal engineering review...
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample or link
+      description: Share Markdown, screenshots, generated output, or a public example if possible.
+  - type: textarea
+    id: wish
+    attributes:
+      label: What would make MDPR useful for this?
+      description: Editing needs, layout expectations, export targets, missing objects, integrations, or quality checks.
+

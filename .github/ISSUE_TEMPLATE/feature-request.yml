@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest a deterministic MDPR feature or integration.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What presentation workflow would this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the deterministic rule, CLI option, renderer feature, or integration.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Parser
+        - Slide splitting
+        - Layout planning
+        - Theme/color system
+        - PPTX rendering
+        - HTML/PDF export
+        - Validation
+        - CLI
+        - GitHub Actions / CI
+        - Documentation
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+

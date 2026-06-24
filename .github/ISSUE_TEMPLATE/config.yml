@@ -1,0 +1,9 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Preview gallery
+    url: https://ch040602.github.io/MdPr/theme-preview/
+    about: Inspect generated PPTX-to-PNG examples before filing a visual issue.
+  - name: mdpr-skill
+    url: https://github.com/ch040602/mdpr-skill
+    about: Use this companion when you want optional LLM-advised review hints before MDPR builds.
+

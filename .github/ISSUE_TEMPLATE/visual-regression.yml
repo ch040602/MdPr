@@ -1,0 +1,38 @@
+name: Visual regression
+description: Report generated slide output that looks wrong or loses coherence.
+title: "[Visual regression]: "
+labels: ["visual-regression", "needs-triage"]
+body:
+  - type: textarea
+    id: source
+    attributes:
+      label: Source Markdown or fixture
+      description: Link to the fixture or paste a minimal Markdown sample.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Generated artifacts
+      description: Attach generated PNG/PPTX files or link to the preview gallery slide.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: What looks wrong?
+      options:
+        - label: Text is clipped, too small, or outside its shape.
+        - label: Marker/icon/badge alignment is off.
+        - label: Connector/graph edges are broken or hidden.
+        - label: Objects overflow the slide bounds.
+        - label: Same-depth objects use inconsistent decoration.
+        - label: Theme style looks like a palette/background swap only.
+        - label: Generated PPTX objects are not editable enough.
+  - type: textarea
+    id: expectation
+    attributes:
+      label: Expected visual behavior
+      description: Describe the intended layout, hierarchy, or coherence rule.
+

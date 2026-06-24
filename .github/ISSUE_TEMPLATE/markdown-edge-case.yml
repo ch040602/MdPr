@@ -1,0 +1,60 @@
+name: Markdown edge case
+description: Report Markdown that does not split, layout, or render correctly.
+title: "[Markdown edge case]: "
+labels: ["markdown-edge-case", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing MDPR. Small reproducible Markdown snippets are the
+        fastest way to improve deterministic PPTX layout quality.
+  - type: textarea
+    id: markdown
+    attributes:
+      label: Minimal Markdown input
+      description: Paste the smallest Markdown snippet that reproduces the problem.
+      render: markdown
+    validations:
+      required: true
+  - type: dropdown
+    id: problem-area
+    attributes:
+      label: Problem area
+      options:
+        - Slide splitting
+        - Text overflow or clipping
+        - Table rendering
+        - Chart rendering
+        - Diagram or connector rendering
+        - Image placement
+        - Theme or typography
+        - PPTX editability
+        - HTML/PDF export
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should the generated deck preserve or show?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include screenshots, exported PNGs, manifest snippets, or diagnostics when possible.
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      placeholder: mdpresent build deck.md --to pptx --out dist --visual
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: OS, Node version, PowerPoint/LibreOffice version if relevant
+
