@@ -10,9 +10,10 @@ import type { LayoutIR } from "@mdpresent/layout";
 import { planLayout, planSlideLayoutWithSpec, rankLayoutCandidates, validateLayoutOverflow } from "@mdpresent/layout";
 import { renderHtml } from "@mdpresent/render-html";
 import { renderPdf } from "@mdpresent/render-pdf";
-import type { DesignPresetName } from "@mdpresent/render-pptx";
+import type { DesignPresetName, PptxObjectMapEntry } from "@mdpresent/render-pptx";
 import { renderPptx } from "@mdpresent/render-pptx";
-import { applyOverrides, diffLayout, type LayoutDiff, type OverrideManifest } from "@mdpresent/override";
+import { applyOverrides, diffLayout, type LayoutDiff, type OverrideManifest, type OverrideOperation } from "@mdpresent/override";
+import { themeConfigFromPack, validateMdprPack, type MdprPack, type PackValidationResult } from "@mdpresent/pack";
 import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createVisualValidationSummary, visualValidationDiagnostics } from "@mdpresent/validation";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import { parse as parseYaml } from "yaml";
@@ -28,6 +29,11 @@ export type OverrideSource = {
 
 export type AgentHintSource = {
   path: string;
+};
+
+export type PackSource = {
+  path: string;
+  validation: PackValidationResult;
 };
 
 export type AgentHintSummary = {
@@ -51,6 +57,7 @@ export type OrchestrationOptions = {
   visualValidation?: boolean;
   coherenceValidation?: boolean;
   strict?: boolean;
+  packPath?: string;
 };
 
 export type DeckPlan = {
@@ -60,6 +67,7 @@ export type DeckPlan = {
   presentation: PresentationIR;
   layout: LayoutIR;
   overrideDiff?: LayoutDiff[];
+  pack?: PackSource;
   agentHints: AgentHintSummary;
   diagnostics: Diagnostic[];
 };
@@ -86,19 +94,25 @@ export type ValidationResult = DeckPlan & {
 
 export function createDeckPlan(inputPath: string, options: OrchestrationOptions = {}): DeckPlan {
   const configDiagnostics: Diagnostic[] = [];
-  const config = resolveEffectiveConfig(options, configDiagnostics);
+  const pack = readPackFile(options.packPath, configDiagnostics);
+  const config = resolveEffectiveConfig({
+    ...options,
+    cliConfig: mergeConfigPatch(options.cliConfig, pack?.pack ? { theme: themeConfigFromPack(pack.pack) } : undefined),
+  }, configDiagnostics);
   const markdown = readFileSync(inputPath, "utf-8");
   const sourceSha256 = sha256(markdown);
   const agentHints = readAgentHints(options.hintPath, sourceSha256, Boolean(options.strict));
+  const overrideManifest = options.overridePath ? readOverrideFile(options.overridePath, configDiagnostics) : undefined;
+  const planConfig = overrideManifest ? applyPreLayoutSplitOverrides(config, overrideManifest) : config;
   const doc = options.parser === "pandoc"
     ? parseMarkdownWithPandoc(markdown, { sourcePath: inputPath })
     : parseMarkdown(markdown, inputPath);
-  const presentation = applyAgentHintsToPresentation(planPresentation(doc, config), agentHints.acceptedHints);
-  const overrideManifest = options.overridePath ? readOverrideFile(options.overridePath, configDiagnostics) : undefined;
-  const initialLayout = resolveLayoutTextOverflow(planLayout(presentation, config), presentation, config, {
+  const presentation = applyAgentHintsToPresentation(planPresentation(doc, planConfig), agentHints.acceptedHints);
+  const postLayoutOverrideManifest = overrideManifest ? withoutPreLayoutSplitOverrides(overrideManifest) : undefined;
+  const initialLayout = resolveLayoutTextOverflow(planLayout(presentation, planConfig), presentation, planConfig, {
     allowCandidateReflow: !overrideManifest,
   });
-  const layout = overrideManifest ? applyOverrides(initialLayout, overrideManifest, presentation) : initialLayout;
+  const layout = postLayoutOverrideManifest ? applyOverrides(initialLayout, postLayoutOverrideManifest, presentation) : initialLayout;
   const overrideDiff = overrideManifest ? diffLayout(initialLayout, layout) : undefined;
   const diagnostics: Diagnostic[] = [
     ...presentation.diagnostics,
@@ -108,19 +122,73 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
   ];
 
   return {
-    config,
+    config: planConfig,
     configSources: [
       { kind: "default" },
       ...(options.configPath ? [{ kind: "config-file" as const, path: options.configPath }] : []),
       ...(options.cliConfig ? [{ kind: "cli-args" as const, values: options.cliConfig }] : []),
     ],
     overrideSource: options.overridePath ? { path: options.overridePath } : undefined,
+    pack: pack ? { path: pack.path, validation: pack.validation } : undefined,
     presentation,
     layout,
     overrideDiff,
     agentHints,
     diagnostics,
   };
+}
+
+function applyPreLayoutSplitOverrides(config: Config, manifest: OverrideManifest): Config {
+  const splitOperations = normalizeOverrideOperations(manifest)
+    .filter((operation) => operation.op === "setSplit")
+    .filter((operation) => operation.target.title || operation.target.headingPath);
+  if (splitOperations.length === 0) return config;
+  const next = structuredClone(config);
+  next.split.overrides = [
+    ...(next.split.overrides ?? []),
+    ...splitOperations.map((operation) => ({
+      target: {
+        ...(operation.target.title ? { title: operation.target.title } : {}),
+        ...(operation.target.headingPath ? { headingPath: operation.target.headingPath } : {}),
+      },
+      ...(typeof operation.value.forceSingleSlide === "boolean" ? { forceSingleSlide: operation.value.forceSingleSlide } : {}),
+      ...(typeof operation.value.splitBy === "string" ? { splitBy: operation.value.splitBy as NonNullable<Config["split"]["overrides"]>[number]["splitBy"] } : {}),
+      ...(typeof operation.value.maxDensity === "number" ? { maxDensity: operation.value.maxDensity } : {}),
+    })),
+  ];
+  return next;
+}
+
+function withoutPreLayoutSplitOverrides(manifest: OverrideManifest): OverrideManifest | undefined {
+  if (manifest.operations) {
+    const operations = manifest.operations.filter((operation) => operation.op !== "setSplit");
+    return operations.length > 0 ? { ...manifest, operations } : undefined;
+  }
+  if (manifest.overrides) {
+    const overrides = manifest.overrides
+      .map((entry) => ({ ...entry, patch: { ...entry.patch, split: undefined } }))
+      .filter((entry) => Object.values(entry.patch).some((value) => value !== undefined));
+    return overrides.length > 0 ? { ...manifest, overrides } : undefined;
+  }
+  return manifest;
+}
+
+function normalizeOverrideOperations(manifest: OverrideManifest): OverrideOperation[] {
+  if (manifest.operations) return manifest.operations;
+  return (manifest.overrides ?? []).flatMap((entry) => {
+    const operations: OverrideOperation[] = [];
+    if (entry.patch.layout) operations.push({ op: "setLayout", target: entry.target, value: entry.patch.layout, reason: entry.reason });
+    if (entry.patch.typography) operations.push({ op: "setTypography", target: entry.target, value: entry.patch.typography, reason: entry.reason });
+    if (entry.patch.background) operations.push({ op: "setBackground", target: entry.target, value: entry.patch.background, reason: entry.reason });
+    if (entry.patch.split) operations.push({ op: "setSplit", target: entry.target, value: entry.patch.split, reason: entry.reason });
+    if (entry.patch.overflow) operations.push({ op: "setOverflow", target: entry.target, value: entry.patch.overflow, reason: entry.reason });
+    if (entry.patch.slots) {
+      for (const [slot, value] of Object.entries(entry.patch.slots)) {
+        operations.push({ op: "setSlot", target: { ...entry.target, slot }, value, reason: entry.reason });
+      }
+    }
+    return operations;
+  });
 }
 
 export function inspectDeck(inputPath: string, options: OrchestrationOptions = {}): SlideIR[] {
@@ -132,12 +200,14 @@ export function planDeck(inputPath: string, options: OrchestrationOptions = {}):
 }
 
 export async function buildDeck(inputPath: string, options: BuildOptions = {}): Promise<BuildResult> {
+  const buildStartedAt = Date.now();
   const deck = createDeckPlan(inputPath, options);
   assertBuildCanRender(deck, options);
   const formats = options.formats ?? ["html"];
   const outDir = options.outDir ?? "dist";
   const renderJobs: Promise<string>[] = [];
   let pptxJob: Promise<string> | undefined;
+  let pptxObjects: PptxObjectMapEntry[] = [];
 
   mkdirSync(outDir, { recursive: true });
 
@@ -161,7 +231,7 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
     const outPath = formats.includes("pptx") ? join(outDir, "deck.pptx") : join(outDir, ".mdpresent-pdf", "deck.pptx");
     pptxJob = (async () => {
       mkdirSync(dirname(outPath), { recursive: true });
-      await renderPptx(
+      const result = await renderPptx(
         { presentation: deck.presentation, layout: deck.layout },
         {
           outPath,
@@ -171,6 +241,7 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
           lockBackgroundToMaster: deck.config.pptx.lockBackgroundToMaster,
         },
       );
+      pptxObjects = result.objectMap;
       return outPath;
     })();
     if (formats.includes("pptx")) renderJobs.push(pptxJob);
@@ -191,7 +262,10 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
   const designLock = createDesignLock(deck);
   enforceOrWriteDesignLock(designLockPath, designLock, Boolean(options.updateDesignLock));
   const manifestPath = join(outDir, "mdpresent-manifest.json");
-  const manifest = createBuildManifest(inputPath, deck, writtenFiles, designLockPath, options.visualValidation);
+  const manifest = createBuildManifest(inputPath, deck, writtenFiles, designLockPath, options.visualValidation, {
+    buildMs: Date.now() - buildStartedAt,
+    pptxObjects,
+  });
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
 
   return { ...deck, writtenFiles: [...writtenFiles, manifestPath, designLockPath], manifestPath, designLockPath };
@@ -272,8 +346,18 @@ function createBuildManifest(
   writtenFiles: string[],
   designLockPath: string,
   visualValidation: boolean | undefined,
+  runtime: { buildMs: number; pptxObjects: PptxObjectMapEntry[] } = { buildMs: 0, pptxObjects: [] },
 ) {
   const source = readFileSync(inputPath, "utf-8");
+  const artifacts = writtenFiles.map(createArtifactContract);
+  const layoutOverflow = validateLayoutOverflow(deck.layout, createContentIndex(deck.presentation)).map((diagnostic) => ({
+    level: diagnostic.level,
+    code: diagnostic.code,
+    message: diagnostic.message,
+    slideId: diagnostic.slideId,
+  }));
+  const visual = visualValidation ? createVisualValidationSummary(deck.layout) : null;
+  const coherence = createCoherenceValidationSummary(deck.presentation, deck.layout);
   return {
     schemaVersion: 1,
     engine: "mdpresent",
@@ -289,6 +373,10 @@ function createBuildManifest(
       source: deck.overrideSource,
       diff: deck.overrideDiff ?? [],
     } : null,
+    pack: deck.pack ? {
+      source: { path: deck.pack.path },
+      validation: deck.pack.validation,
+    } : null,
     agentHints: {
       enabled: deck.agentHints.enabled,
       source: deck.agentHints.source ?? null,
@@ -301,21 +389,55 @@ function createBuildManifest(
     presentationMode: deck.config.deck.presentationMode ?? "normal",
     slideCount: deck.presentation.slides.length,
     outputs: writtenFiles,
-    artifacts: writtenFiles.map(createArtifactContract),
+    artifacts,
     designLock: designLockPath,
+    pptxObjects: runtime.pptxObjects,
     diagnostics: deck.diagnostics,
     validation: {
-      layoutOverflow: validateLayoutOverflow(deck.layout, createContentIndex(deck.presentation)).map((diagnostic) => ({
-        level: diagnostic.level,
-        code: diagnostic.code,
-        message: diagnostic.message,
-        slideId: diagnostic.slideId,
-      })),
-      visual: visualValidation ? createVisualValidationSummary(deck.layout) : null,
-      coherence: createCoherenceValidationSummary(deck.presentation, deck.layout),
+      layoutOverflow,
+      visual,
+      coherence,
       overflowResolution: createOverflowResolutionSummary(deck.presentation, deck.layout),
     },
+    metrics: createBuildMetrics(deck, artifacts, layoutOverflow, visual, coherence, runtime.buildMs),
   };
+}
+
+function createBuildMetrics(
+  deck: DeckPlan,
+  artifacts: Array<ReturnType<typeof createArtifactContract>>,
+  layoutOverflow: Array<{ level: string; code?: string }>,
+  visual: ReturnType<typeof createVisualValidationSummary> | null,
+  coherence: ReturnType<typeof createCoherenceValidationSummary>,
+  buildMs: number,
+) {
+  const outputBytes: Record<string, number> = {};
+  for (const artifact of artifacts) {
+    outputBytes[artifact.format] = (outputBytes[artifact.format] ?? 0) + artifact.bytes;
+  }
+  const visualDiagnostics = visual?.diagnostics ?? [];
+  const coherenceDiagnostics = coherence.diagnostics ?? [];
+  return {
+    slideCount: deck.presentation.slides.length,
+    overflowCount: layoutOverflow.filter((diagnostic) => diagnostic.level === "error").length,
+    coherenceWarningCount: coherenceDiagnostics.filter((diagnostic) => diagnostic.level === "warning").length,
+    coherenceErrorCount: coherenceDiagnostics.filter((diagnostic) => diagnostic.level === "error").length,
+    visualWarningCount: visualDiagnostics.filter((diagnostic) => diagnostic.level === "warning").length,
+    visualErrorCount: visualDiagnostics.filter((diagnostic) => diagnostic.level === "error").length,
+    minFontPt: minimumFontPt(deck.layout),
+    textClipRiskCount: layoutOverflow.filter((diagnostic) => String(diagnostic.code ?? "").includes("TEXT_OVERFLOW")).length,
+    contrastFailures: visualDiagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_CONTRAST").length,
+    connectorWarnings: visualDiagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_CONNECTOR_CLEARANCE").length,
+    buildMs,
+    outputBytes,
+  };
+}
+
+function minimumFontPt(layout: LayoutIR): number {
+  const values = layout.slides
+    .flatMap((slide) => slide.regions.flatMap((region) => [region.typography?.fontSize, region.typography?.minFontSize]))
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  return values.length ? Math.min(...values) : layout.theme.minFontSize;
 }
 
 function createArtifactContract(path: string) {
@@ -498,6 +620,43 @@ function readOverrideFile(overridePath: string, diagnostics: Diagnostic[]): Over
   }
 }
 
+function readPackFile(packPath: string | undefined, diagnostics: Diagnostic[]): { path: string; pack?: MdprPack; validation: PackValidationResult } | undefined {
+  if (!packPath) return undefined;
+  if (!existsSync(packPath)) {
+    const validation: PackValidationResult = {
+      valid: false,
+      diagnostics: [{
+        level: "error",
+        code: "PACK_FILE_NOT_FOUND",
+        message: `Pack file was requested but not found: ${packPath}`,
+      }],
+    };
+    diagnostics.push(...validation.diagnostics);
+    return { path: packPath, validation };
+  }
+  try {
+    const pack = JSON.parse(readFileSync(packPath, "utf-8")) as MdprPack;
+    const validation = validateMdprPack(pack);
+    diagnostics.push(...validation.diagnostics.map((diagnostic) => ({
+      level: diagnostic.level,
+      code: diagnostic.code,
+      message: diagnostic.message,
+    })));
+    return { path: packPath, pack: validation.valid ? pack : undefined, validation };
+  } catch (error) {
+    const validation: PackValidationResult = {
+      valid: false,
+      diagnostics: [{
+        level: "error",
+        code: "PACK_FILE_INVALID",
+        message: `Pack file could not be parsed: ${packPath}. ${error instanceof Error ? error.message : String(error)}`,
+      }],
+    };
+    diagnostics.push(...validation.diagnostics);
+    return { path: packPath, validation };
+  }
+}
+
 function validateOverrideManifest(manifest: OverrideManifest): string | null {
   if (!manifest || manifest.version !== "1.0") return "version must be \"1.0\".";
   const hasOperations = Array.isArray(manifest.operations);
@@ -599,6 +758,13 @@ let agentHintSchemaValidator: ValidateFunction | undefined;
 function mergeConfig(base: Config, override?: DeepPartial<Config>): Config {
   if (!override) return structuredClone(base);
   return mergeObjects(structuredClone(base), override) as Config;
+}
+
+function mergeConfigPatch<T extends Record<string, unknown>>(base?: T, patch?: T): T | undefined {
+  if (!base && !patch) return undefined;
+  if (!base) return patch;
+  if (!patch) return base;
+  return mergeObjects(structuredClone(base), patch) as T;
 }
 
 function mergeObjects(target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> {

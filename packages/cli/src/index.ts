@@ -10,6 +10,8 @@ import {
   type ParserMode,
 } from "@mdpresent/core";
 import { inspectPdfExporterEnvironment } from "@mdpresent/render-pdf";
+import { importPackCandidate, listBuiltInPacks, previewPack, validateMdprPack, type MdprPack } from "@mdpresent/pack";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 const args = process.argv.slice(2);
 const exitCode = await runCli(args);
@@ -22,6 +24,10 @@ export async function runCli(args: string[]): Promise<number> {
     if (args.includes("--pdf")) return doctorPdf();
     printHelp();
     return 1;
+  }
+
+  if (command === "pack") {
+    return runPackCommand(args.slice(1));
   }
 
   const input = args[1];
@@ -56,6 +62,7 @@ export async function runCli(args: string[]): Promise<number> {
       designPreset: readDesignPreset(args),
       cliConfig: readCliConfig(args),
       themeGalleryPresets: readThemeGalleryPresets(args),
+      packPath: readOption(args, "--pack"),
       designLockPath: readOption(args, "--design-lock"),
       updateDesignLock: args.includes("--update-design-lock"),
       visualValidation: args.includes("--visual"),
@@ -102,11 +109,88 @@ async function doctorPdf(): Promise<number> {
   return status.available ? 0 : 1;
 }
 
+function runPackCommand(args: string[]): number {
+  const subcommand = args[0];
+  if (subcommand === "list") {
+    console.log(JSON.stringify(listBuiltInPacks(), null, 2));
+    return 0;
+  }
+
+  const inputPath = args[1];
+  if (!subcommand || !inputPath) {
+    printHelp();
+    return 1;
+  }
+
+  if (!existsSync(inputPath)) {
+    console.error(`Pack input not found: ${inputPath}`);
+    return 1;
+  }
+
+  const parsed = readJsonInput(inputPath);
+  if (!parsed.ok) {
+    const result = {
+      valid: false,
+      diagnostics: [{
+        level: "error",
+        code: "PACK_FILE_INVALID",
+        message: `Pack input could not be parsed: ${inputPath}. ${parsed.message}`,
+      }],
+    };
+    if (args.includes("--json")) console.log(JSON.stringify(result, null, 2));
+    else console.error(`${result.diagnostics[0].level}\t${result.diagnostics[0].code}\t${result.diagnostics[0].message}`);
+    return 1;
+  }
+  const value = parsed.value;
+  if (subcommand === "validate") {
+    const result = validateMdprPack(value);
+    if (args.includes("--json")) console.log(JSON.stringify(result, null, 2));
+    else if (result.valid) console.log("ok");
+    else for (const diagnostic of result.diagnostics) console.log(`${diagnostic.level}\t${diagnostic.code}\t${diagnostic.message}`);
+    return result.valid ? 0 : 1;
+  }
+
+  if (subcommand === "import") {
+    const imported = importPackCandidate({ candidate: value, approved: args.includes("--approved") });
+    const valid = imported.diagnostics.every((diagnostic) => diagnostic.level !== "error");
+    if (!valid) {
+      for (const diagnostic of imported.diagnostics) console.error(`${diagnostic.level}\t${diagnostic.code}\t${diagnostic.message}`);
+      return 1;
+    }
+    const outPath = readOption(args, "--out") ?? "mdpr.pack.json";
+    writeFileSync(outPath, JSON.stringify(imported.pack, null, 2), "utf-8");
+    console.log(`Wrote ${outPath}`);
+    return 0;
+  }
+
+  if (subcommand === "preview") {
+    const result = validateMdprPack(value);
+    if (!result.valid) {
+      for (const diagnostic of result.diagnostics) console.error(`${diagnostic.level}\t${diagnostic.code}\t${diagnostic.message}`);
+      return 1;
+    }
+    console.log(JSON.stringify(previewPack(value as MdprPack), null, 2));
+    return 0;
+  }
+
+  printHelp();
+  return 1;
+}
+
+function readJsonInput(path: string): { ok: true; value: unknown } | { ok: false; message: string } {
+  try {
+    return { ok: true, value: JSON.parse(readFileSync(path, "utf-8")) };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 function readCommonOptions(args: string[]) {
   return {
     configPath: readOption(args, "--config"),
     overridePath: readOption(args, "--override"),
     hintPath: readOption(args, "--hints"),
+    packPath: readOption(args, "--pack"),
     parser: readParserMode(args),
     cliConfig: readCliConfig(args),
     visualValidation: args.includes("--visual"),
@@ -199,11 +283,15 @@ function printHelp() {
 
 Usage:
   mdpresent doctor --pdf
+  mdpresent pack list
+  mdpresent pack validate <mdpr.pack.json> [--json]
+  mdpresent pack import <candidate.json> --approved [--out mdpr.pack.json]
+  mdpresent pack preview <mdpr.pack.json>
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
   mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--hints deck.mdpr-hints.json] [--visual] [--coherence] [--strict] [--json]
-  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style clean|executive|technical|minimalism|newmorphism|glass|data] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,glass] [--hints deck.mdpr-hints.json] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence] [--strict]
+  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style clean|executive|technical|minimalism|newmorphism|glass|data] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,glass] [--pack mdpr.pack.json] [--hints deck.mdpr-hints.json] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence] [--strict]
 
-Config files are validated against schemas/config.schema.json before merging. Optional agent hints are validated against schemas/agent-hint.schema.json and cannot set final layout/style decisions. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
+Config files are validated against schemas/config.schema.json before merging. Approved packs are validated against schemas/mdpr-pack.schema.json and can provide tokenized theme inputs. Optional agent hints are validated against schemas/agent-hint.schema.json and cannot set final layout/style decisions. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
 `);
 }

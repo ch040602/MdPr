@@ -222,6 +222,31 @@ test("renderPptx writes editable text boxes with stable coordinates, centered ti
   }
 });
 
+test("renderPptx returns a stable MDPR object map for future PowerPoint selection bridges", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-object-map-"));
+  const outPath = join(outDir, "deck.pptx");
+
+  try {
+    const result = await renderPptx(sampleDeck, { outPath });
+    assert.ok(Array.isArray(result.objectMap));
+    assert.ok(result.objectMap.length > 0);
+    assert.ok(result.objectMap.some((entry) => entry.slideId === "slide-1" && entry.regionId === "title"));
+    assert.ok(result.objectMap.some((entry) => entry.blockIds.some((blockId) => blockId.startsWith("list-1")) && entry.objectKind === "native-text"));
+    assert.ok(result.objectMap.every((entry) => entry.shapeName.startsWith("mdpr:")));
+    assert.ok(result.objectMap.every((entry) => entry.editable === true));
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+    const titleEntry = result.objectMap.find((entry) => entry.slideId === "slide-1" && entry.regionId === "title");
+    assert.ok(titleEntry);
+    assert.match(xml, new RegExp(`name="${escapeRegExp(titleEntry.shapeName)}"`));
+    assert.doesNotMatch(xml, /name="Text \d+"/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx gives wrapped item text enough height to avoid PowerPoint overlap", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-wrapped-item-height-"));
   const outPath = join(outDir, "deck.pptx");
@@ -383,7 +408,7 @@ test("renderPptx renders plain lists as separate editable text boxes to avoid co
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-plain-list-lines-"));
   const outPath = join(outDir, "deck.pptx");
   const deck = structuredClone(sampleDeck);
-  deck.presentation.slides[0].title = "목차";
+  deck.presentation.slides[0].title = "Agenda";
   deck.presentation.slides[0].blocks = [
     { id: "toc-item-1", type: "listItem", text: "Validation Ring" },
     { id: "toc-item-2", type: "listItem", text: "Readiness Gauge" },
@@ -2233,4 +2258,8 @@ function makePipelineDiagram(labels, cycle = false) {
   const edges = nodes.slice(0, -1).map((node, index) => ({ from: node.id, to: nodes[index + 1].id }));
   if (cycle && nodes.length > 2) edges.push({ from: nodes[nodes.length - 1].id, to: nodes[0].id });
   return { kind: "pipeline", nodes, edges };
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

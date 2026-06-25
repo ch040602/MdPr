@@ -17,6 +17,15 @@ test("CLI package metadata exposes an installable mdpresent binary and packed ru
   assert.ok(pkg.files.includes("dist"));
   assert.equal(existsSync(join(packageRoot, "dist/schemas/config.schema.json")), true);
   assert.equal(existsSync(join(packageRoot, "dist/schemas/agent-hint.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/mdpr-pack.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/diagram-ir.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/component-ir.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/mdpr-selection-context.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/mdpr-ppt-selection.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/mdpr-ppt-pack-candidate.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/mdpr-user-override-candidate.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/mdpr-theme-candidate.schema.json")), true);
+  assert.equal(existsSync(join(packageRoot, "dist/schemas/mdpr-html-design-analysis.schema.json")), true);
 
   assert.ok(process.env.npm_execpath);
   const output = execFileSync(process.execPath, [process.env.npm_execpath, "--dir", packageRoot, "pack", "--dry-run", "--json"], {
@@ -32,14 +41,26 @@ test("CLI package metadata exposes an installable mdpresent binary and packed ru
   assert.equal(files.has("dist/index.d.ts"), true);
   assert.equal(files.has("dist/schemas/config.schema.json"), true);
   assert.equal(files.has("dist/schemas/agent-hint.schema.json"), true);
+  assert.equal(files.has("dist/schemas/mdpr-pack.schema.json"), true);
+  assert.equal(files.has("dist/schemas/diagram-ir.schema.json"), true);
+  assert.equal(files.has("dist/schemas/component-ir.schema.json"), true);
+  assert.equal(files.has("dist/schemas/mdpr-selection-context.schema.json"), true);
+  assert.equal(files.has("dist/schemas/mdpr-ppt-selection.schema.json"), true);
+  assert.equal(files.has("dist/schemas/mdpr-ppt-pack-candidate.schema.json"), true);
+  assert.equal(files.has("dist/schemas/mdpr-user-override-candidate.schema.json"), true);
+  assert.equal(files.has("dist/schemas/mdpr-theme-candidate.schema.json"), true);
+  assert.equal(files.has("dist/schemas/mdpr-html-design-analysis.schema.json"), true);
   assert.equal(files.has("package.json"), true);
 });
 
 test("workspace package metadata declares exports and publish files", () => {
   const packageNames = [
+    "component",
     "core",
+    "diagram",
     "layout",
     "override",
+    "pack",
     "render-html",
     "render-pdf",
     "render-pptx",

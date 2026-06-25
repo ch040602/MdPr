@@ -183,8 +183,9 @@ Rules:
 - Generate JSON schemas from exported unions where practical.
 - Add schema drift tests for layout presets and slide intents.
 - Implement or reject override operations consistently. `moveBlock`,
-  `hideBlock`, and `pinBlock` are implemented; `setSplit` remains explicitly
-  pre-layout only.
+  `hideBlock`, and `pinBlock` are implemented as post-layout operations;
+  `setSplit` is implemented in CLI orchestration as a pre-layout split-planner
+  override.
 - Make build use the same validation gate as validate before rendering
   (implemented for error diagnostics).
 - Add `--strict`, `--allow-warnings`, `--visual`, and `--coherence` policies.

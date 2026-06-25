@@ -1,0 +1,372 @@
+{
+  "source": "pipeline.md",
+  "theme": "sage-editorial",
+  "alignmentEngine": "PowerPoint ShapeRange.Align",
+  "basePlacement": {
+    "z01_canvas": [
+      55,
+      112,
+      1330,
+      580
+    ],
+    "zone_content_panel": [
+      90,
+      150,
+      280,
+      430
+    ],
+    "zone_reasoning_panel": [
+      395,
+      150,
+      270,
+      430
+    ],
+    "zone_rules_panel": [
+      676,
+      150,
+      448,
+      430
+    ],
+    "zone_outputs_panel": [
+      1140,
+      150,
+      230,
+      430
+    ],
+    "start_flag": [
+      190,
+      248,
+      80,
+      36
+    ],
+    "markdown_card": [
+      116,
+      308,
+      228,
+      108
+    ],
+    "splitter_card": [
+      116,
+      448,
+      228,
+      112
+    ],
+    "ir_core_card": [
+      420,
+      238,
+      220,
+      105
+    ],
+    "reasoning_card": [
+      420,
+      400,
+      220,
+      160
+    ],
+    "reasoning_guard": [
+      448,
+      494,
+      164,
+      36
+    ],
+    "rule_engine_card": [
+      715,
+      250,
+      370,
+      80
+    ],
+    "features_card": [
+      696,
+      350,
+      124,
+      102
+    ],
+    "recipes_card": [
+      838,
+      350,
+      124,
+      102
+    ],
+    "theme_card": [
+      980,
+      350,
+      124,
+      102
+    ],
+    "compose_card": [
+      696,
+      464,
+      124,
+      102
+    ],
+    "objects_card": [
+      838,
+      464,
+      124,
+      102
+    ],
+    "decorate_card": [
+      980,
+      464,
+      124,
+      102
+    ],
+    "styled_ir_card": [
+      1157,
+      238,
+      196,
+      105
+    ],
+    "renderers_card": [
+      1157,
+      390,
+      196,
+      105
+    ],
+    "visual_check": [
+      1157,
+      506,
+      196,
+      60
+    ],
+    "coherence_band": [
+      90,
+      610,
+      1220,
+      66
+    ]
+  },
+  "alignedPlacement": {
+    "z01_canvas": [
+      55,
+      112,
+      1330,
+      580
+    ],
+    "zone_content_panel": [
+      90.0,
+      150.0,
+      280,
+      430
+    ],
+    "zone_reasoning_panel": [
+      395.0,
+      150.0,
+      270,
+      430
+    ],
+    "zone_rules_panel": [
+      676.0,
+      150.0,
+      448,
+      430
+    ],
+    "zone_outputs_panel": [
+      1140.0,
+      150.0,
+      230,
+      430
+    ],
+    "start_flag": [
+      190.0,
+      248.0,
+      80,
+      36
+    ],
+    "markdown_card": [
+      116.0,
+      308.0,
+      228,
+      108
+    ],
+    "splitter_card": [
+      116.0,
+      448.0,
+      228,
+      112
+    ],
+    "ir_core_card": [
+      420.0,
+      238.0,
+      220,
+      105
+    ],
+    "reasoning_card": [
+      420.0,
+      400.0,
+      220,
+      160
+    ],
+    "reasoning_guard": [
+      448,
+      494,
+      164,
+      36
+    ],
+    "rule_engine_card": [
+      715.0,
+      250.5,
+      370,
+      80
+    ],
+    "features_card": [
+      696.0,
+      350.0,
+      124,
+      102
+    ],
+    "recipes_card": [
+      838.0,
+      350.0,
+      124,
+      102
+    ],
+    "theme_card": [
+      980.0,
+      350.0,
+      124,
+      102
+    ],
+    "compose_card": [
+      696.0,
+      464.0,
+      124,
+      102
+    ],
+    "objects_card": [
+      838.0,
+      464.0,
+      124,
+      102
+    ],
+    "decorate_card": [
+      980.0,
+      464.0,
+      124,
+      102
+    ],
+    "styled_ir_card": [
+      1157.0,
+      238.0,
+      196,
+      105
+    ],
+    "renderers_card": [
+      1157.0,
+      390.0,
+      196,
+      105
+    ],
+    "visual_check": [
+      1157.0,
+      506.0,
+      196,
+      60
+    ],
+    "coherence_band": [
+      90,
+      610,
+      1220,
+      66
+    ]
+  },
+  "alignmentRules": [
+    {
+      "id": "top-level-regions",
+      "axis": "middle",
+      "members": [
+        "zone_content_panel",
+        "zone_reasoning_panel",
+        "zone_rules_panel",
+        "zone_outputs_panel"
+      ],
+      "direction": "horizontal"
+    },
+    {
+      "id": "content-column",
+      "axis": "center",
+      "members": [
+        "start_flag",
+        "markdown_card",
+        "splitter_card"
+      ],
+      "direction": "vertical"
+    },
+    {
+      "id": "reasoning-column",
+      "axis": "center",
+      "members": [
+        "ir_core_card",
+        "reasoning_card"
+      ],
+      "direction": "vertical"
+    },
+    {
+      "id": "main-horizontal-flow",
+      "axis": "middle",
+      "members": [
+        "ir_core_card",
+        "rule_engine_card",
+        "styled_ir_card"
+      ],
+      "direction": "horizontal"
+    },
+    {
+      "id": "rule-top-row",
+      "axis": "middle",
+      "members": [
+        "features_card",
+        "recipes_card",
+        "theme_card"
+      ],
+      "direction": "horizontal"
+    },
+    {
+      "id": "rule-bottom-row",
+      "axis": "middle",
+      "members": [
+        "compose_card",
+        "objects_card",
+        "decorate_card"
+      ],
+      "direction": "horizontal"
+    },
+    {
+      "id": "rule-left-column",
+      "axis": "center",
+      "members": [
+        "features_card",
+        "compose_card"
+      ],
+      "direction": "vertical"
+    },
+    {
+      "id": "rule-middle-column",
+      "axis": "center",
+      "members": [
+        "recipes_card",
+        "objects_card"
+      ],
+      "direction": "vertical"
+    },
+    {
+      "id": "rule-right-column",
+      "axis": "center",
+      "members": [
+        "theme_card",
+        "decorate_card"
+      ],
+      "direction": "vertical"
+    },
+    {
+      "id": "outputs-column",
+      "axis": "center",
+      "members": [
+        "styled_ir_card",
+        "renderers_card",
+        "visual_check"
+      ],
+      "direction": "vertical"
+    }
+  ]
+}

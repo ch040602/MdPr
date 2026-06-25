@@ -520,7 +520,7 @@ test("planPresentation consumes Pandoc-normalized documents through the existing
     presentation.slides.map((slide) => [slide.role, slide.title, slide.intent]),
     [
       ["cover", "Deck", "title"],
-      ["toc", "목차", "list"],
+      ["toc", "Agenda", "list"],
       ["content", "Capabilities", "list"],
     ],
   );
@@ -668,7 +668,7 @@ test("planPresentation creates cover, toc, and h2 content slides", () => {
     presentation.slides.map((slide) => [slide.role, slide.title, slide.intent]),
     [
       ["cover", "Product", "title"],
-      ["toc", "목차", "list"],
+      ["toc", "Agenda", "list"],
       ["content", "Why it matters", "standard"],
       ["content", "Capabilities", "grid"],
     ],

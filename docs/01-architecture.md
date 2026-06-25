@@ -9,6 +9,7 @@ Markdown
   -> Split Planner
   -> Coherence Grouping
   -> Presentation IR
+  -> Pack Validation / Token Import
   -> Layout Planner (candidate scoring)
   -> Layout IR
   -> Override Resolver
@@ -41,6 +42,26 @@ packages/validation
   Reusable visual and coherence diagnostics over Presentation IR plus Layout IR.
   CLI calls this package instead of owning domain validation rules.
 
+packages/diagram
+  Deterministic diagram type registry, editable node/edge IR validation,
+  connector role normalization, complexity budget checks, and focal accent
+  taste gates.
+
+packages/component
+  Slide-native component taxonomy, slot and token-reference validation,
+  editable-primary-content gates, and rule-based component family summaries.
+
+packages/pack
+  Approved pack validation, theme/component/diagram token import, deterministic
+  preview summaries, and pack command helpers. Packs may affect runtime theme
+  inputs only after schema validation and explicit approval.
+
+schemas/
+  Source-of-truth JSON contracts for runtime IR, config, override, pack,
+  bridge, and design proposal artifacts. `mdpr-skill` and `mdpr-ppt` can keep
+  synchronized copies, but MDPR owns the contract accepted by build,
+  validation, pack import, and override application.
+
 packages/override
   Override manifest loading, schema validation, target resolution, operation
   application, and diffs.
@@ -69,3 +90,6 @@ packages/cli
 6. Optional agent hints may annotate coherence metadata, but deterministic MDPR rules own final output.
 7. Quality improvements preserve source semantics; they classify, group,
    measure, reflow, and validate content without summarizing or rewriting it.
+8. Approved packs are token imports, not agent decisions. They can supply theme,
+   component, and diagram tokens, while MDPR still owns final layout, z-order,
+   object rendering, and validation.

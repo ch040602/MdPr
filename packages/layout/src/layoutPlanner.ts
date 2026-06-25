@@ -9,6 +9,7 @@ export function planLayout(presentation: PresentationIR, config: Config): Layout
     decorationStyle: config.theme.decorationStyle ?? config.theme.designPreset ?? config.pptx.designPreset,
     colorCombination: config.theme.colorCombination,
     colorSeed: config.theme.colorSeed ?? config.theme.primaryColor,
+    useProvidedColors: config.theme.useProvidedColors,
     backgroundColor: config.theme.backgroundColor,
     textColor: config.theme.textColor,
     primaryColor: config.theme.primaryColor,

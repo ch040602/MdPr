@@ -1,48 +1,48 @@
-# 엠디프레젠트
+# mdpresent
 
-## 핵심 원칙
+## Core Principles
 
-> 원본은 마크다운이고 결과물은 렌더링된 발표 보기입니다.
+> The source is Markdown, and the output is a rendered presentation view.
 
-마크다운 원고는 계속 사람이 읽을 수 있어야 합니다.
-슬라이드 분할, 레이아웃 선택, 넘침 검사는 모두 정해진 규칙으로 처리합니다.
+Markdown drafts should remain readable by humans.
+Slide splitting, layout selection, and overflow checks are handled by deterministic rules.
 
-## 생성 흐름
+## Generation Flow
 
 ```text
-마크다운 원고
-  → 구조 분석
-  → 슬라이드 분할
-  → 발표 구조
-  → 레이아웃 계획
-  → 품질 검사
-  → 결과 렌더링
+Markdown draft
+  -> structure analysis
+  -> slide splitting
+  -> presentation structure
+  -> layout planning
+  -> quality validation
+  -> renderer output
 ```
 
-## 규칙 기반 엔진
+## Rule-Based Engine
 
-- 모델 호출 없음: 생성 과정은 외부 모델이나 외부 연결 호출 없이 동작합니다.
-- 규칙 기반: 제목, 밀도, 목록 수, 문장 단위, 도식 신호를 기준으로 배치합니다.
-- 재현 가능성: 같은 원고와 설정은 같은 발표 구조를 만듭니다.
-- 보조 스킬화: 독립적인 명령행 도구이므로 로컬 자동화 스킬로 감쌀 수 있습니다.
+- No model call: generation runs without external model calls or external network calls.
+- Rule-based: placement uses headings, density, item counts, sentence units, and diagram signals.
+- Reproducible: the same manuscript and settings produce the same presentation structure.
+- Skill wrapper friendly: the CLI can be wrapped by local automation skills.
 
-## 마크다운 구조 보존
+## Markdown Structure Preservation
 
-- 목록: 번호, 중첩, 설명 줄을 유지합니다.
-- 강조: 굵게와 기울임을 편집 가능한 글자 효과로 옮깁니다.
-- 인용: 핵심 문장을 별도 강조 영역으로 분리합니다.
-- 도식: 화살표 흐름을 노드와 연결선으로 바꿉니다.
+- Lists: numbering, nesting, and description lines are preserved.
+- Emphasis: bold and italic are mapped into editable text effects.
+- Quotes: key messages can be separated into emphasized regions.
+- Diagrams: arrow flows become nodes and connectors.
 
-## 테마 선택
+## Theme Selection
 
-- 프리셋: 밝은 업무형, 어두운 발표형, 기술 문서형 등 여러 색 조합을 제공합니다.
-- 전환: 같은 발표 구조에 다른 색과 장식을 적용해 비교할 수 있습니다.
-- 유지: 본문, 제목, 카드, 연결선의 역할별 스타일은 테마를 바꿔도 유지됩니다.
-- 편집: 발표 파일에서는 글자와 도형을 계속 직접 수정할 수 있습니다.
+- Presets: several color combinations are available for bright work decks, dark talk decks, and technical documents.
+- Switching: the same presentation structure can be compared with different colors and decoration styles.
+- Consistency: role-based styles for body text, titles, cards, and connectors stay coherent across themes.
+- Editability: text and shapes remain directly editable in the presentation file.
 
-## 품질 검사
+## Quality Validation
 
-- 글자 넘침: 영역 안에 글자가 들어가는지 검사합니다.
-- 도식 연결: 노드 사이 연결선이 끊기지 않도록 좌표 기반으로 그립니다.
-- 페이지 분리: 내용이 많으면 이어지는 슬라이드로 나눕니다.
-- 불필요 문자 제거: 장식용 점이나 빈 항목은 렌더링 전에 제거합니다.
+- Text overflow: checks whether text fits inside its assigned region.
+- Diagram connectors: draws node-to-node connectors from layout coordinates.
+- Page splitting: dense content moves into continuation slides.
+- Noise removal: decorative dots and empty items are removed before rendering.

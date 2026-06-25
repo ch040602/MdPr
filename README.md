@@ -166,6 +166,9 @@ mdpresent validate examples/basic/deck.md --override examples/basic/deck.overrid
 mdpresent validate examples/basic/deck.md --hints examples/basic/deck.mdpr-hints.json --strict
 mdpresent build examples/basic/deck.md --to pptx,pdf,html --out dist --design executive
 mdpresent build examples/basic/deck.md --to pptx --out dist --theme-style glass --theme-color "#8A4FFF" --theme-harmony analogous --visual --coherence
+mdpresent pack import theme-candidate.json --approved --out mdpr.pack.json
+mdpresent pack validate mdpr.pack.json --json
+mdpresent build examples/basic/deck.md --to pptx,html --out dist --pack mdpr.pack.json
 mdpresent build examples/readme-teaser/deck.md --to pptx --out dist/readme-teaser --theme-style clean --theme-color "#0F766E" --theme-harmony split-complementary --pipeline-one-page --visual
 mdpresent build examples/basic/deck.md --to pptx --out dist --template company-master.pptx
 mdpresent build README.md --to pptx --out dist/theme-gallery --theme-gallery clean,minimalism,newmorphism,glass,data
@@ -186,6 +189,16 @@ Pandoc and uses the built-in CommonMark/GFM AST path.
 - `--pipeline-one-page`: creates a single-slide pipeline/teaser composition from multi-section Markdown while keeping the shared parser, layout planner, validation, and renderers
 - `--design`: compatibility alias for legacy/shared preset selection
 - `--theme-gallery`: repeats the same source deck under multiple style presets for visual comparison; README/Actions previews use the pruned distinct-style subset
+- `--pack`: applies an approved, tokenized MDPR pack after schema validation. Packs may provide theme tokens, component tokens, diagram tokens, and PPT effect mappings without requiring an agent at runtime.
+
+Pack commands:
+
+```bash
+mdpresent pack list
+mdpresent pack validate mdpr.pack.json
+mdpresent pack import theme-candidate.json --approved --out mdpr.pack.json
+mdpresent pack preview mdpr.pack.json
+```
 
 ## Coherence Rules
 
@@ -200,8 +213,8 @@ Pandoc and uses the built-in CommonMark/GFM AST path.
 
 ```text
 docs/       Design, rendering, validation, and methodology notes
-schemas/    Config, Override, Presentation IR, and Layout IR schemas
-packages/   Core, layout, override, CLI, and renderers
+schemas/    Runtime IR, config, override, pack, bridge, and design proposal contracts
+packages/   Core, layout, diagram, component, pack, override, CLI, and renderers
 examples/   Example Markdown decks and configs
 scripts/    Shared theme preview export and evaluation utilities
 ```
@@ -211,10 +224,21 @@ Implementation order:
 1. Keep schemas stable unless the task explicitly changes a schema contract.
 2. Build Markdown-to-`Presentation IR` in `packages/core`.
 3. Build `Presentation IR`-to-`Layout IR` in `packages/layout`.
-4. Apply override manifests in `packages/override`.
-5. Keep `packages/render-pptx` as the primary editable-object renderer.
-6. Keep `packages/render-html` as a gallery/preview shell.
-7. Keep `packages/render-pdf` as an export path.
+4. Keep diagram grammar, edge routing, and taste gates in `packages/diagram`.
+5. Keep slide-native component taxonomy and token gates in `packages/component`.
+6. Validate approved tokenized packs in `packages/pack` before they affect theme or component inputs.
+7. Apply override manifests in `packages/override`.
+8. Keep `packages/render-pptx` as the primary editable-object renderer.
+9. Keep `packages/render-html` as a gallery/preview shell.
+10. Keep `packages/render-pdf` as an export path.
+
+Bridge and proposal schemas such as `mdpr-selection-context`,
+`mdpr-ppt-selection`, `mdpr-ppt-pack-candidate`,
+`mdpr-user-override-candidate`, `mdpr-theme-candidate`, and
+`mdpr-html-design-analysis` live in MDPR as source-of-truth contracts.
+`mdpr-skill` and `mdpr-ppt` may keep synced copies, but MDPR owns the runtime
+validation boundary before packs, overrides, hints, or selection-derived
+artifacts affect output.
 
 ## GitHub Actions
 

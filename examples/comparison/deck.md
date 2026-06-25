@@ -1,15 +1,15 @@
-# 비교 구조 예시
+# Comparison Structure Example
 
-## 기존 방식과 개선 방식
+## Current Approach and Improved Approach
 
-### 기존 방식
+### Current Approach
 
-- 문서 작성이 수동으로 진행됨
-- 형식이 개인별로 다름
-- 검색이 어려움
+- Documents are written manually
+- Format varies by person
+- Search is difficult
 
-### 개선 방식
+### Improved Approach
 
-- 초안이 자동 생성됨
-- 형식이 템플릿으로 통일됨
-- 의미 기반 검색 가능
+- Drafts are generated automatically
+- Format is standardized by template
+- Semantic search is available

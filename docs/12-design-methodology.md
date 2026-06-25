@@ -62,6 +62,14 @@ preset, monochromatic, analogous, complementary, split-complementary, triadic
 
 The derived palette feeds element accents, chart colors, and the generated PowerPoint document theme colors (`accent1` through `accent6`).
 
+Approved packs provide a separate token import path. `mdpresent pack import`
+converts approved theme or component candidates into `mdpr-pack-v1`,
+`mdpresent pack validate` checks provenance, approval, editability, external
+asset risk, and accent budget, and `mdpresent build --pack mdpr.pack.json`
+merges validated theme tokens before planning. This path is deterministic and
+does not allow agent hints to set coordinates, raw renderer objects, z-order, or
+final component variants.
+
 ## Coherence Rules
 
 - Same-role objects use the same connector and surface family unless the content expresses a different flow.

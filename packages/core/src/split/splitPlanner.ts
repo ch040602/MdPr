@@ -7,6 +7,8 @@ import { buildCoherenceGroups } from "../coherence/buildCoherenceGroups.js";
 
 const MAX_TOC_ITEMS_PER_SLIDE = 14;
 
+type SplitOverride = NonNullable<Config["split"]["overrides"]>[number];
+
 function flattenNodes(nodes: OutlineNode[]): OutlineNode[] {
   return nodes.flatMap((node) => [node, ...flattenNodes(node.children)]);
 }
@@ -69,18 +71,28 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
   }
 
   for (const node of candidates) {
+    const splitOverride = splitOverrideForNode(config, node);
     const density = calculateDensity(node.blocks).total;
     const explicitChunks = splitBySlideBreak(node.blocks);
     const normalizedNode = explicitChunks.length === 1 ? { ...node, blocks: explicitChunks[0]! } : node;
     const forcedChunks = explicitChunks.length === 1 ? splitForcedContinuationBlocks(normalizedNode.blocks) : [];
+    const autosplitMaxDensity = splitOverride?.maxDensity ?? config.split.autosplit.maxDensity;
+    const forceSingleSlide = splitOverride?.forceSingleSlide === true || splitOverride?.splitBy === "none";
+    const headingSplitChildren = forceSingleSlide ? [] : headingSplitChildrenForOverride(splitOverride, node);
 
     if (explicitChunks.length > 1) {
       for (const [chunkIndex, blocks] of explicitChunks.entries()) {
         slides.push(createContentSlide({ ...node, blocks }, slides.length + 1, undefined, `${chunkIndex + 1}/${explicitChunks.length}`));
       }
+    } else if (headingSplitChildren.length > 0) {
+      for (const child of headingSplitChildren) {
+        slides.push(createContentSlide(child, slides.length + 1, node.title));
+      }
     } else if (shouldKeepCompactMixedEvidence(normalizedNode.blocks)) {
       slides.push(createContentSlide(normalizedNode, slides.length + 1));
-    } else if (config.split.autosplit.enabled && density > config.split.autosplit.maxDensity && node.children.length > 1) {
+    } else if (forceSingleSlide) {
+      slides.push(createContentSlide(normalizedNode, slides.length + 1));
+    } else if (config.split.autosplit.enabled && density > autosplitMaxDensity && node.children.length > 1) {
       for (const child of node.children) {
         slides.push(createContentSlide(child, slides.length + 1, node.title));
       }
@@ -88,8 +100,8 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
       for (const [chunkIndex, blocks] of forcedChunks.entries()) {
         slides.push(createContentSlide({ ...normalizedNode, blocks }, slides.length + 1, undefined, `${chunkIndex + 1}/${forcedChunks.length}`));
       }
-    } else if (config.split.autosplit.enabled && density > config.split.autosplit.maxDensity) {
-      const chunks = splitBlocksIntoChunks(normalizedNode.blocks, config.split.autosplit.maxDensity);
+    } else if (config.split.autosplit.enabled && density > autosplitMaxDensity) {
+      const chunks = splitBlocksIntoChunks(normalizedNode.blocks, autosplitMaxDensity);
       if (chunks.length > 1) {
         for (const [chunkIndex, blocks] of chunks.entries()) {
           slides.push(createContentSlide({ ...normalizedNode, blocks }, slides.length + 1, undefined, `${chunkIndex + 1}/${chunks.length}`));
@@ -123,6 +135,28 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
     assets: [],
     diagnostics: [],
   };
+}
+
+function splitOverrideForNode(config: Config, node: OutlineNode): SplitOverride | undefined {
+  return config.split.overrides?.find((override) => {
+    if (override.target.title && override.target.title === node.title) return true;
+    if (override.target.headingPath && JSON.stringify(override.target.headingPath) === JSON.stringify(node.headingPath)) return true;
+    return false;
+  });
+}
+
+function headingSplitChildrenForOverride(splitOverride: SplitOverride | undefined, node: OutlineNode): OutlineNode[] {
+  const targetLevel = headingLevelFromSplitOverride(splitOverride);
+  if (!targetLevel) return [];
+  return flattenNodes(node.children).filter((child) => child.level === targetLevel);
+}
+
+function headingLevelFromSplitOverride(splitOverride: SplitOverride | undefined): number | undefined {
+  if (!splitOverride?.splitBy) return undefined;
+  if (splitOverride.splitBy === "h2" || splitOverride.splitBy === "h3" || splitOverride.splitBy === "h4") {
+    return Number(splitOverride.splitBy.slice(1));
+  }
+  return undefined;
 }
 
 function createPipelineOnePageSlide(doc: MarkdownDocument, config: Config, plannedSlides: SlideIR[]): SlideIR {
@@ -177,9 +211,7 @@ function chunkTocBlocks<T>(blocks: T[]): T[][] {
 }
 
 function tocTitleForLanguage(language?: string): string {
-  const normalized = (language ?? "").toLowerCase();
-  if (normalized.startsWith("en")) return "Agenda";
-  return "목차";
+  return "Agenda";
 }
 
 function createContentSlide(node: OutlineNode, index: number, section?: string, continuation?: string): SlideIR {

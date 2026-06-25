@@ -91,7 +91,20 @@ Post-layout phase:
   pinBlock
 ```
 
-`setSplit` changes slide generation, so it must run before `Presentation IR` is planned and before `Layout IR` exists.
+`setSplit` changes slide generation, so CLI orchestration extracts it before
+`Presentation IR` is planned and passes a target-specific split override into
+the split planner. If the post-layout override engine receives `setSplit`
+directly, it reports a pre-layout-phase diagnostic instead of mutating Layout
+IR.
+
+Supported pre-layout split values:
+
+- `forceSingleSlide: true` or `splitBy: none`: keep the targeted heading as one
+  generated slide unless explicit Markdown slide breaks are present.
+- `splitBy: h2 | h3 | h4`: split the targeted heading by matching descendant
+  heading level even when the global density threshold would not split it.
+- `maxDensity`: override the autosplit density threshold for the targeted
+  heading.
 `moveBlock`, `hideBlock`, and `pinBlock` operate on Layout IR region
 membership. They do not rewrite Markdown content.
 

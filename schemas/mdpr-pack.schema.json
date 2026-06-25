@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mdpresent.dev/schemas/mdpr-pack.schema.json",
+  "title": "MDPR Pack",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "source",
+    "themeTokens",
+    "componentTokens",
+    "diagramTokens",
+    "components",
+    "pptEffectMappings",
+    "constraints"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "mdpr-pack-v1"
+    },
+    "kind": {
+      "enum": [
+        "theme-component-pack",
+        "style-pack",
+        "component-pack",
+        "diagram-pack"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "kind",
+        "sourceSha256",
+        "approved"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "design-md",
+            "html-analysis",
+            "mdpr-ppt",
+            "manual"
+          ]
+        },
+        "sourceSha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "generatedBy": {
+          "enum": [
+            "mdpr-skill",
+            "mdpr-ppt",
+            "mdpresent",
+            "user"
+          ]
+        },
+        "approved": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "themeTokens": {
+      "type": "object"
+    },
+    "componentTokens": {
+      "type": "object"
+    },
+    "diagramTokens": {
+      "type": "object"
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "pptEffectMappings": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "editablePrimaryContent",
+        "allowRasterBackgroundOnly",
+        "maxAccentRatio"
+      ],
+      "properties": {
+        "editablePrimaryContent": {
+          "const": true
+        },
+        "allowRasterBackgroundOnly": {
+          "type": "boolean"
+        },
+        "maxAccentRatio": {
+          "type": "number",
+          "maximum": 0.25
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

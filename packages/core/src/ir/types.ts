@@ -286,6 +286,15 @@ export type Config = {
       fallbackHeading: "h2" | "h3" | "h4";
       allowContinuation: boolean;
     };
+    overrides?: Array<{
+      target: {
+        title?: string;
+        headingPath?: string[];
+      };
+      forceSingleSlide?: boolean;
+      splitBy?: "h2" | "h3" | "h4" | "block-group" | "list-chunk" | "none";
+      maxDensity?: number;
+    }>;
   };
   toc: {
     enabled: boolean;
@@ -319,6 +328,7 @@ export type Config = {
     decorationStyle?: DecorationStyleName;
     colorCombination?: ColorCombinationName;
     colorSeed?: string;
+    useProvidedColors?: boolean;
     backgroundColor: string;
     textColor: string;
     primaryColor: string;

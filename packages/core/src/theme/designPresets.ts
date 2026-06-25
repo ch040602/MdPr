@@ -383,7 +383,7 @@ export const DESIGN_PRESETS: Record<DecorationStyleName, BaseDesignTokens> = {
 
 export function resolveDesignTokens(
   name: DecorationStyleName | DesignPresetName | undefined,
-  theme: Pick<Config["theme"], "backgroundColor" | "textColor" | "primaryColor" | "colorSeed" | "colorCombination">,
+  theme: Pick<Config["theme"], "backgroundColor" | "textColor" | "primaryColor" | "colorSeed" | "colorCombination" | "useProvidedColors">,
 ): DesignTokens {
   const colorCombination = theme.colorCombination ?? "preset";
   const primaryColor = normalizeHex(theme.colorSeed ?? theme.primaryColor);
@@ -397,7 +397,12 @@ export function resolveDesignTokens(
     }, colorCombination);
   }
   const preset = { ...(DESIGN_PRESETS[name as DecorationStyleName] ?? DESIGN_PRESETS.clean) };
-  if (colorCombination !== "preset") {
+  if (theme.useProvidedColors) {
+    preset.backgroundColor = normalizeHex(theme.backgroundColor);
+    preset.textColor = normalizeHex(theme.textColor);
+    preset.primaryColor = primaryColor;
+    preset.ruleColor = primaryColor;
+  } else if (colorCombination !== "preset") {
     preset.primaryColor = primaryColor;
     preset.ruleColor = primaryColor;
   }

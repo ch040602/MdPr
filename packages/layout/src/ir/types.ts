@@ -91,6 +91,7 @@ export type ThemeTokens = {
   decorationStyle?: DecorationStyleName;
   colorCombination?: ColorCombinationName;
   colorSeed?: string;
+  useProvidedColors?: boolean;
   backgroundColor: string;
   textColor: string;
   primaryColor: string;

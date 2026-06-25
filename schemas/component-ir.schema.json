@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mdpresent.dev/schemas/component-ir.schema.json",
+  "title": "MDPR Component IR",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "kind", "slots", "tokenRefs", "editable"],
+  "properties": {
+    "schemaVersion": { "const": "mdpr-component-ir-v1" },
+    "id": { "type": "string", "minLength": 1 },
+    "kind": {
+      "enum": [
+        "card",
+        "stat-card",
+        "badge",
+        "callout",
+        "button-pill",
+        "segmented-control",
+        "progress-bar",
+        "progress-indicator",
+        "stepper",
+        "timeline",
+        "quote-card",
+        "avatar-label",
+        "breadcrumb",
+        "separator",
+        "tabs-strip",
+        "tree-view",
+        "hero-block",
+        "toast-note",
+        "table-card"
+      ]
+    },
+    "semanticRole": { "enum": ["claim", "evidence", "metric", "risk", "action", "caption"] },
+    "slots": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": { "type": "string" },
+          "blockIds": { "type": "array", "items": { "type": "string" } },
+          "role": { "enum": ["label", "value", "body", "caption", "icon"] }
+        }
+      }
+    },
+    "tokenRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fill": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "stroke": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "text": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "accent": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "radius": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "shadow": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "typography": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" },
+        "spacing": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$" }
+      }
+    },
+    "editable": { "const": true }
+  }
+}

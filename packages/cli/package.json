@@ -26,6 +26,7 @@
     "@mdpresent/core": "workspace:*",
     "@mdpresent/layout": "workspace:*",
     "@mdpresent/override": "workspace:*",
+    "@mdpresent/pack": "workspace:*",
     "@mdpresent/render-html": "workspace:*",
     "@mdpresent/render-pdf": "workspace:*",
     "@mdpresent/render-pptx": "workspace:*",

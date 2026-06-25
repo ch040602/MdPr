@@ -187,6 +187,9 @@
         "colorSeed": {
           "type": "string"
         },
+        "useProvidedColors": {
+          "type": "boolean"
+        },
         "backgroundColor": {
           "type": "string"
         },

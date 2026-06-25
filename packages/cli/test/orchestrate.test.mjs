@@ -32,8 +32,8 @@ test("buildDeck delegates rendering through the orchestration boundary", async (
 
     assert.equal(result.writtenFiles.some((file) => file.endsWith("mdpresent-manifest.json")), true);
     assert.equal(result.writtenFiles.some((file) => file.endsWith("mdpresent-design-lock.json")), true);
-    assert.match(html, /AI 업무 자동화 제안서/);
-    assert.match(html, /회의록 자동 요약/);
+    assert.match(html, /AI Workflow Automation Proposal/);
+    assert.match(html, /Automatic meeting summary/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -99,12 +99,201 @@ test("buildDeck applies CLI design preset to HTML output", async () => {
   }
 });
 
+test("buildDeck applies an approved MDPR pack to theme config", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-pack-"));
+  const packPath = join(outDir, "mdpr.pack.json");
+
+  try {
+    writeFileSync(packPath, JSON.stringify({
+      schemaVersion: "mdpr-pack-v1",
+      kind: "theme-component-pack",
+      source: {
+        kind: "design-md",
+        sourceSha256: "a".repeat(64),
+        generatedBy: "mdpr-skill",
+        approved: true,
+      },
+      themeTokens: {
+        colors: {
+          background: "#111827",
+          text: "#F9FAFB",
+          accent: "#F97316",
+        },
+      },
+      componentTokens: {},
+      diagramTokens: {},
+      components: [],
+      pptEffectMappings: [],
+      constraints: {
+        editablePrimaryContent: true,
+        allowRasterBackgroundOnly: true,
+        maxAccentRatio: 0.18,
+      },
+    }, null, 2));
+
+    const result = await buildDeck(basicDeck, { formats: ["html"], outDir, packPath });
+    const html = readFileSync(join(outDir, "deck.html"), "utf-8");
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+
+    assert.match(html, /--bg: #111827;/);
+    assert.match(html, /--text: #F9FAFB;/);
+    assert.match(html, /--primary: #F97316;/);
+    assert.equal(manifest.pack.source.path, packPath);
+    assert.equal(manifest.pack.validation.valid, true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("CLI pack commands import approved theme candidates and feed build --pack", () => {
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-pack-command-"));
+  const candidatePath = join(outDir, "theme-candidate.json");
+  const packPath = join(outDir, "mdpr.pack.json");
+  const sourceSha256 = createHash("sha256").update("theme candidate source").digest("hex");
+
+  try {
+    writeFileSync(candidatePath, JSON.stringify({
+      schemaVersion: "mdpr-theme-candidate-v1",
+      source: {
+        kind: "design-md",
+        sourceSha256,
+        generatedBy: "mdpr-skill",
+        approved: true,
+      },
+      tokens: {
+        colors: {
+          background: "#101828",
+          text: "#F8FAFC",
+          accent: "#22C55E",
+          rule: "#344054",
+        },
+      },
+    }, null, 2));
+
+    assert.throws(() => execFileSync(process.execPath, [
+      cliPath,
+      "pack",
+      "import",
+      candidatePath,
+      "--out",
+      packPath,
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }), /Command failed/);
+
+    execFileSync(process.execPath, [
+      cliPath,
+      "pack",
+      "import",
+      candidatePath,
+      "--approved",
+      "--out",
+      packPath,
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    const validation = execFileSync(process.execPath, [
+      cliPath,
+      "pack",
+      "validate",
+      packPath,
+      "--json",
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    assert.equal(JSON.parse(validation).valid, true);
+
+    const preview = JSON.parse(execFileSync(process.execPath, [
+      cliPath,
+      "pack",
+      "preview",
+      packPath,
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }));
+    assert.equal(preview.colorCount, 4);
+    assert.equal(preview.approved, true);
+
+    const listed = JSON.parse(execFileSync(process.execPath, [
+      cliPath,
+      "pack",
+      "list",
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }));
+    assert.equal(listed.some((pack) => pack.id === "clean-foundation"), true);
+
+    execFileSync(process.execPath, [
+      cliPath,
+      "build",
+      basicDeck,
+      "--to",
+      "html",
+      "--out",
+      outDir,
+      "--pack",
+      packPath,
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    const html = readFileSync(join(outDir, "deck.html"), "utf-8");
+    assert.match(html, /--bg: #101828;/);
+    assert.match(html, /--text: #F8FAFC;/);
+    assert.match(html, /--primary: #22C55E;/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("CLI pack validate reports invalid JSON without a stack trace", () => {
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-pack-invalid-"));
+  const packPath = join(outDir, "broken.pack.json");
+
+  try {
+    writeFileSync(packPath, "{not-json", "utf-8");
+    assert.throws(() => execFileSync(process.execPath, [
+      cliPath,
+      "pack",
+      "validate",
+      packPath,
+      "--json",
+    ], {
+      cwd: repoRoot,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }), (error) => {
+      assert.equal(error.status, 1);
+      assert.match(error.stdout, /PACK_FILE_INVALID/);
+      assert.doesNotMatch(error.stderr, /SyntaxError|at JSON\.parse/);
+      return true;
+    });
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("buildDeck writes design lock and output manifest with visual validation summary", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-manifest-"));
 
   try {
     const result = await buildDeck(basicDeck, {
-      formats: ["html"],
+      formats: ["pptx", "html"],
       outDir,
       visualValidation: true,
       cliConfig: {
@@ -127,6 +316,16 @@ test("buildDeck writes design lock and output manifest with visual validation su
     assert.equal(manifest.validation.visual.checks.regionBounds, true);
     assert.equal(manifest.validation.coherence.checked, true);
     assert.equal(typeof manifest.validation.coherence.mixedObjectGroupingScore, "number");
+    assert.equal(typeof manifest.metrics.buildMs, "number");
+    assert.equal(manifest.metrics.slideCount, manifest.slideCount);
+    assert.equal(typeof manifest.metrics.overflowCount, "number");
+    assert.equal(typeof manifest.metrics.coherenceWarningCount, "number");
+    assert.equal(typeof manifest.metrics.visualErrorCount, "number");
+    assert.equal(typeof manifest.metrics.minFontPt, "number");
+    assert.ok(manifest.metrics.outputBytes.pptx > 0);
+    assert.ok(Array.isArray(manifest.pptxObjects));
+    assert.ok(manifest.pptxObjects.some((entry) => entry.shapeName.startsWith("mdpr:")));
+    assert.ok(manifest.pptxObjects.some((entry) => entry.objectKind === "native-text" && entry.editable === true));
     assert.equal(designLock.decorationStyle, "glass");
     assert.equal(designLock.colorSeed, "#8A4FFF");
     assert.equal(designLock.paletteSeed.base, "8A4FFF");
@@ -743,7 +942,7 @@ test("createDeckPlan rejects config files that violate the JSON schema", () => {
 
 test("createDeckPlan applies override files to title-targeted slides", () => {
   const result = planDeck(basicDeck, { overridePath: join(repoRoot, "examples/basic/deck.override.yaml") });
-  const sourceSlide = result.presentation.slides.find((slide) => slide.title === "주요 기능");
+  const sourceSlide = result.presentation.slides.find((slide) => slide.title === "Key Features");
   assert.ok(sourceSlide);
   const layoutSlide = result.layout.slides.find((slide) => slide.sourceSlideId === sourceSlide.id);
   assert.ok(layoutSlide);
@@ -756,6 +955,100 @@ test("createDeckPlan applies override files to title-targeted slides", () => {
   assert.equal(result.overrideDiff?.some((diff) => diff.path.endsWith("typography.fontSize") && diff.after === 21), true);
 });
 
+test("createDeckPlan applies setSplit before presentation planning", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-split-override-"));
+  const deckPath = join(outDir, "deck.md");
+  const overridePath = join(outDir, "deck.override.yaml");
+  const items = Array.from({ length: 12 }, (_, index) => `- Evidence item ${index + 1} with enough detail to add density`).join("\n");
+  const markdown = [
+    "# Demo",
+    "",
+    "## Dense Evidence",
+    "",
+    items,
+  ].join("\n");
+
+  try {
+    writeFileSync(deckPath, markdown);
+    writeFileSync(overridePath, [
+      "version: '1.0'",
+      "operations:",
+      "  - op: setSplit",
+      "    target:",
+      "      title: Dense Evidence",
+      "    value:",
+      "      forceSingleSlide: true",
+    ].join("\n"));
+
+    const baseline = planDeck(deckPath, {
+      cliConfig: { split: { autosplit: { enabled: true, maxDensity: 4 } } },
+    });
+    const overridden = planDeck(deckPath, {
+      cliConfig: { split: { autosplit: { enabled: true, maxDensity: 4 } } },
+      overridePath,
+    });
+
+    assert.equal(baseline.presentation.slides.filter((slide) => slide.title.startsWith("Dense Evidence")).length > 1, true);
+    assert.equal(overridden.presentation.slides.filter((slide) => slide.title.startsWith("Dense Evidence")).length, 1);
+    assert.equal(overridden.layout.diagnostics.some((diagnostic) => diagnostic.code === "OVERRIDE_REQUIRES_PRE_LAYOUT_PHASE"), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("createDeckPlan applies heading-level splitBy overrides before presentation planning", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-splitby-override-"));
+  const deckPath = join(outDir, "deck.md");
+  const overridePath = join(outDir, "deck.override.yaml");
+  const markdown = [
+    "# Demo",
+    "",
+    "## Research Findings",
+    "",
+    "This section should split by its child headings when requested.",
+    "",
+    "### Signal A",
+    "",
+    "First finding.",
+    "",
+    "### Signal B",
+    "",
+    "Second finding.",
+  ].join("\n");
+
+  try {
+    writeFileSync(deckPath, markdown);
+    writeFileSync(overridePath, [
+      "version: '1.0'",
+      "operations:",
+      "  - op: setSplit",
+      "    target:",
+      "      title: Research Findings",
+      "    value:",
+      "      splitBy: h3",
+    ].join("\n"));
+
+    const baseline = planDeck(deckPath, {
+      cliConfig: { split: { autosplit: { enabled: true, maxDensity: 99 } } },
+    });
+    const overridden = planDeck(deckPath, {
+      cliConfig: { split: { autosplit: { enabled: true, maxDensity: 99 } } },
+      overridePath,
+    });
+
+    assert.deepEqual(
+      baseline.presentation.slides.filter((slide) => slide.title.includes("Signal")).map((slide) => slide.title),
+      [],
+    );
+    assert.deepEqual(
+      overridden.presentation.slides.filter((slide) => slide.headingPath.includes("Research Findings")).map((slide) => slide.title),
+      ["Research Findings — Signal A", "Research Findings — Signal B"],
+    );
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("CLI entrypoint delegates inspect and build commands through the shared path", () => {
   const cliPath = join(repoRoot, "packages/cli/dist/index.js");
   const inspectOutput = execFileSync(process.execPath, [cliPath, "inspect", basicDeck, "--json"], {
@@ -763,7 +1056,7 @@ test("CLI entrypoint delegates inspect and build commands through the shared pat
     encoding: "utf-8",
   });
   const slides = JSON.parse(inspectOutput);
-  assert.ok(slides.some((slide) => slide.title === "주요 기능"));
+  assert.ok(slides.some((slide) => slide.title === "Key Features"));
 
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-entry-"));
   try {
@@ -787,7 +1080,7 @@ test("CLI entrypoint delegates inspect and build commands through the shared pat
     const html = readFileSync(join(outDir, "deck.html"), "utf-8");
 
     assert.match(buildOutput, /Wrote/);
-    assert.match(html, /회의록 자동 요약/);
+    assert.match(html, /Automatic meeting summary/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

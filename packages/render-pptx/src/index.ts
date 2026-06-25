@@ -18,6 +18,21 @@ export type RenderPptxOptions = {
   themeGalleryPresets?: DesignPresetName[];
 };
 
+export type PptxObjectMapEntry = {
+  slideId: string;
+  layoutSlideId: string;
+  regionId: string;
+  blockIds: string[];
+  shapeName: string;
+  objectKind: "native-text" | "native-table" | "native-chart" | "native-diagram" | "native-image";
+  role: string;
+  editable: boolean;
+};
+
+export type RenderPptxResult = {
+  objectMap: PptxObjectMapEntry[];
+};
+
 export type RenderableDeckIR = {
   presentation: PresentationIR;
   layout: LayoutIR;
@@ -25,11 +40,12 @@ export type RenderableDeckIR = {
 
 export type RenderPptxInput = LayoutIR | RenderableDeckIR;
 
-export async function renderPptx(input: RenderPptxInput, options: RenderPptxOptions): Promise<void> {
+export async function renderPptx(input: RenderPptxInput, options: RenderPptxOptions): Promise<RenderPptxResult> {
   const layout = isRenderableDeck(input) ? input.layout : input;
   const presentation = isRenderableDeck(input) ? input.presentation : undefined;
   const PptxGen = resolvePptxGenConstructor(PptxGenJSExport);
   const pptx = new PptxGen();
+  const objectMap: PptxObjectMapEntry[] = [];
   const layoutName = "MDPRESENT_LAYOUT";
   const designPresets = options.themeGalleryPresets?.length
     ? options.themeGalleryPresets.map((preset) => resolveDesignPreset(preset, layout.theme))
@@ -126,8 +142,15 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           })
           : textBoxForRegion(region, common);
 
+        const objectKind = objectKindForRegion(blocks, region.role);
+        const objectMapEntry = sourceSlide
+          ? createObjectMapEntry(sourceSlide.id, layoutSlide.id, region, objectKind)
+          : undefined;
+        const objectMetadata = objectMapEntry ? objectMetadataForEntry(objectMapEntry) : {};
+        const metadataTextCommon = { ...textCommon, ...objectMetadata };
+
         if (region.role === "title" && sourceSlide?.title) {
-          slide.addText(sourceSlide.title, textCommon);
+          slide.addText(sourceSlide.title, metadataTextCommon);
         } else if (blocks.length === 1 && blocks[0].type === "chart" && blocks[0].chart) {
           renderChartRegion(slide, blocks[0].chart, region, designPreset, common);
         } else if (blocks.length > 1 && blocks.every((block) => block.type === "chart" && block.chart)) {
@@ -151,17 +174,19 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
             autoPageCharWeight: 0.25,
             autoPageLineWeight: 0.25,
             border: { color: designPreset.surfaceLine, type: "solid", pt: 1 },
+            ...objectMetadata,
           });
         } else if (blocks.length === 1 && blocks[0].type === "image" && blocks[0].src) {
-          renderImageRegion(slide, blocks[0], region);
+          renderImageRegion(slide, blocks[0], region, objectMetadata);
         } else if (tocItemNumber !== undefined) {
-          slide.addText(`${String(tocItemNumber).padStart(2, "0")}  ${plainRegionText}`, textCommon);
+          slide.addText(`${String(tocItemNumber).padStart(2, "0")}  ${plainRegionText}`, metadataTextCommon);
         } else if (shouldRenderAsPlainMultiline(blocks)) {
-          renderPlainListRegion(slide, blocks, region.role, textCommon);
+          renderPlainListRegion(slide, blocks, region.role, metadataTextCommon);
         } else {
           const richText = renderRichRegionContent(region.blockIds, blockIndex, sourceSlide, region.role, designPreset);
-          slide.addText(hasVisibleRichText(richText) ? richText : plainRegionText, textCommon);
+          slide.addText(hasVisibleRichText(richText) ? richText : plainRegionText, metadataTextCommon);
         }
+        if (objectMapEntry) objectMap.push(objectMapEntry);
       }
     }
   }
@@ -171,9 +196,69 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
     await writePptxThemeColors(options.outPath, documentDesignPreset);
     if (documentDesignPreset.surfacePolicy.shadow === "glass") await addPptxGlowEffects(options.outPath, documentDesignPreset.primaryColor);
   }
+  return { objectMap };
 }
 
-function renderImageRegion(slide: PptxGenJS.Slide, block: BlockIR, region: LayoutIR["slides"][number]["regions"][number]): void {
+function objectKindForRegion(
+  blocks: BlockIR[],
+  role: string,
+): PptxObjectMapEntry["objectKind"] {
+  if (blocks.length === 1 && blocks[0]?.type === "table") return "native-table";
+  if (blocks.length >= 1 && blocks.every((block) => block.type === "chart")) return "native-chart";
+  if (blocks.length === 1 && blocks[0]?.type === "diagram") return "native-diagram";
+  if (blocks.length === 1 && blocks[0]?.type === "image") return "native-image";
+  if (role === "image") return "native-image";
+  if (role === "diagram") return "native-diagram";
+  return "native-text";
+}
+
+function createObjectMapEntry(
+  slideId: string,
+  layoutSlideId: string,
+  region: LayoutIR["slides"][number]["regions"][number],
+  objectKind: PptxObjectMapEntry["objectKind"],
+): PptxObjectMapEntry {
+  const blockIds = region.blockIds.map((blockId) => blockId.split("#")[0] ?? blockId);
+  const target = blockIds.length ? blockIds.join("+") : region.role;
+  return {
+    slideId,
+    layoutSlideId,
+    regionId: region.id,
+    blockIds,
+    shapeName: `mdpr:${sanitizeShapeTag(slideId)}:${sanitizeShapeTag(region.id)}:${sanitizeShapeTag(target)}`,
+    objectKind,
+    role: region.role,
+    editable: objectKind !== "native-image",
+  };
+}
+
+function sanitizeShapeTag(value: string): string {
+  return value.replace(/[^A-Za-z0-9_.:-]+/g, "-").replace(/^-+|-+$/g, "") || "object";
+}
+
+function objectMetadataForEntry(entry: PptxObjectMapEntry): { objectName: string; altText: string } {
+  return {
+    objectName: entry.shapeName,
+    altText: JSON.stringify({
+      mdpr: {
+        slideId: entry.slideId,
+        layoutSlideId: entry.layoutSlideId,
+        regionId: entry.regionId,
+        blockIds: entry.blockIds,
+        objectKind: entry.objectKind,
+        role: entry.role,
+        editable: entry.editable,
+      },
+    }),
+  };
+}
+
+function renderImageRegion(
+  slide: PptxGenJS.Slide,
+  block: BlockIR,
+  region: LayoutIR["slides"][number]["regions"][number],
+  metadata: { objectName?: string; altText?: string } = {},
+): void {
   if (!block.src) return;
   const frame = insetRect(region, imageSafeInset(region));
   slide.addImage({
@@ -182,7 +267,8 @@ function renderImageRegion(slide: PptxGenJS.Slide, block: BlockIR, region: Layou
     y: frame.y,
     w: frame.w,
     h: frame.h,
-    altText: block.alt ?? block.text ?? "Markdown image",
+    objectName: metadata.objectName,
+    altText: metadata.altText ?? block.alt ?? block.text ?? "Markdown image",
   } as never);
 }
 

@@ -29,6 +29,9 @@ importers:
       '@mdpresent/override':
         specifier: workspace:*
         version: link:../override
+      '@mdpresent/pack':
+        specifier: workspace:*
+        version: link:../pack
       '@mdpresent/render-html':
         specifier: workspace:*
         version: link:../render-html
@@ -48,6 +51,12 @@ importers:
         specifier: ^2.9.0
         version: 2.9.0
 
+  packages/component:
+    dependencies:
+      '@mdpresent/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/core:
     dependencies:
       mdast-util-from-markdown:
@@ -59,6 +68,12 @@ importers:
       micromark-extension-gfm:
         specifier: ^3.0.0
         version: 3.0.0
+
+  packages/diagram:
+    dependencies:
+      '@mdpresent/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/layout:
     dependencies:
@@ -74,6 +89,8 @@ importers:
       '@mdpresent/layout':
         specifier: workspace:*
         version: link:../layout
+
+  packages/pack: {}
 
   packages/render-html:
     dependencies:

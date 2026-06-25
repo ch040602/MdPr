@@ -1,9 +1,9 @@
-# 5개 항목 레이아웃 예시
+# Five-Item Layout Example
 
-## 5가지 실행 방법
+## Five Execution Steps
 
-- 파일럿 조직 선정
-- 반복 문서 유형 분석
-- 자동화 템플릿 설계
-- 지식 검색 인덱스 구축
-- 성과 지표 측정
+- Select a pilot team
+- Analyze repetitive document types
+- Design automation templates
+- Build a knowledge search index
+- Measure success metrics

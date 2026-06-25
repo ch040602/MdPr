@@ -1,54 +1,54 @@
-# AI 업무 자동화 제안서
+# AI Workflow Automation Proposal
 
-## 문제 정의
+## Problem Definition
 
-현재 조직은 반복 문서 작성과 정보 검색에 많은 시간을 사용한다.
+The organization spends too much time on repetitive document writing and information retrieval.
 
-### 반복 업무 증가
+### Repetitive Work Is Growing
 
-- 회의록 정리
-- 보고서 초안 작성
-- 데이터 취합
+- Meeting note cleanup
+- Report draft writing
+- Data collection
 
-### 검색 비용 증가
+### Search Costs Are Growing
 
-- 자료 위치 불명확
-- 파일명 중심 검색
-- 버전 혼선
+- Source location is unclear
+- Search depends on filenames
+- Version confusion is common
 
-## 기존 방식과 개선 방식
+## Current Approach and Improved Approach
 
-### 기존 방식
+### Current Approach
 
-- 담당자가 수동으로 문서를 정리한다
-- 품질이 개인 역량에 의존한다
-- 검색과 재사용이 어렵다
+- Owners manually prepare documents
+- Quality depends on individual skill
+- Search and reuse are difficult
 
-### 개선 방식
+### Improved Approach
 
-- 회의록과 보고서 초안을 자동 생성한다
-- 일관된 형식으로 문서를 정리한다
-- 의미 기반 검색으로 자료를 찾는다
+- Meeting notes and report drafts are generated automatically
+- Documents follow a consistent structure
+- Materials are found with semantic search
 
-## 주요 기능
+## Key Features
 
-- 회의록 자동 요약
-- 보고서 초안 생성
-- 사내 지식 검색
-- 업무 템플릿 자동 적용
+- Automatic meeting summary
+- Report draft generation
+- Internal knowledge search
+- Workflow template application
 
-## 5가지 실행 방법
+## Five Execution Steps
 
-- 파일럿 조직 선정
-- 반복 문서 유형 분석
-- 자동화 템플릿 설계
-- 지식 검색 인덱스 구축
-- 성과 지표 측정
+- Select a pilot team
+- Analyze repetitive document types
+- Design automation templates
+- Build a knowledge search index
+- Measure success metrics
 
-## 기대 효과
+## Expected Impact
 
-| 항목 | 현재 | 개선 후 |
+| Area | Current | Improved |
 |---|---|---|
-| 회의록 정리 | 수동 작성 | 자동 요약 |
-| 보고서 초안 | 직접 작성 | 자동 초안 |
-| 자료 검색 | 파일명 검색 | 의미 검색 |
+| Meeting notes | Manual writing | Automatic summary |
+| Report drafts | Written from scratch | Automatic draft |
+| Material search | Filename search | Semantic search |

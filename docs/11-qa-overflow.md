@@ -147,6 +147,21 @@ The manifest also records `validation.overflowResolution`, including strategy
 counts for pre-split continuation, candidate reflow, region expansion, and font
 shrink; continuation reasons; continuation group counts; and whether a graph or
 diagram block was split.
+
+The manifest also exposes normalized `metrics` for companion tools and CI:
+`slideCount`, `overflowCount`, coherence warning/error counts, visual
+warning/error counts, `minFontPt`, text clip risk count, contrast failures,
+connector warnings, `buildMs`, and per-format `outputBytes`. Companion tools
+must prefer these normalized metrics before falling back to diagnostic strings.
+
+PPTX builds additionally record `pptxObjects`. Each entry maps an editable
+PowerPoint output object back to `slideId`, `layoutSlideId`, `regionId`,
+`blockIds`, role, object kind, and a stable `mdpr:` shape name. This is the
+runtime-owned bridge contract for future PowerPoint selection tools; agent
+hints and review reports must not invent coordinates or renderer object IDs.
+For supported PPTX object types, MDPR also writes the same stable `mdpr:`
+identifier into the generated PowerPoint shape name so selection bridges can
+resolve a clicked shape back to the manifest object map.
 Visual summaries do not replace rendered screenshot review; they catch
 deterministic geometry regressions such as out-of-bounds regions, unreadable
 font floors, low text/background contrast, same-z-index content overlap,

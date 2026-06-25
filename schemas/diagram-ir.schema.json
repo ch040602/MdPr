@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mdpresent.dev/schemas/diagram-ir.schema.json",
+  "title": "MDPR Diagram IR",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "type", "nodes", "edges"],
+  "properties": {
+    "schemaVersion": { "const": "mdpr-diagram-ir-v1" },
+    "id": { "type": "string", "minLength": 1 },
+    "type": {
+      "enum": [
+        "architecture",
+        "flowchart",
+        "sequence",
+        "state-machine",
+        "er",
+        "timeline",
+        "swimlane",
+        "quadrant",
+        "nested",
+        "tree",
+        "org-chart",
+        "layer-stack",
+        "venn",
+        "pyramid",
+        "funnel",
+        "consultant-2x2"
+      ]
+    },
+    "title": { "type": "string" },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "kind": {
+            "enum": ["input", "process", "decision", "data", "output", "actor", "system", "annotation"]
+          },
+          "focal": { "type": "boolean" },
+          "group": { "type": "string" }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 },
+          "label": { "type": "string" },
+          "role": { "enum": ["primary", "secondary", "exception", "feedback"] },
+          "flowGroup": { "type": "string" }
+        }
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "surface": { "type": "string" },
+        "accent": { "type": "string" },
+        "rule": { "type": "string" },
+        "text": { "type": "string" }
+      }
+    }
+  }
+}
