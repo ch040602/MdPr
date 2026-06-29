@@ -66,6 +66,41 @@ test("slideId target can set layout and typography", () => {
   assert.equal(next.slides[0].regions[0].typography.minFontSize, 18);
 });
 
+test("title target resolves through Presentation IR when provided", () => {
+  const next = applyOverrides(createLayout(), {
+    version: "1.0",
+    operations: [
+      {
+        op: "setLayout",
+        target: { title: "Main Features" },
+        value: { preset: "grid", columns: 2, rows: 2 },
+      },
+    ],
+  }, {
+    version: "1.0",
+    meta: { title: "Demo" },
+    outline: [],
+    assets: [],
+    diagnostics: [],
+    slides: [
+      {
+        id: "slide-1",
+        index: 1,
+        role: "content",
+        title: "Main Features",
+        headingPath: ["Demo", "Main Features"],
+        source: {},
+        blocks: [],
+        intent: "grid",
+        tags: [],
+      },
+    ],
+  });
+
+  assert.deepEqual(next.slides[0].layout, { preset: "grid", columns: 2, rows: 2 });
+  assert.deepEqual(next.diagnostics, []);
+});
+
 test("unresolved targets produce diagnostics", () => {
   const next = applyOverrides(createLayout(), {
     version: "1.0",
