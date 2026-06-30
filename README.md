@@ -10,6 +10,12 @@
 from Markdown with deterministic layout rules instead of a black-box LLM
 runtime.
 
+Markdown goes in. Editable PowerPoint, rendered previews, overflow checks, and
+agent-review boundaries come out. When paired with `mdpr-skill`, the workflow
+can also benchmark the same Markdown corpus against codex-ppt image-only
+baselines and `Presentations` probe decks without giving the agent final layout
+control.
+
 [Preview gallery](https://ch040602.github.io/MdPr/theme-preview/) ·
 [Download preview PPTX](https://github.com/ch040602/MdPr/releases/tag/v0.1.0-preview) ·
 [Optional agent review](https://github.com/ch040602/mdpr-skill) ·
@@ -32,6 +38,20 @@ Contributions: [Contributing guide](CONTRIBUTING.md) ·
 [Community feedback guide](docs/community-feedback.md) ·
 [International launch kit](docs/international-launch-kit.md) ·
 [Open a Markdown/PPTX issue](https://github.com/ch040602/MdPr/issues/new/choose)
+
+## Visual Proof
+
+MDPR is the deterministic runtime in the comparison below: it owns Markdown
+parsing, splitting, layout, theme binding, validation, and editable PPTX output.
+`mdpr-skill` can add review hints and quality ledgers, but those hints stay
+semantic and MDPR keeps final rendering authority.
+
+<img src="docs/assets/readme-slides/mdpr-skill-comparison.png" alt="Comparison of Codex presentations, MDPR, and mdpr-skill plus MDPR outputs" width="100%">
+
+The current companion evaluation in `mdpr-skill` reports 21/21 codex-ppt
+feature families mapped, 23 public Markdown comparison sources, five visual
+improvement passes, 25 scoring criteria, 23 `Presentations` probes, five
+codex-ppt image-only baselines, and zero missing evidence artifacts.
 
 ## What It Does
 
