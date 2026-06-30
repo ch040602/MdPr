@@ -5,6 +5,9 @@
 ```bash
 mdpresent init
 mdpresent doctor --pdf
+mdpresent job-state validate mdpr-job-state.json --json
+mdpresent job-state status dist --json
+mdpresent generated-assets validate mdpr-generated-assets.json --json
 mdpresent inspect deck.md --json
 mdpresent plan deck.md --json > layout.plan.json
 mdpresent validate deck.md --override deck.override.yaml --hints deck.mdpr-hints.json --coherence
@@ -68,6 +71,13 @@ default config < config file < CLI args
 - `html` writes `dist/deck.html` through `@mdpresent/render-html`.
 - `pptx` writes `dist/deck.pptx` through `@mdpresent/render-pptx`.
 - Build writes `mdpresent-design-lock.json` and `mdpresent-manifest.json`.
+- `job-state validate/status` reads `mdpr-job-state-v1` from an explicit JSON
+  file or `mdpr-job-state.json` inside a build directory. It verifies
+  evidence-bound completion states for long-running review/repair workflows.
+- `generated-assets validate` reads `mdpr-generated-assets-v1` provider and
+  request metadata. It rejects secret-like provider fields and full-slide
+  renderer requests, and warns when quality or transparency policy is not
+  supported by provider metadata.
 - Build fails before rendering when config, layout overflow, or requested
   visual/coherence validation produces error diagnostics.
 - `--hints` accepts optional `mdpr-skill` semantic/icon/importance candidates as weak metadata only.

@@ -12,6 +12,8 @@ import {
 import { inspectPdfExporterEnvironment } from "@mdpresent/render-pdf";
 import { importPackCandidate, listBuiltInPacks, previewPack, validateMdprPack, type MdprPack } from "@mdpresent/pack";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { readGeneratedAssetsManifest, validateGeneratedAssetsManifest } from "./generatedAssets.js";
+import { readMdprJobState, summarizeMdprJobState, validateMdprJobState } from "./jobState.js";
 
 const args = process.argv.slice(2);
 const exitCode = await runCli(args);
@@ -28,6 +30,14 @@ export async function runCli(args: string[]): Promise<number> {
 
   if (command === "pack") {
     return runPackCommand(args.slice(1));
+  }
+
+  if (command === "job-state") {
+    return runJobStateCommand(args.slice(1));
+  }
+
+  if (command === "generated-assets") {
+    return runGeneratedAssetsCommand(args.slice(1));
   }
 
   const input = args[1];
@@ -92,6 +102,48 @@ export async function runCli(args: string[]): Promise<number> {
     return result.valid ? 0 : 1;
   }
 
+  printHelp();
+  return 1;
+}
+
+function runGeneratedAssetsCommand(args: string[]): number {
+  const subcommand = args[0];
+  const inputPath = args[1] && !args[1].startsWith("--") ? args[1] : readOption(args, "--manifest");
+  if (subcommand !== "validate" || !inputPath) {
+    printHelp();
+    return 1;
+  }
+  const validation = validateGeneratedAssetsManifest(readGeneratedAssetsManifest(inputPath));
+  if (args.includes("--json")) console.log(JSON.stringify(validation, null, 2));
+  else if (validation.valid) console.log("ok");
+  else for (const error of validation.errors) console.log(`error\tGENERATED_ASSET_INVALID\t${error}`);
+  return validation.valid ? 0 : 1;
+}
+
+function runJobStateCommand(args: string[]): number {
+  const subcommand = args[0];
+  const inputPath = args[1] && !args[1].startsWith("--") ? args[1] : readOption(args, "--state");
+  if (!subcommand || !inputPath) {
+    printHelp();
+    return 1;
+  }
+  const state = readMdprJobState(inputPath);
+  if (subcommand === "validate") {
+    const validation = validateMdprJobState(state);
+    if (args.includes("--json")) console.log(JSON.stringify(validation, null, 2));
+    else if (validation.valid) console.log("ok");
+    else for (const finding of validation.findings) console.log(`error\tJOB_STATE_INVALID\t${finding}`);
+    return validation.valid ? 0 : 1;
+  }
+  if (subcommand === "status") {
+    const summary = summarizeMdprJobState(state);
+    if (args.includes("--json")) console.log(JSON.stringify(summary, null, 2));
+    else {
+      console.log(`total\t${summary.total}`);
+      for (const [status, count] of Object.entries(summary.byStatus)) console.log(`${status}\t${count}`);
+    }
+    return 0;
+  }
   printHelp();
   return 1;
 }
@@ -287,11 +339,14 @@ Usage:
   mdpresent pack validate <mdpr.pack.json> [--json]
   mdpresent pack import <candidate.json> --approved [--out mdpr.pack.json]
   mdpresent pack preview <mdpr.pack.json>
+  mdpresent job-state validate <mdpr-job-state.json|build-dir> [--json]
+  mdpresent job-state status <mdpr-job-state.json|build-dir> [--json]
+  mdpresent generated-assets validate <mdpr-generated-assets.json> [--json]
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
   mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--hints deck.mdpr-hints.json] [--visual] [--coherence] [--strict] [--json]
   mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style clean|executive|technical|minimalism|newmorphism|glass|data] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,glass] [--pack mdpr.pack.json] [--hints deck.mdpr-hints.json] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence] [--strict]
 
-Config files are validated against schemas/config.schema.json before merging. Approved packs are validated against schemas/mdpr-pack.schema.json and can provide tokenized theme inputs. Optional agent hints are validated against schemas/agent-hint.schema.json and cannot set final layout/style decisions. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
+Config files are validated against schemas/config.schema.json before merging. Approved packs are validated against schemas/mdpr-pack.schema.json and can provide tokenized theme inputs. Optional agent hints are validated against schemas/agent-hint.schema.json and cannot set final layout/style decisions. Generated asset metadata is validated as provenance and request policy only; it cannot provide secrets or become a full-slide renderer. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
 `);
 }
