@@ -1,7 +1,60 @@
-import type { Diagnostic } from "@mdpresent/core";
+import type { Diagnostic, PresentationIR } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 
 type LayoutRegion = LayoutIR["slides"][number]["regions"][number];
+
+export type PolishQualitySummary = {
+  checked: true;
+  source: {
+    videoId: "GX0Fn-5YqKE";
+    title: string;
+    chapters: Array<{ time: string; key: keyof PolishQualitySummary["chapters"]; label: string }>;
+  };
+  chapters: {
+    fontHierarchy: PolishChapterCheck & {
+      titleFontPt: number;
+      bodyFontPt: number;
+      minFontPt: number;
+      sameRoleFontVarianceCount: number;
+      fontFamily: string;
+    };
+    layoutComposition: PolishChapterCheck & {
+      structuredLayoutRatio: number;
+      genericBlockySlideCount: number;
+      averageRegionsPerContentSlide: number;
+    };
+    highlightPage: PolishChapterCheck & {
+      importantClaimSlideCount: number;
+      highlightedSlideCount: number;
+    };
+    coverPage: PolishChapterCheck & {
+      coverSlideCount: number;
+      polishedCoverCount: number;
+    };
+    detailPolish: PolishChapterCheck & {
+      visualErrorCount: number;
+      overlapCount: number;
+      clippingRiskCount: number;
+      contrastFailureCount: number;
+      connectorClearanceCount: number;
+    };
+    beforeAfterComparison: PolishChapterCheck & {
+      presets: string[];
+    };
+  };
+  requiredFailureCount: number;
+  optionalFailureCount: number;
+};
+
+type PolishChapterCheck = {
+  passed: boolean;
+  required: boolean;
+  evidence: string;
+};
+
+export type PolishQualityOptions = {
+  comparisonPresets?: string[];
+};
 
 export function createVisualValidationSummary(layout: LayoutIR) {
   const diagnostics = visualValidationDiagnostics(layout);
@@ -101,6 +154,115 @@ export function visualValidationDiagnostics(layout: LayoutIR): Diagnostic[] {
   return diagnostics;
 }
 
+export function createPolishQualitySummary(
+  presentation: PresentationIR,
+  layout: LayoutIR,
+  options: PolishQualityOptions = {},
+): PolishQualitySummary {
+  const diagnostics = visualValidationDiagnostics(layout);
+  const titleFontPt = maxRegionFont(layout, "title", layout.theme.titleFontSize);
+  const bodyFontPt = maxRegionFont(layout, "body", layout.theme.bodyFontSize);
+  const minFontPt = minimumRegionFont(layout);
+  const sameRoleFontVarianceCount = sameRoleFontVariance(layout);
+  const structuredLayoutRatio = structuredLayoutRatioFor(layout);
+  const genericBlockySlideCount = genericBlockySlides(layout);
+  const contentSlides = layout.slides.filter((slide) => !["cover", "toc"].includes(slide.layout.preset));
+  const averageRegionsPerContentSlide = contentSlides.length
+    ? contentSlides.reduce((sum, slide) => sum + slide.regions.filter(isContentRegion).length, 0) / contentSlides.length
+    : 0;
+  const importantClaimSlideIds = new Set(
+    presentation.slides
+      .filter((slide) => slide.intent === "quote" || slide.blocks.some((block) => block.type === "quote"))
+      .map((slide) => slide.id),
+  );
+  const highlightedSlideCount = layout.slides
+    .filter((slide) => slide.layout.preset === "key-message" || slide.layout.preset === "quote")
+    .length;
+  const coverSlideCount = presentation.slides.filter((slide) => slide.role === "cover").length;
+  const polishedCoverCount = layout.slides.filter((slide) => {
+    if (slide.layout.preset !== "cover") return false;
+    return slide.regions.some((region) => region.role === "title" && region.blockIds.length > 0)
+      && !slide.regions.some((region) => region.role !== "title" && region.blockIds.length === 0);
+  }).length;
+  const visualErrorCount = diagnostics.filter((diagnostic) => diagnostic.level === "error").length;
+  const overlapCount = diagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_REGION_OVERLAP").length;
+  const clippingRiskCount = diagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_REGION_BOUNDS" || diagnostic.code === "VISUAL_FONT_FLOOR").length;
+  const contrastFailureCount = diagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_CONTRAST").length;
+  const connectorClearanceCount = diagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_CONNECTOR_CLEARANCE").length;
+  const comparisonPresets = options.comparisonPresets ?? [];
+
+  const chapters: PolishQualitySummary["chapters"] = {
+    fontHierarchy: {
+      required: true,
+      passed: Boolean(layout.theme.fontFamily) && titleFontPt >= bodyFontPt + 4 && minFontPt >= 16 && sameRoleFontVarianceCount === 0,
+      evidence: "Title/body hierarchy, readable font floor, family availability, and same-role consistency are checked from Layout IR typography.",
+      titleFontPt,
+      bodyFontPt,
+      minFontPt,
+      sameRoleFontVarianceCount,
+      fontFamily: layout.theme.fontFamily,
+    },
+    layoutComposition: {
+      required: true,
+      passed: structuredLayoutRatio >= 0.5 && genericBlockySlideCount === 0,
+      evidence: "Layout presets are checked for structured composition instead of generic dense AI-PPT blocks.",
+      structuredLayoutRatio: Number(structuredLayoutRatio.toFixed(3)),
+      genericBlockySlideCount,
+      averageRegionsPerContentSlide: Number(averageRegionsPerContentSlide.toFixed(3)),
+    },
+    highlightPage: {
+      required: true,
+      passed: importantClaimSlideIds.size === 0 || highlightedSlideCount >= importantClaimSlideIds.size,
+      evidence: "Quote and key-message intents must route to quote/key-message layouts when important claims exist.",
+      importantClaimSlideCount: importantClaimSlideIds.size,
+      highlightedSlideCount,
+    },
+    coverPage: {
+      required: true,
+      passed: coverSlideCount === 0 || polishedCoverCount >= coverSlideCount,
+      evidence: "Cover slides must use the cover preset with visible title hierarchy and no empty body artifacts.",
+      coverSlideCount,
+      polishedCoverCount,
+    },
+    detailPolish: {
+      required: true,
+      passed: visualErrorCount === 0,
+      evidence: "Detail polish reuses visual diagnostics for overlap, clipping, contrast, image aspect, and connector clearance failures.",
+      visualErrorCount,
+      overlapCount,
+      clippingRiskCount,
+      contrastFailureCount,
+      connectorClearanceCount,
+    },
+    beforeAfterComparison: {
+      required: false,
+      passed: comparisonPresets.length >= 2,
+      evidence: "Theme-gallery builds with at least two presets provide deterministic before/after comparison evidence for representative decks.",
+      presets: comparisonPresets,
+    },
+  };
+
+  const checks = Object.values(chapters);
+  return {
+    checked: true,
+    source: {
+      videoId: "GX0Fn-5YqKE",
+      title: "Do not use AI-made PPT as-is",
+      chapters: [
+        { time: "00:24", key: "fontHierarchy", label: "font changes" },
+        { time: "02:33", key: "layoutComposition", label: "layout" },
+        { time: "05:20", key: "highlightPage", label: "highlight page" },
+        { time: "07:13", key: "coverPage", label: "cover page" },
+        { time: "07:48", key: "detailPolish", label: "detail polish" },
+        { time: "08:45", key: "beforeAfterComparison", label: "before/after comparison" },
+      ],
+    },
+    chapters,
+    requiredFailureCount: checks.filter((check) => check.required && !check.passed).length,
+    optionalFailureCount: checks.filter((check) => !check.required && !check.passed).length,
+  };
+}
+
 function isContentRegion(region: LayoutRegion): boolean {
   if (["icon", "footer", "pageNumber"].includes(region.role)) return false;
   return region.role === "title" || region.blockIds.length > 0;
@@ -113,6 +275,57 @@ function regionOverlapRatio(left: LayoutRegion, right: LayoutRegion): number {
   if (overlap <= 0) return 0;
   const smallerArea = Math.max(0.0001, Math.min(left.w * left.h, right.w * right.h));
   return overlap / smallerArea;
+}
+
+function maxRegionFont(layout: LayoutIR, role: string, fallback: number): number {
+  const values = layout.slides
+    .flatMap((slide) => slide.regions)
+    .filter((region) => region.role === role)
+    .map((region) => region.typography?.fontSize)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  return values.length ? Math.max(...values) : fallback;
+}
+
+function minimumRegionFont(layout: LayoutIR): number {
+  const values = layout.slides
+    .flatMap((slide) => slide.regions)
+    .flatMap((region) => [region.typography?.fontSize, region.typography?.minFontSize])
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  return values.length ? Math.min(...values) : layout.theme.minFontSize;
+}
+
+function sameRoleFontVariance(layout: LayoutIR): number {
+  let count = 0;
+  for (const slide of layout.slides) {
+    const byRole = new Map<string, number[]>();
+    for (const region of slide.regions) {
+      if (!isContentRegion(region)) continue;
+      const value = region.typography?.fontSize ?? (region.role === "title" ? layout.theme.titleFontSize : layout.theme.bodyFontSize);
+      const values = byRole.get(region.role) ?? [];
+      values.push(value);
+      byRole.set(region.role, values);
+    }
+    for (const values of byRole.values()) {
+      if (values.length > 1 && Math.max(...values) - Math.min(...values) > 2) count += 1;
+    }
+  }
+  return count;
+}
+
+function structuredLayoutRatioFor(layout: LayoutIR): number {
+  const contentSlides = layout.slides.filter((slide) => !["cover", "toc"].includes(slide.layout.preset));
+  if (!contentSlides.length) return 1;
+  const structured = contentSlides.filter((slide) => slide.layout.preset !== "title-body" || slide.regions.filter(isContentRegion).length <= 2);
+  return structured.length / contentSlides.length;
+}
+
+function genericBlockySlides(layout: LayoutIR): number {
+  return layout.slides.filter((slide) => {
+    if (slide.layout.preset !== "title-body") return false;
+    const contentRegions = slide.regions.filter(isContentRegion);
+    const itemLikeCount = contentRegions.filter((region) => region.role === "item" || region.blockIds.some((blockId) => blockId.includes("#"))).length;
+    return itemLikeCount >= 4 || contentRegions.length >= 5;
+  }).length;
 }
 
 function contrastRatio(foreground: string, background: string): number | undefined {

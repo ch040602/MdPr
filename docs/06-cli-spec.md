@@ -80,6 +80,9 @@ default config < config file < CLI args
 - `--design-lock` checks the resolved design contract unless `--update-design-lock` is used.
 - `--visual` adds structural visual-validation summaries.
 - `--coherence` adds claim/evidence/caption/table grouping diagnostics.
+- Every build manifest records `validation.polish`, a deterministic post-AI PPT
+  polish gate covering font hierarchy, layout composition, highlight pages,
+  cover treatment, detail QA, and optional before/after comparison evidence.
 - PPTX can reuse positioned image assets from a template/master deck as a background layer.
 - PDF is exported from the generated PPTX with PowerPoint on Windows or LibreOffice in CI/Linux.
 - `doctor --pdf` reports the configured or discoverable PDF exporter before a
@@ -101,6 +104,7 @@ Validation reports:
 - detached captions
 - orphan tables
 - low object coverage
+- polish gate required failures
 - design lock drift
 ```
 

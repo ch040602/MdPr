@@ -14,7 +14,7 @@ import type { DesignPresetName, PptxObjectMapEntry } from "@mdpresent/render-ppt
 import { renderPptx } from "@mdpresent/render-pptx";
 import { applyOverrides, diffLayout, type LayoutDiff, type OverrideManifest, type OverrideOperation } from "@mdpresent/override";
 import { themeConfigFromPack, validateMdprPack, type MdprPack, type PackValidationResult } from "@mdpresent/pack";
-import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createVisualValidationSummary, visualValidationDiagnostics } from "@mdpresent/validation";
+import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createPolishQualitySummary, createVisualValidationSummary, visualValidationDiagnostics } from "@mdpresent/validation";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import { parse as parseYaml } from "yaml";
 
@@ -265,6 +265,7 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
   const manifest = createBuildManifest(inputPath, deck, writtenFiles, designLockPath, options.visualValidation, {
     buildMs: Date.now() - buildStartedAt,
     pptxObjects,
+    themeGalleryPresets: options.themeGalleryPresets ?? [],
   });
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
 
@@ -346,7 +347,7 @@ function createBuildManifest(
   writtenFiles: string[],
   designLockPath: string,
   visualValidation: boolean | undefined,
-  runtime: { buildMs: number; pptxObjects: PptxObjectMapEntry[] } = { buildMs: 0, pptxObjects: [] },
+  runtime: { buildMs: number; pptxObjects: PptxObjectMapEntry[]; themeGalleryPresets?: DesignPresetName[] } = { buildMs: 0, pptxObjects: [] },
 ) {
   const source = readFileSync(inputPath, "utf-8");
   const artifacts = writtenFiles.map(createArtifactContract);
@@ -358,6 +359,9 @@ function createBuildManifest(
   }));
   const visual = visualValidation ? createVisualValidationSummary(deck.layout) : null;
   const coherence = createCoherenceValidationSummary(deck.presentation, deck.layout);
+  const polish = createPolishQualitySummary(deck.presentation, deck.layout, {
+    comparisonPresets: runtime.themeGalleryPresets ?? [],
+  });
   return {
     schemaVersion: 1,
     engine: "mdpresent",
@@ -397,9 +401,10 @@ function createBuildManifest(
       layoutOverflow,
       visual,
       coherence,
+      polish,
       overflowResolution: createOverflowResolutionSummary(deck.presentation, deck.layout),
     },
-    metrics: createBuildMetrics(deck, artifacts, layoutOverflow, visual, coherence, runtime.buildMs),
+    metrics: createBuildMetrics(deck, artifacts, layoutOverflow, visual, coherence, polish, runtime.buildMs),
   };
 }
 
@@ -409,6 +414,7 @@ function createBuildMetrics(
   layoutOverflow: Array<{ level: string; code?: string }>,
   visual: ReturnType<typeof createVisualValidationSummary> | null,
   coherence: ReturnType<typeof createCoherenceValidationSummary>,
+  polish: ReturnType<typeof createPolishQualitySummary>,
   buildMs: number,
 ) {
   const outputBytes: Record<string, number> = {};
@@ -424,6 +430,7 @@ function createBuildMetrics(
     coherenceErrorCount: coherenceDiagnostics.filter((diagnostic) => diagnostic.level === "error").length,
     visualWarningCount: visualDiagnostics.filter((diagnostic) => diagnostic.level === "warning").length,
     visualErrorCount: visualDiagnostics.filter((diagnostic) => diagnostic.level === "error").length,
+    polishWarningCount: polish.requiredFailureCount,
     minFontPt: minimumFontPt(deck.layout),
     textClipRiskCount: layoutOverflow.filter((diagnostic) => String(diagnostic.code ?? "").includes("TEXT_OVERFLOW")).length,
     contrastFailures: visualDiagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_CONTRAST").length,

@@ -150,9 +150,10 @@ diagram block was split.
 
 The manifest also exposes normalized `metrics` for companion tools and CI:
 `slideCount`, `overflowCount`, coherence warning/error counts, visual
-warning/error counts, `minFontPt`, text clip risk count, contrast failures,
-connector warnings, `buildMs`, and per-format `outputBytes`. Companion tools
-must prefer these normalized metrics before falling back to diagnostic strings.
+warning/error counts, polish warning count, `minFontPt`, text clip risk count,
+contrast failures, connector warnings, `buildMs`, and per-format `outputBytes`.
+Companion tools must prefer these normalized metrics before falling back to
+diagnostic strings.
 
 PPTX builds additionally record `pptxObjects`. Each entry maps an editable
 PowerPoint output object back to `slideId`, `layoutSlideId`, `regionId`,
@@ -169,6 +170,24 @@ extreme image frame ratios, and diagram regions too small for connector
 routing. The manifest records the current thresholds for minimum contrast,
 maximum same-layer overlap ratio, readable font size, image aspect range, and
 minimum diagram connector space.
+
+`validation.polish` records the deterministic post-AI PPT polish gate. The gate
+maps the referenced presentation-polish checklist to runtime checks:
+
+- `00:24` font hierarchy: title/body scale, readable minimum font floor,
+  configured font family, and same-role font consistency
+- `02:33` layout composition: structured presets and generic blocky-slide risk
+- `05:20` highlight page: quote/key-message slides for important claims
+- `07:13` cover page: cover preset, visible title hierarchy, and no empty body
+  artifacts
+- `07:48` detail polish: overlap, clipping, contrast, image aspect, and
+  connector-clearance diagnostics
+- `08:45` before/after comparison: `--theme-gallery` builds with two or more
+  presets record deterministic comparison evidence
+
+The first five checks are required build-quality gates in the manifest. The
+before/after comparison is optional for normal builds and passes when the build
+uses at least two theme-gallery presets.
 
 Coherence summaries are always recorded in the manifest. `validate --coherence`
 promotes the same checks into user-facing diagnostics:

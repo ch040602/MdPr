@@ -22,7 +22,7 @@
 - **Markdown semantics 보존**: heading, list, emphasis, table, chart, image, code, quote, pipeline diagram을 구조로 유지합니다.
 - **Design grammar**: 장식 스타일과 색상 seed를 분리하고, harmony 규칙으로 PPT theme/chart 색을 계산합니다.
 - **Object coverage**: native table, native chart, proof object, icon slot, SVG-backed surface, diagram connector를 지원합니다.
-- **Deterministic validation**: overflow, generated artifact contract, slide count, surface marker, 언어, manifest drift를 검사합니다.
+- **Deterministic validation**: overflow, generated artifact contract, slide count, surface marker, 언어, manifest drift, post-AI PPT polish gate를 검사합니다.
 - **Skill-side review**: LLM 기반 레이아웃 비평, visual polish, high-quality deck guidance는 MDPR runtime이 아니라 [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage)의 역할입니다.
 
 ## 미리보기
@@ -98,6 +98,7 @@ mdpresent build examples/basic/deck.md --to pptx --out dist --template company-m
 - `--theme-harmony`: `preset`, `monochromatic`, `analogous`, `complementary`, `split-complementary`, `triadic`
 - `--pipeline-one-page`: 여러 section의 Markdown을 한 장짜리 pipeline/teaser composition으로 만들되 parser, layout planner, validation, renderer는 동일 경로를 사용합니다.
 - `--theme-gallery`: 같은 Markdown을 여러 style로 반복 렌더링하여 비교합니다. README/Actions preview는 distinct style subset만 사용합니다.
+- `validation.polish`: 모든 build manifest가 font hierarchy, layout composition, highlight page, cover treatment, detail QA, 선택적 theme-gallery before/after evidence를 기록합니다.
 - `--design`: 기존 shared preset 선택과의 호환 옵션
 
 ## Coherence 규칙

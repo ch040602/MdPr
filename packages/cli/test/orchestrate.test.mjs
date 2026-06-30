@@ -315,12 +315,17 @@ test("buildDeck writes design lock and output manifest with visual validation su
     assert.equal(manifest.validation.visual.checked, true);
     assert.equal(manifest.validation.visual.checks.regionBounds, true);
     assert.equal(manifest.validation.coherence.checked, true);
+    assert.equal(manifest.validation.polish.checked, true);
+    assert.equal(manifest.validation.polish.source.videoId, "GX0Fn-5YqKE");
+    assert.equal(manifest.validation.polish.chapters.fontHierarchy.passed, true);
+    assert.equal(manifest.validation.polish.chapters.detailPolish.passed, true);
     assert.equal(typeof manifest.validation.coherence.mixedObjectGroupingScore, "number");
     assert.equal(typeof manifest.metrics.buildMs, "number");
     assert.equal(manifest.metrics.slideCount, manifest.slideCount);
     assert.equal(typeof manifest.metrics.overflowCount, "number");
     assert.equal(typeof manifest.metrics.coherenceWarningCount, "number");
     assert.equal(typeof manifest.metrics.visualErrorCount, "number");
+    assert.equal(typeof manifest.metrics.polishWarningCount, "number");
     assert.equal(typeof manifest.metrics.minFontPt, "number");
     assert.ok(manifest.metrics.outputBytes.pptx > 0);
     assert.ok(Array.isArray(manifest.pptxObjects));
@@ -860,6 +865,9 @@ test("buildDeck passes theme-gallery presets to PPTX output", async () => {
 
     assert.equal(slideCount, result.presentation.slides.length * 2);
     assert.match(xml, /Theme: nord/);
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+    assert.equal(manifest.validation.polish.chapters.beforeAfterComparison.passed, true);
+    assert.deepEqual(manifest.validation.polish.chapters.beforeAfterComparison.presets, ["executive", "nord"]);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

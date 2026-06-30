@@ -42,7 +42,7 @@ Contributions: [Contributing guide](CONTRIBUTING.md) ·
 - **Markdown semantics**: parses CommonMark/GFM Markdown into an AST, then preserves headings, lists, links, emphasis, tables, HTML blocks, charts, images, code, quotes, and pipeline diagrams.
 - **Design grammar**: separates decoration style from color seed and derives PPT theme/chart colors from the selected harmony.
 - **Object coverage**: supports native tables, native charts, proof objects, icon slots, SVG-backed surfaces, and bounded diagram connectors.
-- **Deterministic validation**: checks overflow, generated artifact contracts, slide counts, surface markers, language, and manifest drift.
+- **Deterministic validation**: checks overflow, generated artifact contracts, slide counts, surface markers, language, manifest drift, and a post-AI PPT polish gate.
 - **Skill-side review**: LLM-advised layout critique, visual polish, icon keyword ideas, and high-quality deck guidance belong in [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage), not MDPR runtime.
 
 Best fit:
@@ -189,6 +189,7 @@ Pandoc and uses the built-in CommonMark/GFM AST path.
 - `--pipeline-one-page`: creates a single-slide pipeline/teaser composition from multi-section Markdown while keeping the shared parser, layout planner, validation, and renderers
 - `--design`: compatibility alias for legacy/shared preset selection
 - `--theme-gallery`: repeats the same source deck under multiple style presets for visual comparison; README/Actions previews use the pruned distinct-style subset
+- `validation.polish`: every build manifest records the post-AI PPT polish gate for font hierarchy, layout composition, highlight pages, cover treatment, detail QA, and optional theme-gallery before/after evidence
 - `--pack`: applies an approved, tokenized MDPR pack after schema validation. Packs may provide theme tokens, component tokens, diagram tokens, and PPT effect mappings without requiring an agent at runtime.
 
 Pack commands:
