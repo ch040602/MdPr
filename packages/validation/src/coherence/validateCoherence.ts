@@ -6,6 +6,7 @@ const CONTENT_REGION_ROLES = new Set(["body", "item", "image", "table", "chart",
 
 export function createCoherenceValidationSummary(presentation: PresentationIR, layout: LayoutIR) {
   const diagnostics = coherenceValidationDiagnostics(presentation, layout);
+  const intraSlideSpacingCoverage = intraSlideSpacingValidationCoverage(layout);
   const claimlessSlides = diagnostics.filter((diagnostic) => diagnostic.code === "CLAIMLESS_EVIDENCE_SLIDE").length;
   const captionDetached = diagnostics.filter((diagnostic) => diagnostic.code === "DETACHED_CAPTION").length;
   const orphanTables = diagnostics.filter((diagnostic) => diagnostic.code === "ORPHAN_TABLE").length;
@@ -27,6 +28,7 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
     claimlessSlides,
     sectionMotifDrift,
     intraSlideSpacingDrift,
+    intraSlideSpacingCoverage,
     continuationTitleQuality: diagnostics.some((diagnostic) => diagnostic.code === "DENSE_CONTINUATION_WITHOUT_TITLE") ? "needs-review" : "ok",
     mixedObjectGroupingScore: evidenceGroups ? Number((groupedEvidence / evidenceGroups).toFixed(2)) : 1,
     checks: {
@@ -115,7 +117,7 @@ function intraSlideSpacingDiagnostics(layout: LayoutIR): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
   for (const slide of layout.slides) {
-    if (slide.layout.direction === "radial") continue;
+    if (isExcludedFromLinearSpacing(slide)) continue;
     const regions = slide.regions.filter(isContentRegionForSpacing);
     if (regions.length < 3) continue;
 
@@ -140,15 +142,82 @@ type SpacingDrift = {
   gapsPx: number[];
 };
 
-function spacingDriftFor(regions: LayoutRegion[], layout: LayoutIR, axis: "horizontal" | "vertical"): SpacingDrift | undefined {
-  const groups = alignedRegionGroups(regions, axis);
-  const gapSets = groups.map((group) => adjacentGapsPx(group, layout, axis));
-  const comparableGapSets = [
-    ...gapSets.filter((gaps) => gaps.length >= 2),
-    gapSets.flatMap((gaps) => gaps).filter((gap) => gap >= 0),
-  ].filter((gaps) => gaps.length >= 2);
+type IntraSlideSpacingCoverage = {
+  checkedSlides: number;
+  skippedSlides: number;
+  notApplicableSlides: number;
+  checkedGroups: number;
+  skipped: Array<{ slideId: string; reason: string }>;
+  notApplicable: Array<{ slideId: string; reason: string }>;
+  scope: {
+    includedRoles: string[];
+    excludedRoles: string[];
+    excludedLayoutDirections: string[];
+    minimumContentRegions: number;
+  };
+};
 
-  for (const gapsPx of comparableGapSets) {
+function intraSlideSpacingValidationCoverage(layout: LayoutIR): IntraSlideSpacingCoverage {
+  const coverage: IntraSlideSpacingCoverage = {
+    checkedSlides: 0,
+    skippedSlides: 0,
+    notApplicableSlides: 0,
+    checkedGroups: 0,
+    skipped: [],
+    notApplicable: [],
+    scope: {
+      includedRoles: Array.from(CONTENT_REGION_ROLES).sort(),
+      excludedRoles: ["footer", "pageNumber", "subtitle", "title"],
+      excludedLayoutDirections: ["radial"],
+      minimumContentRegions: 3,
+    },
+  };
+
+  for (const slide of layout.slides) {
+    if (isExcludedFromLinearSpacing(slide)) {
+      coverage.skippedSlides += 1;
+      coverage.skipped.push({
+        slideId: slide.sourceSlideId,
+        reason: "radial and pentagon layouts are excluded from linear row/column spacing checks",
+      });
+      continue;
+    }
+
+    const regions = slide.regions.filter(isContentRegionForSpacing);
+    if (regions.length < coverage.scope.minimumContentRegions) {
+      coverage.notApplicableSlides += 1;
+      coverage.notApplicable.push({
+        slideId: slide.sourceSlideId,
+        reason: `fewer than ${coverage.scope.minimumContentRegions} content regions in spacing scope`,
+      });
+      continue;
+    }
+
+    const checkedGroups =
+      comparableGapSetsFor(regions, layout, "horizontal").length +
+      comparableGapSetsFor(regions, layout, "vertical").length;
+    if (checkedGroups === 0) {
+      coverage.notApplicableSlides += 1;
+      coverage.notApplicable.push({
+        slideId: slide.sourceSlideId,
+        reason: "no comparable same-row or same-column gap groups",
+      });
+      continue;
+    }
+
+    coverage.checkedSlides += 1;
+    coverage.checkedGroups += checkedGroups;
+  }
+
+  return coverage;
+}
+
+function isExcludedFromLinearSpacing(slide: LayoutIR["slides"][number]): boolean {
+  return slide.layout.direction === "radial" || slide.layout.preset === "pentagon";
+}
+
+function spacingDriftFor(regions: LayoutRegion[], layout: LayoutIR, axis: "horizontal" | "vertical"): SpacingDrift | undefined {
+  for (const gapsPx of comparableGapSetsFor(regions, layout, axis)) {
     const min = Math.min(...gapsPx);
     const max = Math.max(...gapsPx);
     if (max - min > INTRA_SLIDE_SPACING_TOLERANCE_PX) {
@@ -157,6 +226,15 @@ function spacingDriftFor(regions: LayoutRegion[], layout: LayoutIR, axis: "horiz
   }
 
   return undefined;
+}
+
+function comparableGapSetsFor(regions: LayoutRegion[], layout: LayoutIR, axis: "horizontal" | "vertical"): number[][] {
+  const groups = alignedRegionGroups(regions, axis);
+  const gapSets = groups.map((group) => adjacentGapsPx(group, layout, axis));
+  return [
+    ...gapSets.filter((gaps) => gaps.length >= 2),
+    gapSets.flatMap((gaps) => gaps).filter((gap) => gap >= 0),
+  ].filter((gaps) => gaps.length >= 2);
 }
 
 function alignedRegionGroups(regions: LayoutRegion[], axis: "horizontal" | "vertical"): LayoutRegion[][] {

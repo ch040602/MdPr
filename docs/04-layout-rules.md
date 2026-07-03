@@ -142,6 +142,16 @@ slide is reported as an intra-slide coherence warning. Renderers must preserve
 the validated Layout IR positions rather than hiding uneven spacing with
 target-specific adjustments.
 
+The linear spacing rule is scoped to deterministic row and column groups only.
+It checks slides with at least three scoped content regions and at least one
+comparable same-row or same-column gap group. Nonlinear radial layouts, including
+the pentagon preset, are reported as skipped for this linear rule rather than
+passed. Slides with too few scoped regions or no comparable linear groups are
+reported as not applicable. The coherence summary records checked, skipped, and
+not-applicable slide counts so a release profile can fail only covered
+deterministic cases and can separately decide whether skipped radial layouts
+need their own validator.
+
 ## Planner Pseudocode
 
 ```ts

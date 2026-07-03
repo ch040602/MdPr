@@ -86,6 +86,8 @@ test("coherence validation reports detached captions from presentation/layout IR
   const summary = createCoherenceValidationSummary(presentation, layout);
   assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "DETACHED_CAPTION"), true);
   assert.equal(summary.captionDetached, 1);
+  assert.equal(summary.intraSlideSpacingCoverage.notApplicableSlides, 1);
+  assert.equal(summary.intraSlideSpacingCoverage.notApplicable[0].slideId, "slide-1");
 });
 
 test("coherence validation reports inconsistent intra-slide content spacing", () => {
@@ -147,6 +149,10 @@ test("coherence validation reports inconsistent intra-slide content spacing", ()
   const summary = createCoherenceValidationSummary(presentation, layout);
   assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "INCONSISTENT_INTRA_SLIDE_SPACING"), true);
   assert.equal(summary.intraSlideSpacingDrift, 1);
+  assert.equal(summary.intraSlideSpacingCoverage.checkedSlides, 1);
+  assert.equal(summary.intraSlideSpacingCoverage.skippedSlides, 0);
+  assert.equal(summary.intraSlideSpacingCoverage.notApplicableSlides, 0);
+  assert.equal(summary.intraSlideSpacingCoverage.checkedGroups > 0, true);
   assert.equal(summary.checks.intraSlideSpacing, false);
 });
 
@@ -243,7 +249,16 @@ test("coherence validation ignores radial layouts for linear spacing checks", ()
   };
 
   const diagnostics = coherenceValidationDiagnostics(presentation, layout);
+  const summary = createCoherenceValidationSummary(presentation, layout);
   assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "INCONSISTENT_INTRA_SLIDE_SPACING"), false);
+  assert.equal(summary.intraSlideSpacingCoverage.checkedSlides, 0);
+  assert.equal(summary.intraSlideSpacingCoverage.skippedSlides, 1);
+  assert.equal(summary.intraSlideSpacingCoverage.skipped[0].reason.includes("radial"), true);
+
+  const pentagonWithoutDirection = structuredClone(layout);
+  delete pentagonWithoutDirection.slides[0].layout.direction;
+  const pentagonSummary = createCoherenceValidationSummary(presentation, pentagonWithoutDirection);
+  assert.equal(pentagonSummary.intraSlideSpacingCoverage.skippedSlides, 1);
 });
 
 test("polish quality summary maps AI PPT polish chapters to deterministic checks", () => {

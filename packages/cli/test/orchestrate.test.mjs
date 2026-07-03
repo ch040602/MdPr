@@ -315,6 +315,9 @@ test("buildDeck writes design lock and output manifest with visual validation su
     assert.equal(manifest.validation.visual.checked, true);
     assert.equal(manifest.validation.visual.checks.regionBounds, true);
     assert.equal(manifest.validation.coherence.checked, true);
+    assert.equal(typeof manifest.validation.coherence.intraSlideSpacingCoverage.checkedSlides, "number");
+    assert.equal(typeof manifest.validation.coherence.intraSlideSpacingCoverage.skippedSlides, "number");
+    assert.equal(typeof manifest.validation.coherence.intraSlideSpacingCoverage.notApplicableSlides, "number");
     assert.equal(manifest.validation.polish.checked, true);
     assert.equal(manifest.validation.polish.source.videoId, "GX0Fn-5YqKE");
     assert.equal(manifest.validation.polish.chapters.fontHierarchy.passed, true);
