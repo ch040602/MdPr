@@ -88,6 +88,68 @@ test("coherence validation reports detached captions from presentation/layout IR
   assert.equal(summary.captionDetached, 1);
 });
 
+test("coherence validation reports inconsistent intra-slide content spacing", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Deck" },
+    outline: [],
+    slides: [{
+      id: "slide-1",
+      index: 0,
+      role: "content",
+      title: "Spacing",
+      headingPath: ["Spacing"],
+      source: {},
+      blocks: [
+        { id: "b1", type: "paragraph", text: "Left claim." },
+        { id: "b2", type: "paragraph", text: "Middle evidence." },
+        { id: "b3", type: "image", alt: "Right proof", src: "proof.png" },
+      ],
+      intent: "evidence",
+      tags: [],
+    }],
+    coherenceGroups: [{
+      id: "cg-1",
+      slideId: "slide-1",
+      headingPath: ["Spacing"],
+      primaryBlockId: "b1",
+      supportingBlockIds: ["b2", "b3"],
+      role: "evidence-pack",
+      keepTogether: true,
+      splitPriority: 1,
+      blockRoles: { b1: "claim", b2: "evidence", b3: "evidence" },
+    }],
+    assets: [],
+    diagnostics: [],
+  };
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 1280, height: 720, unit: "px" },
+    theme,
+    slides: [{
+      id: "layout-1",
+      sourceSlideId: "slide-1",
+      index: 0,
+      layout: { preset: "chart-table" },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 8, maxShrinkSteps: 4 },
+      regions: [
+        { id: "title", role: "title", x: 80, y: 40, w: 1120, h: 60, zIndex: 1, blockIds: ["__title:slide-1"] },
+        { id: "left", role: "body", x: 80, y: 160, w: 260, h: 320, zIndex: 1, blockIds: ["b1"] },
+        { id: "middle", role: "body", x: 380, y: 160, w: 260, h: 320, zIndex: 1, blockIds: ["b2"] },
+        { id: "right", role: "image", x: 720, y: 160, w: 260, h: 320, zIndex: 1, blockIds: ["b3"] },
+      ],
+    }],
+    diagnostics: [],
+  };
+
+  const diagnostics = coherenceValidationDiagnostics(presentation, layout);
+  const summary = createCoherenceValidationSummary(presentation, layout);
+  assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "INCONSISTENT_INTRA_SLIDE_SPACING"), true);
+  assert.equal(summary.intraSlideSpacingDrift, 1);
+  assert.equal(summary.checks.intraSlideSpacing, false);
+});
+
 test("polish quality summary maps AI PPT polish chapters to deterministic checks", () => {
   const presentation = {
     version: "1.0",

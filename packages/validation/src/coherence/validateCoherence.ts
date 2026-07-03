@@ -1,5 +1,8 @@
 import type { Diagnostic, PresentationIR, SlideIR } from "@mdpresent/core";
-import type { LayoutIR } from "@mdpresent/layout";
+import type { LayoutIR, LayoutRegion } from "@mdpresent/layout";
+
+const INTRA_SLIDE_SPACING_TOLERANCE_PX = 8;
+const CONTENT_REGION_ROLES = new Set(["body", "item", "image", "table", "chart", "code", "diagram", "icon"]);
 
 export function createCoherenceValidationSummary(presentation: PresentationIR, layout: LayoutIR) {
   const diagnostics = coherenceValidationDiagnostics(presentation, layout);
@@ -8,6 +11,7 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
   const orphanTables = diagnostics.filter((diagnostic) => diagnostic.code === "ORPHAN_TABLE").length;
   const lowObjectCoverage = diagnostics.filter((diagnostic) => diagnostic.code === "LOW_OBJECT_COVERAGE").length;
   const sectionMotifDrift = diagnostics.filter((diagnostic) => diagnostic.code === "SECTION_STYLE_DRIFT").length;
+  const intraSlideSpacingDrift = diagnostics.filter((diagnostic) => diagnostic.code === "INCONSISTENT_INTRA_SLIDE_SPACING").length;
   const evidenceGroups = presentation.coherenceGroups.filter((group) => group.role === "evidence-pack").length;
   const groupedEvidence = presentation.coherenceGroups.filter((group) => group.role === "evidence-pack" && group.supportingBlockIds.length > 0).length;
 
@@ -16,11 +20,13 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
     thresholds: {
       minimumMixedObjectGroupingScore: 0.75,
       minimumObjectCoverageRatio: 0.2,
+      intraSlideSpacingTolerancePx: INTRA_SLIDE_SPACING_TOLERANCE_PX,
     },
     orphanEvidenceBlocks: orphanTables,
     captionDetached,
     claimlessSlides,
     sectionMotifDrift,
+    intraSlideSpacingDrift,
     continuationTitleQuality: diagnostics.some((diagnostic) => diagnostic.code === "DENSE_CONTINUATION_WITHOUT_TITLE") ? "needs-review" : "ok",
     mixedObjectGroupingScore: evidenceGroups ? Number((groupedEvidence / evidenceGroups).toFixed(2)) : 1,
     checks: {
@@ -29,6 +35,7 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
       orphanTables: orphanTables === 0,
       lowObjectCoverage: lowObjectCoverage === 0,
       sectionMotifDrift: sectionMotifDrift === 0,
+      intraSlideSpacing: intraSlideSpacingDrift === 0,
     },
     diagnostics,
   };
@@ -99,8 +106,115 @@ export function coherenceValidationDiagnostics(presentation: PresentationIR, lay
 
   diagnostics.push(...sectionStyleDriftDiagnostics(presentation, layout));
   diagnostics.push(...continuationTitleDiagnostics(presentation));
+  diagnostics.push(...intraSlideSpacingDiagnostics(layout));
 
   return diagnostics;
+}
+
+function intraSlideSpacingDiagnostics(layout: LayoutIR): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+
+  for (const slide of layout.slides) {
+    const regions = slide.regions.filter(isContentRegionForSpacing);
+    if (regions.length < 3) continue;
+
+    const horizontal = spacingDriftFor(regions, layout, "horizontal");
+    const vertical = spacingDriftFor(regions, layout, "vertical");
+
+    for (const drift of [horizontal, vertical].filter(Boolean) as SpacingDrift[]) {
+      diagnostics.push({
+        level: "warning",
+        code: "INCONSISTENT_INTRA_SLIDE_SPACING",
+        slideId: slide.sourceSlideId,
+        message: `Slide "${slide.sourceSlideId}" uses uneven ${drift.axis} spacing between content regions (${drift.gapsPx.join(", ")}px; tolerance ${INTRA_SLIDE_SPACING_TOLERANCE_PX}px). Keep actual text and object regions on one spacing token within the slide.`,
+      });
+    }
+  }
+
+  return diagnostics;
+}
+
+type SpacingDrift = {
+  axis: "horizontal" | "vertical";
+  gapsPx: number[];
+};
+
+function spacingDriftFor(regions: LayoutRegion[], layout: LayoutIR, axis: "horizontal" | "vertical"): SpacingDrift | undefined {
+  const groups = alignedRegionGroups(regions, axis);
+  const comparableGapSets = groups
+    .map((group) => adjacentGapsPx(group, layout, axis))
+    .filter((gaps) => gaps.length >= 2);
+  if (!comparableGapSets.length) return undefined;
+
+  for (const gapsPx of comparableGapSets) {
+    const min = Math.min(...gapsPx);
+    const max = Math.max(...gapsPx);
+    if (max - min > INTRA_SLIDE_SPACING_TOLERANCE_PX) {
+      return { axis, gapsPx };
+    }
+  }
+
+  return undefined;
+}
+
+function alignedRegionGroups(regions: LayoutRegion[], axis: "horizontal" | "vertical"): LayoutRegion[][] {
+  const crossStart = axis === "horizontal" ? "y" : "x";
+  const crossSize = axis === "horizontal" ? "h" : "w";
+  const sorted = [...regions].sort((left, right) => left[crossStart] - right[crossStart]);
+  const groups: LayoutRegion[][] = [];
+
+  for (const region of sorted) {
+    const group = groups.find((candidate) => regionOverlapRatio(region, groupBounds(candidate), crossStart, crossSize) >= 0.5);
+    if (group) {
+      group.push(region);
+    } else {
+      groups.push([region]);
+    }
+  }
+
+  return groups;
+}
+
+function adjacentGapsPx(regions: LayoutRegion[], layout: LayoutIR, axis: "horizontal" | "vertical"): number[] {
+  const start = axis === "horizontal" ? "x" : "y";
+  const size = axis === "horizontal" ? "w" : "h";
+  const sorted = [...regions].sort((left, right) => left[start] - right[start]);
+  const gaps: number[] = [];
+
+  for (let index = 0; index < sorted.length - 1; index += 1) {
+    const current = sorted[index];
+    const next = sorted[index + 1];
+    const gap = next[start] - (current[start] + current[size]);
+    if (gap < 0) continue;
+    gaps.push(Number(toPx(gap, layout).toFixed(1)));
+  }
+
+  return gaps;
+}
+
+function isContentRegionForSpacing(region: LayoutRegion): boolean {
+  return CONTENT_REGION_ROLES.has(region.role) && region.blockIds.length > 0;
+}
+
+function groupBounds(regions: LayoutRegion[]): Pick<LayoutRegion, "x" | "y" | "w" | "h"> {
+  const minX = Math.min(...regions.map((region) => region.x));
+  const minY = Math.min(...regions.map((region) => region.y));
+  const maxX = Math.max(...regions.map((region) => region.x + region.w));
+  const maxY = Math.max(...regions.map((region) => region.y + region.h));
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+function regionOverlapRatio(left: Pick<LayoutRegion, "x" | "y" | "w" | "h">, right: Pick<LayoutRegion, "x" | "y" | "w" | "h">, start: "x" | "y", size: "w" | "h"): number {
+  const leftStart = left[start];
+  const leftEnd = left[start] + left[size];
+  const rightStart = right[start];
+  const rightEnd = right[start] + right[size];
+  const overlap = Math.max(0, Math.min(leftEnd, rightEnd) - Math.max(leftStart, rightStart));
+  return overlap / Math.max(1e-6, Math.min(left[size], right[size]));
+}
+
+function toPx(value: number, layout: LayoutIR): number {
+  return layout.slideSize.unit === "px" ? value : value * 96;
 }
 
 function sectionStyleDriftDiagnostics(presentation: PresentationIR, layout: LayoutIR): Diagnostic[] {

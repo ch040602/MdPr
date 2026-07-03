@@ -127,6 +127,21 @@ The score favors layouts that keep source objects visible, preserve heading to
 claim to evidence reading order, avoid unnecessary font reduction, and keep
 white space balanced.
 
+## Intra-Slide Coherence Spacing
+
+Within a single slide, actual content regions must share one spacing token
+whenever they belong to the same visual row or column. This applies to body
+text boxes, item boxes, images, tables, charts, code blocks, diagrams, icons,
+and other object regions represented in Layout IR. Title, subtitle, footer, and
+page-number chrome may use separate spacing.
+
+Spacing is compared in pixels for validation. If the Layout IR is expressed in
+inches, validation normalizes gaps with `96px = 1in`. Adjacent content gaps in a
+comparable row or column should not drift by more than `8px`; otherwise the
+slide is reported as an intra-slide coherence warning. Renderers must preserve
+the validated Layout IR positions rather than hiding uneven spacing with
+target-specific adjustments.
+
 ## Planner Pseudocode
 
 ```ts
