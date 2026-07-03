@@ -150,6 +150,102 @@ test("coherence validation reports inconsistent intra-slide content spacing", ()
   assert.equal(summary.checks.intraSlideSpacing, false);
 });
 
+test("coherence validation compares matching column gaps within a slide", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Deck" },
+    outline: [],
+    slides: [{
+      id: "slide-1",
+      index: 0,
+      role: "content",
+      title: "Columns",
+      headingPath: ["Columns"],
+      source: {},
+      blocks: [
+        { id: "b1", type: "diagram", nodes: [], edges: [] },
+        { id: "b2", type: "paragraph", text: "Feature summary." },
+        { id: "b3", type: "chart", data: { labels: [], series: [] } },
+        { id: "b4", type: "table", rows: [] },
+      ],
+      intent: "diagram",
+      tags: [],
+    }],
+    coherenceGroups: [],
+    assets: [],
+    diagnostics: [],
+  };
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 1280, height: 720, unit: "px" },
+    theme,
+    slides: [{
+      id: "layout-1",
+      sourceSlideId: "slide-1",
+      index: 0,
+      layout: { preset: "pipeline-one-page" },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 8, maxShrinkSteps: 4 },
+      regions: [
+        { id: "diagram", role: "diagram", x: 70, y: 110, w: 660, h: 200, zIndex: 1, blockIds: ["b1"] },
+        { id: "features", role: "body", x: 70, y: 330, w: 660, h: 300, zIndex: 1, blockIds: ["b2"] },
+        { id: "chart", role: "chart", x: 770, y: 110, w: 440, h: 210, zIndex: 1, blockIds: ["b3"] },
+        { id: "table", role: "table", x: 770, y: 355, w: 440, h: 260, zIndex: 1, blockIds: ["b4"] },
+      ],
+    }],
+    diagnostics: [],
+  };
+
+  const diagnostics = coherenceValidationDiagnostics(presentation, layout);
+  assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "INCONSISTENT_INTRA_SLIDE_SPACING"), true);
+});
+
+test("coherence validation ignores radial layouts for linear spacing checks", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Deck" },
+    outline: [],
+    slides: [{
+      id: "slide-1",
+      index: 0,
+      role: "content",
+      title: "Radial",
+      headingPath: ["Radial"],
+      source: {},
+      blocks: [],
+      intent: "list",
+      tags: [],
+    }],
+    coherenceGroups: [],
+    assets: [],
+    diagnostics: [],
+  };
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme,
+    slides: [{
+      id: "layout-1",
+      sourceSlideId: "slide-1",
+      index: 0,
+      layout: { preset: "pentagon", direction: "radial" },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 8, maxShrinkSteps: 4 },
+      regions: [
+        { id: "item-1", role: "item", x: 5.1, y: 1.4, w: 3.0, h: 1.2, zIndex: 1, blockIds: ["b1"] },
+        { id: "item-2", role: "item", x: 8.4, y: 2.8, w: 3.0, h: 1.2, zIndex: 1, blockIds: ["b2"] },
+        { id: "item-3", role: "item", x: 7.1, y: 5.0, w: 3.0, h: 1.2, zIndex: 1, blockIds: ["b3"] },
+        { id: "item-4", role: "item", x: 3.2, y: 5.0, w: 3.0, h: 1.2, zIndex: 1, blockIds: ["b4"] },
+        { id: "item-5", role: "item", x: 1.9, y: 2.8, w: 3.0, h: 1.2, zIndex: 1, blockIds: ["b5"] },
+      ],
+    }],
+    diagnostics: [],
+  };
+
+  const diagnostics = coherenceValidationDiagnostics(presentation, layout);
+  assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "INCONSISTENT_INTRA_SLIDE_SPACING"), false);
+});
+
 test("polish quality summary maps AI PPT polish chapters to deterministic checks", () => {
   const presentation = {
     version: "1.0",

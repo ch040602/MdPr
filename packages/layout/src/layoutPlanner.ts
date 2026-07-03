@@ -434,7 +434,7 @@ function createPipelineOnePageRegions(slide: SlideIR, titleRegion: LayoutRegion,
       { id: "diagram", role: "diagram", blockIds: diagramBlockIds.slice(0, 1), x: 0.72, y: 1.16, w: 6.9, h: 2.08, zIndex: 10, typography: compact },
       { id: "feature-summary", role: "body", blockIds: featureBlockIds, x: 0.72, y: 3.45, w: 6.9, h: 3.18, zIndex: 10, typography: { ...compact, fontSize: 14, minFontSize: 14 } },
       ...(chartBlockIds.length ? [{ id: "chart", role: "chart" as const, blockIds: chartBlockIds.slice(0, 1), x: 8.02, y: 1.16, w: 4.55, h: 2.2, zIndex: 10, typography: compact }] : []),
-      ...(tableBlockIds.length ? [{ id: "table", role: "table" as const, blockIds: tableBlockIds.slice(0, 1), x: 8.02, y: 3.72, w: 4.55, h: 2.72, zIndex: 10, typography: { ...compact, fontSize: Math.max(14, compact.fontSize - 2), minFontSize: 14 } }] : []),
+      ...(tableBlockIds.length ? [{ id: "table", role: "table" as const, blockIds: tableBlockIds.slice(0, 1), x: 8.02, y: 3.57, w: 4.55, h: 2.72, zIndex: 10, typography: { ...compact, fontSize: Math.max(14, compact.fontSize - 2), minFontSize: 14 } }] : []),
       {
         id: "object-summary",
         role: "body",

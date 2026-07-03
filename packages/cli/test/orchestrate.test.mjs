@@ -669,6 +669,10 @@ test("pipeline-one-page layout separates pipeline, feature text, chart, and tabl
     assert.equal(chart.x > diagram.x + diagram.w, true);
     assert.equal(table.x, chart.x);
     assert.equal(table.y > chart.y + chart.h, true);
+    assert.equal(
+      Number((features.y - (diagram.y + diagram.h)).toFixed(2)),
+      Number((table.y - (chart.y + chart.h)).toFixed(2)),
+    );
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

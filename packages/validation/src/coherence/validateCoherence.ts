@@ -115,6 +115,7 @@ function intraSlideSpacingDiagnostics(layout: LayoutIR): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
   for (const slide of layout.slides) {
+    if (slide.layout.direction === "radial") continue;
     const regions = slide.regions.filter(isContentRegionForSpacing);
     if (regions.length < 3) continue;
 
@@ -141,10 +142,11 @@ type SpacingDrift = {
 
 function spacingDriftFor(regions: LayoutRegion[], layout: LayoutIR, axis: "horizontal" | "vertical"): SpacingDrift | undefined {
   const groups = alignedRegionGroups(regions, axis);
-  const comparableGapSets = groups
-    .map((group) => adjacentGapsPx(group, layout, axis))
-    .filter((gaps) => gaps.length >= 2);
-  if (!comparableGapSets.length) return undefined;
+  const gapSets = groups.map((group) => adjacentGapsPx(group, layout, axis));
+  const comparableGapSets = [
+    ...gapSets.filter((gaps) => gaps.length >= 2),
+    gapSets.flatMap((gaps) => gaps).filter((gap) => gap >= 0),
+  ].filter((gaps) => gaps.length >= 2);
 
   for (const gapsPx of comparableGapSets) {
     const min = Math.min(...gapsPx);
