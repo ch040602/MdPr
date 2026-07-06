@@ -1004,6 +1004,111 @@ test("planPresentation keeps compact chart table image evidence bundles on one s
   assert.deepEqual(mixedSlides[0].blocks.map((block) => block.type), ["bulletList", "chart", "table", "image"]);
 });
 
+test("pipeline-one-page mode creates a CHI-style teaser overview before proof objects", () => {
+  const config = structuredClone(defaultConfig);
+  config.deck.presentationMode = "pipeline-one-page";
+  const doc = parseMarkdown([
+    "# Research System",
+    "",
+    "## Runtime Pipeline",
+    "",
+    "Collect => Model => Explain => Deploy",
+    "",
+    "## Contribution",
+    "",
+    "- Human-guided modeling for ambiguous design evidence.",
+    "- Deterministic output checks for generated artifacts.",
+    "",
+    "## Evaluation",
+    "",
+    "```chart",
+    "labels: Accuracy, Coverage, Trust",
+    "Score: 81, 88, 76",
+    "```",
+    "",
+    "## Boundary",
+    "",
+    "| Layer | Owned by runtime |",
+    "| --- | --- |",
+    "| Layout | coordinates and regions |",
+  ].join("\n"));
+
+  const presentation = planPresentation(doc, config);
+  const slide = presentation.slides[0];
+  const overview = slide.blocks.find((block) => block.id.endsWith("-teaser-overview"));
+
+  assert.equal(presentation.slides.length, 1);
+  assert.equal(slide.intent, "summary");
+  assert.deepEqual(slide.blocks.map((block) => block.type), ["diagram", "bulletList", "chart", "table"]);
+  assert.ok(overview);
+  assert.deepEqual(overview.listItems.map((item) => item.label), [
+    "Runtime Pipeline",
+    "Contribution",
+    "Evaluation",
+    "Boundary",
+  ]);
+  assert.equal(overview.listItems.every((item) => item.description && item.description.length <= 92), true);
+});
+
+test("pipeline-one-page mode exposes compact teaser coverage and proof priority metadata", () => {
+  const config = structuredClone(defaultConfig);
+  config.deck.presentationMode = "pipeline-one-page";
+  const doc = parseMarkdown([
+    "# Dense Teaser",
+    "",
+    "## Pipeline",
+    "",
+    "Input => Transform => Output",
+    "",
+    "## Incidental Chart",
+    "",
+    "```chart",
+    "labels: Draft, Review",
+    "Score: 1, 2",
+    "```",
+    "",
+    "## Main Chart",
+    "",
+    "```chart",
+    "labels: Quality, Coverage",
+    "Score: 9, 8",
+    "```",
+    "",
+    "## Table A",
+    "",
+    "| Key | Value |",
+    "| --- | --- |",
+    "| A | B |",
+    "",
+    "## Table B",
+    "",
+    "| Key | Value |",
+    "| --- | --- |",
+    "| C | D |",
+    "",
+    "## Extra Notes",
+    "",
+    "- This section should be omitted from the compact overview metadata.",
+  ].join("\n"));
+
+  const presentation = planPresentation(doc, config);
+  const slide = presentation.slides[0];
+  const chart = slide.blocks.find((block) => block.type === "chart");
+  const table = slide.blocks.find((block) => block.type === "table");
+  const overview = slide.blocks.find((block) => block.id.endsWith("-teaser-overview"));
+
+  assert.equal(overview.listItems.length, 4);
+  assert.deepEqual(chart.chart.labels, ["Draft", "Review"]);
+  assert.deepEqual(table.rows[1], ["A", "B"]);
+  assert.equal(slide.tags.includes("teaser-sections:6"), true);
+  assert.equal(slide.tags.includes("teaser-sections-selected:4"), true);
+  assert.equal(slide.tags.includes("teaser-sections-omitted:2"), true);
+  assert.equal(slide.tags.includes("teaser-proofs:diagram+chart+table"), true);
+  assert.equal(slide.tags.includes("teaser-proof-omitted:chart:1"), true);
+  assert.equal(slide.tags.includes("teaser-proof-omitted:table:1"), true);
+  assert.equal(slide.tags.includes("teaser-proof-priority:first-by-type-source-order"), true);
+});
+
 test("planPresentation treats horizontal rules as explicit slide separators", () => {
   const config = structuredClone(defaultConfig);
   config.toc.enabled = false;

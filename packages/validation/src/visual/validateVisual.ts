@@ -76,6 +76,7 @@ export function createVisualValidationSummary(layout: LayoutIR) {
       sameLayerOverlap: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_REGION_OVERLAP"),
       imageAspectRatio: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_IMAGE_ASPECT_RATIO"),
       connectorClearance: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_CONNECTOR_CLEARANCE"),
+      pipelineOnePageEvidenceRail: diagnostics.every((diagnostic) => diagnostic.code !== "VISUAL_TEASER_EVIDENCE_RAIL"),
       backgroundContentOverlap: diagnostics.every((diagnostic) => !["VISUAL_BACKGROUND_OVERLAP", "VISUAL_REGION_OVERLAP"].includes(diagnostic.code ?? "")),
     },
     diagnostics,
@@ -134,6 +135,10 @@ export function visualValidationDiagnostics(layout: LayoutIR): Diagnostic[] {
       }
     }
 
+    if (slide.layout.preset === "pipeline-one-page") {
+      diagnostics.push(...validatePipelineOnePageEvidenceRail(slide));
+    }
+
     const contentRegions = slide.regions.filter(isContentRegion);
     for (let leftIndex = 0; leftIndex < contentRegions.length; leftIndex++) {
       for (let rightIndex = leftIndex + 1; rightIndex < contentRegions.length; rightIndex++) {
@@ -152,6 +157,44 @@ export function visualValidationDiagnostics(layout: LayoutIR): Diagnostic[] {
     }
   }
   return diagnostics;
+}
+
+function validatePipelineOnePageEvidenceRail(slide: LayoutIR["slides"][number]): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const diagram = slide.regions.find((region) => region.id === "diagram" || region.role === "diagram");
+  const chart = slide.regions.find((region) => region.id === "chart" || region.role === "chart");
+  const table = slide.regions.find((region) => region.id === "table" || region.role === "table");
+
+  if (diagram && chart && chart.x <= diagram.x + diagram.w) {
+    diagnostics.push(teaserRailDiagnostic(slide.sourceSlideId, "Chart evidence rail must sit to the right of the hero diagram."));
+  }
+  if (chart && table && table.y <= chart.y + chart.h) {
+    diagnostics.push(teaserRailDiagnostic(slide.sourceSlideId, "Table evidence rail must sit below the chart rail."));
+  }
+  if (chart && (chart.w < 3.6 || chart.h < 1.5)) {
+    diagnostics.push(teaserRailDiagnostic(slide.sourceSlideId, `Chart evidence rail is too small (${chart.w.toFixed(2)}x${chart.h.toFixed(2)}in).`));
+  }
+  if (table && (table.w < 3.6 || table.h < 2.1)) {
+    diagnostics.push(teaserRailDiagnostic(slide.sourceSlideId, `Table evidence rail is too small (${table.w.toFixed(2)}x${table.h.toFixed(2)}in).`));
+  }
+  for (const region of [chart, table].filter((candidate): candidate is LayoutRegion => Boolean(candidate))) {
+    const fontSize = region.typography?.fontSize ?? 14;
+    const minFontSize = region.typography?.minFontSize ?? 14;
+    if (Math.min(fontSize, minFontSize) < 14) {
+      diagnostics.push(teaserRailDiagnostic(slide.sourceSlideId, `Evidence rail region ${region.id} falls below the 14pt teaser readability floor.`));
+    }
+  }
+
+  return diagnostics;
+}
+
+function teaserRailDiagnostic(slideId: string, message: string): Diagnostic {
+  return {
+    level: "error",
+    code: "VISUAL_TEASER_EVIDENCE_RAIL",
+    slideId,
+    message,
+  };
 }
 
 export function createPolishQualitySummary(

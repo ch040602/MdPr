@@ -163,15 +163,13 @@ function createPipelineOnePageSlide(doc: MarkdownDocument, config: Config, plann
   const contentSlides = plannedSlides.filter((slide) => slide.role !== "cover" && slide.role !== "toc");
   const title = doc.title ?? config.deck.title ?? contentSlides[0]?.title ?? "Pipeline Overview";
   const source = contentSlides[0]?.source ?? {};
-  const blocks = contentSlides.flatMap((slide, index) => [
-    createSectionLabelBlock(slide, index),
-    ...slide.blocks.filter((block) => block.type !== "slideBreak"),
-  ]);
+  const id = createStableId(["pipeline-one-page", title], "pipeline-one-page");
+  const blocks = createPipelineTeaserBlocks(id, contentSlides);
   const fallbackBlocks = plannedSlides.flatMap((slide) => slide.blocks.filter((block) => block.type !== "slideBreak"));
   const sourceBlocks = doc.blocks.filter((block) => block.type !== "heading" && block.type !== "slideBreak");
   const finalBlocks = blocks.length ? blocks : fallbackBlocks.length ? fallbackBlocks : sourceBlocks;
   const base: Omit<SlideIR, "intent" | "tags"> = {
-    id: createStableId(["pipeline-one-page", title], "pipeline-one-page"),
+    id,
     index: 1,
     role: "content",
     title,
@@ -185,20 +183,125 @@ function createPipelineOnePageSlide(doc: MarkdownDocument, config: Config, plann
   return {
     ...base,
     intent: "summary",
-    tags: ["auto", "pipeline-one-page"],
+    tags: ["auto", "pipeline-one-page", ...createPipelineTeaserTags(contentSlides, finalBlocks)],
   };
 }
 
-function createSectionLabelBlock(slide: SlideIR, index: number): BlockIR {
-  const text = slide.title ?? `Section ${index + 1}`;
+function createPipelineTeaserBlocks(teaserSlideId: string, contentSlides: SlideIR[]): BlockIR[] {
+  if (!contentSlides.length) return [];
+
+  const allBlocks = contentSlides.flatMap((slide) => slide.blocks.filter((block) => block.type !== "slideBreak"));
+  const overview = createTeaserOverviewBlock(teaserSlideId, contentSlides);
+  const diagram = firstBlockOfType(allBlocks, "diagram");
+  const chart = firstBlockOfType(allBlocks, "chart");
+  const table = firstBlockOfType(allBlocks, "table");
+  const image = firstBlockOfType(allBlocks, "image");
+  const selected = [
+    diagram,
+    overview,
+    chart,
+    table,
+    image,
+  ].filter((block): block is BlockIR => Boolean(block));
+
+  if (selected.length > 1 || !allBlocks.length) return selected;
+  return selected.length ? selected : allBlocks.slice(0, 4);
+}
+
+function createTeaserOverviewBlock(teaserSlideId: string, contentSlides: SlideIR[]): BlockIR {
+  const listItems = contentSlides.slice(0, 4).map((slide, index) => {
+    const label = cleanTeaserText(slide.title ?? `Step ${index + 1}`) || `Step ${index + 1}`;
+    const description = truncateTeaserText(summarizeSlideForTeaser(slide), 92);
+    const text = description ? `${label}: ${description}` : label;
+    return {
+      text,
+      level: 0,
+      ordered: false,
+      label,
+      description,
+    };
+  });
+
   return {
-    id: `${slide.id}-one-page-section`,
-    type: "paragraph",
-    text,
-    lines: [text],
-    inlineRuns: [{ text, bold: true }],
-    source: slide.source,
+    id: `${teaserSlideId}-teaser-overview`,
+    type: "bulletList",
+    items: listItems.map((item) => item.text),
+    listItems,
+    listKind: "unordered",
+    source: contentSlides[0]?.source,
   };
+}
+
+function createPipelineTeaserTags(contentSlides: SlideIR[], selectedBlocks: BlockIR[]): string[] {
+  if (!contentSlides.length) return ["teaser-source:h1-fallback"];
+
+  const allBlocks = contentSlides.flatMap((slide) => slide.blocks.filter((block) => block.type !== "slideBreak"));
+  const overview = selectedBlocks.find((block) => block.id.endsWith("-teaser-overview"));
+  const overviewItems = overview?.listItems ?? [];
+  const selectedProofKinds = ["diagram", "chart", "table", "image"].filter((type) =>
+    selectedBlocks.some((block) => block.type === type)
+  );
+  const tags = [
+    `teaser-sections:${contentSlides.length}`,
+    `teaser-sections-selected:${overviewItems.length}`,
+    `teaser-sections-omitted:${Math.max(0, contentSlides.length - overviewItems.length)}`,
+    `teaser-proofs:${selectedProofKinds.length ? selectedProofKinds.join("+") : "none"}`,
+    `teaser-truncated:${overviewItems.filter((item) => item.description?.endsWith("...")).length}`,
+    "teaser-proof-priority:first-by-type-source-order",
+  ];
+
+  for (const kind of ["diagram", "chart", "table", "image"]) {
+    const total = allBlocks.filter((block) => block.type === kind).length;
+    const selected = selectedBlocks.filter((block) => block.type === kind).length;
+    if (total > selected) tags.push(`teaser-proof-omitted:${kind}:${total - selected}`);
+  }
+
+  return tags;
+}
+
+function summarizeSlideForTeaser(slide: SlideIR): string {
+  const primary = slide.blocks.find((block) => block.type !== "slideBreak");
+  if (!primary) return "Section summary.";
+
+  if (primary.type === "diagram") {
+    const labels = primary.diagram?.nodes.map((node) => node.label).filter(Boolean).slice(0, 4) ?? [];
+    return labels.length ? labels.join(" -> ") : "Pipeline diagram.";
+  }
+
+  if (primary.type === "bulletList") {
+    const firstItem = primary.listItems?.[0];
+    if (firstItem) return cleanTeaserText(`${firstItem.label ?? ""} ${firstItem.description ?? firstItem.text}`.trim());
+    return cleanTeaserText(primary.items?.[0] ?? "Feature summary.");
+  }
+
+  if (primary.type === "chart") {
+    const labels = primary.chart?.labels.slice(0, 3).join(", ");
+    return labels ? `Chart signal: ${labels}.` : "Chart signal.";
+  }
+
+  if (primary.type === "table") {
+    const headers = primary.rows?.[0]?.filter(Boolean).slice(0, 3).join(" / ");
+    return headers ? `Table proof: ${headers}.` : "Table proof.";
+  }
+
+  if (primary.type === "image") return cleanTeaserText(primary.alt ? `Image proof: ${primary.alt}.` : "Image proof.");
+  if (primary.type === "code") return cleanTeaserText(primary.lines?.[0] ?? primary.text ?? "Code proof.");
+  if (primary.type === "quote") return cleanTeaserText(primary.text ?? "Quoted evidence.");
+  return cleanTeaserText(primary.sentences?.[0] ?? primary.text ?? "Section summary.");
+}
+
+function firstBlockOfType(blocks: BlockIR[], type: BlockIR["type"]): BlockIR | undefined {
+  return blocks.find((block) => block.type === type);
+}
+
+function cleanTeaserText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function truncateTeaserText(value: string, maxLength: number): string {
+  const cleaned = cleanTeaserText(value);
+  if (cleaned.length <= maxLength) return cleaned;
+  return `${cleaned.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
 }
 
 function chunkTocBlocks<T>(blocks: T[]): T[][] {

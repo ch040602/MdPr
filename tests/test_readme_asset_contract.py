@@ -101,6 +101,15 @@ class ReadmeAssetContractTests(unittest.TestCase):
         self.assertEqual(evaluation["teaserSourceSha256"], hashlib.sha256(teaser_source.encode("utf-8")).hexdigest())
         self.assertTrue(evaluation["teaserSourceSha256Matches"])
         self.assertEqual(evaluation["teaserSlideCount"], 1)
+        teaser_contract = evaluation["pipelineOnePageTeaser"]
+        self.assertTrue(teaser_contract["overviewRegionPresent"])
+        self.assertTrue(teaser_contract["overviewBelowHero"])
+        self.assertGreaterEqual(teaser_contract["heroRegionShare"], 0.16)
+        self.assertEqual(teaser_contract["evidenceRailObjectCount"], 2)
+        self.assertTrue(teaser_contract["chartTablePresent"])
+        self.assertTrue(teaser_contract["evidenceRailRightOfHero"])
+        self.assertFalse(teaser_contract["emptyObjectSummaryPresent"])
+        self.assertTrue(teaser_contract["visualEvidenceRailCheck"])
         selected_by_title = evaluation["selectedPreviewImagesByTitle"]
         self.assertEqual(selected_by_title["Pipeline Diagram"], "docs/theme-preview/slides/bentogrid/slide-11.png")
         for title, image in selected_by_title.items():

@@ -90,6 +90,53 @@ Draft => Review => Render => Validate
 
 The parser emits ordered nodes and directed edges. The layout planner routes the slide to the `pipeline` preset and creates a `diagram` region. Renderers must preserve the node/edge relationship rather than flattening the flow into bullets.
 
+## Pipeline-One-Page Teaser Rule
+
+`deck.presentationMode: pipeline-one-page` creates one summary-first slide for README
+previews, proposal teasers, and first-page deck overviews. The rule follows CHI-style
+teaser references: a short header, one large central figure or system diagram, compact
+numbered/labelled summary text, and a small evidence rail.
+
+Generation order:
+
+1. Use the deck title as the single header.
+2. Select the first pipeline diagram in source order as the hero object.
+3. Synthesize one `*-teaser-overview` bullet list from up to four source sections.
+4. Keep the first chart, table, and image in source order as proof objects.
+5. Drop raw section-label paragraphs and omit empty summary regions.
+
+Layout order:
+
+```text
+title
+hero diagram          chart
+teaser overview       table / image proof
+```
+
+The overview item label is the source section title. Its description is a concise
+summary of the section's primary object and is capped so the teaser remains readable.
+This mode is for "what is in this deck?" summary pages, not for preserving every
+source block.
+
+Because this mode is intentionally compact, the resulting slide adds coverage tags:
+
+```text
+teaser-sections:<count>
+teaser-sections-selected:<count>
+teaser-sections-omitted:<count>
+teaser-proofs:<diagram+chart+table+image|none>
+teaser-proof-omitted:<kind>:<count>
+teaser-proof-priority:first-by-type-source-order
+```
+
+These tags make omitted sections and proof objects reviewable by tests, preview
+evaluators, and future agent hints.
+
+Visual validation also treats the right proof rail as part of the teaser
+contract: chart/table regions must remain to the right of the hero diagram,
+keep readable minimum dimensions, and stay at or above the 14pt teaser rail
+font floor.
+
 ## Composition Grammar
 
 Renderers may apply a non-positioning composition layer from the selected `LayoutSpec`. This layer changes visual hierarchy without changing Layout IR coordinates.

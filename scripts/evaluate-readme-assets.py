@@ -91,6 +91,68 @@ def selected_preview_images_by_title(manifest: dict[str, object], issues: list[s
     return selected
 
 
+def parse_region_styles(html: str) -> dict[str, dict[str, float]]:
+    regions: dict[str, dict[str, float]] = {}
+    for match in re.finditer(r'<div class="region ([^"]+)" style="([^"]+)"', html):
+        classes = match.group(1).split()
+        region_id = classes[-1] if classes else ""
+        style = match.group(2)
+        values: dict[str, float] = {}
+        for name in ["left", "top", "width", "height"]:
+            value_match = re.search(rf"{name}:([0-9.]+)in", style)
+            if value_match:
+                values[name] = float(value_match.group(1))
+        if region_id and len(values) == 4:
+            regions[region_id] = values
+    return regions
+
+
+def pipeline_one_page_teaser_contract(teaser_manifest: dict[str, object], issues: list[str]) -> dict[str, object]:
+    html_path = README_TEASER_DIR / "deck.html"
+    html = read_text(html_path) if html_path.exists() else ""
+    regions = parse_region_styles(html)
+    diagram = regions.get("diagram")
+    overview = regions.get("feature-summary")
+    chart = regions.get("chart")
+    table = regions.get("table")
+    slide_area = 13.333 * 7.5
+    hero_share = (diagram["width"] * diagram["height"] / slide_area) if diagram else 0
+    visual_checks = teaser_manifest.get("validation", {}).get("visual", {}).get("checks", {})
+    object_regions = {
+        item.get("regionId")
+        for item in teaser_manifest.get("pptxObjects", [])
+        if isinstance(item, dict)
+    }
+    contract = {
+        "checked": True,
+        "heroRegionShare": round(hero_share, 3),
+        "overviewRegionPresent": overview is not None,
+        "overviewBelowHero": bool(diagram and overview and overview["top"] > diagram["top"] + diagram["height"]),
+        "evidenceRailObjectCount": int(chart is not None) + int(table is not None),
+        "chartTablePresent": chart is not None and table is not None,
+        "evidenceRailRightOfHero": bool(diagram and chart and table and chart["left"] > diagram["left"] + diagram["width"] and table["left"] >= chart["left"]),
+        "emptyObjectSummaryPresent": "object-summary" in regions or "object-summary" in object_regions,
+        "visualEvidenceRailCheck": visual_checks.get("pipelineOnePageEvidenceRail") is True,
+    }
+
+    if contract["heroRegionShare"] < 0.16:
+        issues.append("readme-teaser:hero-diagram-not-dominant")
+    if not contract["overviewRegionPresent"]:
+        issues.append("readme-teaser:missing-overview-region")
+    if not contract["overviewBelowHero"]:
+        issues.append("readme-teaser:overview-not-below-hero")
+    if not contract["chartTablePresent"]:
+        issues.append("readme-teaser:missing-chart-table-evidence")
+    if not contract["evidenceRailRightOfHero"]:
+        issues.append("readme-teaser:evidence-rail-not-right-of-hero")
+    if contract["emptyObjectSummaryPresent"]:
+        issues.append("readme-teaser:empty-object-summary-present")
+    if not contract["visualEvidenceRailCheck"]:
+        issues.append("readme-teaser:evidence-rail-visual-check-missing")
+
+    return contract
+
+
 def main() -> None:
     readmes = {
         "README.md": read_text(ROOT / "README.md"),
@@ -124,6 +186,7 @@ def main() -> None:
     if evaluation.get("ok") is not True:
         issues.append("theme-preview:evaluation-not-ok")
     selected_images_by_title = selected_preview_images_by_title(manifest, issues)
+    pipeline_teaser_contract = pipeline_one_page_teaser_contract(teaser_manifest, issues)
     required_preview_images = [EXPECTED_MAIN_IMAGE, *selected_images_by_title.values()]
     expected_pipeline_image = selected_images_by_title.get("Pipeline Diagram", "")
 
@@ -159,6 +222,7 @@ def main() -> None:
         "teaserSlideCount": teaser_manifest.get("slideCount"),
         "mainImage": EXPECTED_MAIN_IMAGE,
         "pipelineImage": expected_pipeline_image,
+        "pipelineOnePageTeaser": pipeline_teaser_contract,
         "selectedPreviewImagesByTitle": selected_images_by_title,
         "checkedImages": required_preview_images,
         "visualFingerprints": visual_fingerprints(required_preview_images),

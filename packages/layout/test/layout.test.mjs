@@ -295,6 +295,55 @@ test("pipeline diagram regions use most of the slide body area", () => {
   assert.equal(diagram.w >= 11.6, true);
 });
 
+test("pipeline-one-page uses a CHI-style hero diagram with overview and evidence rail", () => {
+  const config = structuredClone(defaultConfig);
+  config.deck.presentationMode = "pipeline-one-page";
+  const presentation = planPresentation(parseMarkdown([
+    "# Research System",
+    "",
+    "## Runtime Pipeline",
+    "",
+    "Collect => Model => Explain => Deploy",
+    "",
+    "## Contribution",
+    "",
+    "- Human-guided modeling for ambiguous design evidence.",
+    "- Deterministic output checks for generated artifacts.",
+    "",
+    "## Evaluation",
+    "",
+    "```chart",
+    "labels: Accuracy, Coverage, Trust",
+    "Score: 81, 88, 76",
+    "```",
+    "",
+    "## Boundary",
+    "",
+    "| Layer | Owned by runtime |",
+    "| --- | --- |",
+    "| Layout | coordinates and regions |",
+  ].join("\n")), config);
+  const layout = planLayout(presentation, config);
+  const slide = layout.slides[0];
+  const diagram = slide.regions.find((region) => region.id === "diagram");
+  const overview = slide.regions.find((region) => region.id === "feature-summary");
+  const chart = slide.regions.find((region) => region.id === "chart");
+  const table = slide.regions.find((region) => region.id === "table");
+
+  assert.deepEqual(slide.regions.map((region) => region.id), ["title", "diagram", "feature-summary", "chart", "table"]);
+  assert.ok(diagram);
+  assert.ok(overview);
+  assert.ok(chart);
+  assert.ok(table);
+  assert.equal(diagram.w >= 7.2, true);
+  assert.equal(diagram.h >= 2.3, true);
+  assert.equal(overview.y > diagram.y + diagram.h, true);
+  assert.equal(overview.blockIds[0].endsWith("-teaser-overview"), true);
+  assert.equal(chart.x > diagram.x + diagram.w, true);
+  assert.equal(table.x, chart.x);
+  assert.equal(table.y > chart.y + chart.h, true);
+});
+
 test("graph detail content stays with the diagram when it fits on one slide", () => {
   const presentation = planPresentation(parseMarkdown([
     "# Demo",

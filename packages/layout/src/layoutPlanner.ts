@@ -417,46 +417,46 @@ function createPipelineOnePageRegions(slide: SlideIR, titleRegion: LayoutRegion,
   const tableBlockIds = slide.blocks.filter((block) => block.type === "table").map((block) => block.id);
   const imageBlockIds = slide.blocks.filter((block) => block.type === "image").map((block) => block.id);
   const bulletBlockIds = slide.blocks.filter((block) => block.type === "bulletList").map((block) => block.id);
-  const sectionLabelIds = new Set(slide.blocks
-    .filter((block) => block.type === "paragraph" && block.id.endsWith("-one-page-section"))
-    .map((block) => block.id));
   const evidenceBlockIds = [...chartBlockIds.slice(0, 2), ...tableBlockIds.slice(0, 1), ...imageBlockIds.slice(0, 1)];
-  const evidenceSet = new Set(evidenceBlockIds);
   const textBlockIds = slide.blocks
-    .filter((block) => !["diagram", "chart", "table", "image", "slideBreak"].includes(block.type) && !sectionLabelIds.has(block.id))
+    .filter((block) => !["diagram", "chart", "table", "image", "slideBreak"].includes(block.type) && !block.id.endsWith("-one-page-section"))
     .map((block) => block.id);
-  const featureBlockIds = bulletBlockIds.length ? bulletBlockIds.slice(0, 1) : textBlockIds.slice(0, 4);
+  const overviewBlockIds = bulletBlockIds.filter((blockId) => blockId.endsWith("-teaser-overview"));
+  const featureBlockIds = overviewBlockIds.length ? overviewBlockIds.slice(0, 1) : bulletBlockIds.length ? bulletBlockIds.slice(0, 1) : textBlockIds.slice(0, 4);
   const compact = compactBodyTypography(config);
 
   if (diagramBlockIds.length) {
-    return [
+    const regions: LayoutRegion[] = [
       { ...titleRegion, y: 0.34, h: 0.66, typography: { ...titleRegion.typography, fontSize: Math.max(28, config.typography.titleFontSize - 2) } },
-      { id: "diagram", role: "diagram", blockIds: diagramBlockIds.slice(0, 1), x: 0.72, y: 1.16, w: 6.9, h: 2.08, zIndex: 10, typography: compact },
-      { id: "feature-summary", role: "body", blockIds: featureBlockIds, x: 0.72, y: 3.45, w: 6.9, h: 3.18, zIndex: 10, typography: { ...compact, fontSize: 14, minFontSize: 14 } },
-      ...(chartBlockIds.length ? [{ id: "chart", role: "chart" as const, blockIds: chartBlockIds.slice(0, 1), x: 8.02, y: 1.16, w: 4.55, h: 2.2, zIndex: 10, typography: compact }] : []),
-      ...(tableBlockIds.length ? [{ id: "table", role: "table" as const, blockIds: tableBlockIds.slice(0, 1), x: 8.02, y: 3.57, w: 4.55, h: 2.72, zIndex: 10, typography: { ...compact, fontSize: Math.max(14, compact.fontSize - 2), minFontSize: 14 } }] : []),
-      {
-        id: "object-summary",
-        role: "body",
-        blockIds: textBlockIds.slice(5).concat(evidenceBlockIds.filter((blockId) => !evidenceSet.has(blockId))),
-        x: 8.02,
-        y: 6.48,
-        w: 4.55,
-        h: 0.42,
-        zIndex: 10,
-        typography: compact,
-      },
+      { id: "diagram", role: "diagram", blockIds: diagramBlockIds.slice(0, 1), x: 0.62, y: 1.12, w: 7.42, h: 2.48, zIndex: 10, typography: compact },
+      { id: "feature-summary", role: "body", blockIds: featureBlockIds, x: 0.62, y: 3.86, w: 7.42, h: 2.74, zIndex: 10, typography: { ...compact, fontSize: 14, minFontSize: 14 } },
+      ...(chartBlockIds.length ? [{ id: "chart", role: "chart" as const, blockIds: chartBlockIds.slice(0, 1), x: 8.25, y: 1.12, w: 4.42, h: 1.86, zIndex: 10, typography: compact }] : []),
+      ...(tableBlockIds.length ? [{ id: "table", role: "table" as const, blockIds: tableBlockIds.slice(0, 1), x: 8.25, y: 3.26, w: 4.42, h: 2.72, zIndex: 10, typography: { ...compact, fontSize: Math.max(14, compact.fontSize - 2), minFontSize: 14 } }] : []),
     ];
+    const usedBlockIds = new Set(regions.flatMap((region) => region.blockIds));
+    const remainingBlockIds = slide.blocks
+      .filter((block) => block.type !== "slideBreak" && !usedBlockIds.has(block.id))
+      .map((block) => block.id)
+      .slice(0, 2);
+    if (remainingBlockIds.length) {
+      regions.push({ id: "object-summary", role: "body", blockIds: remainingBlockIds, x: 8.25, y: 6.18, w: 4.42, h: 0.44, zIndex: 10, typography: compact });
+    }
+    return regions;
   }
 
   const primaryEvidence = evidenceBlockIds.slice(0, 2);
-  return [
+  const regions: LayoutRegion[] = [
     { ...titleRegion, y: 0.34, h: 0.66, typography: { ...titleRegion.typography, fontSize: Math.max(28, config.typography.titleFontSize - 2) } },
-    { id: "feature-summary", role: "body", blockIds: textBlockIds.slice(0, 4), x: 0.82, y: 1.2, w: 5.65, h: 2.35, zIndex: 10, typography: compact },
-    { id: "object-summary", role: "body", blockIds: textBlockIds.slice(4, 8), x: 6.88, y: 1.2, w: 5.65, h: 2.35, zIndex: 10, typography: compact },
+    { id: "feature-summary", role: "body", blockIds: featureBlockIds.length ? featureBlockIds : textBlockIds.slice(0, 4), x: 0.82, y: 1.2, w: 5.65, h: 2.35, zIndex: 10, typography: compact },
     ...(primaryEvidence[0] ? [{ id: "evidence-1", role: chartBlockIds.includes(primaryEvidence[0]) ? "chart" as const : tableBlockIds.includes(primaryEvidence[0]) ? "table" as const : "image" as const, blockIds: [primaryEvidence[0]], x: 0.82, y: 3.92, w: 5.65, h: 2.45, zIndex: 10, typography: compact }] : []),
     ...(primaryEvidence[1] ? [{ id: "evidence-2", role: chartBlockIds.includes(primaryEvidence[1]) ? "chart" as const : tableBlockIds.includes(primaryEvidence[1]) ? "table" as const : "image" as const, blockIds: [primaryEvidence[1]], x: 6.88, y: 3.92, w: 5.65, h: 2.45, zIndex: 10, typography: compact }] : []),
   ];
+  const usedBlockIds = new Set(regions.flatMap((region) => region.blockIds));
+  const remainingTextBlockIds = textBlockIds.filter((blockId) => !usedBlockIds.has(blockId)).slice(0, 4);
+  if (remainingTextBlockIds.length) {
+    regions.splice(2, 0, { id: "object-summary", role: "body", blockIds: remainingTextBlockIds, x: 6.88, y: 1.2, w: 5.65, h: 2.35, zIndex: 10, typography: compact });
+  }
+  return regions;
 }
 
 function createTableFocusRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {

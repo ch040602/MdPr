@@ -2056,6 +2056,45 @@ test("renderPptx renders pipeline diagrams as editable nodes and connectors", as
   }
 });
 
+test("renderPptx fits two-word teaser pipeline labels without source shortening", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-teaser-diagram-labels-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = makeDiagramDeck([
+    {
+      title: "Teaser Pipeline",
+      labels: ["Markdown", "Semantic IR", "Layout Grammar", "Theme Tokens", "Editable PPTX"],
+    },
+  ]);
+  deck.layout.slides[0].layout = { preset: "pipeline-one-page" };
+  deck.layout.slides[0].regions[1] = {
+    id: "diagram",
+    role: "diagram",
+    blockIds: ["diagram-1"],
+    x: 0.62,
+    y: 1.12,
+    w: 7.42,
+    h: 2.48,
+    zIndex: 10,
+    typography: { fontFamily: "Arial", fontSize: 14, lineHeight: 1.2, minFontSize: 12 },
+  };
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "bentogrid" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+    const labelShape = shapeXmlContainingText(xml, "Layout Grammar");
+
+    assert.ok(labelShape);
+    assert.equal((xml.match(/<a:t>Layout Grammar<\/a:t>/g) ?? []).length, 1);
+    assert.match(labelShape, /sz="1200"/);
+    assert.equal(shapeTransform(labelShape).w >= 1.35, true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx selects vertical, U, reverse-U, and cycle-like graph arrangements for diagrams", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-diagram-arrangements-"));
   const outPath = join(outDir, "deck.pptx");

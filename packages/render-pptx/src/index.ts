@@ -2101,13 +2101,13 @@ function diagramLabelFontSize(label: string, width: number, height: number, base
   const longestLine = Math.max(...label.split(/\r?\n/).map((line) => line.length));
   const capacity = Math.max(8, width * height * 18);
   const pressure = Math.max(longestLine, label.length / Math.max(lines, 1)) / capacity;
-  if (pressure > 0.26) return Math.max(14, baseFontSize - 5);
-  if (pressure > 0.18) return Math.max(14, baseFontSize - 3);
-  return Math.max(14, Math.min(baseFontSize - 1, 16));
+  if (pressure > 0.26) return Math.max(12, baseFontSize - 6);
+  if (pressure > 0.18) return Math.max(12, baseFontSize - 4);
+  return Math.max(12, Math.min(baseFontSize - 1, 16));
 }
 
 function uniformDiagramLabelFontSize(boxes: DiagramNodeBox[], baseFontSize: number): number {
-  if (!boxes.length) return Math.max(14, Math.min(baseFontSize - 1, 16));
+  if (!boxes.length) return Math.max(12, Math.min(baseFontSize - 1, 16));
   return Math.min(...boxes.map((box) => diagramLabelFontSize(box.node.label, box.w, box.h, baseFontSize)));
 }
 

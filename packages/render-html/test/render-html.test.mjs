@@ -175,6 +175,16 @@ test("renderHtml marks pipeline diagrams with selected graph arrangements", () =
   assert.doesNotMatch(reverseU, /NaN|Infinity/);
   assert.match(reverseU, /points="[0-9.,\s]+"/);
   assert.doesNotMatch(reverseU, /class="pipeline-edge"/);
+
+  const teaser = renderHtmlForMarkdown([
+    "# Demo Deck",
+    "",
+    "## Teaser Pipeline",
+    "",
+    "Markdown => Semantic IR => Layout Grammar => Theme Tokens => Editable PPTX",
+  ].join("\n"));
+  assert.match(teaser, /Layout Grammar/);
+  assert.match(teaser, /class="pipeline-node"[^>]+font-size:[0-9.]+pt/);
 });
 
 test("renderHtml applies shared design preset tokens from LayoutIR", () => {

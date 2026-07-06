@@ -49,15 +49,15 @@
       "path": "docs\\assets\\readme-teaser\\deck.html",
       "format": "html",
       "exists": true,
-      "bytes": 16134,
-      "sha256": "e5b5ab1deeb9393bfd1b64087b965883dcdf7a8c870210fc1a7a84a89ce194f1"
+      "bytes": 16107,
+      "sha256": "4e8a2849731f3c488482b9d815b168bdf78b1946768ac7b8e198d7da2c12167f"
     },
     {
       "path": "docs\\assets\\readme-teaser\\deck.pptx",
       "format": "pptx",
       "exists": true,
-      "bytes": 119611,
-      "sha256": "7b75cdd555d7bca98668ebacb503a3fe860e4c9e3d55e85577e61f6a03401a4f"
+      "bytes": 120145,
+      "sha256": "e52b207c6d087eeca40f3061ffe2f9145ab184ce9a69ff75cd03c878d21112a2"
     }
   ],
   "designLock": "docs\\assets\\readme-teaser\\mdpresent-design-lock.json",
@@ -91,9 +91,9 @@
       "layoutSlideId": "layout-mdpr-markdown-to-editable-pptx-de2396",
       "regionId": "feature-summary",
       "blockIds": [
-        "block-5"
+        "mdpr-markdown-to-editable-pptx-de2396-teaser-overview"
       ],
-      "shapeName": "mdpr:mdpr-markdown-to-editable-pptx-de2396:feature-summary:block-5",
+      "shapeName": "mdpr:mdpr-markdown-to-editable-pptx-de2396:feature-summary:mdpr-markdown-to-editable-pptx-de2396-teaser-overview",
       "objectKind": "native-text",
       "role": "body",
       "editable": true
@@ -150,6 +150,7 @@
         "sameLayerOverlap": true,
         "imageAspectRatio": true,
         "connectorClearance": true,
+        "pipelineOnePageEvidenceRail": true,
         "backgroundContentOverlap": true
       },
       "diagnostics": []
@@ -256,7 +257,7 @@
           "passed": false,
           "evidence": "Title/body hierarchy, readable font floor, family availability, and same-role consistency are checked from Layout IR typography.",
           "titleFontPt": 32,
-          "bodyFontPt": 18,
+          "bodyFontPt": 14,
           "minFontPt": 14,
           "sameRoleFontVarianceCount": 0,
           "fontFamily": "Pretendard"
@@ -336,10 +337,10 @@
     "textClipRiskCount": 0,
     "contrastFailures": 0,
     "connectorWarnings": 0,
-    "buildMs": 86,
+    "buildMs": 74,
     "outputBytes": {
-      "html": 16134,
-      "pptx": 119611
+      "html": 16107,
+      "pptx": 120145
     }
   }
 }

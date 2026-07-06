@@ -60,7 +60,9 @@ export function coherenceValidationDiagnostics(presentation: PresentationIR, lay
     const blockRoles = group?.blockRoles ?? {};
     const blockTypes = new Set(slide.blocks.map((block) => block.type));
     const hasEvidenceObject = ["table", "chart", "image", "diagram"].some((type) => blockTypes.has(type as never));
-    const hasClaim = Object.values(blockRoles).includes("claim") || slide.blocks.some((block) => block.type === "paragraph" && isClaimLikeText(block.text ?? block.sentences?.join(" ") ?? ""));
+    const hasClaim = Object.values(blockRoles).includes("claim") ||
+      slide.blocks.some((block) => block.type === "paragraph" && isClaimLikeText(block.text ?? block.sentences?.join(" ") ?? "")) ||
+      slide.blocks.some((block) => block.type === "bulletList" && block.id.endsWith("-teaser-overview"));
     const hasEvidenceRole = Object.values(blockRoles).some((role) => role === "evidence" || role === "metric");
 
     if (hasEvidenceObject && !hasClaim) {

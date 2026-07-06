@@ -365,7 +365,7 @@ function renderPipelineDiagram(diagram: NonNullable<BlockIR["diagram"]>): string
     return `<polyline class="pipeline-connector" data-edge="${index + 1}" points="${points.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ")}" marker-end="url(#${markerId})" />`;
   }).join("");
   const nodes = arrangement.boxes.map((box, index) => [
-    `<div class="pipeline-node" data-node="${index + 1}" style="left:${box.x.toFixed(2)}%;top:${box.y.toFixed(2)}%;width:${box.w.toFixed(2)}%;height:${box.h.toFixed(2)}%">`,
+    `<div class="pipeline-node" data-node="${index + 1}" style="left:${box.x.toFixed(2)}%;top:${box.y.toFixed(2)}%;width:${box.w.toFixed(2)}%;height:${box.h.toFixed(2)}%;font-size:${htmlDiagramNodeFontSize(box).toFixed(1)}pt">`,
     escapeHtml(box.node.label),
     "</div>",
   ].join("")).join("");
@@ -502,6 +502,15 @@ function uniqueHtmlCells(cells: Array<{ column: number; row: number }>): Array<{
 
 function stableDiagramKey(diagram: NonNullable<BlockIR["diagram"]>): string {
   return diagram.nodes.map((node) => node.id).join("-").replace(/[^a-z0-9_-]/gi, "-").slice(0, 48) || "diagram";
+}
+
+function htmlDiagramNodeFontSize(box: HtmlDiagramNodeBox): number {
+  const longestLine = Math.max(...box.node.label.split(/\r?\n/).map((line) => line.length));
+  const capacity = Math.max(8, (box.w / 12) * (box.h / 10) * 18);
+  const pressure = longestLine / capacity;
+  if (pressure > 0.26) return 12;
+  if (pressure > 0.18) return 13;
+  return 15;
 }
 
 function escapeHtml(value: string): string {

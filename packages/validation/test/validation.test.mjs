@@ -33,6 +33,30 @@ test("visual validation flags out-of-bounds regions", () => {
   assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "VISUAL_REGION_BOUNDS"), true);
 });
 
+test("visual validation flags unreadable pipeline-one-page evidence rails", () => {
+  const diagnostics = visualValidationDiagnostics({
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme,
+    slides: [{
+      id: "layout-1",
+      sourceSlideId: "slide-1",
+      index: 0,
+      layout: { preset: "pipeline-one-page" },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 8, maxShrinkSteps: 4 },
+      regions: [
+        { id: "diagram", role: "diagram", x: 0.62, y: 1.12, w: 7.42, h: 2.48, zIndex: 1, blockIds: ["d1"], typography: { fontSize: 14, minFontSize: 12 } },
+        { id: "chart", role: "chart", x: 7.8, y: 1.12, w: 2.8, h: 1.1, zIndex: 1, blockIds: ["c1"], typography: { fontSize: 13, minFontSize: 13 } },
+        { id: "table", role: "table", x: 7.8, y: 2.0, w: 2.8, h: 1.7, zIndex: 1, blockIds: ["t1"], typography: { fontSize: 13, minFontSize: 13 } },
+      ],
+    }],
+    diagnostics: [],
+  });
+
+  assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "VISUAL_TEASER_EVIDENCE_RAIL"), true);
+});
+
 test("coherence validation reports detached captions from presentation/layout IR", () => {
   const presentation = {
     version: "1.0",
@@ -88,6 +112,62 @@ test("coherence validation reports detached captions from presentation/layout IR
   assert.equal(summary.captionDetached, 1);
   assert.equal(summary.intraSlideSpacingCoverage.notApplicableSlides, 1);
   assert.equal(summary.intraSlideSpacingCoverage.notApplicable[0].slideId, "slide-1");
+});
+
+test("coherence validation treats pipeline teaser overview as the evidence claim", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Deck" },
+    outline: [],
+    slides: [{
+      id: "slide-1",
+      index: 0,
+      role: "content",
+      title: "Teaser",
+      headingPath: ["Teaser"],
+      source: {},
+      blocks: [
+        { id: "diagram-1", type: "diagram", diagram: { kind: "pipeline", nodes: [], edges: [] } },
+        {
+          id: "slide-1-teaser-overview",
+          type: "bulletList",
+          items: ["Pipeline: source to output"],
+          listItems: [{ text: "Pipeline: source to output", label: "Pipeline", description: "source to output", level: 0, ordered: false }],
+        },
+        { id: "chart-1", type: "chart", chart: { kind: "bar", labels: ["A"], series: [{ name: "Score", values: [1] }] } },
+      ],
+      intent: "summary",
+      tags: ["pipeline-one-page"],
+    }],
+    coherenceGroups: [],
+    assets: [],
+    diagnostics: [],
+  };
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme,
+    slides: [{
+      id: "layout-1",
+      sourceSlideId: "slide-1",
+      index: 0,
+      layout: { preset: "pipeline-one-page" },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 8, maxShrinkSteps: 4 },
+      regions: [
+        { id: "diagram", role: "diagram", x: 0.62, y: 1.12, w: 7.42, h: 2.48, zIndex: 1, blockIds: ["diagram-1"], typography: { fontSize: 14, minFontSize: 12 } },
+        { id: "feature-summary", role: "body", x: 0.62, y: 3.86, w: 7.42, h: 2.74, zIndex: 1, blockIds: ["slide-1-teaser-overview"], typography: { fontSize: 14, minFontSize: 14 } },
+        { id: "chart", role: "chart", x: 8.25, y: 1.12, w: 4.42, h: 1.86, zIndex: 1, blockIds: ["chart-1"], typography: { fontSize: 14, minFontSize: 14 } },
+      ],
+    }],
+    diagnostics: [],
+  };
+
+  const diagnostics = coherenceValidationDiagnostics(presentation, layout);
+  const summary = createCoherenceValidationSummary(presentation, layout);
+
+  assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "CLAIMLESS_EVIDENCE_SLIDE"), false);
+  assert.equal(summary.checks.claimlessEvidenceSlides, true);
 });
 
 test("coherence validation reports inconsistent intra-slide content spacing", () => {

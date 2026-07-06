@@ -9,6 +9,17 @@
   "teaserSlideCount": 1,
   "mainImage": "docs/assets/readme-teaser/slides/slide-01.png",
   "pipelineImage": "docs/theme-preview/slides/bentogrid/slide-11.png",
+  "pipelineOnePageTeaser": {
+    "checked": true,
+    "heroRegionShare": 0.184,
+    "overviewRegionPresent": true,
+    "overviewBelowHero": true,
+    "evidenceRailObjectCount": 2,
+    "chartTablePresent": true,
+    "evidenceRailRightOfHero": true,
+    "emptyObjectSummaryPresent": false,
+    "visualEvidenceRailCheck": true
+  },
   "selectedPreviewImagesByTitle": {
     "Pipeline Diagram": "docs/theme-preview/slides/bentogrid/slide-11.png",
     "Semantic Blocks": "docs/theme-preview/slides/minimalism/slide-09.png",
@@ -30,8 +41,8 @@
   ],
   "visualFingerprints": {
     "docs/assets/readme-teaser/slides/slide-01.png": {
-      "sha256": "fee6c3469e39308b461bdf6de67f7c7c0d5e7ef6197edd1aa707018cb1e959f3",
-      "bytes": 78079,
+      "sha256": "6dc0ae6670339b34a124430ef56ac01ef571ce64d85bbb6ee4b79356bedcca3a",
+      "bytes": 76300,
       "size": [
         1600,
         900
