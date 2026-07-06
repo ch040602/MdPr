@@ -61,6 +61,27 @@ contrast checks so visually adjacent families such as `neomorphism` versus
 `newmorphism` and `glassmorphism` versus `liquid-glass` cannot silently collapse
 into palette-only variants.
 
+Each public theme also has a bounded decoration rule. These rules change only
+background surfaces, SVG surface overlays, shadows, and accent marks; they must
+not move content regions or replace editable text:
+
+| Theme | Optimized decoration rule |
+| --- | --- |
+| `skeuomorphism` | chrome frame, inset bevel, highlight/lowlight edge, small physical screw cues |
+| `neomorphism` | recessed soft UI rails, paired light/dark shadows, low-contrast relief, no floating accent dots |
+| `glassmorphism` | dark field, translucent panes, frosted surface noise, straight glass edge highlights |
+| `claymorphism` | soft puffy surfaces, warm colored depth, pillow highlights and lowlights |
+| `minimalism` | hairline rules, sparse corner ticks, transparent surface treatment, low decoration count |
+| `newmorphism` | legacy raised soft surfaces, paired shadows, subtle floating relief marks |
+| `brutalism` | hard borders, offset blocks, registration marks, saturated canvas, no soft shadow |
+| `liquid-glass` | frosted glass plus refractive ribbons, lens highlights, caustic edge accents |
+| `bentogrid` | modular grid field, tile rules, index modules, bento-card rhythm |
+
+The theme preview evaluator fails a style when its generated PPTX surfaces miss
+the required theme-specific SVG layer markers. This keeps `neomorphism` distinct
+from `newmorphism`, and `glassmorphism` distinct from `liquid-glass`, even when
+the same Markdown and layout regions are rendered.
+
 `theme.colorSeed` provides the main color. `theme.colorCombination` derives the supporting palette using Adobe Color Wheel-style harmony rules:
 
 ```text

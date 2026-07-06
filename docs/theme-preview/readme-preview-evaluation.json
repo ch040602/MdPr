@@ -41,64 +41,64 @@
   ],
   "visualFingerprints": {
     "docs/assets/readme-teaser/slides/slide-01.png": {
-      "sha256": "6dc0ae6670339b34a124430ef56ac01ef571ce64d85bbb6ee4b79356bedcca3a",
-      "bytes": 76300,
+      "sha256": "bc3fa83966c5fd38c41811dc961c99f4e5830540f6a94c5c0e241feadb607838",
+      "bytes": 77893,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/bentogrid/slide-11.png": {
-      "sha256": "810898c9a72acee19fbe31bf9962c62afa97ab6fe59377255940342b87f91d35",
-      "bytes": 47525,
+      "sha256": "622139f84acc50354a31d209ee778ee88d013d74ea02ff27c96b20372bc20fa0",
+      "bytes": 48322,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/minimalism/slide-09.png": {
-      "sha256": "2bd190739600e5ad81029d534c7f75f9f13799a88776451a7b552e4fb878c144",
-      "bytes": 10216,
+      "sha256": "b96b00c6827fd084f311b3a8d8594d393c8eec06ef14ff037b75f0cfd6f9087f",
+      "bytes": 10512,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/minimalism/slide-12.png": {
-      "sha256": "3bb4a54f8dc08c5de220e2d44f25ba56ff7fdb556e3edb74147b50aed32c0ae6",
-      "bytes": 46482,
+      "sha256": "d2099fa48dc2b7c1314f957f9fdce37830af70185d0d5fb5d4141285f06b1bb2",
+      "bytes": 46895,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/skeuomorphism/slide-17.png": {
-      "sha256": "210124f299e44346e7335792c511ad3b41d30add6cdd38c4ca1d5736b377c0e1",
-      "bytes": 45581,
+      "sha256": "7cca128a5171669a83371b6c98d7ed80790feaed56beb5d0569bcadb3413a715",
+      "bytes": 47821,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/glassmorphism/slide-23.png": {
-      "sha256": "df0613cd8e97360321f567914bc53d886e2452b9930ecefb7a5dff87f5cc95e7",
-      "bytes": 132976,
+      "sha256": "3fc969a06b915b7e73140b84156c33e829d881aeb1345805bb09e1f0987521a9",
+      "bytes": 140285,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/newmorphism/slide-24.png": {
-      "sha256": "1397ad89aa11436cc907f3edb86dcc4e50c0ef3404fd1a3d9ff39896d8ef655d",
-      "bytes": 120611,
+      "sha256": "5ef28e127ffeade132122fd9dad3186338ced3b3807942f570c11045f468f4c9",
+      "bytes": 122446,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/brutalism/slide-16.png": {
-      "sha256": "a3e9b4b4e5b5435d32bda4a466cb8558f9151c8708b3db0e04ffacbc540b0002",
-      "bytes": 19022,
+      "sha256": "9ead2782e7963a43b960e4c909f87c4886bf55c4ca9010311f76d4177be31b62",
+      "bytes": 19279,
       "size": [
         1600,
         900

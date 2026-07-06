@@ -69,6 +69,13 @@ export function addPresetBackground(
 }
 
 function addNewmorphismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
+  slide.addShape("roundRect", {
+    ...boundedBox(slideSize, { x: slideSize.width - 3.08, y: 0.42, w: 1.9, h: 0.34 }),
+    rectRadius: 0.05,
+    fill: { color: "F8FAFC", transparency: 28 },
+    line: { color: "FFFFFF", transparency: 72, pt: 0.4 },
+    shadow: { type: "outer", color: "B8C3D2", opacity: 0.16, blur: 1.2, angle: 45, distance: 0.55 },
+  } as never);
   slide.addShape("ellipse", {
     ...boundedBox(slideSize, { x: slideSize.width - 2.0, y: 0.55, w: 0.9, h: 0.9 }),
     fill: { color: "F7FAFC", transparency: 8 },
@@ -81,16 +88,56 @@ function addNewmorphismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, 
     line: { color: "FFFFFF", transparency: 58, pt: 0.6 },
     shadow: { type: "outer", color: "B8C3D2", opacity: 0.18, blur: 1.0, angle: 45, distance: 0.8 },
   } as never);
+  slide.addShape("line" as never, {
+    x: slideSize.width - 3.2,
+    y: slideSize.height - 0.46,
+    w: 2.18,
+    h: 0,
+    line: { color: "FFFFFF", transparency: 12, pt: 1.2 },
+  });
+  slide.addShape("line" as never, {
+    x: slideSize.width - 3.12,
+    y: slideSize.height - 0.39,
+    w: 2.1,
+    h: 0,
+    line: { color: "B8C3D2", transparency: 36, pt: 0.9 },
+  });
 }
 
 function addNeomorphismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
-  addNewmorphismBackground(slide, preset, slideSize);
   slide.addShape("roundRect", {
-    ...boundedBox(slideSize, { x: slideSize.width - 3.1, y: slideSize.height - 1.04, w: 2.25, h: 0.18 }),
-    rectRadius: 0.04,
-    fill: { color: "FFFFFF", transparency: 28 },
-    line: { color: "FFFFFF", transparency: 100 },
+    ...boundedBox(slideSize, { x: 0.54, y: slideSize.height - 1.1, w: slideSize.width - 1.08, h: 0.46 }),
+    rectRadius: 0.08,
+    fill: { color: "DDE8F2", transparency: 38 },
+    line: { color: "FFFFFF", transparency: 68, pt: 0.35 },
+    shadow: { type: "outer", color: "A8B6C8", opacity: 0.08, blur: 0.7, angle: 45, distance: 0.25 },
   } as never);
+  slide.addShape("roundRect", {
+    ...boundedBox(slideSize, { x: 0.82, y: slideSize.height - 0.96, w: 2.3, h: 0.16 }),
+    rectRadius: 0.04,
+    fill: { color: preset.primaryColor, transparency: 56 },
+    line: { color: preset.primaryColor, transparency: 100 },
+  } as never);
+  slide.addShape("ellipse", {
+    ...boundedBox(slideSize, { x: slideSize.width - 1.62, y: 0.56, w: 0.54, h: 0.54 }),
+    fill: { color: "FFFFFF", transparency: 12 },
+    line: { color: "CBD7E4", transparency: 50, pt: 0.45 },
+    shadow: { type: "outer", color: "A8B6C8", opacity: 0.14, blur: 0.9, angle: 45, distance: 0.45 },
+  } as never);
+  slide.addShape("line" as never, {
+    x: 0.82,
+    y: 0.82,
+    w: 1.48,
+    h: 0,
+    line: { color: preset.primaryColor, transparency: 16, pt: 1.1 },
+  });
+  slide.addShape("line" as never, {
+    x: slideSize.width - 2.3,
+    y: slideSize.height - 0.78,
+    w: 1.3,
+    h: 0,
+    line: { color: "FFFFFF", transparency: 18, pt: 1.4 },
+  });
 }
 
 function addMinimalismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
@@ -108,9 +155,52 @@ function addMinimalismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, s
     h: 0,
     line: { color: preset.surfaceLine, transparency: 18, pt: 0.7 },
   });
+  const tick = 0.36;
+  slide.addShape("line" as never, {
+    x: 0.64,
+    y: 0.64,
+    w: tick,
+    h: 0,
+    line: { color: preset.surfaceLine, transparency: 28, pt: 0.5 },
+  });
+  slide.addShape("line" as never, {
+    x: 0.64,
+    y: 0.64,
+    w: 0,
+    h: tick,
+    line: { color: preset.surfaceLine, transparency: 28, pt: 0.5 },
+  });
+  slide.addShape("line" as never, {
+    x: slideSize.width - 0.64 - tick,
+    y: slideSize.height - 0.64,
+    w: tick,
+    h: 0,
+    line: { color: preset.surfaceLine, transparency: 28, pt: 0.5 },
+  });
+  slide.addShape("line" as never, {
+    x: slideSize.width - 0.64,
+    y: slideSize.height - 0.64 - tick,
+    w: 0,
+    h: tick,
+    line: { color: preset.surfaceLine, transparency: 28, pt: 0.5 },
+  });
+  slide.addShape("line" as never, {
+    x: 0.82,
+    y: slideSize.height - 0.46,
+    w: slideSize.width - 1.64,
+    h: 0,
+    line: { color: preset.surfaceLine, transparency: 82, pt: 0.35 },
+  });
 }
 
 function addSkeuomorphismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
+  slide.addShape("roundRect", {
+    ...boundedBox(slideSize, { x: 0.5, y: 0.44, w: slideSize.width - 1.0, h: slideSize.height - 0.88 }),
+    rectRadius: 0.14,
+    fill: { color: "E6EAF0", transparency: 0 },
+    line: { color: "8793A3", transparency: 16, pt: 1.4 },
+    shadow: { type: "outer", color: "475569", opacity: 0.18, blur: 1.1, angle: 45, distance: 0.58 },
+  } as never);
   slide.addShape("roundRect", {
     ...boundedBox(slideSize, { x: 0.58, y: 0.5, w: slideSize.width - 1.16, h: slideSize.height - 1.0 }),
     rectRadius: 0.12,
@@ -125,6 +215,19 @@ function addSkeuomorphismBackground(slide: PptxGenJS.Slide, preset: DesignPreset
     h: 0,
     line: { color: "FFFFFF", transparency: 0, pt: 1.3 },
   });
+  slide.addShape("line" as never, {
+    x: 0.72,
+    y: slideSize.height - 0.7,
+    w: slideSize.width - 1.44,
+    h: 0,
+    line: { color: "94A3B8", transparency: 34, pt: 1.1 },
+  });
+  slide.addShape("roundRect", {
+    ...boundedBox(slideSize, { x: slideSize.width - 1.74, y: 0.56, w: 0.96, h: 0.22 }),
+    rectRadius: 0.04,
+    fill: { color: "D7DDE6", transparency: 8 },
+    line: { color: "FFFFFF", transparency: 18, pt: 0.45 },
+  } as never);
   for (const x of [0.86, slideSize.width - 1.02]) {
     slide.addShape("ellipse", {
       ...boundedBox(slideSize, { x, y: 0.72, w: 0.16, h: 0.16 }),
@@ -136,18 +239,30 @@ function addSkeuomorphismBackground(slide: PptxGenJS.Slide, preset: DesignPreset
 
 function addClaymorphismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
   const blobs = [
-    { x: slideSize.width - 2.55, y: 0.48, w: 1.12, h: 1.12, color: preset.primaryColor, transparency: 18 },
-    { x: 0.58, y: slideSize.height - 1.36, w: 1.0, h: 1.0, color: preset.secondaryColor, transparency: 16 },
-    { x: slideSize.width - 1.58, y: slideSize.height - 1.2, w: 0.72, h: 0.72, color: "FDE047", transparency: 20 },
+    { x: slideSize.width - 2.65, y: 0.46, w: 1.18, h: 1.18, color: preset.primaryColor, transparency: 14 },
+    { x: 0.55, y: slideSize.height - 1.38, w: 1.04, h: 1.04, color: preset.secondaryColor, transparency: 14 },
+    { x: slideSize.width - 1.6, y: slideSize.height - 1.2, w: 0.72, h: 0.72, color: "FDE047", transparency: 18 },
   ];
   for (const blob of blobs) {
     slide.addShape("ellipse", {
       ...boundedBox(slideSize, blob),
       fill: { color: blob.color, transparency: blob.transparency },
-      line: { color: blob.color, transparency: 100 },
+      line: { color: "FFFFFF", transparency: 72, pt: 0.5 },
       shadow: { type: "outer", color: blob.color, opacity: 0.14, blur: 1.6, angle: 45, distance: 0.55 },
     } as never);
   }
+  slide.addShape("roundRect", {
+    ...boundedBox(slideSize, { x: slideSize.width - 1.18, y: 0.18, w: 0.78, h: 0.14 }),
+    rectRadius: 0.04,
+    fill: { color: preset.secondaryColor, transparency: 0 },
+    line: { color: preset.secondaryColor, transparency: 100 },
+  } as never);
+  slide.addShape("roundRect", {
+    ...boundedBox(slideSize, { x: slideSize.width - 2.18, y: 0.24, w: 0.92, h: 0.12 }),
+    rectRadius: 0.04,
+    fill: { color: preset.primaryColor, transparency: 0 },
+    line: { color: "FFFFFF", transparency: 100 },
+  } as never);
 }
 
 function addBrutalismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
@@ -161,6 +276,23 @@ function addBrutalismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, sl
     fill: { color: preset.secondaryColor },
     line: { color: preset.primaryColor, transparency: 0, pt: 1.2 },
   });
+  slide.addShape("rect", {
+    ...boundedBox(slideSize, { x: slideSize.width - 2.36, y: 0.34, w: 1.34, h: 0.22 }),
+    fill: { color: preset.primaryColor },
+    line: { color: preset.primaryColor, transparency: 100 },
+  });
+  slide.addShape("rect", {
+    ...boundedBox(slideSize, { x: slideSize.width - 2.0, y: 0.5, w: 0.94, h: 0.22 }),
+    fill: { color: preset.secondaryColor },
+    line: { color: preset.primaryColor, transparency: 0, pt: 1.0 },
+  });
+  slide.addShape("line" as never, {
+    x: 0.52,
+    y: 0.84,
+    w: 1.48,
+    h: 0,
+    line: { color: preset.primaryColor, transparency: 0, pt: 2.0 },
+  });
   slide.addShape("line" as never, {
     x: 0.52,
     y: slideSize.height - 0.54,
@@ -172,6 +304,20 @@ function addBrutalismBackground(slide: PptxGenJS.Slide, preset: DesignPreset, sl
 
 function addLiquidGlassBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
   addGlassBackground(slide, preset, slideSize);
+  slide.addShape("roundRect", {
+    ...boundedBox(slideSize, { x: 0.58, y: 0.48, w: slideSize.width * 0.54, h: 0.16 }),
+    rectRadius: 0.06,
+    rotate: -3,
+    fill: { color: "FFFFFF", transparency: 78 },
+    line: { color: "FFFFFF", transparency: 100 },
+  } as never);
+  slide.addShape("roundRect", {
+    ...boundedBox(slideSize, { x: slideSize.width * 0.62, y: 0.28, w: slideSize.width * 0.25, h: 0.22 }),
+    rectRadius: 0.07,
+    rotate: 2,
+    fill: { color: preset.primaryColor, transparency: 36 },
+    line: { color: "FFFFFF", transparency: 82, pt: 0.45 },
+  } as never);
   slide.addShape("ellipse", {
     ...boundedBox(slideSize, { x: slideSize.width - 2.6, y: 0.72, w: 1.35, h: 1.35 }),
     fill: { color: preset.secondaryColor, transparency: 78 },
@@ -205,6 +351,17 @@ function addBentoGridBackground(slide: PptxGenJS.Slide, preset: DesignPreset, sl
       line: { color: preset.surfaceLine, transparency: 84, pt: 0.35 },
     });
   }
+  for (const box of [
+    { x: 0.72, y: 0.66, w: 1.1, h: 0.32, color: preset.primaryColor, transparency: 72 },
+    { x: slideSize.width - 2.55, y: slideSize.height - 0.96, w: 1.74, h: 0.32, color: preset.secondaryColor, transparency: 82 },
+  ]) {
+    slide.addShape("roundRect", {
+      ...boundedBox(slideSize, box),
+      rectRadius: 0.04,
+      fill: { color: box.color, transparency: box.transparency },
+      line: { color: box.color, transparency: 100 },
+    } as never);
+  }
   slide.addShape("roundRect", {
     ...boundedBox(slideSize, { x: slideSize.width - 1.74, y: 0.5, w: 1.0, h: 0.28 }),
     rectRadius: 0.04,
@@ -214,6 +371,13 @@ function addBentoGridBackground(slide: PptxGenJS.Slide, preset: DesignPreset, sl
 }
 
 function addGlassBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideSize: SlideSize): void {
+  slide.addShape("roundRect", {
+    ...boundedBox(slideSize, { x: 0.34, y: 0.28, w: slideSize.width - 1.42, h: slideSize.height - 1.18 }),
+    rectRadius: 0.12,
+    fill: { color: preset.primaryColor, transparency: 74 },
+    line: { color: "FFFFFF", transparency: 86, pt: 0.45 },
+    shadow: { type: "outer", color: preset.primaryColor, opacity: 0.1, blur: 1.0, angle: 45, distance: 0.4 },
+  } as never);
   slide.addShape("roundRect", {
     ...boundedBox(slideSize, { x: 0.62, y: 0.52, w: slideSize.width - 1.24, h: slideSize.height - 1.04 }),
     rectRadius: 0.14,
@@ -249,6 +413,13 @@ function addGlassBackground(slide: PptxGenJS.Slide, preset: DesignPreset, slideS
     w: 2.2,
     h: 0,
     line: { color: preset.secondaryColor, transparency: 44, pt: 1.4 },
+  });
+  slide.addShape("line" as never, {
+    x: slideSize.width - 2.8,
+    y: 0.66,
+    w: 1.48,
+    h: 0,
+    line: { color: "FFFFFF", transparency: 46, pt: 0.75 },
   });
 }
 
@@ -538,7 +709,7 @@ function surfaceSvgElements(
   const glassPrefix = frostedGlass ? frostedGlassDefs(fill, stroke, accent) : [];
   const glassSuffix = frostedGlass ? frostedGlassOverlays(x, y, w, h, r, accent, stroke) : [];
   const newmorphicPrefix = newmorphic ? newmorphicDefs(fill, stroke) : [];
-  const newmorphicSuffix = newmorphic ? newmorphicOverlays(x, y, w, h, r, accent, stroke) : [];
+  const newmorphicSuffix = newmorphic ? newmorphicOverlays(x, y, w, h, r, accent, stroke, styleName) : [];
   const styleSuffix = styleOverlays(styleName, x, y, w, h, r, accent, stroke);
   if (variant === "rounded") {
     return [
@@ -670,16 +841,42 @@ function surfaceSvgElements(
 
 function styleOverlays(styleName: string, x: number, y: number, w: number, h: number, r: number, accent: string, stroke: string): string[] {
   const inner = roundedRectPath(x + 10, y + 10, Math.max(2, w - 20), Math.max(2, h - 20), Math.max(2, r - 10));
+  if (styleName === "glassmorphism") {
+    return [
+      `<path data-mdpr-glassmorphism-layer="pane-diagonal" d="M ${x + w * 0.08} ${y + h * 0.18} H ${x + w * 0.92}" fill="none" stroke="#FFFFFF" stroke-opacity="0.24" stroke-width="${Math.max(4, r * 0.06)}" stroke-linecap="round"/>`,
+      `<path data-mdpr-glassmorphism-layer="frosted-edge" d="${inner}" fill="none" stroke="#${accent}" stroke-opacity="0.16" stroke-width="${Math.max(3, r * 0.04)}"/>`,
+    ];
+  }
+  if (styleName === "neomorphism") {
+    return [
+      `<path data-mdpr-neomorphism-layer="recessed-bottom-rail" d="M ${x + Math.max(18, r * 0.5)} ${y + h - Math.max(22, r * 0.48)} H ${x + w - Math.max(18, r * 0.5)}" fill="none" stroke="#${stroke}" stroke-opacity="0.42" stroke-width="${Math.max(6, r * 0.08)}" stroke-linecap="round"/>`,
+      `<path data-mdpr-neomorphism-layer="raised-top-rail" d="M ${x + Math.max(18, r * 0.5)} ${y + Math.max(22, r * 0.48)} H ${x + w * 0.46}" fill="none" stroke="#FFFFFF" stroke-opacity="0.68" stroke-width="${Math.max(5, r * 0.07)}" stroke-linecap="round"/>`,
+    ];
+  }
+  if (styleName === "minimalism") {
+    return [
+      `<path data-mdpr-minimalism-layer="hairline-rule" d="M ${x + w * 0.08} ${y + h * 0.18} H ${x + w * 0.92}" fill="none" stroke="#${stroke}" stroke-opacity="0.34" stroke-width="${Math.max(2, r * 0.025)}"/>`,
+      `<path data-mdpr-minimalism-layer="corner-tick" d="M ${x + w - Math.max(24, r * 0.5)} ${y + 12} H ${x + w - 12} V ${y + Math.max(24, r * 0.5)}" fill="none" stroke="#${accent}" stroke-opacity="0.22" stroke-width="${Math.max(2, r * 0.025)}"/>`,
+    ];
+  }
+  if (styleName === "newmorphism") {
+    return [
+      `<path data-mdpr-newmorphism-layer="legacy-floating-relief" d="M ${x + w * 0.64} ${y + h * 0.2} C ${x + w * 0.78} ${y + h * 0.08}, ${x + w * 0.88} ${y + h * 0.18}, ${x + w * 0.92} ${y + h * 0.34}" fill="none" stroke="#FFFFFF" stroke-opacity="0.54" stroke-width="${Math.max(5, r * 0.06)}" stroke-linecap="round"/>`,
+      `<ellipse data-mdpr-newmorphism-layer="soft-raised-cap" cx="${x + w * 0.86}" cy="${y + h * 0.22}" rx="${Math.max(12, w * 0.04)}" ry="${Math.max(10, h * 0.06)}" fill="#${accent}" fill-opacity="0.16"/>`,
+    ];
+  }
   if (styleName === "skeuomorphism") {
     return [
       `<path data-mdpr-skeuomorphism-layer="bevel-highlight" d="${inner}" fill="none" stroke="#FFFFFF" stroke-opacity="0.72" stroke-width="${Math.max(4, r * 0.06)}"/>`,
       `<path data-mdpr-skeuomorphism-layer="bevel-lowlight" d="M ${x + Math.max(18, r * 0.55)} ${y + h - Math.max(18, r * 0.42)} H ${x + w - Math.max(18, r * 0.55)}" fill="none" stroke="#${stroke}" stroke-opacity="0.58" stroke-width="${Math.max(5, r * 0.08)}" stroke-linecap="round"/>`,
+      `<path data-mdpr-skeuomorphism-layer="inner-pressed-edge" d="M ${x + 16} ${y + 16} V ${y + h - 16} H ${x + w - 16}" fill="none" stroke="#${stroke}" stroke-opacity="0.18" stroke-width="${Math.max(3, r * 0.04)}"/>`,
     ];
   }
   if (styleName === "claymorphism") {
     return [
       `<ellipse data-mdpr-claymorphism-layer="puffy-highlight" cx="${x + w * 0.22}" cy="${y + h * 0.22}" rx="${Math.max(18, w * 0.12)}" ry="${Math.max(14, h * 0.12)}" fill="#FFFFFF" fill-opacity="0.34"/>`,
       `<ellipse data-mdpr-claymorphism-layer="soft-accent" cx="${x + w * 0.82}" cy="${y + h * 0.22}" rx="${Math.max(14, w * 0.08)}" ry="${Math.max(14, h * 0.10)}" fill="#${accent}" fill-opacity="0.18"/>`,
+      `<path data-mdpr-claymorphism-layer="pillow-lowlight" d="M ${x + w * 0.18} ${y + h * 0.82} C ${x + w * 0.42} ${y + h * 0.94}, ${x + w * 0.68} ${y + h * 0.9}, ${x + w * 0.86} ${y + h * 0.76}" fill="none" stroke="#${stroke}" stroke-opacity="0.18" stroke-width="${Math.max(7, r * 0.08)}" stroke-linecap="round"/>`,
     ];
   }
   if (styleName === "brutalism") {
@@ -687,18 +884,21 @@ function styleOverlays(styleName: string, x: number, y: number, w: number, h: nu
     return [
       `<path data-mdpr-brutalism-layer="hard-offset" d="M ${x + stripe} ${y + h - stripe} H ${x + w} V ${y + h} H ${x + stripe} Z" fill="#${accent}" fill-opacity="0.18" stroke="#111111" stroke-opacity="1" stroke-width="6"/>`,
       `<path data-mdpr-brutalism-layer="slash" d="M ${x + w - stripe * 1.2} ${y} L ${x + w} ${y + stripe * 1.2}" fill="none" stroke="#111111" stroke-opacity="1" stroke-width="10"/>`,
+      `<path data-mdpr-brutalism-layer="registration-mark" d="M ${x + 20} ${y + 20} H ${x + 86} M ${x + 20} ${y + 20} V ${y + 86}" fill="none" stroke="#111111" stroke-opacity="1" stroke-width="5"/>`,
     ];
   }
   if (styleName === "liquid-glass") {
     return [
       `<path data-mdpr-liquid-glass-layer="refractive-ribbon" d="M ${x + r} ${y + h * 0.26} C ${x + w * 0.32} ${y + h * 0.04}, ${x + w * 0.62} ${y + h * 0.44}, ${x + w - r} ${y + h * 0.18}" fill="none" stroke="#FFFFFF" stroke-opacity="0.38" stroke-width="${Math.max(6, r * 0.1)}" stroke-linecap="round"/>`,
       `<ellipse data-mdpr-liquid-glass-layer="lens" cx="${x + w * 0.78}" cy="${y + h * 0.72}" rx="${Math.max(16, w * 0.08)}" ry="${Math.max(12, h * 0.1)}" fill="#${accent}" fill-opacity="0.16" stroke="#FFFFFF" stroke-opacity="0.24" stroke-width="4"/>`,
+      `<path data-mdpr-liquid-glass-layer="caustic-edge" d="M ${x + w * 0.16} ${y + h * 0.7} C ${x + w * 0.38} ${y + h * 0.56}, ${x + w * 0.54} ${y + h * 0.88}, ${x + w * 0.86} ${y + h * 0.58}" fill="none" stroke="#${accent}" stroke-opacity="0.26" stroke-width="${Math.max(4, r * 0.07)}" stroke-linecap="round"/>`,
     ];
   }
   if (styleName === "bentogrid") {
     return [
       `<path data-mdpr-bentogrid-layer="tile-rule-h" d="M ${x + w * 0.12} ${y + h * 0.28} H ${x + w * 0.88}" fill="none" stroke="#${stroke}" stroke-opacity="0.38" stroke-width="5" stroke-linecap="round"/>`,
       `<path data-mdpr-bentogrid-layer="tile-rule-v" d="M ${x + w * 0.78} ${y + h * 0.16} V ${y + h * 0.84}" fill="none" stroke="#${accent}" stroke-opacity="0.24" stroke-width="5" stroke-linecap="round"/>`,
+      `<path data-mdpr-bentogrid-layer="module-index" d="M ${x + w * 0.12} ${y + h * 0.72} H ${x + w * 0.34} V ${y + h * 0.84} H ${x + w * 0.12} Z" fill="#${accent}" fill-opacity="0.08" stroke="#${accent}" stroke-opacity="0.22" stroke-width="4"/>`,
     ];
   }
   return [];
@@ -714,7 +914,7 @@ function newmorphicDefs(fill: string, stroke: string): string[] {
   ];
 }
 
-function newmorphicOverlays(x: number, y: number, w: number, h: number, r: number, accent: string, stroke: string): string[] {
+function newmorphicOverlays(x: number, y: number, w: number, h: number, r: number, accent: string, stroke: string, styleName: string): string[] {
   const d = roundedRectPath(x + 1, y + 1, Math.max(2, w - 2), Math.max(2, h - 2), Math.max(2, r - 1));
   const highlight = [
     `M ${x + r * 0.9} ${y + Math.max(12, r * 0.35)}`,
@@ -725,10 +925,10 @@ function newmorphicOverlays(x: number, y: number, w: number, h: number, r: numbe
     `H ${x + w - r * 0.9}`,
   ].join(" ");
   return [
-    `<path data-mdpr-newmorphism-layer="sheen" d="${d}" fill="url(#newmorphicSheen)" stroke="none"/>`,
-    `<path data-mdpr-newmorphism-layer="top-left-highlight" d="${highlight}" fill="none" stroke="#FFFFFF" stroke-opacity="0.72" stroke-width="${Math.max(5, r * 0.08)}" stroke-linecap="round"/>`,
-    `<path data-mdpr-newmorphism-layer="bottom-right-lowlight" d="${lowlight}" fill="none" stroke="#${stroke}" stroke-opacity="0.62" stroke-width="${Math.max(5, r * 0.08)}" stroke-linecap="round"/>`,
-    `<circle data-mdpr-newmorphism-layer="accent-dot" cx="${x + w - Math.max(24, r * 0.68)}" cy="${y + Math.max(24, r * 0.68)}" r="${Math.max(10, r * 0.16)}" fill="#${accent}" fill-opacity="0.30"/>`,
+    `<path data-mdpr-newmorphism-layer="${styleName === "neomorphism" ? "neo-sheen" : "sheen"}" d="${d}" fill="url(#newmorphicSheen)" stroke="none"/>`,
+    `<path data-mdpr-newmorphism-layer="${styleName === "neomorphism" ? "neo-top-left-highlight" : "top-left-highlight"}" d="${highlight}" fill="none" stroke="#FFFFFF" stroke-opacity="0.72" stroke-width="${Math.max(5, r * 0.08)}" stroke-linecap="round"/>`,
+    `<path data-mdpr-newmorphism-layer="${styleName === "neomorphism" ? "neo-bottom-right-lowlight" : "bottom-right-lowlight"}" d="${lowlight}" fill="none" stroke="#${stroke}" stroke-opacity="0.62" stroke-width="${Math.max(5, r * 0.08)}" stroke-linecap="round"/>`,
+    ...(styleName === "neomorphism" ? [] : [`<circle data-mdpr-newmorphism-layer="accent-dot" cx="${x + w - Math.max(24, r * 0.68)}" cy="${y + Math.max(24, r * 0.68)}" r="${Math.max(10, r * 0.16)}" fill="#${accent}" fill-opacity="0.30"/>`]),
   ];
 }
 

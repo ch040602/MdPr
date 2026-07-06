@@ -806,7 +806,7 @@ test("renderPptx emits newmorphic and minimalist style surfaces", async () => {
       colorSeed: "#111827",
       harmony: "monochromatic",
       expectedBackground: "FFFFFF",
-      expectedSvg: /data-mdpr-surface="rounded"/,
+      expectedSvg: /data-mdpr-minimalism-layer="hairline-rule"[\s\S]*data-mdpr-surface="rounded"|data-mdpr-surface="rounded"[\s\S]*data-mdpr-minimalism-layer="hairline-rule"/,
     },
   ];
 
@@ -930,11 +930,15 @@ test("renderPptx renders distinct native decoration grammar for remaining rich s
 
   try {
     const expectedMarkers = {
-      skeuomorphism: /data-mdpr-skeuomorphism-layer/,
-      claymorphism: /data-mdpr-claymorphism-layer/,
-      brutalism: /data-mdpr-brutalism-layer/,
-      "liquid-glass": /data-mdpr-liquid-glass-layer/,
-      bentogrid: /data-mdpr-bentogrid-layer/,
+      skeuomorphism: [/data-mdpr-skeuomorphism-layer/],
+      neomorphism: [/data-mdpr-neomorphism-layer/, /data-mdpr-newmorphism-layer/],
+      glassmorphism: [/data-mdpr-glassmorphism-layer/, /data-mdpr-glass-layer/],
+      claymorphism: [/data-mdpr-claymorphism-layer/],
+      minimalism: [/data-mdpr-minimalism-layer/],
+      newmorphism: [/data-mdpr-newmorphism-layer="legacy-floating-relief"/],
+      brutalism: [/data-mdpr-brutalism-layer/],
+      "liquid-glass": [/data-mdpr-liquid-glass-layer/, /data-mdpr-glass-layer/],
+      bentogrid: [/data-mdpr-bentogrid-layer/],
     };
     for (const style of ["skeuomorphism", "neomorphism", "glassmorphism", "claymorphism", "minimalism", "newmorphism", "brutalism", "liquid-glass", "bentogrid"]) {
       const outPath = join(outDir, `${style}.pptx`);
@@ -961,13 +965,16 @@ test("renderPptx renders distinct native decoration grammar for remaining rich s
           .join("\n")
         : "";
       assert.match(svg, new RegExp(`data-mdpr-style="${style}"`));
-      if (expectedMarkers[style]) assert.match(svg, expectedMarkers[style]);
+      for (const marker of expectedMarkers[style] ?? []) assert.match(svg, marker);
 
       if (style === "glassmorphism" || style === "liquid-glass") {
         assert.match(xml, /outerShdw/);
         assert.match(xml, /glow/);
       }
       if (style === "newmorphism") {
+        assert.match(xml, /outerShdw/);
+      }
+      if (style === "neomorphism") {
         assert.match(xml, /outerShdw/);
       }
       if (style === "skeuomorphism") {

@@ -56,8 +56,8 @@
       "path": "docs\\assets\\readme-teaser\\deck.pptx",
       "format": "pptx",
       "exists": true,
-      "bytes": 120145,
-      "sha256": "e52b207c6d087eeca40f3061ffe2f9145ab184ce9a69ff75cd03c878d21112a2"
+      "bytes": 121981,
+      "sha256": "f2530c24f994fd55821b932250fa716bd052c8c283ad1176a533d05d3b0b8615"
     }
   ],
   "designLock": "docs\\assets\\readme-teaser\\mdpresent-design-lock.json",
@@ -337,10 +337,10 @@
     "textClipRiskCount": 0,
     "contrastFailures": 0,
     "connectorWarnings": 0,
-    "buildMs": 74,
+    "buildMs": 78,
     "outputBytes": {
       "html": 16107,
-      "pptx": 120145
+      "pptx": 121981
     }
   }
 }

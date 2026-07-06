@@ -35,6 +35,17 @@ const STYLE_GRAMMAR_SIGNATURES = {
   "liquid-glass": ["frosted-glass", "dark-field", "refractive-ribbon", "lens-highlight"],
   bentogrid: ["grid-field", "tile-rule", "bento-card", "modular-surface"],
 };
+const REQUIRED_STYLE_MARKERS = {
+  skeuomorphism: ["data-mdpr-skeuomorphism-layer"],
+  neomorphism: ["data-mdpr-neomorphism-layer", "data-mdpr-newmorphism-layer"],
+  glassmorphism: ["data-mdpr-glassmorphism-layer", "data-mdpr-glass-layer"],
+  claymorphism: ["data-mdpr-claymorphism-layer"],
+  minimalism: ["data-mdpr-minimalism-layer"],
+  newmorphism: ["data-mdpr-newmorphism-layer"],
+  brutalism: ["data-mdpr-brutalism-layer"],
+  "liquid-glass": ["data-mdpr-liquid-glass-layer", "data-mdpr-glass-layer"],
+  bentogrid: ["data-mdpr-bentogrid-layer"],
+};
 const JSZip = await loadWorkspaceJsZip();
 const report = await evaluateThemePreview();
 writeFileSync(join(outDir, "theme-preview-evaluation.json"), `${JSON.stringify(report, null, 2)}\n`, "utf-8");
@@ -69,6 +80,7 @@ async function evaluateThemePreview() {
   const connectorIssues = [];
   const typographyIssues = [];
   const glassIssues = [];
+  const themeRuleIssues = [];
   const imageSafeFrameIssues = [];
   const pptxIssues = [];
   const pngIssues = [];
@@ -96,6 +108,7 @@ async function evaluateThemePreview() {
       inspections.set(style, pptxInspection);
       languageIssues.push(...pptxInspection.languageIssues);
       imageSafeFrameIssues.push(...pptxInspection.imageSafeFrameIssues);
+      themeRuleIssues.push(...inspectThemeRuleMarkers(style, pptxInspection.styleMarkers));
       pptxInspection.surfaceVariants.forEach((variant) => renderedSurfaceVariants.add(variant));
       if (pptxInspection.slideCount !== slideCount) pptxIssues.push(`${style}:pptx-slide-count:${pptxInspection.slideCount}:expected:${slideCount}`);
     }
@@ -138,6 +151,7 @@ async function evaluateThemePreview() {
     && !connectorIssues.length
     && !typographyIssues.length
     && !glassIssues.length
+    && !themeRuleIssues.length
     && !imageSafeFrameIssues.length
     && !pptxIssues.length
     && !pngIssues.length
@@ -173,6 +187,7 @@ async function evaluateThemePreview() {
     connectorIssues,
     typographyIssues,
     glassIssues,
+    themeRuleIssues,
     imageSafeFrameIssues,
     decorationSafeZoneIssues: imageSafeFrameIssues,
     contrastIssues,
@@ -184,6 +199,13 @@ async function evaluateThemePreview() {
     overflowCount: overflow.length,
     overflow: overflow.slice(0, 10),
   };
+}
+
+function inspectThemeRuleMarkers(style, styleMarkers = []) {
+  const markers = new Set(styleMarkers);
+  return (REQUIRED_STYLE_MARKERS[style] ?? [])
+    .filter((marker) => !markers.has(marker))
+    .map((marker) => `${style}:missing-theme-rule-marker:${marker}`);
 }
 
 function listFiles(path) {

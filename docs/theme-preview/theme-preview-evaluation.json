@@ -61,11 +61,12 @@
   "connectorIssues": [],
   "typographyIssues": [],
   "glassIssues": [],
+  "themeRuleIssues": [],
   "imageSafeFrameIssues": [],
   "decorationSafeZoneIssues": [],
   "contrastIssues": [],
   "visualDistinctiveness": {
-    "minScore": 0.286,
+    "minScore": 0.294,
     "threshold": 0.28,
     "issues": [],
     "closestPairs": [
@@ -77,8 +78,8 @@
         "paletteDistance": 0.039,
         "layoutGrammarDistance": 0,
         "decorationGrammarDistance": 0.667,
-        "surfaceTreatmentDistance": 0.364,
-        "score": 0.286
+        "surfaceTreatmentDistance": 0.417,
+        "score": 0.294
       },
       {
         "styles": [
@@ -88,19 +89,8 @@
         "paletteDistance": 0.204,
         "layoutGrammarDistance": 0,
         "decorationGrammarDistance": 0.667,
-        "surfaceTreatmentDistance": 0.417,
-        "score": 0.354
-      },
-      {
-        "styles": [
-          "neomorphism",
-          "skeuomorphism"
-        ],
-        "paletteDistance": 0.054,
-        "layoutGrammarDistance": 0,
-        "decorationGrammarDistance": 1,
-        "surfaceTreatmentDistance": 0.786,
-        "score": 0.465
+        "surfaceTreatmentDistance": 0.462,
+        "score": 0.361
       },
       {
         "styles": [
@@ -115,14 +105,25 @@
       },
       {
         "styles": [
+          "neomorphism",
+          "skeuomorphism"
+        ],
+        "paletteDistance": 0.054,
+        "layoutGrammarDistance": 0,
+        "decorationGrammarDistance": 1,
+        "surfaceTreatmentDistance": 0.8,
+        "score": 0.468
+      },
+      {
+        "styles": [
           "minimalism",
           "skeuomorphism"
         ],
         "paletteDistance": 0.164,
         "layoutGrammarDistance": 0,
         "decorationGrammarDistance": 1,
-        "surfaceTreatmentDistance": 0.75,
-        "score": 0.499
+        "surfaceTreatmentDistance": 0.769,
+        "score": 0.502
       },
       {
         "styles": [
@@ -132,8 +133,8 @@
         "paletteDistance": 0.16,
         "layoutGrammarDistance": 0,
         "decorationGrammarDistance": 1,
-        "surfaceTreatmentDistance": 0.769,
-        "score": 0.501
+        "surfaceTreatmentDistance": 0.786,
+        "score": 0.503
       },
       {
         "styles": [
@@ -143,8 +144,8 @@
         "paletteDistance": 0.184,
         "layoutGrammarDistance": 0,
         "decorationGrammarDistance": 1,
-        "surfaceTreatmentDistance": 0.769,
-        "score": 0.509
+        "surfaceTreatmentDistance": 0.8,
+        "score": 0.514
       },
       {
         "styles": [
@@ -338,6 +339,7 @@
       "styleMarkers": [
         "data-mdpr-glass",
         "data-mdpr-glass-layer",
+        "data-mdpr-glassmorphism-layer",
         "data-mdpr-style",
         "data-mdpr-surface",
         "data-mdpr-surface-accent"
@@ -429,6 +431,7 @@
         "two-corner-left"
       ],
       "styleMarkers": [
+        "data-mdpr-minimalism-layer",
         "data-mdpr-style",
         "data-mdpr-surface",
         "data-mdpr-surface-accent"
@@ -473,6 +476,7 @@
         "two-corner-left"
       ],
       "styleMarkers": [
+        "data-mdpr-neomorphism-layer",
         "data-mdpr-newmorphism",
         "data-mdpr-newmorphism-layer",
         "data-mdpr-style",
