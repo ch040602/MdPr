@@ -57,7 +57,7 @@
       "format": "pptx",
       "exists": true,
       "bytes": 119611,
-      "sha256": "026c1d9b998f3216b7da7a5f2c8e0deb27b9787cb2e71c934f705240f8736f88"
+      "sha256": "334cd05f2b65b0751c3ce9e199c71848d450dad27ba8b9ebc0981388540899ba"
     }
   ],
   "designLock": "docs\\assets\\readme-teaser\\mdpresent-design-lock.json",
@@ -332,7 +332,7 @@
     "textClipRiskCount": 0,
     "contrastFailures": 0,
     "connectorWarnings": 0,
-    "buildMs": 73,
+    "buildMs": 67,
     "outputBytes": {
       "html": 16134,
       "pptx": 119611

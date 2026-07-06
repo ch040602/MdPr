@@ -54,6 +54,13 @@ minimalism, newmorphism, brutalism, liquid-glass, bentogrid
 `clean`, `executive`, and `technical` remain named design presets through
 `--design`, but they are no longer public `--theme-style` decoration grammars.
 
+The generated theme preview records a deterministic design-quality fingerprint
+for each public style. The fingerprint combines palette distance, decoration
+grammar, surface treatment markers, rendered surface variants, and token
+contrast checks so visually adjacent families such as `neomorphism` versus
+`newmorphism` and `glassmorphism` versus `liquid-glass` cannot silently collapse
+into palette-only variants.
+
 `theme.colorSeed` provides the main color. `theme.colorCombination` derives the supporting palette using Adobe Color Wheel-style harmony rules:
 
 ```text

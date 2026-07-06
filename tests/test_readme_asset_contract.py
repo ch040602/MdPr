@@ -116,6 +116,26 @@ class ReadmeAssetContractTests(unittest.TestCase):
             self.assertGreater(fingerprint["bytes"], 5000)
             self.assertEqual(fingerprint["size"], [1600, 900])
 
+    def test_theme_preview_evaluation_records_design_quality_gates(self):
+        evaluation = json.loads((ROOT / "docs" / "theme-preview" / "theme-preview-evaluation.json").read_text(encoding="utf-8"))
+        self.assertEqual(evaluation["styleCount"], 9)
+        self.assertEqual(evaluation["contrastIssues"], [])
+        self.assertEqual(evaluation["decorationSafeZoneIssues"], [])
+
+        distinctiveness = evaluation["visualDistinctiveness"]
+        self.assertGreaterEqual(distinctiveness["minScore"], distinctiveness["threshold"])
+        self.assertEqual(distinctiveness["issues"], [])
+        closest_pairs = {tuple(pair["styles"]): pair for pair in distinctiveness["closestPairs"]}
+        self.assertIn(("neomorphism", "newmorphism"), closest_pairs)
+        self.assertGreaterEqual(closest_pairs[("neomorphism", "newmorphism")]["decorationGrammarDistance"], 0.6)
+
+        fingerprints = {item["style"]: item for item in evaluation["themeFingerprints"]}
+        self.assertEqual(set(fingerprints), set(evaluation["styleNames"]))
+        self.assertIn("frosted-glass", fingerprints["glassmorphism"]["grammarSignature"])
+        self.assertIn("refractive-ribbon", fingerprints["liquid-glass"]["grammarSignature"])
+        self.assertIn("grid-field", fingerprints["bentogrid"]["grammarSignature"])
+        self.assertIn("hard-border", fingerprints["brutalism"]["grammarSignature"])
+
 
 if __name__ == "__main__":
     unittest.main()

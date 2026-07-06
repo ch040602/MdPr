@@ -152,3 +152,16 @@ mdpresent build deck.md --to html,pdf --background "#111827" --font Aptos
 ## Generated Preview Validation
 
 Actions theme preview is regenerated from PPTX output and checked by `scripts/evaluate-theme-preview.mjs`. The evaluator checks the 9-style redefined preview set, legacy deck removal, exported PNG count and size, manifest composition markers, proof object markers, rendered surface variants, required catalog slides, visible text language, and the absence of legacy iframe-based previews.
+
+The preview evaluator also emits design-quality gates:
+
+- `contrastIssues` checks body text and primary accent readability against the
+  declared background and surface tokens.
+- `visualDistinctiveness` compares every public theme pair by palette distance,
+  decoration grammar distance, surface-treatment distance, and rendered surface
+  variant distance.
+- `themeFingerprints` records each style's palette vector, grammar signature,
+  surface variants, and SVG style markers for regression review.
+
+The gate fails when a theme has insufficient text/accent contrast or when two
+public styles fall below the visual-distinctiveness threshold.

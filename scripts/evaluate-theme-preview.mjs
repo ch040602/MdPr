@@ -21,6 +21,20 @@ const legacyColorOnly = ["clean", "data", "dark", "executive", "glass", "nord", 
 const expectedPngSize = { w: 1600, h: 900 };
 const EMU_PER_INCH = 914400;
 const MIN_IMAGE_SAFE_INSET_EMU = Math.round(0.08 * EMU_PER_INCH);
+const MIN_NORMAL_TEXT_CONTRAST = 4.5;
+const MIN_ACCENT_CONTRAST = 3.0;
+const MIN_VISUAL_DISTINCTIVENESS = 0.28;
+const STYLE_GRAMMAR_SIGNATURES = {
+  skeuomorphism: ["bevel", "chrome-frame", "highlight-lowlight", "soft-shadow"],
+  neomorphism: ["soft-ui", "paired-light-dark-shadow", "bottom-rail", "low-contrast-relief"],
+  glassmorphism: ["frosted-glass", "dark-field", "translucent-card", "straight-edge-highlight"],
+  claymorphism: ["puffy-blob", "rounded-clay-surface", "soft-accent-orbs", "warm-shadow"],
+  minimalism: ["low-decoration", "line-rule", "transparent-surface", "flat-hierarchy"],
+  newmorphism: ["soft-ui", "paired-light-dark-shadow", "floating-relief-orbs", "legacy-soft-raised"],
+  brutalism: ["hard-border", "offset-shadow", "saturated-canvas", "sharp-geometric-accent"],
+  "liquid-glass": ["frosted-glass", "dark-field", "refractive-ribbon", "lens-highlight"],
+  bentogrid: ["grid-field", "tile-rule", "bento-card", "modular-surface"],
+};
 const JSZip = await loadWorkspaceJsZip();
 const report = await evaluateThemePreview();
 writeFileSync(join(outDir, "theme-preview-evaluation.json"), `${JSON.stringify(report, null, 2)}\n`, "utf-8");
@@ -59,6 +73,9 @@ async function evaluateThemePreview() {
   const pptxIssues = [];
   const pngIssues = [];
   const languageIssues = [];
+  const contrastIssues = [];
+  const themeFingerprints = [];
+  const inspections = new Map();
 
   if (!/data-gallery-kind="pptx-png"/.test(indexHtml)) missingMarkers.push("index:pptx-png-gallery-marker");
   if (!/PPTX Theme Validation Gallery/.test(indexHtml)) missingMarkers.push("index:missing-validation-gallery-title");
@@ -76,6 +93,7 @@ async function evaluateThemePreview() {
         .filter((slide) => slide.title === "Image Safe Frame")
         .map((slide) => slide.index);
       const pptxInspection = await inspectPptx(pptxPath, style, imageSafeFrameSlideIndexes);
+      inspections.set(style, pptxInspection);
       languageIssues.push(...pptxInspection.languageIssues);
       imageSafeFrameIssues.push(...pptxInspection.imageSafeFrameIssues);
       pptxInspection.surfaceVariants.forEach((variant) => renderedSurfaceVariants.add(variant));
@@ -95,8 +113,10 @@ async function evaluateThemePreview() {
       }
     }
     const manifestTheme = previewSource.themes?.find((theme) => theme.name === style);
+    if (manifestTheme?.colors) contrastIssues.push(...evaluateThemeContrast(style, manifestTheme.colors));
     if (!manifestTheme?.pptx?.endsWith(`${style}.pptx`)) pptxIssues.push(`${style}:manifest-pptx`);
     if ((manifestTheme?.slides?.length ?? 0) !== slideCount) pngIssues.push(`${style}:manifest-slide-count:${manifestTheme?.slides?.length ?? 0}:expected:${slideCount}`);
+    themeFingerprints.push(themeFingerprint(style, manifestTheme?.colors, inspections.get(style)));
   }
 
   const requiredCompositions = ["cover", "toc", "vertical-list", "grid", "pipeline", "chart-table"];
@@ -107,6 +127,7 @@ async function evaluateThemePreview() {
   const missingSurfaces = requiredSurfaces.filter((name) => !surfaceVariants.includes(name));
   const renderedSurfaceVariantList = sortedUnique([...renderedSurfaceVariants]);
   const missingRenderedSurfaces = requiredSurfaces.filter((name) => !renderedSurfaceVariantList.includes(name));
+  const visualDistinctiveness = evaluateVisualDistinctiveness(themeFingerprints);
 
   const ok = !missingStyles.length
     && !extraStyles.length
@@ -121,6 +142,8 @@ async function evaluateThemePreview() {
     && !pptxIssues.length
     && !pngIssues.length
     && !languageIssues.length
+    && !contrastIssues.length
+    && !visualDistinctiveness.issues.length
     && !missingCompositions.length
     && !missingSlideTitles.length
     && !missingSurfaces.length
@@ -151,6 +174,10 @@ async function evaluateThemePreview() {
     typographyIssues,
     glassIssues,
     imageSafeFrameIssues,
+    decorationSafeZoneIssues: imageSafeFrameIssues,
+    contrastIssues,
+    visualDistinctiveness,
+    themeFingerprints,
     pptxIssues,
     pngIssues,
     languageIssues,
@@ -206,13 +233,138 @@ async function inspectPptx(pptxPath, style, imageSafeFrameSlideIndexes = []) {
       surfaceVariants.add(match[1]);
     }
   }
+  const styleMarkers = await extractStyleMarkers(svgPaths.map((path) => zip.file(path)).filter(Boolean));
 
   return {
     languageIssues,
     imageSafeFrameIssues,
     slideCount: slidePaths.length,
     surfaceVariants: [...surfaceVariants],
+    styleMarkers,
   };
+}
+
+async function extractStyleMarkers(fileRefs) {
+  const markers = new Set();
+  for (const fileRef of fileRefs) {
+    const svg = await fileRef.async("string");
+    for (const match of svg.matchAll(/data-mdpr-[a-z0-9-]+="([^"]+)"/g)) markers.add(match[0].split("=")[0]);
+  }
+  return [...markers].sort();
+}
+
+function evaluateThemeContrast(style, colors) {
+  const issues = [];
+  const checks = [
+    { role: "body-on-background", fg: colors.text, bg: colors.background, min: MIN_NORMAL_TEXT_CONTRAST },
+    { role: "body-on-surface", fg: colors.text, bg: colors.surface, min: MIN_NORMAL_TEXT_CONTRAST },
+    { role: "primary-large-on-background", fg: colors.primary, bg: colors.background, min: MIN_ACCENT_CONTRAST },
+    { role: "primary-large-on-surface", fg: colors.primary, bg: colors.surface, min: MIN_ACCENT_CONTRAST },
+  ];
+  for (const check of checks) {
+    const ratio = contrastRatio(check.fg, check.bg);
+    if (ratio < check.min) {
+      issues.push({
+        style,
+        role: check.role,
+        foreground: normalizeHexColor(check.fg),
+        background: normalizeHexColor(check.bg),
+        ratio: Number(ratio.toFixed(2)),
+        min: check.min,
+      });
+    }
+  }
+  return issues;
+}
+
+function themeFingerprint(style, colors = {}, inspection = {}) {
+  const grammarSignature = sortedUnique(STYLE_GRAMMAR_SIGNATURES[style] ?? []);
+  return {
+    style,
+    colors: {
+      background: normalizeHexColor(colors.background),
+      text: normalizeHexColor(colors.text),
+      primary: normalizeHexColor(colors.primary),
+      secondary: normalizeHexColor(colors.secondary),
+      surface: normalizeHexColor(colors.surface),
+    },
+    paletteVector: ["background", "text", "primary", "secondary", "surface"].flatMap((key) => rgbVector(colors[key] ?? "000000")),
+    grammarSignature,
+    surfaceVariants: sortedUnique(inspection.surfaceVariants ?? []),
+    styleMarkers: sortedUnique(inspection.styleMarkers ?? []),
+  };
+}
+
+function evaluateVisualDistinctiveness(fingerprints) {
+  const pairs = [];
+  const issues = [];
+  for (let leftIndex = 0; leftIndex < fingerprints.length; leftIndex++) {
+    for (let rightIndex = leftIndex + 1; rightIndex < fingerprints.length; rightIndex++) {
+      const left = fingerprints[leftIndex];
+      const right = fingerprints[rightIndex];
+      const paletteDistance = vectorDistance(left.paletteVector, right.paletteVector);
+      const layoutGrammarDistance = jaccardDistance(left.surfaceVariants, right.surfaceVariants);
+      const decorationGrammarDistance = jaccardDistance(left.grammarSignature, right.grammarSignature);
+      const surfaceTreatmentDistance = jaccardDistance([...left.styleMarkers, ...left.grammarSignature], [...right.styleMarkers, ...right.grammarSignature]);
+      const score = Number(((paletteDistance * 0.36) + (layoutGrammarDistance * 0.16) + (decorationGrammarDistance * 0.32) + (surfaceTreatmentDistance * 0.16)).toFixed(3));
+      const pair = {
+        styles: [left.style, right.style],
+        paletteDistance: Number(paletteDistance.toFixed(3)),
+        layoutGrammarDistance: Number(layoutGrammarDistance.toFixed(3)),
+        decorationGrammarDistance: Number(decorationGrammarDistance.toFixed(3)),
+        surfaceTreatmentDistance: Number(surfaceTreatmentDistance.toFixed(3)),
+        score,
+      };
+      pairs.push(pair);
+      if (score < MIN_VISUAL_DISTINCTIVENESS) issues.push(pair);
+    }
+  }
+  return {
+    minScore: pairs.length ? Math.min(...pairs.map((pair) => pair.score)) : 1,
+    threshold: MIN_VISUAL_DISTINCTIVENESS,
+    issues,
+    closestPairs: pairs.sort((a, b) => a.score - b.score).slice(0, 8),
+  };
+}
+
+function normalizeHexColor(value) {
+  return String(value ?? "").replace(/^#/, "").toUpperCase();
+}
+
+function rgbVector(value) {
+  const hex = normalizeHexColor(value).padEnd(6, "0").slice(0, 6);
+  return [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255);
+}
+
+function vectorDistance(left, right) {
+  const length = Math.max(left.length, right.length, 1);
+  const sum = Array.from({ length }, (_, index) => {
+    const delta = (left[index] ?? 0) - (right[index] ?? 0);
+    return delta * delta;
+  }).reduce((total, value) => total + value, 0);
+  return Math.sqrt(sum / length);
+}
+
+function jaccardDistance(left, right) {
+  const leftSet = new Set(left);
+  const rightSet = new Set(right);
+  const union = new Set([...leftSet, ...rightSet]);
+  if (!union.size) return 0;
+  const intersection = [...leftSet].filter((value) => rightSet.has(value)).length;
+  return 1 - (intersection / union.size);
+}
+
+function contrastRatio(foreground, background) {
+  const leftLum = relativeLuminance(rgbVector(foreground));
+  const rightLum = relativeLuminance(rgbVector(background));
+  const light = Math.max(leftLum, rightLum);
+  const dark = Math.min(leftLum, rightLum);
+  return (light + 0.05) / (dark + 0.05);
+}
+
+function relativeLuminance(rgb) {
+  const [r, g, b] = rgb.map((channel) => channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 function inspectImageSafeFrameSlide(slideXml, style, slidePath) {

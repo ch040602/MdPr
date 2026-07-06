@@ -62,6 +62,516 @@
   "typographyIssues": [],
   "glassIssues": [],
   "imageSafeFrameIssues": [],
+  "decorationSafeZoneIssues": [],
+  "contrastIssues": [],
+  "visualDistinctiveness": {
+    "minScore": 0.286,
+    "threshold": 0.28,
+    "issues": [],
+    "closestPairs": [
+      {
+        "styles": [
+          "neomorphism",
+          "newmorphism"
+        ],
+        "paletteDistance": 0.039,
+        "layoutGrammarDistance": 0,
+        "decorationGrammarDistance": 0.667,
+        "surfaceTreatmentDistance": 0.364,
+        "score": 0.286
+      },
+      {
+        "styles": [
+          "glassmorphism",
+          "liquid-glass"
+        ],
+        "paletteDistance": 0.204,
+        "layoutGrammarDistance": 0,
+        "decorationGrammarDistance": 0.667,
+        "surfaceTreatmentDistance": 0.417,
+        "score": 0.354
+      },
+      {
+        "styles": [
+          "neomorphism",
+          "skeuomorphism"
+        ],
+        "paletteDistance": 0.056,
+        "layoutGrammarDistance": 0,
+        "decorationGrammarDistance": 1,
+        "surfaceTreatmentDistance": 0.786,
+        "score": 0.466
+      },
+      {
+        "styles": [
+          "newmorphism",
+          "skeuomorphism"
+        ],
+        "paletteDistance": 0.055,
+        "layoutGrammarDistance": 0,
+        "decorationGrammarDistance": 1,
+        "surfaceTreatmentDistance": 0.786,
+        "score": 0.466
+      },
+      {
+        "styles": [
+          "minimalism",
+          "skeuomorphism"
+        ],
+        "paletteDistance": 0.166,
+        "layoutGrammarDistance": 0,
+        "decorationGrammarDistance": 1,
+        "surfaceTreatmentDistance": 0.75,
+        "score": 0.5
+      },
+      {
+        "styles": [
+          "minimalism",
+          "newmorphism"
+        ],
+        "paletteDistance": 0.165,
+        "layoutGrammarDistance": 0,
+        "decorationGrammarDistance": 1,
+        "surfaceTreatmentDistance": 0.769,
+        "score": 0.503
+      },
+      {
+        "styles": [
+          "minimalism",
+          "neomorphism"
+        ],
+        "paletteDistance": 0.189,
+        "layoutGrammarDistance": 0,
+        "decorationGrammarDistance": 1,
+        "surfaceTreatmentDistance": 0.769,
+        "score": 0.511
+      },
+      {
+        "styles": [
+          "bentogrid",
+          "newmorphism"
+        ],
+        "paletteDistance": 0.237,
+        "layoutGrammarDistance": 0,
+        "decorationGrammarDistance": 1,
+        "surfaceTreatmentDistance": 0.786,
+        "score": 0.531
+      }
+    ]
+  },
+  "themeFingerprints": [
+    {
+      "style": "bentogrid",
+      "colors": {
+        "background": "F8FAFC",
+        "text": "111827",
+        "primary": "0F766E",
+        "secondary": "F0AA11",
+        "surface": "FFFFFF"
+      },
+      "paletteVector": [
+        0.9725490196078431,
+        0.9803921568627451,
+        0.9882352941176471,
+        0.06666666666666667,
+        0.09411764705882353,
+        0.15294117647058825,
+        0.058823529411764705,
+        0.4627450980392157,
+        0.43137254901960786,
+        0.9411764705882353,
+        0.6666666666666666,
+        0.06666666666666667,
+        1,
+        1,
+        1
+      ],
+      "grammarSignature": [
+        "bento-card",
+        "grid-field",
+        "modular-surface",
+        "tile-rule"
+      ],
+      "surfaceVariants": [
+        "flag-drop",
+        "rounded",
+        "ticket",
+        "two-corner-left"
+      ],
+      "styleMarkers": [
+        "data-mdpr-bentogrid-layer",
+        "data-mdpr-style",
+        "data-mdpr-surface",
+        "data-mdpr-surface-accent"
+      ]
+    },
+    {
+      "style": "brutalism",
+      "colors": {
+        "background": "FFF200",
+        "text": "111111",
+        "primary": "111111",
+        "secondary": "00A6FF",
+        "surface": "FFFFFF"
+      },
+      "paletteVector": [
+        1,
+        0.9490196078431372,
+        0,
+        0.06666666666666667,
+        0.06666666666666667,
+        0.06666666666666667,
+        0.06666666666666667,
+        0.06666666666666667,
+        0.06666666666666667,
+        0,
+        0.6509803921568628,
+        1,
+        1,
+        1,
+        1
+      ],
+      "grammarSignature": [
+        "hard-border",
+        "offset-shadow",
+        "saturated-canvas",
+        "sharp-geometric-accent"
+      ],
+      "surfaceVariants": [
+        "flag-drop",
+        "notched-corner",
+        "rounded",
+        "ticket",
+        "two-corner-left"
+      ],
+      "styleMarkers": [
+        "data-mdpr-brutalism-layer",
+        "data-mdpr-style",
+        "data-mdpr-surface",
+        "data-mdpr-surface-accent"
+      ]
+    },
+    {
+      "style": "claymorphism",
+      "colors": {
+        "background": "F6F7FB",
+        "text": "1F2937",
+        "primary": "F43F5E",
+        "secondary": "38BDF8",
+        "surface": "FFFFFF"
+      },
+      "paletteVector": [
+        0.9647058823529412,
+        0.9686274509803922,
+        0.984313725490196,
+        0.12156862745098039,
+        0.1607843137254902,
+        0.21568627450980393,
+        0.9568627450980393,
+        0.24705882352941178,
+        0.3686274509803922,
+        0.2196078431372549,
+        0.7411764705882353,
+        0.9725490196078431,
+        1,
+        1,
+        1
+      ],
+      "grammarSignature": [
+        "puffy-blob",
+        "rounded-clay-surface",
+        "soft-accent-orbs",
+        "warm-shadow"
+      ],
+      "surfaceVariants": [
+        "circle-vine",
+        "flag-drop",
+        "rounded",
+        "ticket",
+        "two-corner-left"
+      ],
+      "styleMarkers": [
+        "data-mdpr-claymorphism-layer",
+        "data-mdpr-style",
+        "data-mdpr-surface",
+        "data-mdpr-surface-accent"
+      ]
+    },
+    {
+      "style": "glassmorphism",
+      "colors": {
+        "background": "0B1020",
+        "text": "F8FAFC",
+        "primary": "8A4FFF",
+        "secondary": "22D3EE",
+        "surface": "17213A"
+      },
+      "paletteVector": [
+        0.043137254901960784,
+        0.06274509803921569,
+        0.12549019607843137,
+        0.9725490196078431,
+        0.9803921568627451,
+        0.9882352941176471,
+        0.5411764705882353,
+        0.30980392156862746,
+        1,
+        0.13333333333333333,
+        0.8274509803921568,
+        0.9333333333333333,
+        0.09019607843137255,
+        0.12941176470588237,
+        0.22745098039215686
+      ],
+      "grammarSignature": [
+        "dark-field",
+        "frosted-glass",
+        "straight-edge-highlight",
+        "translucent-card"
+      ],
+      "surfaceVariants": [
+        "flag-drop",
+        "rounded",
+        "ticket",
+        "two-corner-left"
+      ],
+      "styleMarkers": [
+        "data-mdpr-glass",
+        "data-mdpr-glass-layer",
+        "data-mdpr-style",
+        "data-mdpr-surface",
+        "data-mdpr-surface-accent"
+      ]
+    },
+    {
+      "style": "liquid-glass",
+      "colors": {
+        "background": "07111F",
+        "text": "F8FAFC",
+        "primary": "7DD3FC",
+        "secondary": "A78BFA",
+        "surface": "132238"
+      },
+      "paletteVector": [
+        0.027450980392156862,
+        0.06666666666666667,
+        0.12156862745098039,
+        0.9725490196078431,
+        0.9803921568627451,
+        0.9882352941176471,
+        0.49019607843137253,
+        0.8274509803921568,
+        0.9882352941176471,
+        0.6549019607843137,
+        0.5450980392156862,
+        0.9803921568627451,
+        0.07450980392156863,
+        0.13333333333333333,
+        0.2196078431372549
+      ],
+      "grammarSignature": [
+        "dark-field",
+        "frosted-glass",
+        "lens-highlight",
+        "refractive-ribbon"
+      ],
+      "surfaceVariants": [
+        "flag-drop",
+        "rounded",
+        "ticket",
+        "two-corner-left"
+      ],
+      "styleMarkers": [
+        "data-mdpr-glass",
+        "data-mdpr-glass-layer",
+        "data-mdpr-liquid-glass-layer",
+        "data-mdpr-style",
+        "data-mdpr-surface",
+        "data-mdpr-surface-accent"
+      ]
+    },
+    {
+      "style": "minimalism",
+      "colors": {
+        "background": "FFFFFF",
+        "text": "111827",
+        "primary": "111827",
+        "secondary": "E5E7EB",
+        "surface": "FFFFFF"
+      },
+      "paletteVector": [
+        1,
+        1,
+        1,
+        0.06666666666666667,
+        0.09411764705882353,
+        0.15294117647058825,
+        0.06666666666666667,
+        0.09411764705882353,
+        0.15294117647058825,
+        0.8980392156862745,
+        0.9058823529411765,
+        0.9215686274509803,
+        1,
+        1,
+        1
+      ],
+      "grammarSignature": [
+        "flat-hierarchy",
+        "line-rule",
+        "low-decoration",
+        "transparent-surface"
+      ],
+      "surfaceVariants": [
+        "flag-drop",
+        "rounded",
+        "ticket",
+        "two-corner-left"
+      ],
+      "styleMarkers": [
+        "data-mdpr-style",
+        "data-mdpr-surface",
+        "data-mdpr-surface-accent"
+      ]
+    },
+    {
+      "style": "neomorphism",
+      "colors": {
+        "background": "EEF3F8",
+        "text": "243041",
+        "primary": "5D7FA4",
+        "secondary": "D8E2EE",
+        "surface": "EEF3F8"
+      },
+      "paletteVector": [
+        0.9333333333333333,
+        0.9529411764705882,
+        0.9725490196078431,
+        0.1411764705882353,
+        0.18823529411764706,
+        0.2549019607843137,
+        0.36470588235294116,
+        0.4980392156862745,
+        0.6431372549019608,
+        0.8470588235294118,
+        0.8862745098039215,
+        0.9333333333333333,
+        0.9333333333333333,
+        0.9529411764705882,
+        0.9725490196078431
+      ],
+      "grammarSignature": [
+        "bottom-rail",
+        "low-contrast-relief",
+        "paired-light-dark-shadow",
+        "soft-ui"
+      ],
+      "surfaceVariants": [
+        "flag-drop",
+        "rounded",
+        "ticket",
+        "two-corner-left"
+      ],
+      "styleMarkers": [
+        "data-mdpr-newmorphism",
+        "data-mdpr-newmorphism-layer",
+        "data-mdpr-style",
+        "data-mdpr-surface",
+        "data-mdpr-surface-accent"
+      ]
+    },
+    {
+      "style": "newmorphism",
+      "colors": {
+        "background": "E9EEF5",
+        "text": "243041",
+        "primary": "4F6F8F",
+        "secondary": "CBD5E1",
+        "surface": "E9EEF5"
+      },
+      "paletteVector": [
+        0.9137254901960784,
+        0.9333333333333333,
+        0.9607843137254902,
+        0.1411764705882353,
+        0.18823529411764706,
+        0.2549019607843137,
+        0.30980392156862746,
+        0.43529411764705883,
+        0.5607843137254902,
+        0.796078431372549,
+        0.8352941176470589,
+        0.8823529411764706,
+        0.9137254901960784,
+        0.9333333333333333,
+        0.9607843137254902
+      ],
+      "grammarSignature": [
+        "floating-relief-orbs",
+        "legacy-soft-raised",
+        "paired-light-dark-shadow",
+        "soft-ui"
+      ],
+      "surfaceVariants": [
+        "flag-drop",
+        "rounded",
+        "ticket",
+        "two-corner-left"
+      ],
+      "styleMarkers": [
+        "data-mdpr-newmorphism",
+        "data-mdpr-newmorphism-layer",
+        "data-mdpr-style",
+        "data-mdpr-surface",
+        "data-mdpr-surface-accent"
+      ]
+    },
+    {
+      "style": "skeuomorphism",
+      "colors": {
+        "background": "F4F6F8",
+        "text": "1F2937",
+        "primary": "6B7280",
+        "secondary": "C7D2FE",
+        "surface": "FDFDFE"
+      },
+      "paletteVector": [
+        0.9568627450980393,
+        0.9647058823529412,
+        0.9725490196078431,
+        0.12156862745098039,
+        0.1607843137254902,
+        0.21568627450980393,
+        0.4196078431372549,
+        0.4470588235294118,
+        0.5019607843137255,
+        0.7803921568627451,
+        0.8235294117647058,
+        0.996078431372549,
+        0.9921568627450981,
+        0.9921568627450981,
+        0.996078431372549
+      ],
+      "grammarSignature": [
+        "bevel",
+        "chrome-frame",
+        "highlight-lowlight",
+        "soft-shadow"
+      ],
+      "surfaceVariants": [
+        "flag-drop",
+        "rounded",
+        "ticket",
+        "two-corner-left"
+      ],
+      "styleMarkers": [
+        "data-mdpr-skeuomorphism-layer",
+        "data-mdpr-style",
+        "data-mdpr-surface",
+        "data-mdpr-surface-accent"
+      ]
+    }
+  ],
   "pptxIssues": [],
   "pngIssues": [],
   "languageIssues": [],
