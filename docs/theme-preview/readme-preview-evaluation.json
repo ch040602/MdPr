@@ -30,15 +30,15 @@
   ],
   "visualFingerprints": {
     "docs/assets/readme-teaser/slides/slide-01.png": {
-      "sha256": "cac24886ac0e3fd3cc1309c6fe65b71a0347f2ff77f2031832404c8c0eb8221a",
-      "bytes": 78063,
+      "sha256": "fee6c3469e39308b461bdf6de67f7c7c0d5e7ef6197edd1aa707018cb1e959f3",
+      "bytes": 78079,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/bentogrid/slide-11.png": {
-      "sha256": "7b9a9eab46ae5ed8c5d40e1f80964dc92b86d7f725b2e6b189bb3321417a8d87",
+      "sha256": "810898c9a72acee19fbe31bf9962c62afa97ab6fe59377255940342b87f91d35",
       "bytes": 47525,
       "size": [
         1600,
@@ -46,40 +46,40 @@
       ]
     },
     "docs/theme-preview/slides/minimalism/slide-09.png": {
-      "sha256": "4a00ea164d941908bf7f4e5e8f1a2edce4a0401cc99434582b36f9d0bd9d1e55",
-      "bytes": 9869,
+      "sha256": "2bd190739600e5ad81029d534c7f75f9f13799a88776451a7b552e4fb878c144",
+      "bytes": 10216,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/minimalism/slide-12.png": {
-      "sha256": "dd148bc0a80bb3e9977a658913837fe81f0c7a16d2c7a99cf3ba1bfb8cd32501",
-      "bytes": 46181,
+      "sha256": "3bb4a54f8dc08c5de220e2d44f25ba56ff7fdb556e3edb74147b50aed32c0ae6",
+      "bytes": 46482,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/skeuomorphism/slide-17.png": {
-      "sha256": "4544e9030fcb293e4381b1feb4ddebaf0c55a5e76c21583ec2b0a416d751a430",
-      "bytes": 45661,
+      "sha256": "210124f299e44346e7335792c511ad3b41d30add6cdd38c4ca1d5736b377c0e1",
+      "bytes": 45581,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/glassmorphism/slide-23.png": {
-      "sha256": "1c6ae5d4265da35be7ea1758d3f3034e2c6e8cc1130a5e04daf7c4d8a548f468",
-      "bytes": 132834,
+      "sha256": "df0613cd8e97360321f567914bc53d886e2452b9930ecefb7a5dff87f5cc95e7",
+      "bytes": 132976,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/newmorphism/slide-24.png": {
-      "sha256": "ac60e5d36661570a54c13eda43b59640eaaf8d872b315029bba046495c8bcb3b",
-      "bytes": 120344,
+      "sha256": "1397ad89aa11436cc907f3edb86dcc4e50c0ef3404fd1a3d9ff39896d8ef655d",
+      "bytes": 120611,
       "size": [
         1600,
         900

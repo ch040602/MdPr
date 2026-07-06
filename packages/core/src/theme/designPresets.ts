@@ -534,6 +534,32 @@ export function isDecorationStyleName(value: string): value is DecorationStyleNa
   return (DECORATION_STYLE_NAMES as readonly string[]).includes(value);
 }
 
+export function readableGrayscaleTextColor(backgroundColor: string, surfaceColor?: string, minContrast = 4.5): string {
+  const backgrounds = [backgroundColor, surfaceColor]
+    .filter((color): color is string => Boolean(color))
+    .map(normalizeHex)
+    .filter((color) => /^[0-9A-F]{6}$/.test(color));
+  const primaryBackground = backgrounds[0] ?? "FFFFFF";
+  const backgroundIsDark = relativeLuminance(hexToRgb(primaryBackground)) < 0.5;
+  const preferred = backgroundIsDark
+    ? [...range(248, 255, 1), ...range(247, 0, -1)]
+    : [...range(17, 0, -1), ...range(18, 255, 1)];
+
+  for (const channel of preferred) {
+    const candidate = grayscaleHex(channel);
+    if (backgrounds.every((background) => contrastRatio(candidate, background) >= minContrast)) return candidate;
+  }
+
+  for (const channel of preferred) {
+    const candidate = grayscaleHex(channel);
+    if (contrastRatio(candidate, primaryBackground) >= minContrast) return candidate;
+  }
+
+  const black = "000000";
+  const white = "FFFFFF";
+  return contrastRatio(black, primaryBackground) >= contrastRatio(white, primaryBackground) ? black : white;
+}
+
 function normalizeHex(color: string): string {
   const hex = color.replace(/^#/, "").toUpperCase();
   if (/^[0-9A-F]{3}$/.test(hex)) return hex.split("").map((char) => `${char}${char}`).join("");
@@ -541,7 +567,7 @@ function normalizeHex(color: string): string {
 }
 
 function finalizeDesignTokens(tokens: BaseDesignTokens, colorCombination: ColorCombinationName): DesignTokens {
-  const combined = colorCombination === "preset" ? tokens : applyColorCombination(tokens, colorCombination);
+  const combined = normalizeReadableTextTokens(colorCombination === "preset" ? tokens : applyColorCombination(tokens, colorCombination));
   const chartColors = chartColorsFor(combined, colorCombination);
   const themeColors = themeColorsFor(combined, chartColors);
   return {
@@ -550,6 +576,16 @@ function finalizeDesignTokens(tokens: BaseDesignTokens, colorCombination: ColorC
     chartColors,
     themeColors,
     paletteSeed: paletteSeedFor(combined, chartColors, themeColors, colorCombination),
+  };
+}
+
+function normalizeReadableTextTokens(tokens: BaseDesignTokens): BaseDesignTokens {
+  const textColor = readableGrayscaleTextColor(tokens.backgroundColor, tokens.surfaceFill, 4.5);
+  const mutedTextColor = readableGrayscaleTextColor(tokens.backgroundColor, tokens.surfaceFill, 3);
+  return {
+    ...tokens,
+    textColor,
+    mutedTextColor: mutedTextColor === textColor ? softenReadableGray(textColor, tokens.backgroundColor, tokens.surfaceFill, 3) : mutedTextColor,
   };
 }
 
@@ -690,6 +726,24 @@ function ensureMinimumContrast(hex: string, background: string, minContrast: num
   return candidate;
 }
 
+function softenReadableGray(textColor: string, backgroundColor: string, surfaceColor: string | undefined, minContrast: number): string {
+  const textChannel = hexToRgb(textColor).r;
+  const backgroundChannel = hexToRgb(backgroundColor).r;
+  const step = textChannel > backgroundChannel ? -1 : 1;
+  const backgrounds = [backgroundColor, surfaceColor]
+    .filter((color): color is string => Boolean(color))
+    .map(normalizeHex)
+    .filter((color) => /^[0-9A-F]{6}$/.test(color));
+
+  let best = textColor;
+  for (let channel = textChannel + step; channel >= 0 && channel <= 255; channel += step) {
+    const candidate = grayscaleHex(channel);
+    if (!backgrounds.every((background) => contrastRatio(candidate, background) >= minContrast)) break;
+    best = candidate;
+  }
+  return best;
+}
+
 function mixHex(left: string, right: string, rightWeight: number): string {
   const a = hexToRgb(left);
   const b = hexToRgb(right);
@@ -767,6 +821,17 @@ function contrastRatio(left: string, right: string): number {
   const light = Math.max(leftLum, rightLum);
   const dark = Math.min(leftLum, rightLum);
   return (light + 0.05) / (dark + 0.05);
+}
+
+function grayscaleHex(channel: number): string {
+  const value = clamp(channel, 0, 255).toString(16).padStart(2, "0").toUpperCase();
+  return `${value}${value}${value}`;
+}
+
+function range(start: number, end: number, step: 1 | -1): number[] {
+  const values: number[] = [];
+  for (let value = start; step > 0 ? value <= end : value >= end; value += step) values.push(value);
+  return values;
 }
 
 function relativeLuminance(rgb: { r: number; g: number; b: number }): number {

@@ -261,6 +261,50 @@ test("coherence validation ignores radial layouts for linear spacing checks", ()
   assert.equal(pentagonSummary.intraSlideSpacingCoverage.skippedSlides, 1);
 });
 
+test("coherence validation reports text colors that are not grayscale brightness adjustments", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Deck" },
+    outline: [],
+    slides: [{
+      id: "slide-1",
+      index: 0,
+      role: "content",
+      title: "Color",
+      headingPath: ["Color"],
+      source: {},
+      blocks: [{ id: "b1", type: "paragraph", text: "Readable body text." }],
+      intent: "standard",
+      tags: [],
+    }],
+    coherenceGroups: [],
+    assets: [],
+    diagnostics: [],
+  };
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme: { ...theme, backgroundColor: "#ffffff", textColor: "#2563eb" },
+    slides: [{
+      id: "layout-1",
+      sourceSlideId: "slide-1",
+      index: 0,
+      layout: { preset: "title-body" },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 8, maxShrinkSteps: 4 },
+      regions: [{ id: "body", role: "body", x: 1, y: 1, w: 5, h: 4, zIndex: 1, blockIds: ["b1"] }],
+    }],
+    diagnostics: [],
+  };
+
+  const diagnostics = coherenceValidationDiagnostics(presentation, layout);
+  const summary = createCoherenceValidationSummary(presentation, layout);
+
+  assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "TEXT_BACKGROUND_LUMINANCE_MISMATCH"), true);
+  assert.equal(summary.textBackgroundLuminanceDrift, 1);
+  assert.equal(summary.checks.textBackgroundLuminance, false);
+});
+
 test("polish quality summary maps AI PPT polish chapters to deterministic checks", () => {
   const presentation = {
     version: "1.0",

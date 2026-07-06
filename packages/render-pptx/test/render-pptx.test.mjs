@@ -749,7 +749,7 @@ test("shared presentation palettes can be selected for PPTX output", async () =>
     const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
 
     assert.match(xml, /val="2E3440"/);
-    assert.match(xml, /val="ECEFF4"/);
+    assert.match(xml, /val="F8F8F8"/);
     assert.match(xml, /val="88C0D0"/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
@@ -1072,7 +1072,7 @@ test("renderPptx writes active color combination into PowerPoint document theme"
     const xml = await readPptxThemeXml(outPath);
 
     assert.match(xml, /<a:lt1><a:srgbClr val="F8FAFC"\/><\/a:lt1>/);
-    assert.match(xml, /<a:dk1><a:srgbClr val="111827"\/><\/a:dk1>/);
+    assert.match(xml, /<a:dk1><a:srgbClr val="111111"\/><\/a:dk1>/);
     assert.match(xml, /<a:accent1><a:srgbClr val="2563EB"\/><\/a:accent1>/);
     assert.match(xml, /<a:accent2><a:srgbClr val="F0AA11"\/><\/a:accent2>/);
     assert.match(xml, /<a:accent3><a:srgbClr val="31B5EA"\/><\/a:accent3>/);

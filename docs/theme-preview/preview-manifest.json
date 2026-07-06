@@ -204,7 +204,7 @@
       ],
       "colors": {
         "background": "#F4F6F8",
-        "text": "#1F2937",
+        "text": "#111111",
         "primary": "#6B7280",
         "secondary": "#C7D2FE",
         "surface": "#FDFDFE"
@@ -367,7 +367,7 @@
       ],
       "colors": {
         "background": "#EEF3F8",
-        "text": "#243041",
+        "text": "#111111",
         "primary": "#5D7FA4",
         "secondary": "#D8E2EE",
         "surface": "#EEF3F8"
@@ -530,7 +530,7 @@
       ],
       "colors": {
         "background": "#0B1020",
-        "text": "#F8FAFC",
+        "text": "#F8F8F8",
         "primary": "#8A4FFF",
         "secondary": "#22D3EE",
         "surface": "#17213A"
@@ -693,7 +693,7 @@
       ],
       "colors": {
         "background": "#F6F7FB",
-        "text": "#1F2937",
+        "text": "#111111",
         "primary": "#F43F5E",
         "secondary": "#38BDF8",
         "surface": "#FFFFFF"
@@ -856,7 +856,7 @@
       ],
       "colors": {
         "background": "#FFFFFF",
-        "text": "#111827",
+        "text": "#111111",
         "primary": "#111827",
         "secondary": "#E5E7EB",
         "surface": "#FFFFFF"
@@ -1019,7 +1019,7 @@
       ],
       "colors": {
         "background": "#E9EEF5",
-        "text": "#243041",
+        "text": "#111111",
         "primary": "#4F6F8F",
         "secondary": "#CBD5E1",
         "surface": "#E9EEF5"
@@ -1345,7 +1345,7 @@
       ],
       "colors": {
         "background": "#07111F",
-        "text": "#F8FAFC",
+        "text": "#F8F8F8",
         "primary": "#7DD3FC",
         "secondary": "#A78BFA",
         "surface": "#132238"
@@ -1508,7 +1508,7 @@
       ],
       "colors": {
         "background": "#F8FAFC",
-        "text": "#111827",
+        "text": "#111111",
         "primary": "#0F766E",
         "secondary": "#F0AA11",
         "surface": "#FFFFFF"

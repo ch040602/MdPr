@@ -50,14 +50,14 @@
       "format": "html",
       "exists": true,
       "bytes": 16134,
-      "sha256": "1e3b1ce5c7be11f7a7602f4adf8c6e0998575f0099af2103c4c30269436e0e2a"
+      "sha256": "e5b5ab1deeb9393bfd1b64087b965883dcdf7a8c870210fc1a7a84a89ce194f1"
     },
     {
       "path": "docs\\assets\\readme-teaser\\deck.pptx",
       "format": "pptx",
       "exists": true,
       "bytes": 119611,
-      "sha256": "334cd05f2b65b0751c3ce9e199c71848d450dad27ba8b9ebc0981388540899ba"
+      "sha256": "7b75cdd555d7bca98668ebacb503a3fe860e4c9e3d55e85577e61f6a03401a4f"
     }
   ],
   "designLock": "docs\\assets\\readme-teaser\\mdpresent-design-lock.json",
@@ -159,13 +159,16 @@
       "thresholds": {
         "minimumMixedObjectGroupingScore": 0.75,
         "minimumObjectCoverageRatio": 0.2,
-        "intraSlideSpacingTolerancePx": 8
+        "intraSlideSpacingTolerancePx": 8,
+        "minimumTextBackgroundContrastRatio": 4.5,
+        "maxTextColorGrayscaleChannelDrift": 2
       },
       "orphanEvidenceBlocks": 0,
       "captionDetached": 0,
       "claimlessSlides": 0,
       "sectionMotifDrift": 0,
       "intraSlideSpacingDrift": 0,
+      "textBackgroundLuminanceDrift": 0,
       "intraSlideSpacingCoverage": {
         "checkedSlides": 1,
         "skippedSlides": 0,
@@ -204,7 +207,8 @@
         "orphanTables": true,
         "lowObjectCoverage": true,
         "sectionMotifDrift": true,
-        "intraSlideSpacing": true
+        "intraSlideSpacing": true,
+        "textBackgroundLuminance": true
       },
       "diagnostics": []
     },
@@ -332,7 +336,7 @@
     "textClipRiskCount": 0,
     "contrastFailures": 0,
     "connectorWarnings": 0,
-    "buildMs": 67,
+    "buildMs": 86,
     "outputBytes": {
       "html": 16134,
       "pptx": 119611

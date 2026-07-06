@@ -67,7 +67,7 @@ into palette-only variants.
 preset, monochromatic, analogous, complementary, split-complementary, triadic
 ```
 
-The derived palette feeds element accents, chart colors, and the generated PowerPoint document theme colors (`accent1` through `accent6`).
+The derived palette feeds element accents, chart colors, and the generated PowerPoint document theme colors (`accent1` through `accent6`). Final body text colors are normalized separately as grayscale black/white brightness adjustments from the resolved background, so text readability is not coupled to hue choices in presets, packs, or templates.
 
 Approved packs provide a separate token import path. `mdpresent pack import`
 converts approved theme or component candidates into `mdpr-pack-v1`,
@@ -88,6 +88,9 @@ final component variants.
   change the family, but sibling items should not rotate unrelated shape
   grammars just to create decoration.
 - Parent object text is at least as large as child object text; bold weight may vary by emphasis.
+- Text/background luminance coherence requires final theme text to be a
+  grayscale black/white brightness adjustment with at least 4.5:1 contrast
+  against the resolved slide background.
 - Tables use middle vertical alignment, readable cell margins, coherent header fills, and a readable minimum font size.
 - Icons remain small, monotone, and secondary; they are not used to fill empty space.
 - If a circle, badge, alphabet marker, number marker, or icon acts like a bullet, the glyph and marker share the same center point on both axes.

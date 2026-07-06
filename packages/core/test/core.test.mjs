@@ -1390,7 +1390,7 @@ test("design preset catalog exposes named presentation palettes as shared tokens
   const nord = resolveDesignTokens("nord", defaultConfig.theme);
 
   assert.equal(nord.backgroundColor, "2E3440");
-  assert.equal(nord.textColor, "ECEFF4");
+  assert.equal(nord.textColor, "F8F8F8");
   assert.equal(nord.primaryColor, "88C0D0");
   assert.equal(nord.surfaceFill, "3B4252");
   assert.equal(nord.ruleColor, "81A1C1");
@@ -1408,6 +1408,31 @@ test("design tokens can derive Adobe-style color combinations for PPT and charts
   assert.equal(tokens.themeColors.accent2, "F0AA11");
   assert.deepEqual(tokens.chartColors.slice(0, 3), ["2563EB", "F0AA11", "31B5EA"]);
   assert.equal(tokens.surfaceLine, "D3DDF0");
+});
+
+test("design tokens derive grayscale readable text from background brightness", () => {
+  const light = resolveDesignTokens("plain", {
+    ...defaultConfig.theme,
+    backgroundColor: "#FFFFFF",
+    textColor: "#FFFFFF",
+    useProvidedColors: true,
+  });
+  const dark = resolveDesignTokens("plain", {
+    ...defaultConfig.theme,
+    backgroundColor: "#111827",
+    textColor: "#111827",
+    useProvidedColors: true,
+  });
+
+  assert.equal(isGrayscale(light.textColor), true);
+  assert.equal(isGrayscale(light.mutedTextColor), true);
+  assert.equal(contrastRatio(light.textColor, light.backgroundColor) >= 4.5, true);
+  assert.equal(contrastRatio(light.mutedTextColor, light.backgroundColor) >= 3, true);
+  assert.equal(isGrayscale(dark.textColor), true);
+  assert.equal(isGrayscale(dark.mutedTextColor), true);
+  assert.equal(contrastRatio(dark.textColor, dark.backgroundColor) >= 4.5, true);
+  assert.equal(contrastRatio(dark.mutedTextColor, dark.backgroundColor) >= 3, true);
+  assert.notEqual(light.textColor, dark.textColor);
 });
 
 test("design tokens register a full contrast-aware harmony palette in PPT theme slots", () => {
@@ -1528,6 +1553,11 @@ function contrastRatio(left, right) {
   const light = Math.max(l1, l2);
   const dark = Math.min(l1, l2);
   return (light + 0.05) / (dark + 0.05);
+}
+
+function isGrayscale(hex) {
+  const rgb = hexToRgb(hex);
+  return rgb.r === rgb.g && rgb.g === rgb.b;
 }
 
 function relativeLuminance(rgb) {

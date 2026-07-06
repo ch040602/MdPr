@@ -80,6 +80,10 @@ Palette-only or background-only swaps are pruned from `--theme-style` and the Ac
 - `theme.colorCombination` derives palette and PPT theme accents from the seed.
 - `preset` preserves catalog colors.
 - `monochromatic`, `analogous`, `complementary`, `split-complementary`, and `triadic` follow Adobe Color Wheel-style harmony.
+- Final `textColor` and `mutedTextColor` are derived as grayscale black/white
+  brightness adjustments from the resolved background. User, preset, template,
+  and pack text colors may seed the theme, but final body text contrast does not
+  depend on hue.
 - PPTX output writes active color tokens into `ppt/theme/theme*.xml` so charts and later user edits inherit the same document theme.
 
 ## Surface Policy
@@ -156,7 +160,7 @@ Actions theme preview is regenerated from PPTX output and checked by `scripts/ev
 The preview evaluator also emits design-quality gates:
 
 - `contrastIssues` checks body text and primary accent readability against the
-  declared background and surface tokens.
+  declared background and surface tokens after grayscale text normalization.
 - `visualDistinctiveness` compares every public theme pair by palette distance,
   decoration grammar distance, surface-treatment distance, and rendered surface
   variant distance.

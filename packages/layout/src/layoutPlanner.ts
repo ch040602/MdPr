@@ -1,4 +1,4 @@
-import type { CoherenceGroup, Config, PresentationIR, SlideIR } from "@mdpresent/core";
+import { readableGrayscaleTextColor, type CoherenceGroup, type Config, type PresentationIR, type SlideIR } from "@mdpresent/core";
 import type { LayoutCandidateScore, LayoutIR, LayoutRegion, LayoutSlide, LayoutSpec, ScoredLayoutCandidate, ThemeTokens } from "./ir/types.js";
 import { chooseItemLayout, titleRect, bodyRect } from "./presets/presets.js";
 
@@ -11,7 +11,7 @@ export function planLayout(presentation: PresentationIR, config: Config): Layout
     colorSeed: config.theme.colorSeed ?? config.theme.primaryColor,
     useProvidedColors: config.theme.useProvidedColors,
     backgroundColor: config.theme.backgroundColor,
-    textColor: config.theme.textColor,
+    textColor: readableGrayscaleTextColor(config.theme.backgroundColor),
     primaryColor: config.theme.primaryColor,
     titleFontSize: config.typography.titleFontSize,
     bodyFontSize: config.typography.bodyFontSize,

@@ -2,6 +2,8 @@ import type { Diagnostic, PresentationIR, SlideIR } from "@mdpresent/core";
 import type { LayoutIR, LayoutRegion } from "@mdpresent/layout";
 
 const INTRA_SLIDE_SPACING_TOLERANCE_PX = 8;
+const MIN_TEXT_BACKGROUND_CONTRAST = 4.5;
+const MAX_GRAYSCALE_CHANNEL_DRIFT = 2;
 const CONTENT_REGION_ROLES = new Set(["body", "item", "image", "table", "chart", "code", "diagram", "icon"]);
 
 export function createCoherenceValidationSummary(presentation: PresentationIR, layout: LayoutIR) {
@@ -13,6 +15,7 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
   const lowObjectCoverage = diagnostics.filter((diagnostic) => diagnostic.code === "LOW_OBJECT_COVERAGE").length;
   const sectionMotifDrift = diagnostics.filter((diagnostic) => diagnostic.code === "SECTION_STYLE_DRIFT").length;
   const intraSlideSpacingDrift = diagnostics.filter((diagnostic) => diagnostic.code === "INCONSISTENT_INTRA_SLIDE_SPACING").length;
+  const textBackgroundLuminanceDrift = diagnostics.filter((diagnostic) => diagnostic.code === "TEXT_BACKGROUND_LUMINANCE_MISMATCH").length;
   const evidenceGroups = presentation.coherenceGroups.filter((group) => group.role === "evidence-pack").length;
   const groupedEvidence = presentation.coherenceGroups.filter((group) => group.role === "evidence-pack" && group.supportingBlockIds.length > 0).length;
 
@@ -22,12 +25,15 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
       minimumMixedObjectGroupingScore: 0.75,
       minimumObjectCoverageRatio: 0.2,
       intraSlideSpacingTolerancePx: INTRA_SLIDE_SPACING_TOLERANCE_PX,
+      minimumTextBackgroundContrastRatio: MIN_TEXT_BACKGROUND_CONTRAST,
+      maxTextColorGrayscaleChannelDrift: MAX_GRAYSCALE_CHANNEL_DRIFT,
     },
     orphanEvidenceBlocks: orphanTables,
     captionDetached,
     claimlessSlides,
     sectionMotifDrift,
     intraSlideSpacingDrift,
+    textBackgroundLuminanceDrift,
     intraSlideSpacingCoverage,
     continuationTitleQuality: diagnostics.some((diagnostic) => diagnostic.code === "DENSE_CONTINUATION_WITHOUT_TITLE") ? "needs-review" : "ok",
     mixedObjectGroupingScore: evidenceGroups ? Number((groupedEvidence / evidenceGroups).toFixed(2)) : 1,
@@ -38,6 +44,7 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
       lowObjectCoverage: lowObjectCoverage === 0,
       sectionMotifDrift: sectionMotifDrift === 0,
       intraSlideSpacing: intraSlideSpacingDrift === 0,
+      textBackgroundLuminance: textBackgroundLuminanceDrift === 0,
     },
     diagnostics,
   };
@@ -109,8 +116,36 @@ export function coherenceValidationDiagnostics(presentation: PresentationIR, lay
   diagnostics.push(...sectionStyleDriftDiagnostics(presentation, layout));
   diagnostics.push(...continuationTitleDiagnostics(presentation));
   diagnostics.push(...intraSlideSpacingDiagnostics(layout));
+  diagnostics.push(...textBackgroundLuminanceDiagnostics(layout));
 
   return diagnostics;
+}
+
+function textBackgroundLuminanceDiagnostics(layout: LayoutIR): Diagnostic[] {
+  const text = parseHex(layout.theme.textColor);
+  const background = parseHex(layout.theme.backgroundColor);
+  if (!text || !background) return [];
+
+  const contrast = contrastRatio(text, background);
+  const grayscaleDrift = Math.max(
+    Math.abs(text.r - text.g),
+    Math.abs(text.g - text.b),
+    Math.abs(text.r - text.b),
+  );
+  const textLum = relativeLuminance(text);
+  const backgroundLum = relativeLuminance(background);
+  const directionMatches = backgroundLum < 0.5 ? textLum > backgroundLum : textLum < backgroundLum;
+  const isCoherent = grayscaleDrift <= MAX_GRAYSCALE_CHANNEL_DRIFT &&
+    contrast >= MIN_TEXT_BACKGROUND_CONTRAST &&
+    directionMatches;
+
+  if (isCoherent) return [];
+
+  return [{
+    level: "warning",
+    code: "TEXT_BACKGROUND_LUMINANCE_MISMATCH",
+    message: `Theme text color ${layout.theme.textColor} should be a grayscale black/white brightness adjustment for background ${layout.theme.backgroundColor}; contrast is ${contrast.toFixed(2)}.`,
+  }];
 }
 
 function intraSlideSpacingDiagnostics(layout: LayoutIR): Diagnostic[] {
@@ -369,6 +404,35 @@ function isClaimLikeText(text: string): boolean {
 function isCaptionLikeText(text: string): boolean {
   const normalized = text.trim();
   return normalized.length > 0 && normalized.length <= 120 && /^(figure|fig\.|image|source|caption|그림|출처)[:\s]/i.test(normalized);
+}
+
+function parseHex(color: string): { r: number; g: number; b: number } | undefined {
+  const normalized = color.replace(/^#/, "").toUpperCase();
+  const hex = /^[0-9A-F]{3}$/.test(normalized)
+    ? normalized.split("").map((char) => `${char}${char}`).join("")
+    : normalized;
+  if (!/^[0-9A-F]{6}$/.test(hex)) return undefined;
+  return {
+    r: parseInt(hex.slice(0, 2), 16),
+    g: parseInt(hex.slice(2, 4), 16),
+    b: parseInt(hex.slice(4, 6), 16),
+  };
+}
+
+function contrastRatio(left: { r: number; g: number; b: number }, right: { r: number; g: number; b: number }): number {
+  const leftLum = relativeLuminance(left);
+  const rightLum = relativeLuminance(right);
+  const light = Math.max(leftLum, rightLum);
+  const dark = Math.min(leftLum, rightLum);
+  return (light + 0.05) / (dark + 0.05);
+}
+
+function relativeLuminance(rgb: { r: number; g: number; b: number }): number {
+  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((channel) => {
+    const value = channel / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
 }
 
 function stableJson(value: unknown): string {

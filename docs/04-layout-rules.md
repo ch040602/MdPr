@@ -152,6 +152,14 @@ not-applicable slide counts so a release profile can fail only covered
 deterministic cases and can separately decide whether skipped radial layouts
 need their own validator.
 
+## Text/Background Luminance Coherence
+
+The resolved Layout IR theme must use text colors that behave as grayscale
+black/white brightness adjustments of the slide background. Validation reports
+`TEXT_BACKGROUND_LUMINANCE_MISMATCH` when the final text color is not grayscale
+within a 2-channel drift, does not move lighter on dark backgrounds or darker on
+light backgrounds, or falls below a 4.5:1 text/background contrast ratio.
+
 ## Planner Pseudocode
 
 ```ts

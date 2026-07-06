@@ -92,7 +92,7 @@ test("buildDeck applies CLI design preset to HTML output", async () => {
     const html = readFileSync(htmlPath, "utf-8");
 
     assert.match(html, /--bg: #2E3440;/);
-    assert.match(html, /--text: #ECEFF4;/);
+    assert.match(html, /--text: #F8F8F8;/);
     assert.match(html, /--primary: #88C0D0;/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
@@ -136,7 +136,7 @@ test("buildDeck applies an approved MDPR pack to theme config", async () => {
     const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
 
     assert.match(html, /--bg: #111827;/);
-    assert.match(html, /--text: #F9FAFB;/);
+    assert.match(html, /--text: #F8F8F8;/);
     assert.match(html, /--primary: #F97316;/);
     assert.equal(manifest.pack.source.path, packPath);
     assert.equal(manifest.pack.validation.valid, true);
@@ -253,7 +253,7 @@ test("CLI pack commands import approved theme candidates and feed build --pack",
 
     const html = readFileSync(join(outDir, "deck.html"), "utf-8");
     assert.match(html, /--bg: #101828;/);
-    assert.match(html, /--text: #F8FAFC;/);
+    assert.match(html, /--text: #F8F8F8;/);
     assert.match(html, /--primary: #22C55E;/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
@@ -322,6 +322,8 @@ test("buildDeck writes design lock and output manifest with visual validation su
     assert.equal(manifest.validation.polish.source.videoId, "GX0Fn-5YqKE");
     assert.equal(manifest.validation.polish.chapters.fontHierarchy.passed, true);
     assert.equal(manifest.validation.polish.chapters.detailPolish.passed, true);
+    assert.equal(typeof manifest.validation.coherence.textBackgroundLuminanceDrift, "number");
+    assert.equal(typeof manifest.validation.coherence.checks.textBackgroundLuminance, "boolean");
     assert.equal(typeof manifest.validation.coherence.mixedObjectGroupingScore, "number");
     assert.equal(typeof manifest.metrics.buildMs, "number");
     assert.equal(manifest.metrics.slideCount, manifest.slideCount);
@@ -758,21 +760,40 @@ test("buildDeck fails before rendering when config diagnostics contain errors", 
 
 test("buildDeck fails visual builds when visual validation reports errors", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-build-visual-error-"));
+  const deckPath = join(outDir, "deck.md");
+  const overridePath = join(outDir, "deck.override.yaml");
 
   try {
+    writeFileSync(deckPath, [
+      "# Demo",
+      "",
+      "## Items",
+      "",
+      "- Alpha",
+      "- Beta",
+    ].join("\n"));
+    writeFileSync(overridePath, [
+      'version: "1.0"',
+      "operations:",
+      "  - op: setSlot",
+      "    target:",
+      "      title: Items",
+      "      slot: right",
+      "    value:",
+      "      x: 0.9",
+      "      y: 1.7",
+      "      w: 5.4",
+      "      h: 4.8",
+    ].join("\n"));
+
     await assert.rejects(
-      () => buildDeck(basicDeck, {
+      () => buildDeck(deckPath, {
         formats: ["html"],
         outDir,
+        overridePath,
         visualValidation: true,
-        cliConfig: {
-          theme: {
-            backgroundColor: "#FFFFFF",
-            textColor: "#FFFFFF",
-          },
-        },
       }),
-      /Build validation failed: VISUAL_CONTRAST/,
+      /Build validation failed: VISUAL_REGION_OVERLAP/,
     );
     assert.equal(existsSync(join(outDir, "deck.html")), false);
   } finally {
@@ -1284,7 +1305,7 @@ test("validateDeck includes title text in overflow diagnostics", () => {
   }
 });
 
-test("validateDeck visual validation reports low contrast and same-layer region overlap", () => {
+test("validateDeck visual validation adjusts theme text contrast and still reports same-layer region overlap", () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-visual-validation-"));
   const deckPath = join(outDir, "deck.md");
   const overridePath = join(outDir, "deck.override.yaml");
@@ -1325,7 +1346,7 @@ test("validateDeck visual validation reports low contrast and same-layer region 
     const codes = result.diagnostics.map((diagnostic) => diagnostic.code);
 
     assert.equal(result.valid, false);
-    assert.equal(codes.includes("VISUAL_CONTRAST"), true);
+    assert.equal(codes.includes("VISUAL_CONTRAST"), false);
     assert.equal(codes.includes("VISUAL_REGION_OVERLAP"), true);
   } finally {
     rmSync(outDir, { recursive: true, force: true });

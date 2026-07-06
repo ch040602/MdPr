@@ -187,7 +187,7 @@ test("renderHtml applies shared design preset tokens from LayoutIR", () => {
   const html = renderHtml({ presentation, layout });
 
   assert.match(html, /--bg: #2E3440;/);
-  assert.match(html, /--text: #ECEFF4;/);
+  assert.match(html, /--text: #F8F8F8;/);
   assert.match(html, /--primary: #88C0D0;/);
   assert.match(html, /--surface: #3B4252;/);
 });
