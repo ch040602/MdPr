@@ -8,14 +8,14 @@ Markdown => Semantic IR => Layout Grammar => Theme Tokens => Editable PPTX
 
 - PPTX first: editable slides, PNG previews, HTML/PDF exports.
 - No agent runtime: deterministic parse, split, layout, validation, render.
-- 5 pruned styles, 36+ patterns, 12 object families, chart/table/diagram/image/icon coverage.
+- 9 themes, 36+ patterns, 12 object families, chart/table/diagram/image/icon coverage.
 - Coherence checks: text bounds, graph containment, table fit, PPT theme colors.
 
 ## Coverage
 
 ```chart
 labels: Styles, Patterns, Object families, Checks
-Current: 5, 36, 12, 9
+Current: 9, 36, 12, 9
 ```
 
 ## Boundary

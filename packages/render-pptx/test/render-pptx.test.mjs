@@ -760,7 +760,7 @@ test("renderPptx applies decoration style separately from theme color seed", asy
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-style-color-"));
   const outPath = join(outDir, "deck.pptx");
   const deck = structuredClone(sampleDeck);
-  deck.layout.theme.decorationStyle = "glass";
+  deck.layout.theme.decorationStyle = "glassmorphism";
   deck.layout.theme.colorSeed = "#8A4FFF";
   deck.layout.theme.primaryColor = "#8A4FFF";
   deck.layout.theme.colorCombination = "analogous";
@@ -793,6 +793,13 @@ test("renderPptx emits newmorphic and minimalist style surfaces", async () => {
       harmony: "analogous",
       expectedBackground: "E9EEF5",
       expectedSvg: /data-mdpr-newmorphism="soft-ui"|newmorphicLift/,
+    },
+    {
+      style: "neomorphism",
+      colorSeed: "#5D7FA4",
+      harmony: "analogous",
+      expectedBackground: "EEF3F8",
+      expectedSvg: /data-mdpr-style="neomorphism"[\s\S]*(?:data-mdpr-newmorphism="soft-ui"|newmorphicLift)/,
     },
     {
       style: "minimalism",
@@ -922,7 +929,14 @@ test("renderPptx renders distinct native decoration grammar for remaining rich s
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-style-grammar-"));
 
   try {
-    for (const style of ["glass", "newmorphism", "minimalism", "data"]) {
+    const expectedMarkers = {
+      skeuomorphism: /data-mdpr-skeuomorphism-layer/,
+      claymorphism: /data-mdpr-claymorphism-layer/,
+      brutalism: /data-mdpr-brutalism-layer/,
+      "liquid-glass": /data-mdpr-liquid-glass-layer/,
+      bentogrid: /data-mdpr-bentogrid-layer/,
+    };
+    for (const style of ["skeuomorphism", "neomorphism", "glassmorphism", "claymorphism", "minimalism", "newmorphism", "brutalism", "liquid-glass", "bentogrid"]) {
       const outPath = join(outDir, `${style}.pptx`);
       const deck = structuredClone(sampleDeck);
       deck.layout.theme.decorationStyle = style;
@@ -939,20 +953,38 @@ test("renderPptx renders distinct native decoration grammar for remaining rich s
         .filter((file) => /^slide\d+\.xml$/.test(file))
         .map((file) => readFileSync(join(slideDir, file), "utf-8"))
         .join("\n");
+      const mediaDir = join(expanded, "ppt", "media");
+      const svg = existsSync(mediaDir)
+        ? readdirSync(mediaDir)
+          .filter((file) => file.endsWith(".svg"))
+          .map((file) => readFileSync(join(mediaDir, file), "utf-8"))
+          .join("\n")
+        : "";
+      assert.match(svg, new RegExp(`data-mdpr-style="${style}"`));
+      if (expectedMarkers[style]) assert.match(svg, expectedMarkers[style]);
 
-      if (style === "glass") {
+      if (style === "glassmorphism" || style === "liquid-glass") {
         assert.match(xml, /outerShdw/);
         assert.match(xml, /glow/);
       }
       if (style === "newmorphism") {
         assert.match(xml, /outerShdw/);
       }
+      if (style === "skeuomorphism") {
+        assert.match(xml, /outerShdw/);
+      }
+      if (style === "claymorphism") {
+        assert.match(xml, /outerShdw/);
+      }
       if (style === "minimalism") {
         assert.equal((xml.match(/prst="line"/g) ?? []).length >= 2, true);
       }
-      if (style === "data") {
-        assert.match(xml, /DATA/);
+      if (style === "brutalism") {
+        assert.doesNotMatch(xml, /outerShdw/);
         assert.equal((xml.match(/prst="rect"/g) ?? []).length >= 4, true);
+      }
+      if (style === "bentogrid") {
+        assert.equal((xml.match(/prst="line"/g) ?? []).length >= 4, true);
       }
     }
   } finally {
@@ -1494,7 +1526,7 @@ test("renderPptx keeps Markdown images inside their surfaced region safe frame",
       "base64",
     ));
 
-    await renderPptx(deck, { outPath, designPreset: "glass" });
+    await renderPptx(deck, { outPath, designPreset: "glassmorphism" });
     await assertPptxObjectsInsideSlide(outPath);
 
     const zip = await JSZip.loadAsync(readFileSync(outPath));

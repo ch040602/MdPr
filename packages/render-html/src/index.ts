@@ -1,4 +1,4 @@
-import { resolveDesignTokens, type BlockIR, type DecorationStyleName, type DesignPresetName, type InlineRunIR, type ListItemIR, type PresentationIR, type SlideIR } from "@mdpresent/core";
+import { isDecorationStyleName, resolveDesignTokens, type BlockIR, type DecorationStyleName, type DesignPresetName, type InlineRunIR, type ListItemIR, type PresentationIR, type SlideIR } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 
 export type RenderHtmlOptions = {
@@ -17,8 +17,11 @@ export type RenderHtmlInput = LayoutIR | RenderableDeckIR;
 export function renderHtml(input: RenderHtmlInput, options: RenderHtmlOptions = {}): string {
   const layout = isRenderableDeck(input) ? input.layout : input;
   const presentation = isRenderableDeck(input) ? input.presentation : undefined;
-  const design = resolveDesignTokens(options.decorationStyle ?? options.designPreset ?? layout.theme.decorationStyle ?? layout.theme.designPreset, layout.theme);
-  const themeStyle = classNameForRegionId(design.decorationStyle);
+  const requestedPreset = options.decorationStyle ?? options.designPreset ?? layout.theme.decorationStyle ?? layout.theme.designPreset;
+  const design = resolveDesignTokens(requestedPreset, layout.theme);
+  const decorationStyle = isDecorationStyleName(design.decorationStyle) ? design.decorationStyle : undefined;
+  const themeStyle = classNameForRegionId(decorationStyle ?? "minimalism");
+  const designPreset = decorationStyle ? undefined : classNameForRegionId(design.name);
   const css = `
 :root {
   --bg: #${design.backgroundColor};
@@ -54,6 +57,8 @@ body { margin: 0; background: #111; font-family: var(--font); }
 .surface.two-corner-right { border-radius: .035in .18in .18in .035in; }
 .surface.flag-drop { border-radius: .06in .06in .16in .06in; }
 .surface.flag-drop::before { content: ""; position: absolute; left: .16in; top: 0; width: .26in; height: .22in; background: var(--primary); border-radius: 0 0 .06in .06in; opacity: .9; z-index: 0; }
+.surface.circle-vine { border-radius: .2in; }
+.surface.circle-vine::before { content: ""; position: absolute; left: .16in; top: .18in; width: .2in; height: .2in; border-radius: 999px; background: var(--primary); opacity: .2; }
 .surface.notched-corner { clip-path: polygon(0 0, calc(100% - .18in) 0, 100% .18in, 100% 100%, 0 100%); border-radius: .08in; }
 .surface.ticket { border-radius: .12in; background-image: radial-gradient(circle at left 50%, var(--bg) 0 .11in, transparent .115in), radial-gradient(circle at right 50%, var(--bg) 0 .11in, transparent .115in); }
 .item { line-height: 1.22; }
@@ -100,14 +105,19 @@ table.mdpr-table { width: 100%; height: 100%; border-collapse: collapse; table-l
 .mdpr-table td:first-child { font-weight: 700; }
 .mdpr-table td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
 .mdpr-table tr:nth-child(odd) td { background: color-mix(in srgb, var(--surface) 76%, transparent); }
-body[data-theme-style="glass"] .slide { background: radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--primary) 42%, transparent) 0, transparent 34%), radial-gradient(circle at 78% 72%, color-mix(in srgb, var(--secondary) 34%, transparent) 0, transparent 30%), var(--bg); }
-body[data-theme-style="glass"] .surface { background: linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,.055)), color-mix(in srgb, var(--surface) 46%, transparent); border-color: color-mix(in srgb, #ffffff 58%, var(--surface-line)); box-shadow: 0 .1in .28in rgba(15,23,42,.24), inset 0 1px 0 rgba(255,255,255,.36), inset 0 0 .16in rgba(255,255,255,.08); -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%); }
-body[data-theme-style="glass"] .surface.flag-drop::before { background: color-mix(in srgb, var(--primary) 76%, #ffffff 24%); opacity: .78; }
-body[data-theme-style="glass"] .surface.ticket { background-image: linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.04)), radial-gradient(circle at left 50%, var(--bg) 0 .11in, transparent .115in), radial-gradient(circle at right 50%, var(--bg) 0 .11in, transparent .115in); }
+body[data-theme-style="glassmorphism"], body[data-theme-style="liquid-glass"] { color-scheme: dark; }
+body[data-theme-style="glassmorphism"] .slide, body[data-theme-style="liquid-glass"] .slide { background: radial-gradient(circle at 20% 18%, color-mix(in srgb, var(--primary) 42%, transparent) 0, transparent 34%), radial-gradient(circle at 78% 72%, color-mix(in srgb, var(--secondary) 34%, transparent) 0, transparent 30%), var(--bg); }
+body[data-theme-style="glassmorphism"] .surface, body[data-theme-style="liquid-glass"] .surface { background: linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,.055)), color-mix(in srgb, var(--surface) 46%, transparent); border-color: color-mix(in srgb, #ffffff 58%, var(--surface-line)); box-shadow: 0 .1in .28in rgba(15,23,42,.24), inset 0 1px 0 rgba(255,255,255,.36), inset 0 0 .16in rgba(255,255,255,.08); -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%); }
+body[data-theme-style="glassmorphism"] .surface.flag-drop::before, body[data-theme-style="liquid-glass"] .surface.flag-drop::before { background: color-mix(in srgb, var(--primary) 76%, #ffffff 24%); opacity: .78; }
+body[data-theme-style="glassmorphism"] .surface.ticket, body[data-theme-style="liquid-glass"] .surface.ticket { background-image: linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.04)), radial-gradient(circle at left 50%, var(--bg) 0 .11in, transparent .115in), radial-gradient(circle at right 50%, var(--bg) 0 .11in, transparent .115in); }
+body[data-theme-style="liquid-glass"] .surface { border-radius: .24in; box-shadow: 0 .14in .32in rgba(15,23,42,.28), inset 0 .02in .08in rgba(255,255,255,.34); }
 body[data-theme-style="newmorphism"] .surface { border-color: color-mix(in srgb, #ffffff 65%, var(--surface-line)); box-shadow: .06in .07in .16in rgba(100,116,139,.25), -.04in -.04in .12in rgba(255,255,255,.76); }
+body[data-theme-style="neomorphism"] .surface { border-color: color-mix(in srgb, #ffffff 70%, var(--surface-line)); box-shadow: .07in .08in .18in rgba(100,116,139,.24), -.05in -.05in .14in rgba(255,255,255,.8); }
+body[data-theme-style="skeuomorphism"] .surface { background: linear-gradient(145deg, #fff, color-mix(in srgb, var(--surface) 88%, var(--surface-line))); border-color: var(--surface-line); box-shadow: 0 .08in .16in rgba(71,85,105,.18), inset 0 1px 0 rgba(255,255,255,.82), inset 0 -1px 0 rgba(71,85,105,.2); }
+body[data-theme-style="claymorphism"] .surface { border-radius: .22in; border-color: color-mix(in srgb, var(--surface-line) 70%, #fff); box-shadow: .08in .1in .22in rgba(244,63,94,.18), inset .03in .03in .1in rgba(255,255,255,.72); }
+body[data-theme-style="brutalism"] .surface { border: .03in solid #111; border-radius: 0; box-shadow: .08in .08in 0 var(--secondary); background: var(--surface); }
+body[data-theme-style="bentogrid"] .surface { border-radius: .16in; box-shadow: 0 .08in .18in rgba(15,23,42,.08); background-image: linear-gradient(90deg, color-mix(in srgb, var(--surface-line) 28%, transparent) 1px, transparent 1px), linear-gradient(180deg, color-mix(in srgb, var(--surface-line) 24%, transparent) 1px, transparent 1px); background-size: .38in .38in; }
 body[data-theme-style="minimalism"] .surface { background: transparent; border-color: var(--surface-line); box-shadow: none; }
-body[data-theme-style="data"] .slide::before { content: "DATA"; left: .66in; top: .34in; color: var(--primary); font-size: 8pt; font-weight: 800; letter-spacing: .08in; }
-body[data-theme-style="data"] .slide::after { left: .66in; right: .66in; bottom: .62in; height: .04in; background: var(--surface-line); opacity: .62; }
 `;
 
   const slides = layout.slides.map((slide) => {
@@ -147,7 +157,7 @@ body[data-theme-style="data"] .slide::after { left: .66in; right: .66in; bottom:
 <title>${escapeHtml(options.title ?? presentation?.meta.title ?? "mdpresent")}</title>
 <style>${css}</style>
 </head>
-<body data-theme-style="${escapeHtml(themeStyle)}">
+<body data-theme-style="${escapeHtml(themeStyle)}"${designPreset ? ` data-design-preset="${escapeHtml(designPreset)}"` : ""}>
 <main class="deck">
 ${slides}
 </main>
@@ -531,8 +541,15 @@ function surfaceVariantClass(style: string, role: string, id: string): string {
 
   const itemVariantByStyle: Record<string, string> = {
     glass: "rounded",
+    glassmorphism: "rounded",
+    "liquid-glass": "rounded",
     newmorphism: "rounded",
+    neomorphism: "rounded",
     minimalism: "rounded",
+    skeuomorphism: "ticket",
+    claymorphism: "circle-vine",
+    brutalism: "notched-corner",
+    bentogrid: "two-corner-left",
     data: "notched-corner",
     executive: "two-corner-left",
     technical: "two-corner-right",

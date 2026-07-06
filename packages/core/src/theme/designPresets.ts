@@ -1,5 +1,8 @@
 import type { ColorCombinationName, Config, DecorationStyleName, DesignPresetName } from "../ir/types.js";
 
+type LegacyDecorationAlias = "simple" | "glass" | "data";
+type InternalTokenPresetName = DecorationStyleName | DesignPresetName | LegacyDecorationAlias;
+
 export type ThemeColorTokens = {
   dark1: string;
   light1: string;
@@ -29,8 +32,8 @@ export type PaletteSeedTokens = {
 };
 
 type BaseDesignTokens = {
-  name: DecorationStyleName;
-  decorationStyle: DecorationStyleName;
+  name: InternalTokenPresetName;
+  decorationStyle: InternalTokenPresetName;
   backgroundColor: string;
   textColor: string;
   primaryColor: string;
@@ -74,13 +77,15 @@ export const DESIGN_PRESET_NAMES = [
 ] as const satisfies readonly DesignPresetName[];
 
 export const DECORATION_STYLE_NAMES = [
-  "clean",
-  "executive",
-  "technical",
+  "skeuomorphism",
+  "neomorphism",
+  "glassmorphism",
+  "claymorphism",
   "minimalism",
   "newmorphism",
-  "glass",
-  "data",
+  "brutalism",
+  "liquid-glass",
+  "bentogrid",
 ] as const satisfies readonly DecorationStyleName[];
 
 const DEFAULT_SURFACE_POLICY: BaseDesignTokens["surfacePolicy"] = {
@@ -90,7 +95,7 @@ const DEFAULT_SURFACE_POLICY: BaseDesignTokens["surfacePolicy"] = {
   opacity: 1,
 };
 
-export const DESIGN_PRESETS: Record<DecorationStyleName, BaseDesignTokens> = {
+export const DESIGN_PRESETS: Record<InternalTokenPresetName, BaseDesignTokens> = {
   plain: {
     name: "plain",
     decorationStyle: "plain",
@@ -171,6 +176,70 @@ export const DESIGN_PRESETS: Record<DecorationStyleName, BaseDesignTokens> = {
     cards: true,
     surfacePolicy: DEFAULT_SURFACE_POLICY,
   },
+  skeuomorphism: {
+    name: "skeuomorphism",
+    decorationStyle: "skeuomorphism",
+    backgroundColor: "F4F6F8",
+    textColor: "1F2937",
+    primaryColor: "6B7280",
+    secondaryColor: "C7D2FE",
+    surfaceFill: "FDFDFE",
+    surfaceLine: "AEB7C4",
+    mutedTextColor: "4B5563",
+    ruleColor: "6B7280",
+    titleRule: true,
+    cornerAccent: true,
+    cards: true,
+    surfacePolicy: { shapeSource: "svg", cornerScale: "proportional", shadow: "soft", opacity: 1 },
+  },
+  neomorphism: {
+    name: "neomorphism",
+    decorationStyle: "neomorphism",
+    backgroundColor: "EEF3F8",
+    textColor: "243041",
+    primaryColor: "5D7FA4",
+    secondaryColor: "D8E2EE",
+    surfaceFill: "EEF3F8",
+    surfaceLine: "D1DAE7",
+    mutedTextColor: "526579",
+    ruleColor: "5D7FA4",
+    titleRule: true,
+    cornerAccent: false,
+    cards: true,
+    surfacePolicy: { shapeSource: "svg", cornerScale: "fixed", shadow: "newmorphic", opacity: 1 },
+  },
+  glassmorphism: {
+    name: "glassmorphism",
+    decorationStyle: "glassmorphism",
+    backgroundColor: "0B1020",
+    textColor: "F8FAFC",
+    primaryColor: "8A4FFF",
+    secondaryColor: "22D3EE",
+    surfaceFill: "17213A",
+    surfaceLine: "C4B5FD",
+    mutedTextColor: "CBD5E1",
+    ruleColor: "8A4FFF",
+    titleRule: true,
+    cornerAccent: true,
+    cards: true,
+    surfacePolicy: { shapeSource: "svg", cornerScale: "fixed", shadow: "glass", opacity: 0.42 },
+  },
+  claymorphism: {
+    name: "claymorphism",
+    decorationStyle: "claymorphism",
+    backgroundColor: "F6F7FB",
+    textColor: "1F2937",
+    primaryColor: "F43F5E",
+    secondaryColor: "38BDF8",
+    surfaceFill: "FFFFFF",
+    surfaceLine: "E5E7EB",
+    mutedTextColor: "4B5563",
+    ruleColor: "F43F5E",
+    titleRule: false,
+    cornerAccent: true,
+    cards: true,
+    surfacePolicy: { shapeSource: "svg", cornerScale: "proportional", shadow: "soft", opacity: 1 },
+  },
   minimalism: {
     name: "minimalism",
     decorationStyle: "minimalism",
@@ -202,6 +271,54 @@ export const DESIGN_PRESETS: Record<DecorationStyleName, BaseDesignTokens> = {
     cornerAccent: false,
     cards: true,
     surfacePolicy: { shapeSource: "svg", cornerScale: "fixed", shadow: "newmorphic", opacity: 1 },
+  },
+  brutalism: {
+    name: "brutalism",
+    decorationStyle: "brutalism",
+    backgroundColor: "FFF200",
+    textColor: "111111",
+    primaryColor: "111111",
+    secondaryColor: "00A6FF",
+    surfaceFill: "FFFFFF",
+    surfaceLine: "111111",
+    mutedTextColor: "27272A",
+    ruleColor: "111111",
+    titleRule: true,
+    cornerAccent: true,
+    cards: true,
+    surfacePolicy: { shapeSource: "svg", cornerScale: "fixed", shadow: "none", opacity: 1 },
+  },
+  "liquid-glass": {
+    name: "liquid-glass",
+    decorationStyle: "liquid-glass",
+    backgroundColor: "07111F",
+    textColor: "F8FAFC",
+    primaryColor: "7DD3FC",
+    secondaryColor: "A78BFA",
+    surfaceFill: "132238",
+    surfaceLine: "BAE6FD",
+    mutedTextColor: "C8D7EA",
+    ruleColor: "7DD3FC",
+    titleRule: true,
+    cornerAccent: true,
+    cards: true,
+    surfacePolicy: { shapeSource: "svg", cornerScale: "proportional", shadow: "glass", opacity: 0.36 },
+  },
+  bentogrid: {
+    name: "bentogrid",
+    decorationStyle: "bentogrid",
+    backgroundColor: "F8FAFC",
+    textColor: "111827",
+    primaryColor: "0F766E",
+    secondaryColor: "F0AA11",
+    surfaceFill: "FFFFFF",
+    surfaceLine: "CBD5E1",
+    mutedTextColor: "475569",
+    ruleColor: "0F766E",
+    titleRule: true,
+    cornerAccent: false,
+    cards: true,
+    surfacePolicy: { shapeSource: "svg", cornerScale: "fixed", shadow: "soft", opacity: 1 },
   },
   glass: {
     name: "glass",
@@ -396,7 +513,7 @@ export function resolveDesignTokens(
       ruleColor: primaryColor,
     }, colorCombination);
   }
-  const preset = { ...(DESIGN_PRESETS[name as DecorationStyleName] ?? DESIGN_PRESETS.clean) };
+  const preset = { ...(DESIGN_PRESETS[name as InternalTokenPresetName] ?? DESIGN_PRESETS.clean) };
   if (theme.useProvidedColors) {
     preset.backgroundColor = normalizeHex(theme.backgroundColor);
     preset.textColor = normalizeHex(theme.textColor);

@@ -3,10 +3,10 @@
   "engine": "mdpresent",
   "source": {
     "path": "examples/readme-teaser/deck.md",
-    "sha256": "df49c588a5fb27b41fd381ade8a125823272faf3c167d0c342ab705332ed9b7d"
+    "sha256": "fc10db5fba54529db4329511b8eeb6f553af82c94520238aed4c4bb593897414"
   },
   "config": {
-    "sha256": "94939bd01f963954a554421a089cf3929699344c0ec47d647253e87f0c3653dd",
+    "sha256": "cfcd4afa972fc2dcd13c48a17b7ee0d32a7bb2b725487f422e5acd5713f9d162",
     "sources": [
       {
         "kind": "default"
@@ -18,7 +18,7 @@
             "presentationMode": "pipeline-one-page"
           },
           "theme": {
-            "decorationStyle": "clean",
+            "decorationStyle": "bentogrid",
             "colorSeed": "#0F766E",
             "primaryColor": "#0F766E",
             "colorCombination": "split-complementary"
@@ -28,6 +28,7 @@
     ]
   },
   "override": null,
+  "pack": null,
   "agentHints": {
     "enabled": false,
     "source": null,
@@ -48,18 +49,80 @@
       "path": "docs\\assets\\readme-teaser\\deck.html",
       "format": "html",
       "exists": true,
-      "bytes": 14430,
-      "sha256": "ced9be3c9232654017ac5275ecfafaca14433d22da15abc85b9fdbe22c0c0957"
+      "bytes": 16134,
+      "sha256": "1e3b1ce5c7be11f7a7602f4adf8c6e0998575f0099af2103c4c30269436e0e2a"
     },
     {
       "path": "docs\\assets\\readme-teaser\\deck.pptx",
       "format": "pptx",
       "exists": true,
-      "bytes": 105002,
-      "sha256": "c44271592579132b3f44161204c86e39aa153ff0a7d39f0e923546446bb256dc"
+      "bytes": 119611,
+      "sha256": "026c1d9b998f3216b7da7a5f2c8e0deb27b9787cb2e71c934f705240f8736f88"
     }
   ],
   "designLock": "docs\\assets\\readme-teaser\\mdpresent-design-lock.json",
+  "pptxObjects": [
+    {
+      "slideId": "mdpr-markdown-to-editable-pptx-de2396",
+      "layoutSlideId": "layout-mdpr-markdown-to-editable-pptx-de2396",
+      "regionId": "title",
+      "blockIds": [
+        "__title:mdpr-markdown-to-editable-pptx-de2396"
+      ],
+      "shapeName": "mdpr:mdpr-markdown-to-editable-pptx-de2396:title:__title:mdpr-markdown-to-editable-pptx-de2396",
+      "objectKind": "native-text",
+      "role": "title",
+      "editable": true
+    },
+    {
+      "slideId": "mdpr-markdown-to-editable-pptx-de2396",
+      "layoutSlideId": "layout-mdpr-markdown-to-editable-pptx-de2396",
+      "regionId": "diagram",
+      "blockIds": [
+        "block-3"
+      ],
+      "shapeName": "mdpr:mdpr-markdown-to-editable-pptx-de2396:diagram:block-3",
+      "objectKind": "native-diagram",
+      "role": "diagram",
+      "editable": true
+    },
+    {
+      "slideId": "mdpr-markdown-to-editable-pptx-de2396",
+      "layoutSlideId": "layout-mdpr-markdown-to-editable-pptx-de2396",
+      "regionId": "feature-summary",
+      "blockIds": [
+        "block-5"
+      ],
+      "shapeName": "mdpr:mdpr-markdown-to-editable-pptx-de2396:feature-summary:block-5",
+      "objectKind": "native-text",
+      "role": "body",
+      "editable": true
+    },
+    {
+      "slideId": "mdpr-markdown-to-editable-pptx-de2396",
+      "layoutSlideId": "layout-mdpr-markdown-to-editable-pptx-de2396",
+      "regionId": "chart",
+      "blockIds": [
+        "block-7"
+      ],
+      "shapeName": "mdpr:mdpr-markdown-to-editable-pptx-de2396:chart:block-7",
+      "objectKind": "native-chart",
+      "role": "chart",
+      "editable": true
+    },
+    {
+      "slideId": "mdpr-markdown-to-editable-pptx-de2396",
+      "layoutSlideId": "layout-mdpr-markdown-to-editable-pptx-de2396",
+      "regionId": "table",
+      "blockIds": [
+        "block-9"
+      ],
+      "shapeName": "mdpr:mdpr-markdown-to-editable-pptx-de2396:table:block-9",
+      "objectKind": "native-table",
+      "role": "table",
+      "editable": true
+    }
+  ],
   "diagnostics": [],
   "validation": {
     "layoutOverflow": [],
@@ -95,12 +158,44 @@
       "checked": true,
       "thresholds": {
         "minimumMixedObjectGroupingScore": 0.75,
-        "minimumObjectCoverageRatio": 0.2
+        "minimumObjectCoverageRatio": 0.2,
+        "intraSlideSpacingTolerancePx": 8
       },
       "orphanEvidenceBlocks": 0,
       "captionDetached": 0,
       "claimlessSlides": 0,
       "sectionMotifDrift": 0,
+      "intraSlideSpacingDrift": 0,
+      "intraSlideSpacingCoverage": {
+        "checkedSlides": 1,
+        "skippedSlides": 0,
+        "notApplicableSlides": 0,
+        "checkedGroups": 2,
+        "skipped": [],
+        "notApplicable": [],
+        "scope": {
+          "includedRoles": [
+            "body",
+            "chart",
+            "code",
+            "diagram",
+            "icon",
+            "image",
+            "item",
+            "table"
+          ],
+          "excludedRoles": [
+            "footer",
+            "pageNumber",
+            "subtitle",
+            "title"
+          ],
+          "excludedLayoutDirections": [
+            "radial"
+          ],
+          "minimumContentRegions": 3
+        }
+      },
       "continuationTitleQuality": "ok",
       "mixedObjectGroupingScore": 1,
       "checks": {
@@ -108,9 +203,101 @@
         "detachedCaptions": true,
         "orphanTables": true,
         "lowObjectCoverage": true,
-        "sectionMotifDrift": true
+        "sectionMotifDrift": true,
+        "intraSlideSpacing": true
       },
       "diagnostics": []
+    },
+    "polish": {
+      "checked": true,
+      "source": {
+        "videoId": "GX0Fn-5YqKE",
+        "title": "Do not use AI-made PPT as-is",
+        "chapters": [
+          {
+            "time": "00:24",
+            "key": "fontHierarchy",
+            "label": "font changes"
+          },
+          {
+            "time": "02:33",
+            "key": "layoutComposition",
+            "label": "layout"
+          },
+          {
+            "time": "05:20",
+            "key": "highlightPage",
+            "label": "highlight page"
+          },
+          {
+            "time": "07:13",
+            "key": "coverPage",
+            "label": "cover page"
+          },
+          {
+            "time": "07:48",
+            "key": "detailPolish",
+            "label": "detail polish"
+          },
+          {
+            "time": "08:45",
+            "key": "beforeAfterComparison",
+            "label": "before/after comparison"
+          }
+        ]
+      },
+      "chapters": {
+        "fontHierarchy": {
+          "required": true,
+          "passed": false,
+          "evidence": "Title/body hierarchy, readable font floor, family availability, and same-role consistency are checked from Layout IR typography.",
+          "titleFontPt": 32,
+          "bodyFontPt": 18,
+          "minFontPt": 14,
+          "sameRoleFontVarianceCount": 0,
+          "fontFamily": "Pretendard"
+        },
+        "layoutComposition": {
+          "required": true,
+          "passed": true,
+          "evidence": "Layout presets are checked for structured composition instead of generic dense AI-PPT blocks.",
+          "structuredLayoutRatio": 1,
+          "genericBlockySlideCount": 0,
+          "averageRegionsPerContentSlide": 5
+        },
+        "highlightPage": {
+          "required": true,
+          "passed": true,
+          "evidence": "Quote and key-message intents must route to quote/key-message layouts when important claims exist.",
+          "importantClaimSlideCount": 0,
+          "highlightedSlideCount": 0
+        },
+        "coverPage": {
+          "required": true,
+          "passed": true,
+          "evidence": "Cover slides must use the cover preset with visible title hierarchy and no empty body artifacts.",
+          "coverSlideCount": 0,
+          "polishedCoverCount": 0
+        },
+        "detailPolish": {
+          "required": true,
+          "passed": true,
+          "evidence": "Detail polish reuses visual diagnostics for overlap, clipping, contrast, image aspect, and connector clearance failures.",
+          "visualErrorCount": 0,
+          "overlapCount": 0,
+          "clippingRiskCount": 0,
+          "contrastFailureCount": 0,
+          "connectorClearanceCount": 0
+        },
+        "beforeAfterComparison": {
+          "required": false,
+          "passed": false,
+          "evidence": "Theme-gallery builds with at least two presets provide deterministic before/after comparison evidence for representative decks.",
+          "presets": []
+        }
+      },
+      "requiredFailureCount": 1,
+      "optionalFailureCount": 1
     },
     "overflowResolution": {
       "checked": true,
@@ -131,6 +318,24 @@
         "toc": 0
       },
       "graphOrDiagramBlocksSplit": false
+    }
+  },
+  "metrics": {
+    "slideCount": 1,
+    "overflowCount": 0,
+    "coherenceWarningCount": 0,
+    "coherenceErrorCount": 0,
+    "visualWarningCount": 0,
+    "visualErrorCount": 0,
+    "polishWarningCount": 1,
+    "minFontPt": 14,
+    "textClipRiskCount": 0,
+    "contrastFailures": 0,
+    "connectorWarnings": 0,
+    "buildMs": 73,
+    "outputBytes": {
+      "html": 16134,
+      "pptx": 119611
     }
   }
 }

@@ -59,13 +59,15 @@ Implemented baseline:
 ## Decoration Styles
 
 ```text
-clean       light background, card surfaces, simple title rule
-executive   business deck with blue accent, title rule, card surfaces, corner accent
-technical   green-accent technical deck with clean card surfaces
-minimalism  restrained rules, transparent surfaces, sparse composition
-newmorphism soft raised surfaces with paired light/dark shadows
-glass       translucent dark-field surfaces with PPT shadow/glow effects
-data        dark data-journalism grammar with proof surfaces
+skeuomorphism  tactile bevels, inset highlights, and physical panel cues
+neomorphism    soft UI surfaces with paired light/dark shadows
+glassmorphism  translucent dark-field surfaces with PPT shadow/glow effects
+claymorphism   puffy rounded surfaces with soft colored depth
+minimalism     restrained rules, transparent surfaces, sparse composition
+newmorphism    legacy-compatible soft raised surfaces
+brutalism      hard borders, offset blocks, and high-contrast geometry
+liquid-glass   glassmorphism variant with rounded refractive highlights
+bentogrid      tiled information rhythm with subtle grid structure
 ```
 
 Palette-only or background-only swaps are pruned from `--theme-style` and the Actions preview. Existing layout presets such as `grid` remain layout grammar, not theme style.
@@ -149,4 +151,4 @@ mdpresent build deck.md --to html,pdf --background "#111827" --font Aptos
 
 ## Generated Preview Validation
 
-Actions theme preview is regenerated from PPTX output and checked by `scripts/evaluate-theme-preview.mjs`. The evaluator checks the 8-style pruned preview set, legacy deck removal, exported PNG count and size, manifest composition markers, proof object markers, rendered surface variants, required catalog slides, visible text language, and the absence of legacy iframe-based previews.
+Actions theme preview is regenerated from PPTX output and checked by `scripts/evaluate-theme-preview.mjs`. The evaluator checks the 9-style redefined preview set, legacy deck removal, exported PNG count and size, manifest composition markers, proof object markers, rendered surface variants, required catalog slides, visible text language, and the absence of legacy iframe-based previews.

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "engine": "mdpresent",
-  "decorationStyle": "clean",
+  "decorationStyle": "bentogrid",
   "colorSeed": "#0F766E",
   "colorCombination": "split-complementary",
   "paletteSeed": {

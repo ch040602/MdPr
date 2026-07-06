@@ -298,7 +298,7 @@ test("buildDeck writes design lock and output manifest with visual validation su
       visualValidation: true,
       cliConfig: {
         theme: {
-          decorationStyle: "glass",
+          decorationStyle: "glassmorphism",
           colorSeed: "#8A4FFF",
           primaryColor: "#8A4FFF",
           colorCombination: "analogous",
@@ -334,7 +334,7 @@ test("buildDeck writes design lock and output manifest with visual validation su
     assert.ok(Array.isArray(manifest.pptxObjects));
     assert.ok(manifest.pptxObjects.some((entry) => entry.shapeName.startsWith("mdpr:")));
     assert.ok(manifest.pptxObjects.some((entry) => entry.objectKind === "native-text" && entry.editable === true));
-    assert.equal(designLock.decorationStyle, "glass");
+    assert.equal(designLock.decorationStyle, "glassmorphism");
     assert.equal(designLock.colorSeed, "#8A4FFF");
     assert.equal(designLock.paletteSeed.base, "8A4FFF");
   } finally {
@@ -577,7 +577,7 @@ test("pipeline-one-page mode renders a multi-section teaser as one slide", async
       "",
       "## Theme Families",
       "",
-      "- clean, executive, technical, glass, data",
+      "- skeuomorphism, neomorphism, glassmorphism, claymorphism, brutalism",
       "- main color seed derives harmony, contrast, and chart slots",
       "",
       "## Object Coverage",
@@ -793,7 +793,7 @@ test("CLI theme style and color seed stay independently selectable", () => {
       "--out",
       outDir,
       "--theme-style",
-      "glass",
+      "glassmorphism",
       "--theme-color",
       "#8A4FFF",
       "--theme-harmony",
@@ -810,7 +810,7 @@ test("CLI theme style and color seed stay independently selectable", () => {
 
     assert.match(html, /--primary: #8A4FFF;/);
     assert.match(html, /--surface: #10182C;/);
-    assert.match(xml, /val="0B1020"/);
+    assert.match(xml, /val="10182C"/);
     assert.match(xml, /outerShdw/);
     assert.match(xml, /glow/);
   } finally {
@@ -818,11 +818,18 @@ test("CLI theme style and color seed stay independently selectable", () => {
   }
 });
 
-test("CLI accepts minimalism and newmorphism decoration styles", () => {
+test("CLI accepts redesigned decoration styles", () => {
   const cliPath = join(repoRoot, "packages/cli/dist/index.js");
   const cases = [
+    ["skeuomorphism", "#6B7280", "monochromatic"],
+    ["neomorphism", "#5D7FA4", "analogous"],
+    ["glassmorphism", "#8A4FFF", "analogous"],
+    ["claymorphism", "#F43F5E", "split-complementary"],
     ["minimalism", "#111827", "monochromatic"],
     ["newmorphism", "#4F6F8F", "analogous"],
+    ["brutalism", "#111111", "complementary"],
+    ["liquid-glass", "#7DD3FC", "analogous"],
+    ["bentogrid", "#0F766E", "split-complementary"],
   ];
 
   for (const [style, color, harmony] of cases) {
@@ -851,6 +858,32 @@ test("CLI accepts minimalism and newmorphism decoration styles", () => {
       assert.equal(designLock.decorationStyle, style);
       assert.equal(designLock.colorSeed, color);
       assert.equal(existsSync(join(outDir, "deck.pptx")), true);
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }
+});
+
+test("CLI rejects retired decoration styles as public theme-style options", () => {
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+  for (const style of ["clean", "glass", "data", "plain", "nord"]) {
+    const outDir = mkdtempSync(join(tmpdir(), `mdpresent-cli-retired-${style}-`));
+    try {
+      assert.throws(() => execFileSync(process.execPath, [
+        cliPath,
+        "build",
+        basicDeck,
+        "--to",
+        "html",
+        "--out",
+        outDir,
+        "--theme-style",
+        style,
+      ], {
+        cwd: repoRoot,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "pipe"],
+      }), new RegExp(`Unknown theme decoration style: ${style}`));
     } finally {
       rmSync(outDir, { recursive: true, force: true });
     }

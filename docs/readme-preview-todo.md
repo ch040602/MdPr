@@ -10,7 +10,7 @@ from generated PPTX files.
 
 - Removed the README-only teaser generation path from `preview:readme`.
 - README pages now reference `docs/assets/readme-teaser/slides/slide-01.png`
-  for the main teaser and `docs/theme-preview/slides/clean/slide-11.png` for
+  for the main teaser and `docs/theme-preview/slides/bentogrid/slide-11.png` for
   the runtime pipeline image. Both are generated PPTX PNGs.
 - README preview evaluation now fails if README pages refer to retired
   `docs/assets/readme-slides` outputs or target-specific teaser script names.
@@ -22,7 +22,7 @@ from generated PPTX files.
   that keeps chart, table, body text, and image regions together on one slide.
 - The shared theme preview source now includes a `Decoration Pattern Catalog`
   slide with 36+ named decoration and layout patterns.
-- The Actions preview now renders 5 pruned decoration styles and excludes
+- The Actions preview now renders 9 redefined decoration styles and excludes
   styles that behave like palette-only or background-only swaps.
 - README preview evaluation records SHA-256 visual fingerprints for selected
   `docs/theme-preview/slides/*` documentation preview images without creating
@@ -56,7 +56,7 @@ from generated PPTX files.
   to `docs/assets/readme-teaser/slides/slide-01.png`, and only then evaluates
   README preview contracts.
 - The main teaser source is intentionally compact and names the key proof
-  points: PPTX-first output, no agent runtime, 5 pruned styles, 36+ patterns, 12 object
+  points: PPTX-first output, no agent runtime, 9 themes, 36+ patterns, 12 object
   families, and deterministic coherence checks.
 
 ## Prioritized TODO

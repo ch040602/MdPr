@@ -4,10 +4,10 @@
 
 > Generated PPTX slides should show design range without sacrificing coherence.
 
-- Preview styles: 5 pruned decoration grammars, not palette-only swaps.
+- Preview styles: 9 distinct decoration grammars, not palette-only swaps.
 - Pattern range: 36+ decoration and layout patterns selected by content role.
 - Object support: native tables, charts, proof objects, diagrams, images, and icon slots.
-- QA contract: readable text, bounded objects, aligned connectors, and editable PPTX output.
+- Validation contract: readable text, bounded objects, aligned connectors, and editable PPTX output.
 
 ## Composition Contract
 
@@ -19,10 +19,10 @@
 
 ## Pruned Style Families
 
-- Clean: restrained default structure.
-- Minimalism / newmorphism: sparse rules or soft raised surfaces.
-- Glass / data: translucent surfaces or metric rails.
-- Clean: restrained default structure for ordinary decks.
+- Skeuomorphism / claymorphism: tactile depth, bevels, or puffy surfaces.
+- Neomorphism / newmorphism: soft raised surfaces.
+- Glassmorphism / liquid-glass: translucent panels and refractive highlights.
+- Minimalism / brutalism / bentogrid: sparse rules, hard contrast, or tiled information rhythm.
 - Pruning rule: preview excludes styles that only change palette or background.
 
 ## Semantic Blocks
@@ -48,11 +48,11 @@ Markdown source => Parse blocks => Split slides => Layout objects => Validate ov
 - Evidence: `chart-table-pair`, `metric-proof`, `arc-ring-proof`, `gauge-proof`, `connected-strip`, `mixed-object-pack`.
 - Connectors: `straight-arrow`, `elbow-arrow`, `boundary-attach`, `overlap-joint`, `parallel-flow`, `contrast-flow`.
 - Icons: `number-badge`, `mono-icon-slot`, `letter-disc`, `quiet-aside`, `image-safe-frame`, `brand-glyph`.
-- Page grammar: `clean-card`, `glass-surface`, `newmorphic-panel`, `data-rail`, `minimal-rule`.
+- Page grammar: `skeuomorphic-bevel`, `glassmorphism-surface`, `newmorphic-panel`, `clay-blob`, `bento-tile`, `liquid-lens`.
 
 ## Table Coherence
 
-| Object | Renderer expectation | QA signal |
+| Object | Renderer expectation | Validation signal |
 | --- | --- | --- |
 | Text box | editable, middle aligned | readable minimum size |
 | Table | native table object | header fill and cell padding |

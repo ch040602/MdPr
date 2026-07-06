@@ -69,7 +69,7 @@ Documentation preview images come from the shared MDPR theme-preview deck:
 examples/readme-teaser/deck.md
 docs/assets/readme-teaser/slides/slide-01.png
 examples/theme-preview-en/deck.md
-docs/theme-preview/slides/clean/slide-11.png
+docs/theme-preview/slides/bentogrid/slide-11.png
 docs/theme-preview/slides/minimalism/slide-12.png
 ```
 

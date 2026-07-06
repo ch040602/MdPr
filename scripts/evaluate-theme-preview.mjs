@@ -7,13 +7,17 @@ const outDir = resolve(repoRoot, process.argv[2] ?? "docs/theme-preview");
 const pptxDir = join(outDir, "pptx");
 const slidesDir = join(outDir, "slides");
 const expectedStyles = [
-  "clean",
+  "bentogrid",
+  "brutalism",
+  "claymorphism",
+  "glassmorphism",
+  "liquid-glass",
   "minimalism",
+  "neomorphism",
   "newmorphism",
-  "glass",
-  "data",
+  "skeuomorphism",
 ].sort();
-const legacyColorOnly = ["dark", "nord", "solarized", "dracula", "tableau", "gruvbox", "monokai", "material", "tokyo-night"];
+const legacyColorOnly = ["clean", "data", "dark", "executive", "glass", "nord", "solarized", "dracula", "tableau", "technical", "gruvbox", "monokai", "material", "tokyo-night"];
 const expectedPngSize = { w: 1600, h: 900 };
 const EMU_PER_INCH = 914400;
 const MIN_IMAGE_SAFE_INSET_EMU = Math.round(0.08 * EMU_PER_INCH);
@@ -99,7 +103,7 @@ async function evaluateThemePreview() {
   const missingCompositions = requiredCompositions.filter((name) => !compositionClasses.includes(name));
   const requiredSlideTitles = ["Decoration Pattern Catalog", "Image Safe Frame", "Mixed Object Packing"];
   const missingSlideTitles = requiredSlideTitles.filter((title) => !previewSlideTitles.includes(title));
-  const requiredSurfaces = ["rounded", "two-corner-left", "flag-drop", "ticket"];
+  const requiredSurfaces = ["circle-vine", "flag-drop", "notched-corner", "rounded", "ticket", "two-corner-left"];
   const missingSurfaces = requiredSurfaces.filter((name) => !surfaceVariants.includes(name));
   const renderedSurfaceVariantList = sortedUnique([...renderedSurfaceVariants]);
   const missingRenderedSurfaces = requiredSurfaces.filter((name) => !renderedSurfaceVariantList.includes(name));

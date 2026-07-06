@@ -31,6 +31,11 @@ jobs:
         with:
           node-version: 22
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
       - name: Enable pnpm
         run: corepack enable
 
@@ -45,8 +50,8 @@ jobs:
       - name: Build packages
         run: corepack pnpm build
 
-      - name: Generate theme preview gallery
-        run: corepack pnpm preview:themes
+      - name: Generate README and theme preview assets
+        run: corepack pnpm preview:readme
 
       - name: Verify committed preview metadata
         run: git diff --exit-code docs/theme-preview/index.html docs/theme-preview/preview-manifest.json docs/theme-preview/theme-preview-evaluation.json

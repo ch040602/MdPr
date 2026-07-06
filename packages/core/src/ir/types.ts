@@ -15,24 +15,15 @@ export type DesignPresetName =
   | "material"
   | "tokyo-night";
 export type DecorationStyleName =
-  | "plain"
-  | "simple"
-  | "clean"
-  | "executive"
-  | "technical"
+  | "skeuomorphism"
+  | "neomorphism"
+  | "glassmorphism"
+  | "claymorphism"
   | "minimalism"
   | "newmorphism"
-  | "glass"
-  | "data"
-  | "dark"
-  | "nord"
-  | "solarized"
-  | "dracula"
-  | "tableau"
-  | "gruvbox"
-  | "monokai"
-  | "material"
-  | "tokyo-night";
+  | "brutalism"
+  | "liquid-glass"
+  | "bentogrid";
 export type ColorCombinationName =
   | "preset"
   | "monochromatic"

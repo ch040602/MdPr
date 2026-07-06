@@ -25,7 +25,7 @@ mdpresent build deck.md \
   --override deck.override.yaml \
   --hints deck.mdpr-hints.json \
   --design executive \
-  --theme-style glass \
+  --theme-style glassmorphism \
   --theme-color "#8A4FFF" \
   --theme-harmony analogous \
   --visual \
@@ -128,7 +128,7 @@ Validation reports:
 --hints deck.mdpr-hints.json
 --template company-template.pptx
 --design plain|clean|executive|technical|dark|nord|solarized|dracula|tableau|gruvbox|monokai|material|tokyo-night
---theme-style clean|executive|technical|minimalism|newmorphism|glass|data
+--theme-style skeuomorphism|neomorphism|glassmorphism|claymorphism|minimalism|newmorphism|brutalism|liquid-glass|bentogrid
 --theme-color "#2563EB"
 --theme-harmony preset|monochromatic|analogous|complementary|split-complementary|triadic
 --design-lock dist/mdpresent-design-lock.json

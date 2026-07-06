@@ -11,7 +11,7 @@
     "cli": "tsx packages/cli/src/index.ts",
     "perf:check": "node scripts/check-performance-regression.mjs",
     "preview:themes": "node scripts/build-theme-preview.mjs && node scripts/evaluate-theme-preview.mjs",
-    "preview:readme": "node packages/cli/dist/index.js build examples/readme-teaser/deck.md --to pptx,html --out docs/assets/readme-teaser --theme-style clean --theme-color \"#0F766E\" --theme-harmony split-complementary --pipeline-one-page --visual --update-design-lock && python scripts/export-pptx-pngs.py docs/assets/readme-teaser/deck.pptx docs/assets/readme-teaser/slides --width 1600 --height 900 && node scripts/build-theme-preview.mjs && node scripts/evaluate-theme-preview.mjs && python scripts/evaluate-readme-assets.py"
+    "preview:readme": "node packages/cli/dist/index.js build examples/readme-teaser/deck.md --to pptx,html --out docs/assets/readme-teaser --theme-style bentogrid --theme-color \"#0F766E\" --theme-harmony split-complementary --pipeline-one-page --visual --update-design-lock && python scripts/export-pptx-pngs.py docs/assets/readme-teaser/deck.pptx docs/assets/readme-teaser/slides --width 1600 --height 900 && node scripts/build-theme-preview.mjs && node scripts/evaluate-theme-preview.mjs && python scripts/evaluate-readme-assets.py"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",

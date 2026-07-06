@@ -9,16 +9,17 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs" / "theme-preview" / "preview-manifest.json"
 TEASER_MANIFEST = ROOT / "docs" / "assets" / "readme-teaser" / "mdpresent-manifest.json"
 TEASER_SOURCE = ROOT / "examples" / "readme-teaser" / "deck.md"
-README_TEASER_URL = "docs/assets/readme-teaser/slides/slide-01.png?v=grid-pipeline-one-page"
+README_TEASER_URL = "docs/assets/readme-teaser/slides/slide-01.png?v=bentogrid-pipeline-one-page"
 THEME_EXAMPLE_IMAGES = [
-    "docs/theme-preview/slides/clean/slide-01.png",
-    "docs/theme-preview/slides/editorial/slide-01.png",
+    "docs/theme-preview/slides/skeuomorphism/slide-01.png",
+    "docs/theme-preview/slides/neomorphism/slide-01.png",
+    "docs/theme-preview/slides/glassmorphism/slide-01.png",
+    "docs/theme-preview/slides/claymorphism/slide-01.png",
     "docs/theme-preview/slides/minimalism/slide-01.png",
     "docs/theme-preview/slides/newmorphism/slide-01.png",
-    "docs/theme-preview/slides/glass/slide-01.png",
-    "docs/theme-preview/slides/grid/slide-01.png",
-    "docs/theme-preview/slides/data/slide-01.png",
-    "docs/theme-preview/slides/magazine/slide-01.png",
+    "docs/theme-preview/slides/brutalism/slide-01.png",
+    "docs/theme-preview/slides/liquid-glass/slide-01.png",
+    "docs/theme-preview/slides/bentogrid/slide-01.png",
 ]
 
 
@@ -30,18 +31,18 @@ class ReadmeAssetContractTests(unittest.TestCase):
         self.assertEqual(teaser_manifest["source"]["path"], "examples/readme-teaser/deck.md")
         self.assertEqual(teaser_manifest["presentationMode"], "pipeline-one-page")
         self.assertEqual(teaser_manifest["slideCount"], 1)
-        self.assertGreaterEqual(manifest["styleCount"], 8)
+        self.assertGreaterEqual(manifest["styleCount"], 9)
         self.assertGreaterEqual(manifest["slideCount"], 12)
         self.assertEqual(
             manifest.get("styleNames"),
-            ["clean", "data", "editorial", "glass", "grid", "magazine", "minimalism", "newmorphism"],
+            ["bentogrid", "brutalism", "claymorphism", "glassmorphism", "liquid-glass", "minimalism", "neomorphism", "newmorphism", "skeuomorphism"],
         )
 
         for readme_name in ["README.md", "README.ko.md", "README.zh.md"]:
             readme = (ROOT / readme_name).read_text(encoding="utf-8")
             self.assertIn(README_TEASER_URL, readme)
-            self.assertIn("docs/theme-preview/slides/grid/slide-10.png", readme)
-            self.assertIn("docs/theme-preview/slides/magazine/slide-11.png", readme)
+            self.assertIn("docs/theme-preview/slides/bentogrid/slide-11.png", readme)
+            self.assertIn("docs/theme-preview/slides/glassmorphism/slide-23.png", readme)
             for image in THEME_EXAMPLE_IMAGES:
                 self.assertIn(image, readme)
             self.assertNotIn("docs/assets/readme-slides", readme)
@@ -61,7 +62,7 @@ class ReadmeAssetContractTests(unittest.TestCase):
         visible_lines = [line for line in source.splitlines() if line.strip()]
         self.assertLessEqual(len(visible_lines), 18)
         for required in [
-            "8 themes",
+            "9 themes",
             "36+ patterns",
             "12 object families",
             "PPTX first",
@@ -101,7 +102,7 @@ class ReadmeAssetContractTests(unittest.TestCase):
         self.assertTrue(evaluation["teaserSourceSha256Matches"])
         self.assertEqual(evaluation["teaserSlideCount"], 1)
         selected_by_title = evaluation["selectedPreviewImagesByTitle"]
-        self.assertEqual(selected_by_title["Pipeline Diagram"], "docs/theme-preview/slides/grid/slide-10.png")
+        self.assertEqual(selected_by_title["Pipeline Diagram"], "docs/theme-preview/slides/bentogrid/slide-11.png")
         for title, image in selected_by_title.items():
             theme_name = image.split("/")[3]
             manifest_theme = next(theme for theme in manifest["themes"] if theme["name"] == theme_name)
@@ -109,7 +110,7 @@ class ReadmeAssetContractTests(unittest.TestCase):
             self.assertEqual(manifest_slide["title"], title)
         fingerprints = evaluation["visualFingerprints"]
         self.assertIn("docs/assets/readme-teaser/slides/slide-01.png", fingerprints)
-        self.assertIn("docs/theme-preview/slides/grid/slide-23.png", fingerprints)
+        self.assertIn("docs/theme-preview/slides/glassmorphism/slide-23.png", fingerprints)
         for fingerprint in fingerprints.values():
             self.assertRegex(fingerprint["sha256"], re.compile(r"^[0-9a-f]{64}$"))
             self.assertGreater(fingerprint["bytes"], 5000)

@@ -12,13 +12,13 @@ THEME_PREVIEW_DIR = ROOT / "docs" / "theme-preview"
 README_TEASER_DIR = ROOT / "docs" / "assets" / "readme-teaser"
 EXPECTED_MAIN_IMAGE = "docs/assets/readme-teaser/slides/slide-01.png"
 SELECTED_THEME_PREVIEW_TITLES = {
-    "Pipeline Diagram": "clean",
-    "Semantic Blocks": "clean",
+    "Pipeline Diagram": "bentogrid",
+    "Semantic Blocks": "minimalism",
     "Decoration Pattern Catalog": "minimalism",
-    "Editable Proof Objects": "data",
-    "Image Safe Frame": "glass",
+    "Editable Proof Objects": "skeuomorphism",
+    "Image Safe Frame": "glassmorphism",
     "Mixed Object Packing": "newmorphism",
-    "Chart and Table Pair (Cont. 2/2)": "data",
+    "Chart and Table Pair (Cont. 2/2)": "brutalism",
 }
 
 README_ROLE_CONTRACTS = {

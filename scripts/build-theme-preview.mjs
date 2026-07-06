@@ -15,11 +15,15 @@ const pngSize = { width: 1600, height: 900 };
 const sourceMarkdown = readFileSync(inputPath, "utf-8");
 const generatedAt = "source-controlled";
 const previewStyleNames = [
-  "clean",
+  "skeuomorphism",
+  "neomorphism",
+  "glassmorphism",
+  "claymorphism",
   "minimalism",
   "newmorphism",
-  "glass",
-  "data",
+  "brutalism",
+  "liquid-glass",
+  "bentogrid",
 ].filter((name) => DECORATION_STYLE_NAMES.includes(name));
 
 assertEnglishOnlyText(sourceMarkdown, inputPath);
@@ -41,7 +45,7 @@ const proofKinds = sortedUnique(deck.presentation.slides.flatMap((slide) =>
     .filter((block) => block.type === "chart" && block.chart?.kind)
     .map((block) => block.chart.kind),
 ));
-const surfaceVariants = ["flag-drop", "notched-corner", "rounded", "ticket", "two-corner-left", "two-corner-right"];
+const surfaceVariants = ["circle-vine", "flag-drop", "notched-corner", "rounded", "ticket", "two-corner-left", "two-corner-right"];
 const themeEntries = [];
 
 for (const name of previewStyleNames) {
@@ -125,7 +129,7 @@ function slideTitle(index) {
 
 function renderPreviewShell({ title, source, generatedAt, themes }) {
   const themesJson = JSON.stringify(themes);
-  const defaultTheme = themes.find((theme) => theme.name === "clean") ?? themes[0];
+  const defaultTheme = themes.find((theme) => theme.name === "bentogrid") ?? themes[0];
   return `<!doctype html>
 <html lang="en">
 <head>

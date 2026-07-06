@@ -1441,33 +1441,31 @@ test("design tokens register a full contrast-aware harmony palette in PPT theme 
 });
 
 test("design tokens separate decoration style from main color seed", () => {
-  const tokens = resolveDesignTokens("glass", {
+  const tokens = resolveDesignTokens("glassmorphism", {
     ...defaultConfig.theme,
     primaryColor: "#8A4FFF",
     colorSeed: "#8A4FFF",
     colorCombination: "analogous",
   });
 
-  assert.equal(tokens.name, "glass");
-  assert.equal(tokens.decorationStyle, "glass");
+  assert.equal(tokens.name, "glassmorphism");
+  assert.equal(tokens.decorationStyle, "glassmorphism");
   assert.equal(tokens.primaryColor, "8A4FFF");
   assert.equal(tokens.paletteSeed.base, "8A4FFF");
   assert.equal(tokens.colorCombination, "analogous");
   assert.equal(tokens.cards, true);
   assert.equal(tokens.surfacePolicy.shapeSource, "svg");
   assert.equal(tokens.surfacePolicy.cornerScale, "fixed");
+  assert.equal(tokens.surfacePolicy.shadow, "glass");
 });
 
-test("design tokens expose the data decoration style without pruned palette swaps", () => {
-  const data = resolveDesignTokens("data", {
-    ...defaultConfig.theme,
-    colorSeed: "#F59E0B",
-    colorCombination: "monochromatic",
-  });
-
-  assert.equal(data.decorationStyle, "data");
-  assert.equal(data.surfacePolicy.shadow, "none");
-  assert.equal(data.paletteSeed.base, "F59E0B");
+test("design tokens expose the redefined PPT visual style families", () => {
+  assert.equal(resolveDesignTokens("skeuomorphism", defaultConfig.theme).surfacePolicy.shadow, "soft");
+  assert.equal(resolveDesignTokens("neomorphism", defaultConfig.theme).surfacePolicy.shadow, "newmorphic");
+  assert.equal(resolveDesignTokens("claymorphism", defaultConfig.theme).surfacePolicy.cornerScale, "proportional");
+  assert.equal(resolveDesignTokens("brutalism", defaultConfig.theme).surfacePolicy.shadow, "none");
+  assert.equal(resolveDesignTokens("liquid-glass", defaultConfig.theme).surfacePolicy.shadow, "glass");
+  assert.equal(resolveDesignTokens("bentogrid", defaultConfig.theme).paletteSeed.base, "0F766E");
   assert.equal(DECORATION_STYLE_NAMES.includes("grid"), false);
   assert.equal(DECORATION_STYLE_NAMES.includes("magazine"), false);
   assert.equal(DESIGN_PRESET_NAMES.includes("editorial"), false);
@@ -1496,14 +1494,19 @@ test("design tokens expose minimalism and newmorphism decoration styles", () => 
 
 test("decoration style catalog omits legacy color-only design presets", () => {
   assert.deepEqual(DECORATION_STYLE_NAMES, [
-    "clean",
-    "executive",
-    "technical",
+    "skeuomorphism",
+    "neomorphism",
+    "glassmorphism",
+    "claymorphism",
     "minimalism",
     "newmorphism",
-    "glass",
-    "data",
+    "brutalism",
+    "liquid-glass",
+    "bentogrid",
   ]);
+  assert.equal(DECORATION_STYLE_NAMES.includes("clean"), false);
+  assert.equal(DECORATION_STYLE_NAMES.includes("glass"), false);
+  assert.equal(DECORATION_STYLE_NAMES.includes("data"), false);
   assert.equal(DECORATION_STYLE_NAMES.includes("plain"), false);
   assert.equal(DECORATION_STYLE_NAMES.includes("simple"), false);
   assert.equal(DESIGN_PRESET_NAMES.includes("nord"), true);

@@ -1,13 +1,17 @@
 {
   "ok": true,
   "outDir": "docs/theme-preview",
-  "styleCount": 5,
+  "styleCount": 9,
   "styleNames": [
-    "clean",
-    "data",
-    "glass",
+    "bentogrid",
+    "brutalism",
+    "claymorphism",
+    "glassmorphism",
+    "liquid-glass",
     "minimalism",
-    "newmorphism"
+    "neomorphism",
+    "newmorphism",
+    "skeuomorphism"
   ],
   "missingStyles": [],
   "extraStyles": [],
@@ -28,6 +32,7 @@
   "missingCompositions": [],
   "missingSlideTitles": [],
   "surfaceVariants": [
+    "circle-vine",
     "flag-drop",
     "notched-corner",
     "rounded",
@@ -37,6 +42,7 @@
   ],
   "missingSurfaces": [],
   "renderedSurfaceVariants": [
+    "circle-vine",
     "flag-drop",
     "notched-corner",
     "rounded",

@@ -3,75 +3,75 @@
   "issues": [],
   "source": "examples/theme-preview-en/deck.md",
   "teaserSource": "examples/readme-teaser/deck.md",
-  "teaserSourceSha256": "df49c588a5fb27b41fd381ade8a125823272faf3c167d0c342ab705332ed9b7d",
+  "teaserSourceSha256": "fc10db5fba54529db4329511b8eeb6f553af82c94520238aed4c4bb593897414",
   "teaserSourceSha256Matches": true,
   "teaserPresentationMode": "pipeline-one-page",
   "teaserSlideCount": 1,
   "mainImage": "docs/assets/readme-teaser/slides/slide-01.png",
-  "pipelineImage": "docs/theme-preview/slides/clean/slide-11.png",
+  "pipelineImage": "docs/theme-preview/slides/bentogrid/slide-11.png",
   "selectedPreviewImagesByTitle": {
-    "Pipeline Diagram": "docs/theme-preview/slides/clean/slide-11.png",
-    "Semantic Blocks": "docs/theme-preview/slides/clean/slide-09.png",
+    "Pipeline Diagram": "docs/theme-preview/slides/bentogrid/slide-11.png",
+    "Semantic Blocks": "docs/theme-preview/slides/minimalism/slide-09.png",
     "Decoration Pattern Catalog": "docs/theme-preview/slides/minimalism/slide-12.png",
-    "Editable Proof Objects": "docs/theme-preview/slides/data/slide-17.png",
-    "Image Safe Frame": "docs/theme-preview/slides/glass/slide-23.png",
+    "Editable Proof Objects": "docs/theme-preview/slides/skeuomorphism/slide-17.png",
+    "Image Safe Frame": "docs/theme-preview/slides/glassmorphism/slide-23.png",
     "Mixed Object Packing": "docs/theme-preview/slides/newmorphism/slide-24.png",
-    "Chart and Table Pair (Cont. 2/2)": "docs/theme-preview/slides/data/slide-16.png"
+    "Chart and Table Pair (Cont. 2/2)": "docs/theme-preview/slides/brutalism/slide-16.png"
   },
   "checkedImages": [
     "docs/assets/readme-teaser/slides/slide-01.png",
-    "docs/theme-preview/slides/clean/slide-11.png",
-    "docs/theme-preview/slides/clean/slide-09.png",
+    "docs/theme-preview/slides/bentogrid/slide-11.png",
+    "docs/theme-preview/slides/minimalism/slide-09.png",
     "docs/theme-preview/slides/minimalism/slide-12.png",
-    "docs/theme-preview/slides/data/slide-17.png",
-    "docs/theme-preview/slides/glass/slide-23.png",
+    "docs/theme-preview/slides/skeuomorphism/slide-17.png",
+    "docs/theme-preview/slides/glassmorphism/slide-23.png",
     "docs/theme-preview/slides/newmorphism/slide-24.png",
-    "docs/theme-preview/slides/data/slide-16.png"
+    "docs/theme-preview/slides/brutalism/slide-16.png"
   ],
   "visualFingerprints": {
     "docs/assets/readme-teaser/slides/slide-01.png": {
-      "sha256": "0726c222be9213c439e0f6909ad9baa1c4f73a21f3f389729fec5a743c0d0006",
-      "bytes": 61754,
+      "sha256": "cac24886ac0e3fd3cc1309c6fe65b71a0347f2ff77f2031832404c8c0eb8221a",
+      "bytes": 78063,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/clean/slide-11.png": {
-      "sha256": "e71af3d5ac3161e2830aab5c7c33fe2d5a0d78666e2ec766df814c54a2b7d6d1",
-      "bytes": 17204,
+    "docs/theme-preview/slides/bentogrid/slide-11.png": {
+      "sha256": "7b9a9eab46ae5ed8c5d40e1f80964dc92b86d7f725b2e6b189bb3321417a8d87",
+      "bytes": 47525,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/clean/slide-09.png": {
-      "sha256": "eaaf16f5554f0dd7eb76740cf2d7fedbfd75bb91d3b5062cfbf92eebfa5f44b0",
-      "bytes": 10254,
+    "docs/theme-preview/slides/minimalism/slide-09.png": {
+      "sha256": "4a00ea164d941908bf7f4e5e8f1a2edce4a0401cc99434582b36f9d0bd9d1e55",
+      "bytes": 9869,
       "size": [
         1600,
         900
       ]
     },
     "docs/theme-preview/slides/minimalism/slide-12.png": {
-      "sha256": "f2610d966b7fed2df0909b48a46b41a476fa43138711aaa96b78ba34d8fb5044",
-      "bytes": 46111,
+      "sha256": "dd148bc0a80bb3e9977a658913837fe81f0c7a16d2c7a99cf3ba1bfb8cd32501",
+      "bytes": 46181,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/data/slide-17.png": {
-      "sha256": "48447c7650e755fff387a1ee5e4e382f515666d4f469c1a93224e6ffc9fc8be3",
-      "bytes": 41497,
+    "docs/theme-preview/slides/skeuomorphism/slide-17.png": {
+      "sha256": "4544e9030fcb293e4381b1feb4ddebaf0c55a5e76c21583ec2b0a416d751a430",
+      "bytes": 45661,
       "size": [
         1600,
         900
       ]
     },
-    "docs/theme-preview/slides/glass/slide-23.png": {
-      "sha256": "2637e1428787b3f40b54383804797b51f1bc86357d55a3a9c9aa99cdad026a4a",
-      "bytes": 132833,
+    "docs/theme-preview/slides/glassmorphism/slide-23.png": {
+      "sha256": "1c6ae5d4265da35be7ea1758d3f3034e2c6e8cc1130a5e04daf7c4d8a548f468",
+      "bytes": 132834,
       "size": [
         1600,
         900
@@ -85,15 +85,15 @@
         900
       ]
     },
-    "docs/theme-preview/slides/data/slide-16.png": {
-      "sha256": "8bf7399fd1dd0d907e6cbedb91a9ab305d5712dfe929cf884d7d92ecbb2f6821",
-      "bytes": 19553,
+    "docs/theme-preview/slides/brutalism/slide-16.png": {
+      "sha256": "a3e9b4b4e5b5435d32bda4a466cb8558f9151c8708b3db0e04ffacbc540b0002",
+      "bytes": 19022,
       "size": [
         1600,
         900
       ]
     }
   },
-  "styleCount": 5,
+  "styleCount": 9,
   "slideCount": 25
 }

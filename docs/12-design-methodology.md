@@ -37,8 +37,8 @@ typography, z-order, component variants, renderer object IDs, or final output.
 `theme.designPreset` is the compatibility entry point for a named preset. `theme.decorationStyle` selects the visual grammar separately from color:
 
 ```text
-clean, executive, technical,
-minimalism, newmorphism, glass, data
+skeuomorphism, neomorphism, glassmorphism, claymorphism,
+minimalism, newmorphism, brutalism, liquid-glass, bentogrid
 ```
 
 Palette-only or background-only swaps are pruned from `theme.decorationStyle`, `--theme-style`, and Actions previews. Layout presets such as `grid` remain available as composition grammar, not theme style.
@@ -47,12 +47,12 @@ The generated Actions/README preview is intentionally pruned to these distinct
 style grammars:
 
 ```text
-clean, minimalism, newmorphism, glass, data
+skeuomorphism, neomorphism, glassmorphism, claymorphism,
+minimalism, newmorphism, brutalism, liquid-glass, bentogrid
 ```
 
-`executive` and `technical` remain valid CLI styles for specific deck use, but
-they are not part of the generated README gallery when their output would read
-as a palette or background variation of another style.
+`clean`, `executive`, and `technical` remain named design presets through
+`--design`, but they are no longer public `--theme-style` decoration grammars.
 
 `theme.colorSeed` provides the main color. `theme.colorCombination` derives the supporting palette using Adobe Color Wheel-style harmony rules:
 
