@@ -1,4 +1,4 @@
-import type { Diagnostic, PresentationIR, SlideIR } from "@mdpresent/core";
+import { findSlideClaimMessageCandidate, isNeutralSlideTitle, type Diagnostic, type PresentationIR, type SlideIR } from "@mdpresent/core";
 import type { LayoutIR, LayoutRegion } from "@mdpresent/layout";
 
 const INTRA_SLIDE_SPACING_TOLERANCE_PX = 8;
@@ -13,6 +13,7 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
   const captionDetached = diagnostics.filter((diagnostic) => diagnostic.code === "DETACHED_CAPTION").length;
   const orphanTables = diagnostics.filter((diagnostic) => diagnostic.code === "ORPHAN_TABLE").length;
   const lowObjectCoverage = diagnostics.filter((diagnostic) => diagnostic.code === "LOW_OBJECT_COVERAGE").length;
+  const neutralTitleWithoutMessage = diagnostics.filter((diagnostic) => diagnostic.code === "NEUTRAL_TITLE_WITHOUT_MESSAGE").length;
   const sectionMotifDrift = diagnostics.filter((diagnostic) => diagnostic.code === "SECTION_STYLE_DRIFT").length;
   const intraSlideSpacingDrift = diagnostics.filter((diagnostic) => diagnostic.code === "INCONSISTENT_INTRA_SLIDE_SPACING").length;
   const textBackgroundLuminanceDrift = diagnostics.filter((diagnostic) => diagnostic.code === "TEXT_BACKGROUND_LUMINANCE_MISMATCH").length;
@@ -31,6 +32,7 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
     orphanEvidenceBlocks: orphanTables,
     captionDetached,
     claimlessSlides,
+    neutralTitleWithoutMessage,
     sectionMotifDrift,
     intraSlideSpacingDrift,
     textBackgroundLuminanceDrift,
@@ -42,6 +44,7 @@ export function createCoherenceValidationSummary(presentation: PresentationIR, l
       detachedCaptions: captionDetached === 0,
       orphanTables: orphanTables === 0,
       lowObjectCoverage: lowObjectCoverage === 0,
+      neutralTitleMessages: neutralTitleWithoutMessage === 0,
       sectionMotifDrift: sectionMotifDrift === 0,
       intraSlideSpacing: intraSlideSpacingDrift === 0,
       textBackgroundLuminance: textBackgroundLuminanceDrift === 0,
@@ -60,6 +63,8 @@ export function coherenceValidationDiagnostics(presentation: PresentationIR, lay
     const blockRoles = group?.blockRoles ?? {};
     const blockTypes = new Set(slide.blocks.map((block) => block.type));
     const hasEvidenceObject = ["table", "chart", "image", "diagram"].some((type) => blockTypes.has(type as never));
+    const layoutSlide = layoutBySlideId.get(slide.id);
+    const claimMessage = findSlideClaimMessageCandidate(slide);
     const hasClaim = Object.values(blockRoles).includes("claim") ||
       slide.blocks.some((block) => block.type === "paragraph" && isClaimLikeText(block.text ?? block.sentences?.join(" ") ?? "")) ||
       slide.blocks.some((block) => block.type === "bulletList" && block.id.endsWith("-teaser-overview"));
@@ -99,7 +104,15 @@ export function coherenceValidationDiagnostics(presentation: PresentationIR, lay
       }
     }
 
-    const layoutSlide = layoutBySlideId.get(slide.id);
+    if (claimMessage && isNeutralSlideTitle(slide.title) && layoutSlide && !claimMessageIsVisible(layoutSlide, claimMessage.blockId)) {
+      diagnostics.push({
+        level: "warning",
+        code: "NEUTRAL_TITLE_WITHOUT_MESSAGE",
+        slideId: slide.id,
+        message: `Slide "${slide.title ?? slide.id}" has a source claim but no visible claim/message region.`,
+      });
+    }
+
     if (layoutSlide && hasEvidenceRole) {
       const coveredBlockIds = new Set(layoutSlide.regions.flatMap((region) => region.blockIds.map((blockId) => blockId.split("#")[0])));
       const contentBlockIds = slide.blocks.filter((block) => block.type !== "heading").map((block) => block.id);
@@ -121,6 +134,13 @@ export function coherenceValidationDiagnostics(presentation: PresentationIR, lay
   diagnostics.push(...textBackgroundLuminanceDiagnostics(layout));
 
   return diagnostics;
+}
+
+function claimMessageIsVisible(layoutSlide: LayoutIR["slides"][number], blockId: string): boolean {
+  return layoutSlide.regions.some((region) =>
+    region.role !== "title" &&
+    region.blockIds.some((candidate) => candidate.split("#")[0] === blockId)
+  );
 }
 
 function textBackgroundLuminanceDiagnostics(layout: LayoutIR): Diagnostic[] {

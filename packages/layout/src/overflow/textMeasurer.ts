@@ -221,7 +221,7 @@ function isWideCharacter(char: string): boolean {
 
 export type OverflowDiagnostic = {
   level: "warning" | "error";
-  code: "LAYOUT_REGION_OUT_OF_BOUNDS" | "LAYOUT_MIN_FONT_SIZE_VIOLATION" | "TEXT_OVERFLOW";
+  code: "LAYOUT_REGION_OUT_OF_BOUNDS" | "LAYOUT_MIN_FONT_SIZE_VIOLATION" | "TEXT_OVERFLOW" | "DENSE_TEXT_FIT_RISK";
   message: string;
   slideId: string;
   regionId: string;
@@ -233,6 +233,7 @@ export type OverflowDiagnostic = {
     usedHeightIn?: number;
     regionWidthIn?: number;
     regionHeightIn?: number;
+    fitRatio?: number;
     fontSize?: number;
     minFontSize?: number;
     sourcePreserved?: true;
@@ -338,9 +339,40 @@ export function validateLayoutOverflow(
             runtimeOwner: "MDPR",
           },
         });
+      } else if (isDenseTextFitRisk(text, measurement.usedHeightIn, region.h)) {
+        diagnostics.push({
+          level,
+          code: "DENSE_TEXT_FIT_RISK",
+          message: `Region ${region.id} dense text uses ${Math.round((measurement.usedHeightIn / region.h) * 100)}% of available height; add whitespace, split, or reflow before rendering.`,
+          slideId: slide.sourceSlideId,
+          regionId: region.id,
+          details: {
+            textLength: text.length,
+            textExcerpt: text.slice(0, 160),
+            lineCount: measurement.lineCount,
+            usedWidthIn: measurement.usedWidthIn,
+            usedHeightIn: measurement.usedHeightIn,
+            regionWidthIn: region.w,
+            regionHeightIn: region.h,
+            fitRatio: Number((measurement.usedHeightIn / region.h).toFixed(3)),
+            sourcePreserved: true,
+            rewriteApplied: false,
+            summarizationApplied: false,
+            textDeletionApplied: false,
+            runtimeOwner: "MDPR",
+          },
+        });
       }
     }
   }
 
   return diagnostics;
+}
+
+function isDenseTextFitRisk(text: string, usedHeightIn: number, regionHeightIn: number): boolean {
+  if (!Number.isFinite(regionHeightIn) || regionHeightIn <= 0) return false;
+  const nonEmptyLines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const hasHierarchy = nonEmptyLines.length >= 3;
+  const denseLength = text.length >= 360;
+  return (hasHierarchy || denseLength) && usedHeightIn > regionHeightIn * 0.95;
 }

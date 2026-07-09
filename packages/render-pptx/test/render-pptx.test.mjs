@@ -205,7 +205,7 @@ const sampleDeck = {
   },
 };
 
-test("renderPptx writes editable text boxes with stable coordinates, centered titles, and item icon gutters", async () => {
+test("renderPptx writes editable text boxes with stable coordinates and no source-neutral item icons", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-"));
   const outPath = join(outDir, "deck.pptx");
 
@@ -223,10 +223,12 @@ test("renderPptx writes editable text boxes with stable coordinates, centered ti
     assert.match(xml, /Markdown은 원본 문서다\./);
     assert.equal((xml.match(/txBox="1"/g) ?? []).length, 3);
     assert.match(xml, /<a:off x="731520" y="411480"\/><a:ext cx="10698480" cy="731520"\/>/);
-    assert.match(xml, /<a:off x="976122" y="1947672"\/><a:ext cx="585216" cy="585216"\/>/);
-    const firstItemTextBox = /<a:off x="1689354" y="\d+"\/><a:ext cx="3961638" cy="(\d+)"\/>[\s\S]{0,900}<a:t>Markdown은 원본 문서다\.<\/a:t>/.exec(xml);
-    assert.ok(firstItemTextBox);
-    assert.ok(Number(firstItemTextBox[1]) >= 390000);
+    assert.doesNotMatch(xml, / icon from /);
+    assert.doesNotMatch(xml, /simple-icons|tabler-icons|svgrepo/);
+    const firstItemShape = shapeXmlContainingText(xml, "Markdown은 원본 문서다.");
+    const firstItemTransform = shapeTransform(firstItemShape);
+    assert.ok(firstItemTransform.x < 1.35);
+    assert.ok(firstItemTransform.h >= 0.42);
     assert.match(xml, /<a:bodyPr[^>]*wrap="square"/);
     assert.match(xml, /<a:normAutofit\/>/);
     assert.match(xml, /<a:bodyPr[^>]*anchor="ctr"/);
@@ -294,12 +296,11 @@ test("renderPptx gives wrapped item text enough height to avoid PowerPoint overl
     const expanded = join(outDir, "expanded");
     execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
     const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
-    const textBox = /<a:t>MDPR is the main presentation runtime\.<\/a:t>[\s\S]*?/.test(xml)
-      ? /<a:off x="1689354" y="\d+"\/><a:ext cx="3961638" cy="(\d+)"\/>[\s\S]{0,900}<a:t>MDPR is the main presentation runtime\.<\/a:t>/.exec(xml)
-      : null;
+    const textShape = shapeXmlContainingText(xml, "MDPR is the main presentation runtime.");
+    const transform = shapeTransform(textShape);
 
-    assert.ok(textBox);
-    assert.ok(Number(textBox[1]) >= 650000);
+    assert.ok(transform.x < 1.35);
+    assert.ok(transform.h >= 0.7);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -1419,7 +1420,7 @@ test("renderPptx renders multiple chart proof blocks in one region instead of te
   }
 });
 
-test("renderPptx renders text-only slides with a restrained monotone icon aside", async () => {
+test("renderPptx does not invent icon media for source-neutral text-only slides", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-icon-aside-"));
   const outPath = join(outDir, "icon-aside.pptx");
   const deck = structuredClone(sampleDeck);
@@ -1467,8 +1468,8 @@ test("renderPptx renders text-only slides with a restrained monotone icon aside"
 
     assert.match(xml, /Design Skill Boundary/);
     assert.match(xml, /MDPR owns deterministic slide structure/);
-    assert.doesNotMatch(xml, /monotone icon aside/);
-    assert.doesNotMatch(xml, /<a:ext cx="2212848" cy="2212848"\/>/);
+    assert.doesNotMatch(xml, / icon from /);
+    assert.doesNotMatch(xml, /simple-icons/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -1488,7 +1489,7 @@ test("renderPptx selects SVG icons from semantic source families", async () => {
       source: {},
       intent: "standard",
       tags: [],
-      blocks: [{ id: "body-1", type: "paragraph", text: "GitHub repository data flows through the runtime." }],
+      blocks: [{ id: "body-1", type: "paragraph", text: "Icon: github. GitHub repository data flows through the runtime." }],
     },
     {
       id: "database-runtime",
@@ -1499,7 +1500,7 @@ test("renderPptx selects SVG icons from semantic source families", async () => {
       source: {},
       intent: "standard",
       tags: [],
-      blocks: [{ id: "body-2", type: "paragraph", text: "Database storage evidence stays secondary to the text." }],
+      blocks: [{ id: "body-2", type: "paragraph", text: "Icon: database. Database storage evidence stays secondary to the text." }],
     },
   ];
   deck.layout.slides = deck.presentation.slides.map((slide, index) => ({

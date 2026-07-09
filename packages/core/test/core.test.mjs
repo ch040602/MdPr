@@ -11,6 +11,9 @@ import {
   detectSlideIntentProfile,
   DESIGN_PRESET_NAMES,
   applyAgentHintsToPresentation,
+  findSlideClaimMessageCandidate,
+  inferConferenceTemplateProfile,
+  isNeutralSlideTitle,
   parseMarkdown,
   normalizeParagraphMarkersForMarkdownAst,
   normalizeParagraphMarkersForMarkdownAstWithReport,
@@ -564,6 +567,71 @@ test("parseMarkdown supports additional editable chart object variants", () => {
   assert.deepEqual(charts.map((chart) => chart.kind), ["ranked-bars", "metric-dots"]);
   assert.deepEqual(charts[0].labels, ["Parser", "Layout", "Renderer"]);
   assert.deepEqual(charts[1].series[0].values, [20, 68, 92]);
+});
+
+test("conference template profiles infer corpus-backed slide families", () => {
+  const baseSlide = {
+    id: "slide-1",
+    index: 1,
+    role: "content",
+    title: "Profile",
+    headingPath: ["Profile"],
+    source: {},
+    intent: "standard",
+    tags: [],
+    primaryItemCount: 0,
+  };
+
+  assert.equal(inferConferenceTemplateProfile({
+    ...baseSlide,
+    blocks: [{
+      id: "paragraph-1",
+      type: "paragraph",
+      text: "A dense standards-style paragraph. ".repeat(30),
+      lines: ["Main claim", "Subordinate detail", "Nested caveat"],
+      lineIndents: [0, 1, 2],
+    }],
+  }), "dense-technical-prose");
+  assert.equal(inferConferenceTemplateProfile({
+    ...baseSlide,
+    blocks: [{ id: "image-1", type: "image", src: "figure.png", alt: "Figure" }],
+  }), "visual-evidence-heavy");
+  assert.equal(inferConferenceTemplateProfile({
+    ...baseSlide,
+    blocks: [{ id: "table-1", type: "table", rows: [["Metric", "Value"], ["Coverage", "92"]] }],
+  }), "data-table-chart-heavy");
+  assert.equal(inferConferenceTemplateProfile({
+    ...baseSlide,
+    intent: "diagram",
+    blocks: [{
+      id: "diagram-1",
+      type: "diagram",
+      text: "Draft => Review => Render",
+      diagram: { kind: "pipeline", nodes: [], edges: [] },
+    }],
+  }), "diagram-workflow-heavy");
+});
+
+test("claim classifier promotes explicit source claims without inventing text", () => {
+  const slide = {
+    id: "slide-claim",
+    index: 1,
+    role: "content",
+    title: "Motivation",
+    headingPath: ["Motivation"],
+    source: {},
+    intent: "standard",
+    tags: [],
+    blocks: [
+      { id: "claim-1", type: "paragraph", text: "Claim: Dense technical slides should show the main message before supporting prose." },
+    ],
+  };
+  const candidate = findSlideClaimMessageCandidate(slide);
+
+  assert.equal(isNeutralSlideTitle("Motivation"), true);
+  assert.equal(candidate.blockId, "claim-1");
+  assert.equal(candidate.source, "explicit-prefix");
+  assert.equal(candidate.text, "Dense technical slides should show the main message before supporting prose.");
 });
 
 test("parsePandocJson normalizes Pandoc AST blocks into MDPR semantic blocks", () => {

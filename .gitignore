@@ -8,4 +8,5 @@ CODEX_PROMPT.md
 *.log
 .env
 .tmp/
+tmp/
 ~$*.pptx

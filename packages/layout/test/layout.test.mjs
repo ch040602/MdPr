@@ -569,6 +569,72 @@ test("layout candidate scoring uses coherence group semantics and section contin
   assert.equal(ranked[0].layout.preset, "image-focus");
 });
 
+test("conference profile scoring gives dense technical prose split-text relief", () => {
+  const denseText = "Long standards prose should remain readable through hierarchy, line breaks, and separated argument columns. ".repeat(10);
+  const slide = {
+    id: "slide-dense",
+    index: 1,
+    role: "content",
+    title: "Dense Technical Notes",
+    headingPath: ["Dense Technical Notes"],
+    source: {},
+    intent: "standard",
+    tags: [],
+    primaryItemCount: 0,
+    blocks: [{
+      id: "paragraph-1",
+      type: "paragraph",
+      text: denseText,
+      lines: ["Main claim", "Supporting detail", "Nested caveat"],
+      lineIndents: [0, 1, 2],
+    }],
+  };
+  const ranked = rankLayoutCandidates(slide, defaultConfig);
+  const comparison = ranked.find((candidate) => candidate.layout.preset === "comparison");
+
+  assert.equal(ranked[0].layout.preset, "text-icon-aside");
+  assert.ok(comparison);
+  assert.equal(comparison.score.conferenceProfilePenalty >= 3, true);
+  assert.equal(ranked[0].score.conferenceProfilePenalty, 0);
+});
+
+test("indented dense prose uses full-width compact body relief instead of half-width columns", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Scope and assumptions",
+    "",
+    "The top-level claim describes the decision boundary and must remain readable even when the prose is long enough to resemble standards notes.",
+    "  The parser should keep this supporting line as a second visual level rather than squeezing it into a narrow column.",
+    "    The deepest caveat should survive as a nested prose line without overprinting the previous line.",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "text-icon-aside");
+  const body = slide.regions.find((region) => region.id === "body-panel");
+
+  assert.ok(body);
+  assert.equal(body.w >= 11, true);
+  assert.equal(body.h >= 5, true);
+  assert.equal(body.typography.fontSize <= 18, true);
+  assert.equal(slide.regions.some((region) => region.role === "icon"), false);
+});
+
+test("neutral claim slides promote source claim text to key-message layout", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Motivation",
+    "",
+    "Claim: Dense technical decks should show the main message before supporting prose.",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "key-message");
+  const message = slide.regions.find((region) => region.id === "key-message");
+
+  assert.ok(slide);
+  assert.ok(message);
+  assert.equal(message.blockIds.length, 1);
+  assert.equal(message.typography.fontWeight, "bold");
+});
+
 test("table-focus slides expose a table role region for native table rendering and decoration", () => {
   const layout = layoutFor([
     "# Demo",
@@ -589,6 +655,31 @@ test("table-focus slides expose a table role region for native table rendering a
   assert.match(table.blockIds[0], /^block-\d+$/);
   assert.equal(table.w >= 10.8, true);
   assert.equal(table.h >= 4.5, true);
+});
+
+test("table-focus slides reserve a visible message band for source claims", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Results",
+    "",
+    "Claim: Table evidence should lead with the source claim before the detailed rows.",
+    "",
+    "| Metric | Value |",
+    "| --- | ---: |",
+    "| Coverage | 94 |",
+    "| Warnings | 0 |",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "table-focus");
+  const message = slide.regions.find((region) => region.id === "key-message");
+  const table = slide.regions.find((region) => region.role === "table");
+
+  assert.ok(message);
+  assert.ok(table);
+  assert.equal(message.blockIds.length, 1);
+  assert.equal(message.typography.fontWeight, "bold");
+  assert.equal(message.y < table.y, true);
+  assert.equal(table.h >= 4, true);
 });
 
 test("chart slides with prose keep the graph and explanation in parallel", () => {
@@ -617,13 +708,31 @@ test("chart slides with prose keep the graph and explanation in parallel", () =>
   assert.equal(chart.w > body.w, true);
 });
 
-test("text-only relief slides use a body panel and separate icon aside", () => {
+test("text-only relief slides use a wide body panel without source-neutral icons", () => {
   const layout = layoutFor([
     "# Demo",
     "",
     "## Text Only Relief",
     "",
-    "Long text-only slides should not become plain prose walls. MDPR can add a restrained black or white icon aside, keep it secondary, and preserve enough breathing room around the copy.",
+    "Long technical notes often contain context, definitions, constraints, and caveats in one compact section. The layout uses a broad body panel with steady line length and calm spacing for repeated reading.",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "text-icon-aside");
+  const body = slide.regions.find((region) => region.id === "body-panel");
+  const icon = slide.regions.find((region) => region.id === "icon-aside");
+
+  assert.ok(body);
+  assert.equal(icon, undefined);
+  assert.equal(body.w >= 10.8, true);
+  assert.equal(body.typography.fontSize >= defaultConfig.typography.bodyFontSize, true);
+});
+
+test("text-only relief slides keep an icon aside only with explicit source evidence", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Text Only Relief",
+    "",
+    "Icon: shield. Long technical notes contain context, definitions, constraints, and caveats in one compact section. The explicit icon marker reserves a secondary icon slot.",
   ]);
   const slide = layout.slides.find((candidate) => candidate.layout.preset === "text-icon-aside");
   const body = slide.regions.find((region) => region.id === "body-panel");
@@ -631,9 +740,8 @@ test("text-only relief slides use a body panel and separate icon aside", () => {
 
   assert.ok(body);
   assert.ok(icon);
-  assert.equal(body.w > icon.w, true);
+  assert.equal(body.w < 10, true);
   assert.equal(icon.x > body.x + body.w, true);
-  assert.equal(body.typography.fontSize >= defaultConfig.typography.bodyFontSize, true);
 });
 
 test("overflow validation emits errors when policy is fail", () => {
@@ -684,6 +792,65 @@ test("overflow validation emits errors when policy is fail", () => {
     ["error", "LAYOUT_MIN_FONT_SIZE_VIOLATION"],
     ["error", "TEXT_OVERFLOW"],
   ]);
+});
+
+test("overflow validation flags dense text that fits only without readable breathing room", () => {
+  const diagnostics = validateLayoutOverflow({
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme: {
+      fontFamily: "Pretendard",
+      backgroundColor: "#fff",
+      textColor: "#111",
+      primaryColor: "#2563eb",
+      titleFontSize: 34,
+      bodyFontSize: 20,
+      captionFontSize: 14,
+      minFontSize: 16,
+      lineHeight: 1.2,
+    },
+    slides: [
+      {
+        id: "layout-slide-dense-fit",
+        sourceSlideId: "slide-dense-fit",
+        index: 1,
+        layout: { preset: "comparison" },
+        background: { color: "#fff" },
+        regions: [
+          {
+            id: "left",
+            role: "body",
+            blockIds: ["block-1"],
+            x: 0.9,
+            y: 1.7,
+            w: 5.4,
+            h: 2.02,
+            zIndex: 1,
+            typography: { fontSize: 20, minFontSize: 16, lineHeight: 1.2 },
+          },
+        ],
+        overflowPolicy: { action: "warn", minFontSize: 16, maxShrinkSteps: 3 },
+      },
+    ],
+    diagnostics: [],
+  }, new Map([
+    ["block-1", [
+      "Main claim line.",
+      "Supporting detail line.",
+      "Nested caveat line.",
+      "Second claim line.",
+      "Second supporting line.",
+      "Second nested caveat.",
+    ].join("\n")],
+  ]));
+
+  const risk = diagnostics.find((diagnostic) => diagnostic.code === "DENSE_TEXT_FIT_RISK");
+
+  assert.ok(risk);
+  assert.equal(risk.level, "warning");
+  assert.equal(risk.details.fitRatio > 0.95, true);
+  assert.equal(risk.details.sourcePreserved, true);
+  assert.equal(risk.details.rewriteApplied, false);
 });
 
 test("overflow validation preserves CJK source evidence without rewrite decisions", () => {

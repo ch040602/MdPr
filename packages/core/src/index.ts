@@ -9,3 +9,4 @@ export * from "./coherence/index.js";
 export * from "./intent/detectSlideIntent.js";
 export * from "./utils/stableId.js";
 export * from "./theme/designPresets.js";
+export * from "./theme/conferenceTemplateProfiles.js";

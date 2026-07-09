@@ -432,7 +432,7 @@ function createBuildMetrics(
     visualErrorCount: visualDiagnostics.filter((diagnostic) => diagnostic.level === "error").length,
     polishWarningCount: polish.requiredFailureCount,
     minFontPt: minimumFontPt(deck.layout),
-    textClipRiskCount: layoutOverflow.filter((diagnostic) => String(diagnostic.code ?? "").includes("TEXT_OVERFLOW")).length,
+    textClipRiskCount: layoutOverflow.filter(isTextFitDiagnostic).length,
     contrastFailures: visualDiagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_CONTRAST").length,
     connectorWarnings: visualDiagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_CONNECTOR_CLEARANCE").length,
     buildMs,
@@ -918,7 +918,7 @@ function resolveLayoutTextOverflow(
   };
 
   for (let iteration = 0; iteration < 12; iteration++) {
-    const diagnostics = validateLayoutOverflow(resolved, contentByBlockId).filter((diagnostic) => diagnostic.code === "TEXT_OVERFLOW");
+    const diagnostics = validateLayoutOverflow(resolved, contentByBlockId).filter(isTextFitDiagnostic);
     if (!diagnostics.length) break;
 
     let changed = false;
@@ -994,7 +994,7 @@ function tryCandidateReflow(
     };
     const candidateDiagnostics = validateLayoutOverflow(candidateLayout, contentByBlockId)
       .filter((diagnostic) => diagnostic.slideId === sourceSlideId);
-    const candidateOverflowCount = candidateDiagnostics.filter((diagnostic) => diagnostic.code === "TEXT_OVERFLOW").length;
+    const candidateOverflowCount = candidateDiagnostics.filter(isTextFitDiagnostic).length;
     const hasBoundsError = candidateDiagnostics.some((diagnostic) => diagnostic.code === "LAYOUT_REGION_OUT_OF_BOUNDS");
     const hasMinFontError = candidateDiagnostics.some((diagnostic) => diagnostic.code === "LAYOUT_MIN_FONT_SIZE_VIOLATION");
     if (!hasBoundsError && !hasMinFontError && candidateOverflowCount < currentOverflowCount) {
@@ -1014,8 +1014,12 @@ function countSlideTextOverflow(
   contentByBlockId: ReadonlyMap<string, string>,
 ): number {
   return validateLayoutOverflow(layout, contentByBlockId)
-    .filter((diagnostic) => diagnostic.slideId === sourceSlideId && diagnostic.code === "TEXT_OVERFLOW")
+    .filter((diagnostic) => diagnostic.slideId === sourceSlideId && isTextFitDiagnostic(diagnostic))
     .length;
+}
+
+function isTextFitDiagnostic(diagnostic: { code?: string }): boolean {
+  return diagnostic.code === "TEXT_OVERFLOW" || diagnostic.code === "DENSE_TEXT_FIT_RISK";
 }
 
 function sameLayoutSpec(left: object, right: object): boolean {

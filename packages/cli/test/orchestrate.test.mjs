@@ -1822,9 +1822,10 @@ test("buildDeck retries an overflowing automatic layout candidate before font sh
     const contentSlide = result.layout.slides.find((slide) => slide.layout.preset !== "cover" && slide.layout.preset !== "toc");
     const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
 
-    assert.equal(contentSlide?.layout.preset, "title-body");
+    assert.equal(contentSlide?.layout.preset, "text-icon-aside");
     assert.equal(manifest.validation.overflowResolution.strategyCounts.candidateReflow > 0, true);
-    assert.equal(contentSlide.regions.some((region) => region.typography?.fontSize === 18 && region.role === "body"), false);
+    assert.equal(manifest.validation.overflowResolution.strategyCounts.fontShrink, 0);
+    assert.equal(contentSlide.regions.every((region) => region.role !== "body" || (region.typography?.minFontSize ?? 0) >= 16), true);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

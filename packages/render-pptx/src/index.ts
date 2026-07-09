@@ -142,15 +142,19 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
         const itemIconKind = blocks.length
           ? iconKindForText(blocks.map(blockSearchText).join(" "))
           : iconKindForIndex(Number(/\d+$/.exec(region.id)?.[0] ?? 0));
-        const iconBadge = badgeNumber === undefined && tocItemNumber === undefined && region.role === "item" ? renderItemIconBadge(slide, region, itemIconKind, designPreset, common) : undefined;
+        const iconBadge = badgeNumber === undefined && tocItemNumber === undefined && region.role === "item" && sourceEvidenceAllowsIcon(sourceSlide)
+          ? renderItemIconBadge(slide, region, itemIconKind, designPreset, common)
+          : undefined;
         const plainRegionText = renderPlainRegionContent(region.role, region.blockIds, blockIndex, sourceSlide);
+        const itemNeedsReadableLeftAlign = region.role === "item" && !badge && !iconBadge && plainRegionText.includes("\n");
+        const regionCommon = itemNeedsReadableLeftAlign ? { ...common, align: "left" as PptxGenJS.HAlign } : common;
         const textCommon = badgeNumber !== undefined || iconBadge
           ? textBoxForRegion(region, common, {
             reservedLeft: badge ? badge.right - region.x + 0.14 : iconBadge ? iconBadge.right - region.x + 0.14 : undefined,
             centerWithLeadingMarker: true,
             text: plainRegionText,
           })
-          : textBoxForRegion(region, common);
+          : textBoxForRegion(region, regionCommon);
 
         const objectKind = objectKindForRegion(blocks, region.role);
         const objectMapEntry = sourceSlide
@@ -963,24 +967,27 @@ function renderIndentedParagraphRegion(slide: PptxGenJS.Slide, blocks: BlockIR[]
   const baseY = Number(common.y ?? 0);
   const baseW = Number(common.w ?? 1);
   const baseH = Number(common.h ?? 1);
-  const paragraphGap = Math.max(0.04, Math.min(0.12, baseFontSize / 240));
-  const rowHeights = rows.map((row) => {
-    const indent = paragraphIndentInches(row.indentLevel);
-    const usableW = Math.max(0.3, baseW - indent);
-    const wrappedLines = estimateWrappedLineCount(row.text, usableW, baseFontSize);
-    const gap = row.startsParagraph ? paragraphGap : 0;
-    return gap + Math.max(0.24, (baseFontSize * lineHeightMultiple * wrappedLines) / 72 + 0.04);
-  });
+  let fittedFontSize = baseFontSize;
+  let paragraphGap = paragraphGapForFont(fittedFontSize);
+  let rowHeights = indentedParagraphRowHeights(rows, baseW, fittedFontSize, lineHeightMultiple, paragraphGap);
   const totalH = rowHeights.reduce((sum, height) => sum + height, 0);
-  const heightScale = totalH > baseH ? baseH / totalH : 1;
-  const fittedRowHeights = rowHeights.map((height) => height * heightScale);
-  const rowFit = totalH <= baseH ? "none" : common.fit;
+  if (totalH > baseH) {
+    const minFontSize = Math.max(10, Math.min(baseFontSize, Number((common as { minFontSize?: number }).minFontSize ?? 12)));
+    while (fittedFontSize > minFontSize) {
+      fittedFontSize = Math.max(minFontSize, fittedFontSize - 1);
+      paragraphGap = paragraphGapForFont(fittedFontSize);
+      rowHeights = indentedParagraphRowHeights(rows, baseW, fittedFontSize, lineHeightMultiple, paragraphGap);
+      if (rowHeights.reduce((sum, height) => sum + height, 0) <= baseH) break;
+    }
+  }
+  const fittedTotalH = rowHeights.reduce((sum, height) => sum + height, 0);
+  const rowFit = fittedTotalH <= baseH ? "none" : common.fit;
   const rowAlign: PptxGenJS.HAlign = role === "item" ? "center" : "left";
-  let cursorY = baseY;
+  let cursorY = baseY + Math.max(0, (baseH - fittedTotalH) / 2);
 
   for (const [index, row] of rows.entries()) {
-    const rowH = fittedRowHeights[index] ?? 0.28;
-    const rawGap = row.startsParagraph ? paragraphGap * heightScale : 0;
+    const rowH = rowHeights[index] ?? 0.28;
+    const rawGap = row.startsParagraph ? paragraphGap : 0;
     const gap = Math.min(rawGap, rowH * 0.35);
     const indent = paragraphIndentInches(row.indentLevel);
     slide.addText(row.text, {
@@ -989,7 +996,7 @@ function renderIndentedParagraphRegion(slide: PptxGenJS.Slide, blocks: BlockIR[]
       y: cursorY + gap,
       w: Math.max(0.3, baseW - indent),
       h: Math.max(0.1, rowH - gap),
-      fontSize: baseFontSize,
+      fontSize: fittedFontSize,
       margin: common.margin ?? [0, 0, 0, 0],
       align: rowAlign,
       valign: "top",
@@ -999,6 +1006,20 @@ function renderIndentedParagraphRegion(slide: PptxGenJS.Slide, blocks: BlockIR[]
     });
     cursorY += rowH;
   }
+}
+
+function paragraphGapForFont(fontSizePt: number): number {
+  return Math.max(0.04, Math.min(0.12, fontSizePt / 240));
+}
+
+function indentedParagraphRowHeights(rows: ParagraphRow[], baseW: number, fontSizePt: number, lineHeightMultiple: number, paragraphGap: number): number[] {
+  return rows.map((row) => {
+    const indent = paragraphIndentInches(row.indentLevel);
+    const usableW = Math.max(0.3, baseW - indent);
+    const wrappedLines = estimateWrappedLineCount(row.text, usableW, fontSizePt);
+    const gap = row.startsParagraph ? paragraphGap : 0;
+    return gap + Math.max(0.24, (fontSizePt * lineHeightMultiple * wrappedLines) / 72 + 0.04);
+  });
 }
 
 function paragraphRows(blocks: BlockIR[], role: string): ParagraphRow[] {
@@ -1390,7 +1411,7 @@ function textBoxForRegion(
     w,
     h,
     margin,
-    align: region.id !== "key-message" && options.reservedLeft !== undefined ? "left" : placement.align,
+    align: region.id !== "key-message" && options.reservedLeft !== undefined ? "left" : common.align ?? placement.align,
     valign: placement.valign,
   };
 }
@@ -2586,6 +2607,7 @@ function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutI
   if (layoutSlide.layout.preset !== "text-icon-aside") return;
   const region = layoutSlide.regions.find((candidate) => candidate.role === "icon" || candidate.id === "icon-aside");
   if (!region) return;
+  if (!sourceEvidenceAllowsIcon(sourceSlide)) return;
 
   const iconSize = Math.min(0.58, Math.max(0.36, Math.min(region.w, region.h) * 0.72));
   const x = region.x + (region.w - iconSize) / 2;
@@ -2599,6 +2621,16 @@ function iconKindForLayout(layoutSlide: LayoutIR["slides"][number], sourceSlide?
     ? [sourceSlide.title, sourceSlide.headingPath.join(" "), ...sourceSlide.blocks.map(blockSearchText)].join(" ")
     : "";
   return iconKindForText(`${sourceText} ${layoutSlide.sourceSlideId} ${titleRegion?.id ?? ""}`);
+}
+
+function sourceEvidenceAllowsIcon(sourceSlide?: SlideIR): boolean {
+  if (!sourceSlide) return false;
+  const text = [
+    sourceSlide.title,
+    sourceSlide.headingPath.join(" "),
+    ...sourceSlide.blocks.map((block) => [block.text, block.alt, ...(block.items ?? [])].filter(Boolean).join(" ")),
+  ].join(" ");
+  return /\bicon\s*[:=]\s*[\w-]+|\[icon\s*[:=][^\]]+\]|emoji\s*[:=]|symbol\s*[:=]/i.test(text);
 }
 
 function drawCatalogIcon(

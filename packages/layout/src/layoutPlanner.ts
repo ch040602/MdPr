@@ -1,4 +1,4 @@
-import { readableGrayscaleTextColor, type CoherenceGroup, type Config, type PresentationIR, type SlideIR } from "@mdpresent/core";
+import { findSlideClaimMessageCandidate, hasSlideClaimMessageCandidate, inferConferenceTemplateProfile, isNeutralSlideTitle, readableGrayscaleTextColor, type CoherenceGroup, type Config, type PresentationIR, type SlideIR } from "@mdpresent/core";
 import type { LayoutCandidateScore, LayoutIR, LayoutRegion, LayoutSlide, LayoutSpec, ScoredLayoutCandidate, ThemeTokens } from "./ir/types.js";
 import { chooseItemLayout, titleRect, bodyRect } from "./presets/presets.js";
 
@@ -59,10 +59,12 @@ function candidateLayoutsForSlide(slide: SlideIR, config: Config): LayoutSpec[] 
     const nonQuoteBlocks = slide.blocks.filter((block) => block.type !== "quote" && block.type !== "slideBreak");
     add({ preset: nonQuoteBlocks.length ? "key-message" : "quote" });
   }
+  if (isClaimMessageLayoutCandidate(slide)) add({ preset: "key-message" });
   if (slide.intent === "timeline") add({ preset: "timeline", direction: "horizontal" });
   if (slide.intent === "diagram") add({ preset: "pipeline", direction: "horizontal" });
   if (isTwoParagraphOpenLayout(slide)) add({ preset: "comparison", direction: "horizontal", columns: 2 });
   if (isTextOnlyReliefCandidate(slide)) add({ preset: "text-icon-aside" });
+  for (const layout of conferenceProfileLayouts(slide)) add(layout);
 
   const itemCount = slide.primaryItemCount ?? 0;
   if (itemCount > 0) add(chooseItemLayout(itemCount));
@@ -73,6 +75,37 @@ function candidateLayoutsForSlide(slide: SlideIR, config: Config): LayoutSpec[] 
   if (hasAny(slide, "image")) add({ preset: "image-focus" });
   if (hasAny(slide, "chart") || (hasAny(slide, "table") && (hasAny(slide, "image") || hasText(slide)))) add({ preset: "chart-table", direction: "horizontal" });
   return candidates;
+}
+
+function conferenceProfileLayouts(slide: SlideIR): LayoutSpec[] {
+  const profile = inferConferenceTemplateProfile(slide);
+  if (profile === "dense-technical-prose") {
+    if (hasIndentedProse(slide)) {
+      return [
+        { preset: "text-icon-aside" },
+        { preset: "comparison", direction: "horizontal", columns: 2 },
+        { preset: "vertical-list" },
+      ];
+    }
+    return [
+      { preset: "comparison", direction: "horizontal", columns: 2 },
+      { preset: "text-icon-aside" },
+      { preset: "vertical-list" },
+    ];
+  }
+  if (profile === "diagram-workflow-heavy") return [{ preset: "pipeline", direction: "horizontal" }];
+  if (profile === "visual-evidence-heavy") {
+    return hasAny(slide, "chart") || hasAny(slide, "table")
+      ? [{ preset: "image-focus" }, { preset: "chart-table", direction: "horizontal" }]
+      : [{ preset: "image-focus" }];
+  }
+  if (profile === "data-table-chart-heavy") {
+    return hasAny(slide, "chart")
+      ? [{ preset: "chart-table", direction: "horizontal" }, { preset: "table-focus" }]
+      : [{ preset: "table-focus" }, { preset: "chart-table", direction: "horizontal" }];
+  }
+  if (profile === "status-agenda-update") return [{ preset: "vertical-list" }];
+  return [];
 }
 
 function evidenceLayouts(slide: SlideIR): LayoutSpec[] {
@@ -108,8 +141,9 @@ function scoreLayoutCandidate(
   const overflowPenalty = roughOverflowPenaltyFor(slide, layout);
   const alignmentPenalty = ["grid", "vertical-list", "chart-table", "table-focus", "image-focus", "comparison"].includes(layout.preset) ? 0 : 1;
   const sectionConsistencyPenalty = sectionConsistencyPenaltyFor(layout, previousPresetInSection);
-  const total = overflowPenalty + minFontPenalty + objectCoveragePenalty + semanticGroupPenalty + readingOrderPenalty + whitespacePenalty + alignmentPenalty + emphasisPenalty + sectionConsistencyPenalty;
-  return { overflowPenalty, minFontPenalty, objectCoveragePenalty, semanticGroupPenalty, readingOrderPenalty, whitespacePenalty, alignmentPenalty, emphasisPenalty, sectionConsistencyPenalty, total };
+  const conferenceProfilePenalty = conferenceProfilePenaltyFor(slide, layout);
+  const total = overflowPenalty + minFontPenalty + objectCoveragePenalty + semanticGroupPenalty + readingOrderPenalty + whitespacePenalty + alignmentPenalty + emphasisPenalty + sectionConsistencyPenalty + conferenceProfilePenalty;
+  return { overflowPenalty, minFontPenalty, objectCoveragePenalty, semanticGroupPenalty, readingOrderPenalty, whitespacePenalty, alignmentPenalty, emphasisPenalty, sectionConsistencyPenalty, conferenceProfilePenalty, total };
 }
 
 function objectCoveragePenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
@@ -126,6 +160,31 @@ function layoutCoversObject(layout: LayoutSpec, type: string): boolean {
   if (type === "code") return layout.preset === "code-focus";
   if (type === "diagram") return layout.preset === "pipeline";
   return true;
+}
+
+function conferenceProfilePenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
+  const profile = inferConferenceTemplateProfile(slide);
+  if (profile === "dense-technical-prose") {
+    if (hasIndentedProse(slide)) {
+      if (layout.preset === "text-icon-aside") return 0;
+      if (layout.preset === "comparison") return 3;
+      if (layout.preset === "vertical-list") return 4;
+      return 5;
+    }
+    if (layout.preset === "comparison") return 0;
+    if (layout.preset === "vertical-list") return 2;
+    if (layout.preset === "text-icon-aside") return 4;
+    if (layout.preset === "title-body") return 5;
+    return 2;
+  }
+  if (profile === "diagram-workflow-heavy") return layout.preset === "pipeline" ? 0 : 6;
+  if (profile === "visual-evidence-heavy") return layout.preset === "image-focus" || layout.preset === "chart-table" ? 0 : 5;
+  if (profile === "data-table-chart-heavy") {
+    if (hasAny(slide, "chart")) return layout.preset === "chart-table" || layout.preset === "table-focus" ? 0 : 6;
+    if (hasAny(slide, "table")) return layout.preset === "table-focus" ? 0 : layout.preset === "chart-table" ? 2 : 6;
+  }
+  if (profile === "status-agenda-update") return layout.preset === "vertical-list" || layout.preset === "grid" ? 0 : 2;
+  return 0;
 }
 
 function readingOrderPenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
@@ -172,6 +231,7 @@ function emphasisPenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
   if (slide.intent === "evidence" && layout.preset === "table-focus" && hasAny(slide, "image")) return 2;
   if ((slide.primaryItemCount ?? 0) >= 5 && (slide.primaryItemCount ?? 0) <= 6 && layout.preset === "vertical-list") return 3;
   if (slide.intent === "quote" && layout.preset !== "key-message" && layout.preset !== "quote") return 4;
+  if (isClaimMessageLayoutCandidate(slide) && layout.preset !== "key-message") return 6;
   if (isTwoParagraphOpenLayout(slide) && layout.preset !== "comparison") return 3;
   if (isTextOnlyReliefCandidate(slide) && layout.preset !== "text-icon-aside") return 3;
   return 0;
@@ -225,8 +285,39 @@ function isTextOnlyReliefCandidate(slide: SlideIR): boolean {
   if (slide.intent !== "standard") return false;
   if (!slide.blocks.length) return false;
   if (slide.blocks.some((block) => ["table", "chart", "image", "code", "diagram", "quote"].includes(block.type))) return false;
-  const textLength = slide.blocks.reduce((sum, block) => sum + (block.text?.length ?? 0), 0);
+  const textLength = slideTextLength(slide);
   return textLength >= 120;
+}
+
+function hasIndentedProse(slide: SlideIR): boolean {
+  return slide.blocks.some((block) => block.type === "paragraph" && block.lineIndents?.some((indent) => indent > 0));
+}
+
+function isDenseProseSlide(slide: SlideIR): boolean {
+  return inferConferenceTemplateProfile(slide) === "dense-technical-prose" || hasIndentedProse(slide) || slideTextLength(slide) >= 420;
+}
+
+function slideTextLength(slide: SlideIR): number {
+  return slide.blocks.reduce((sum, block) => sum + (block.text?.length ?? 0) + (block.items ?? []).join(" ").length, 0);
+}
+
+function isClaimMessageLayoutCandidate(slide: SlideIR): boolean {
+  if (slide.role !== "content") return false;
+  if (slide.intent === "quote") return false;
+  if (!hasSlideClaimMessageCandidate(slide)) return false;
+  if (hasAny(slide, "chart") || hasAny(slide, "table") || hasAny(slide, "image") || hasAny(slide, "diagram") || hasAny(slide, "code")) return false;
+  const contentBlocks = slide.blocks.filter((block) => block.type !== "slideBreak");
+  if (contentBlocks.length > 2) return false;
+  return isNeutralSlideTitle(slide.title) || contentBlocks.length === 1;
+}
+
+function sourceEvidenceAllowsIcon(slide: SlideIR): boolean {
+  const text = [
+    slide.title,
+    slide.headingPath.join(" "),
+    ...slide.blocks.map((block) => [block.text, block.alt, ...(block.items ?? [])].filter(Boolean).join(" ")),
+  ].join(" ");
+  return /\bicon\s*[:=]\s*[\w-]+|\[icon\s*[:=][^\]]+\]|emoji\s*[:=]|symbol\s*[:=]/i.test(text);
 }
 
 function planSlidesWithContinuity(presentation: PresentationIR, config: Config): LayoutSlide[] {
@@ -314,10 +405,14 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   }
 
   if (layout.preset === "comparison") {
+    const dense = isDenseProseSlide(slide);
+    const typography = dense ? compactBodyTypography(config) : bodyTypography(config);
+    const y = dense ? 1.52 : 1.7;
+    const h = dense ? 5.05 : 4.8;
     return [
       titleRegion,
-      { id: "left", role: "body", blockIds: itemBlockIds.slice(0, Math.ceil(itemBlockIds.length / 2)), x: 0.9, y: 1.7, w: 5.4, h: 4.8, zIndex: 10, typography: bodyTypography(config) },
-      { id: "right", role: "body", blockIds: itemBlockIds.slice(Math.ceil(itemBlockIds.length / 2)), x: 7.0, y: 1.7, w: 5.4, h: 4.8, zIndex: 10, typography: bodyTypography(config) },
+      { id: "left", role: "body", blockIds: itemBlockIds.slice(0, Math.ceil(itemBlockIds.length / 2)), x: 0.9, y, w: 5.4, h, zIndex: 10, typography },
+      { id: "right", role: "body", blockIds: itemBlockIds.slice(Math.ceil(itemBlockIds.length / 2)), x: 7.0, y, w: 5.4, h, zIndex: 10, typography },
     ];
   }
 
@@ -361,10 +456,23 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   }
 
   if (layout.preset === "text-icon-aside") {
+    const allowIcon = sourceEvidenceAllowsIcon(slide);
+    const dense = isDenseProseSlide(slide);
+    const bodyRegion: LayoutRegion = {
+      id: "body-panel",
+      role: "body",
+      blockIds: slide.blocks.filter((block) => block.type !== "slideBreak").map((block) => block.id),
+      x: allowIcon ? 0.9 : 1.0,
+      y: dense && !allowIcon ? 1.52 : 1.72,
+      w: allowIcon ? 8.85 : 11.2,
+      h: dense && !allowIcon ? 5.05 : 3.62,
+      zIndex: 10,
+      typography: dense ? compactBodyTypography(config) : bodyTypography(config),
+    };
     return [
       titleRegion,
-      { id: "body-panel", role: "body", blockIds: slide.blocks.filter((block) => block.type !== "slideBreak").map((block) => block.id), x: 0.9, y: 1.72, w: 8.85, h: 3.62, zIndex: 10, typography: bodyTypography(config) },
-      { id: "icon-aside", role: "icon", blockIds: [], x: 10.38, y: 2.36, w: 0.72, h: 0.72, zIndex: 8 },
+      bodyRegion,
+      ...(allowIcon ? [{ id: "icon-aside", role: "icon" as const, blockIds: [], x: 10.38, y: 2.36, w: 0.72, h: 0.72, zIndex: 8 }] : []),
     ];
   }
 
@@ -462,22 +570,30 @@ function createPipelineOnePageRegions(slide: SlideIR, titleRegion: LayoutRegion,
 function createTableFocusRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
   const tableBlockIds = slide.blocks.filter((block) => block.type === "table").map((block) => block.id);
   const imageBlockIds = slide.blocks.filter((block) => block.type === "image").map((block) => block.id);
+  const claimBlockId = findSlideClaimMessageCandidate(slide)?.blockId;
+  const claimRegion: LayoutRegion | undefined = claimBlockId
+    ? { id: "key-message", role: "body", blockIds: [claimBlockId], x: 1.0, y: 1.34, w: 11.2, h: 0.72, zIndex: 10, typography: { ...compactBodyTypography(config), fontWeight: "bold" } }
+    : undefined;
   if (!tableBlockIds.length) return [
     titleRegion,
     { id: "body", role: "body", blockIds: slide.blocks.map((block) => block.id), x: 0.95, y: 1.56, w: 11.35, h: 4.95, zIndex: 10, typography: bodyTypography(config) },
   ];
 
   if (imageBlockIds.length) {
+    const evidenceTop = claimRegion ? 2.22 : 1.55;
+    const evidenceHeight = claimRegion ? 4.25 : 4.95;
     return [
       titleRegion,
-      { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 0.9, y: 1.55, w: 6.15, h: 4.95, zIndex: 10, typography: compactBodyTypography(config) },
-      { id: "image-1", role: "image", blockIds: imageBlockIds.slice(0, 1), x: 7.45, y: 1.6, w: 4.85, h: 4.95, zIndex: 10 },
+      ...(claimRegion ? [claimRegion] : []),
+      { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 0.9, y: evidenceTop, w: 6.15, h: evidenceHeight, zIndex: 10, typography: compactBodyTypography(config) },
+      { id: "image-1", role: "image", blockIds: imageBlockIds.slice(0, 1), x: 7.45, y: evidenceTop + 0.05, w: 4.85, h: evidenceHeight, zIndex: 10 },
     ];
   }
 
   return [
     titleRegion,
-    { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 1.0, y: 1.55, w: 11.2, h: 4.95, zIndex: 10, typography: compactBodyTypography(config) },
+    ...(claimRegion ? [claimRegion] : []),
+    { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 1.0, y: claimRegion ? 2.24 : 1.55, w: 11.2, h: claimRegion ? 4.25 : 4.95, zIndex: 10, typography: compactBodyTypography(config) },
   ];
 }
 
@@ -625,7 +741,9 @@ function titleBlockId(slideId: string): string {
 
 function createKeyMessageRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
   const quoteBlockIds = slide.blocks.filter((block) => block.type === "quote").map((block) => block.id);
-  const bodyBlockIds = slide.blocks.filter((block) => block.type !== "quote" && block.type !== "slideBreak").map((block) => block.id);
+  const claimBlockId = !quoteBlockIds.length ? findSlideClaimMessageCandidate(slide)?.blockId : undefined;
+  const messageBlockIds = quoteBlockIds.length ? quoteBlockIds : claimBlockId ? [claimBlockId] : [];
+  const bodyBlockIds = slide.blocks.filter((block) => !messageBlockIds.includes(block.id) && block.type !== "slideBreak").map((block) => block.id);
   const keyTypography = {
     ...bodyTypography(config),
     fontSize: Math.max(config.typography.bodyFontSize + 4, config.typography.titleFontSize - 4),
@@ -635,13 +753,13 @@ function createKeyMessageRegions(slide: SlideIR, titleRegion: LayoutRegion, conf
   if (!bodyBlockIds.length) {
     return [
       titleRegion,
-      { id: "key-message", role: "body", blockIds: quoteBlockIds, x: 1.25, y: 2.2, w: 10.8, h: 2.1, zIndex: 10, typography: keyTypography },
+      { id: "key-message", role: "body", blockIds: messageBlockIds, x: 1.25, y: 2.2, w: 10.8, h: 2.1, zIndex: 10, typography: keyTypography },
     ];
   }
 
   return [
     titleRegion,
-    { id: "key-message", role: "body", blockIds: quoteBlockIds, x: 1.0, y: 1.55, w: 11.2, h: 1.45, zIndex: 10, typography: keyTypography },
+    { id: "key-message", role: "body", blockIds: messageBlockIds, x: 1.0, y: 1.55, w: 11.2, h: 1.45, zIndex: 10, typography: keyTypography },
     { id: "body", role: "body", blockIds: bodyBlockIds, x: 1.0, y: 3.35, w: 11.2, h: 2.95, zIndex: 10, typography: bodyTypography(config) },
   ];
 }
@@ -712,7 +830,7 @@ function bodyTypography(config: Config) {
 }
 
 function compactBodyTypography(config: Config) {
-  const minFontSize = Math.max(config.typography.minFontSize, 14);
+  const minFontSize = Math.max(config.typography.minFontSize, 16);
   return {
     fontFamily: config.typography.fontFamily,
     fontSize: Math.max(minFontSize, config.typography.bodyFontSize - 5),

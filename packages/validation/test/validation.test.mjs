@@ -209,6 +209,59 @@ test("coherence validation treats pipeline teaser overview as the evidence claim
   assert.equal(summary.checks.claimlessEvidenceSlides, true);
 });
 
+test("coherence validation flags neutral titles when source claims are not visible", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Deck" },
+    outline: [],
+    slides: [{
+      id: "slide-claim",
+      index: 0,
+      role: "content",
+      title: "Motivation",
+      headingPath: ["Motivation"],
+      source: {},
+      blocks: [
+        { id: "claim-1", type: "paragraph", text: "Claim: Dense technical decks should show the main message before supporting prose." },
+      ],
+      intent: "standard",
+      tags: [],
+    }],
+    coherenceGroups: [],
+    assets: [],
+    diagnostics: [],
+  };
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme,
+    slides: [{
+      id: "layout-claim",
+      sourceSlideId: "slide-claim",
+      index: 0,
+      layout: { preset: "title-body" },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 8, maxShrinkSteps: 4 },
+      regions: [
+        { id: "title", role: "title", x: 1, y: 0.5, w: 11, h: 0.8, zIndex: 1, blockIds: ["__title:slide-claim"] },
+      ],
+    }],
+    diagnostics: [],
+  };
+
+  const diagnostics = coherenceValidationDiagnostics(presentation, layout);
+  const summary = createCoherenceValidationSummary(presentation, layout);
+
+  assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "NEUTRAL_TITLE_WITHOUT_MESSAGE"), true);
+  assert.equal(summary.neutralTitleWithoutMessage, 1);
+  assert.equal(summary.checks.neutralTitleMessages, false);
+
+  layout.slides[0].regions.push({ id: "key-message", role: "body", x: 1, y: 1.6, w: 10, h: 1.4, zIndex: 1, blockIds: ["claim-1"] });
+  const resolvedSummary = createCoherenceValidationSummary(presentation, layout);
+  assert.equal(resolvedSummary.neutralTitleWithoutMessage, 0);
+  assert.equal(resolvedSummary.checks.neutralTitleMessages, true);
+});
+
 test("coherence validation reports inconsistent intra-slide content spacing", () => {
   const presentation = {
     version: "1.0",
