@@ -324,6 +324,31 @@ test("parseMarkdown skips marker normalization inside literal code blocks and re
   assert.equal(cleanupDiagnostics.every((diagnostic) => !JSON.stringify(diagnostic).includes("coordinates")), true);
 });
 
+test("parseMarkdown preserves bridge paragraph marker edge fixture order", () => {
+  const markdown = readFileSync(resolve(repoRoot, "tests/fixtures/bridge-paragraph-marker-edge.md"), "utf-8");
+  const doc = parseMarkdown(markdown, "bridge-paragraph-marker-edge.md");
+  const presentation = planPresentation(doc, defaultConfig);
+  const markerSlide = presentation.slides.find((slide) => slide.title === "Mixed Marker Slide");
+  const listBlocks = doc.blocks.filter((block) => block.type === "bulletList");
+  const table = doc.blocks.find((block) => block.type === "table");
+  const code = doc.blocks.find((block) => block.type === "code");
+
+  assert.equal(markerSlide !== undefined, true);
+  assert.equal(doc.blocks.some((block) => block.type === "table"), true);
+  assert.equal(doc.blocks.some((block) => block.type === "code"), true);
+  assert.deepEqual(listBlocks[0].items, [
+    "핵심 메시지는 기존 템플릿을 유지한다",
+    "Readability remains semantic, not coordinate-based.",
+    "First numbered step",
+    "Second numbered step with Korean/English label",
+  ]);
+  assert.match(doc.blocks.filter((block) => block.type === "paragraph").map((block) => block.text).join("\n"), /Short standalone paragraph stays separate/);
+  assert.deepEqual(table.rows[1], ["imageUse", "no-image"]);
+  assert.match(code.text, /-literal marker must stay code/);
+  assert.match(code.text, /ㆍliteral bullet must stay code/);
+  assert.equal(presentation.diagnostics.some((diagnostic) => diagnostic.code === "SOURCE_CLEANUP_PARAGRAPH_MARKER"), true);
+});
+
 test("parseMarkdown preserves prose year markers while retaining ordered list numbering", () => {
   const doc = parseMarkdown([
     "# Deck",
