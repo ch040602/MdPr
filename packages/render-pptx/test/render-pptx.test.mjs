@@ -1633,19 +1633,107 @@ test("renderPptx keeps Markdown images inside their surfaced region safe frame",
 
     const zip = await JSZip.loadAsync(readFileSync(outPath));
     const xml = await zip.file("ppt/slides/slide1.xml").async("string");
-    const expectedX = Math.round((region.x + inset) * EMU_PER_INCH);
-    const expectedY = Math.round((region.y + inset) * EMU_PER_INCH);
-    const expectedW = Math.round((region.w - inset * 2) * EMU_PER_INCH);
-    const expectedH = Math.round((region.h - inset * 2) * EMU_PER_INCH);
+    const safeFrame = {
+      left: Math.round((region.x + inset) * EMU_PER_INCH),
+      top: Math.round((region.y + inset) * EMU_PER_INCH),
+      right: Math.round((region.x + region.w - inset) * EMU_PER_INCH),
+      bottom: Math.round((region.y + region.h - inset) * EMU_PER_INCH),
+    };
     const pictureTransforms = [...xml.matchAll(/<p:pic\b[\s\S]*?<a:off x="(-?\d+)" y="(-?\d+)"\/>\s*<a:ext cx="(-?\d+)" cy="(-?\d+)"\/>[\s\S]*?<\/p:pic>/g)]
-      .map((match) => match.slice(1, 5).map(Number));
+      .map((match) => ({ xml: match[0], values: match.slice(1, 5).map(Number) }));
+    const markdownPicture = pictureTransforms.find((picture) => picture.xml.includes("mdpr:slide-image:image-1:image-1"));
+    assert.ok(markdownPicture, "expected Markdown image picture");
 
-    assert.equal(pictureTransforms.some(([x, y, w, h]) =>
-      Math.abs(x - expectedX) <= 3
-      && Math.abs(y - expectedY) <= 3
-      && Math.abs(w - expectedW) <= 3
-      && Math.abs(h - expectedH) <= 3
-    ), true);
+    const [x, y, w, h] = markdownPicture.values;
+    assert.equal(x >= safeFrame.left - 3, true);
+    assert.equal(y >= safeFrame.top - 3, true);
+    assert.equal(x + w <= safeFrame.right + 3, true);
+    assert.equal(y + h <= safeFrame.bottom + 3, true);
+    assert.equal(Math.abs((w / h) - (20 / 12)) < 0.02, true, `image aspect ratio distorted: ${w / h}`);
+    assert.doesNotMatch(markdownPicture.xml, /<a:srcRect/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx crops explicit cover images around the requested focal point", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-image-cover-"));
+  const imagePath = join(outDir, "preview.png");
+  const outPath = join(outDir, "deck.pptx");
+  const region = { id: "image-1", role: "image", blockIds: ["image-1"], x: 1.0, y: 1.65, w: 4.0, h: 2.0, zIndex: 10 };
+  const inset = 0.07;
+  const deck = {
+    presentation: {
+      version: "1.0",
+      meta: { title: "Image Cover Crop" },
+      outline: [],
+      assets: [],
+      diagnostics: [],
+      slides: [{
+        id: "slide-image",
+        index: 0,
+        role: "content",
+        title: "Image Cover Crop",
+        headingPath: ["Image Cover Crop"],
+        source: {},
+        intent: "image",
+        tags: [],
+        blocks: [{
+          id: "image-1",
+          type: "image",
+          src: imagePath,
+          alt: "cover image",
+          pandocAttr: { attributes: { imageFit: "cover", focalPoint: "left top" } },
+        }],
+      }],
+    },
+    layout: {
+      version: "1.0",
+      slideSize: { width: 13.333, height: 7.5, unit: "in" },
+      theme: {
+        fontFamily: "Arial",
+        backgroundColor: "#FFFFFF",
+        textColor: "#111827",
+        primaryColor: "#2563EB",
+        titleFontSize: 30,
+        bodyFontSize: 20,
+        captionFontSize: 12,
+        minFontSize: 14,
+        lineHeight: 1.2,
+      },
+      diagnostics: [],
+      slides: [{
+        id: "layout-image",
+        sourceSlideId: "slide-image",
+        index: 0,
+        layout: { preset: "image-focus" },
+        background: { color: "#FFFFFF" },
+        overflowPolicy: { action: "shrink", minFontSize: 14, maxShrinkSteps: 3 },
+        regions: [
+          { id: "title", role: "title", blockIds: ["__title:slide-image"], x: 0.8, y: 0.45, w: 11.7, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 30, fontWeight: "bold", lineHeight: 1.2, minFontSize: 14 } },
+          region,
+        ],
+      }],
+    },
+  };
+
+  try {
+    writeFileSync(imagePath, Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAABQAAAAMCAYAAABiDJ37AAAAI0lEQVR42mP8z8Dwn4GKgImBjoEJRh1MDRgYGBgAAJ1CDxN5CHiFAAAAAElFTkSuQmCC",
+      "base64",
+    ));
+
+    await renderPptx(deck, { outPath, designPreset: "glassmorphism" });
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const markdownPicture = [...xml.matchAll(/<p:pic\b[\s\S]*?<\/p:pic>/g)]
+      .map((match) => match[0])
+      .find((picture) => picture.includes("mdpr:slide-image:image-1:image-1"));
+    assert.ok(markdownPicture, "expected Markdown image picture");
+    const frameAspectRatio = (region.w - inset * 2) / (region.h - inset * 2);
+    const expectedBottomCrop = Math.round((1 - 20 / (frameAspectRatio * 12)) * 100000);
+    assert.match(markdownPicture, new RegExp(`<a:srcRect l="0" r="0" t="0" b="${expectedBottomCrop}"\\/>`));
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

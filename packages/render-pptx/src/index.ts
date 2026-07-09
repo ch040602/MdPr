@@ -1,5 +1,6 @@
 import type { BlockIR, ChartIR, DesignTokens, DiagramIR, InlineRunIR, ListItemIR, PresentationIR, SlideIR } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
+import { readFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import PptxGenJSExport from "pptxgenjs";
 import type PptxGenJS from "pptxgenjs";
@@ -40,6 +41,12 @@ export type RenderableDeckIR = {
 
 export type RenderPptxInput = LayoutIR | RenderableDeckIR;
 
+type PptxImageCropRequest = {
+  slideNumber: number;
+  objectName: string;
+  srcRect: { l: number; r: number; t: number; b: number };
+};
+
 export async function renderPptx(input: RenderPptxInput, options: RenderPptxOptions): Promise<RenderPptxResult> {
   const layout = isRenderableDeck(input) ? input.layout : input;
   const presentation = isRenderableDeck(input) ? input.presentation : undefined;
@@ -52,6 +59,8 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
     : [resolveDesignPreset(options.designPreset ?? layout.theme.decorationStyle ?? layout.theme.designPreset, layout.theme)];
   const templateAssets = await extractTemplateDesignAssets(options.templatePath);
   let documentDesignPreset: DesignTokens | undefined;
+  const imageCropRequests: PptxImageCropRequest[] = [];
+  let renderedSlideNumber = 0;
 
   pptx.author = "mdpresent";
   pptx.company = "mdpresent";
@@ -73,6 +82,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
     documentDesignPreset ??= designPreset;
     for (const layoutSlide of layout.slides) {
       const slide = pptx.addSlide();
+      renderedSlideNumber += 1;
       const sourceSlide = presentation?.slides.find((candidate) => candidate.id === layoutSlide.sourceSlideId);
       const blockIndex = sourceSlide ? createBlockIndex(sourceSlide) : new Map<string, BlockIR>();
       const isCover = layoutSlide.layout.preset === "cover";
@@ -177,7 +187,10 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
             ...objectMetadata,
           });
         } else if (blocks.length === 1 && blocks[0].type === "image" && blocks[0].src) {
-          renderImageRegion(slide, blocks[0], region, objectMetadata);
+          renderImageRegion(slide, blocks[0], region, objectMetadata, {
+            slideNumber: renderedSlideNumber,
+            cropRequests: imageCropRequests,
+          });
         } else if (tocItemNumber !== undefined) {
           slide.addText(`${String(tocItemNumber).padStart(2, "0")}  ${plainRegionText}`, metadataTextCommon);
         } else if (shouldRenderAsPlainMultiline(blocks)) {
@@ -192,6 +205,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
   }
 
   await pptx.writeFile({ fileName: options.outPath, compression: false });
+  await applyPptxImageCrops(options.outPath, imageCropRequests);
   if (documentDesignPreset) {
     await writePptxThemeColors(options.outPath, documentDesignPreset);
     if (documentDesignPreset.surfacePolicy.shadow === "glass") await addPptxGlowEffects(options.outPath, documentDesignPreset.primaryColor);
@@ -259,18 +273,227 @@ function renderImageRegion(
   block: BlockIR,
   region: LayoutIR["slides"][number]["regions"][number],
   metadata: { objectName?: string; altText?: string } = {},
+  cropContext?: { slideNumber: number; cropRequests: PptxImageCropRequest[] },
 ): void {
   if (!block.src) return;
   const frame = insetRect(region, imageSafeInset(region));
+  const crop = imageCropRequestForBlock(block, frame);
+  const canPatchCrop = Boolean(crop && cropContext && metadata.objectName);
+  const placement = canPatchCrop ? frame : imagePlacementContain(block.src, frame);
+  if (crop && cropContext && metadata.objectName) {
+    cropContext.cropRequests.push({
+      slideNumber: cropContext.slideNumber,
+      objectName: metadata.objectName,
+      srcRect: crop,
+    });
+  }
   slide.addImage({
     path: block.src,
-    x: frame.x,
-    y: frame.y,
-    w: frame.w,
-    h: frame.h,
+    x: placement.x,
+    y: placement.y,
+    w: placement.w,
+    h: placement.h,
     objectName: metadata.objectName,
     altText: metadata.altText ?? block.alt ?? block.text ?? "Markdown image",
   } as never);
+}
+
+function imageCropRequestForBlock(
+  block: BlockIR,
+  frame: { w: number; h: number },
+): PptxImageCropRequest["srcRect"] | undefined {
+  if (imageFitForBlock(block) !== "cover" || !block.src) return undefined;
+  const dimensions = readImageDimensions(block.src);
+  if (!dimensions) return undefined;
+  return coverSrcRect(dimensions, frame, imageFocalPointForBlock(block));
+}
+
+function imagePlacementContain(
+  src: string,
+  frame: { x: number; y: number; w: number; h: number },
+): { x: number; y: number; w: number; h: number } {
+  const dimensions = readImageDimensions(src);
+  if (!dimensions) return frame;
+  const imageAspectRatio = dimensions.width / dimensions.height;
+  const frameAspectRatio = frame.w / frame.h;
+  if (!Number.isFinite(imageAspectRatio) || imageAspectRatio <= 0) return frame;
+
+  if (imageAspectRatio > frameAspectRatio) {
+    const h = frame.w / imageAspectRatio;
+    return {
+      x: frame.x,
+      y: Number((frame.y + (frame.h - h) / 2).toFixed(3)),
+      w: frame.w,
+      h: Number(h.toFixed(3)),
+    };
+  }
+
+  const w = frame.h * imageAspectRatio;
+  return {
+    x: Number((frame.x + (frame.w - w) / 2).toFixed(3)),
+    y: frame.y,
+    w: Number(w.toFixed(3)),
+    h: frame.h,
+  };
+}
+
+function imageFitForBlock(block: BlockIR): "contain" | "cover" {
+  const value = blockAttribute(block, ["imageFit", "objectFit", "fit", "data-image-fit", "data-object-fit"]);
+  if (/^(cover|crop|fill)$/i.test(value ?? "")) return "cover";
+  return "contain";
+}
+
+function imageFocalPointForBlock(block: BlockIR): { x: number; y: number } {
+  const focal = blockAttribute(block, ["focal", "focalPoint", "imageFocal", "objectPosition", "cropFocus"]);
+  const focalX = blockAttribute(block, ["focalX", "imageFocalX", "objectPositionX", "cropFocusX"]);
+  const focalY = blockAttribute(block, ["focalY", "imageFocalY", "objectPositionY", "cropFocusY"]);
+  return {
+    x: parseFocalAxis(focalX, "x") ?? parseFocalAxis(focal, "x") ?? 0.5,
+    y: parseFocalAxis(focalY, "y") ?? parseFocalAxis(focal, "y") ?? 0.5,
+  };
+}
+
+function blockAttribute(block: BlockIR, keys: string[]): string | undefined {
+  const attributes = block.pandocAttr?.attributes;
+  if (!attributes) return undefined;
+  const lookup = new Map(Object.entries(attributes).map(([key, value]) => [key.toLowerCase(), value]));
+  for (const key of keys) {
+    const value = lookup.get(key.toLowerCase());
+    if (value !== undefined && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+function parseFocalAxis(value: string | undefined, axis: "x" | "y"): number | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim().toLowerCase();
+  const parts = normalized.split(/[,\s]+/).filter(Boolean);
+  const candidate = parts.length >= 2 ? parts[axis === "x" ? 0 : 1] : parts[0];
+  if (!candidate) return undefined;
+  if (candidate.endsWith("%")) {
+    const percent = Number.parseFloat(candidate.slice(0, -1));
+    return Number.isFinite(percent) ? clamp(percent / 100, 0, 1) : undefined;
+  }
+  const numeric = Number.parseFloat(candidate);
+  if (Number.isFinite(numeric)) return clamp(numeric > 1 ? numeric / 100 : numeric, 0, 1);
+
+  if (axis === "x") {
+    if (candidate === "left") return 0;
+    if (candidate === "center" || candidate === "middle") return 0.5;
+    if (candidate === "right") return 1;
+  } else {
+    if (candidate === "top") return 0;
+    if (candidate === "center" || candidate === "middle") return 0.5;
+    if (candidate === "bottom") return 1;
+  }
+  return undefined;
+}
+
+function coverSrcRect(
+  dimensions: { width: number; height: number },
+  frame: { w: number; h: number },
+  focalPoint: { x: number; y: number },
+): PptxImageCropRequest["srcRect"] | undefined {
+  const imageAspectRatio = dimensions.width / dimensions.height;
+  const frameAspectRatio = frame.w / frame.h;
+  if (!Number.isFinite(imageAspectRatio) || imageAspectRatio <= 0 || !Number.isFinite(frameAspectRatio) || frameAspectRatio <= 0) {
+    return undefined;
+  }
+  if (Math.abs(imageAspectRatio - frameAspectRatio) < 0.001) return { l: 0, r: 0, t: 0, b: 0 };
+
+  if (imageAspectRatio > frameAspectRatio) {
+    const visibleWidth = dimensions.height * frameAspectRatio;
+    const cropFraction = clamp(1 - visibleWidth / dimensions.width, 0, 1);
+    const left = cropFraction * clamp(focalPoint.x, 0, 1);
+    return normalizeSrcRect({
+      l: srcRectPct(left),
+      r: srcRectPct(cropFraction - left),
+      t: 0,
+      b: 0,
+    });
+  }
+
+  const visibleHeight = dimensions.width / frameAspectRatio;
+  const cropFraction = clamp(1 - visibleHeight / dimensions.height, 0, 1);
+  const top = cropFraction * clamp(focalPoint.y, 0, 1);
+  return normalizeSrcRect({
+    l: 0,
+    r: 0,
+    t: srcRectPct(top),
+    b: srcRectPct(cropFraction - top),
+  });
+}
+
+function srcRectPct(value: number): number {
+  return Math.round(clamp(value, 0, 1) * 100000);
+}
+
+function normalizeSrcRect(rect: PptxImageCropRequest["srcRect"]): PptxImageCropRequest["srcRect"] {
+  return {
+    l: clamp(rect.l, 0, 100000),
+    r: clamp(rect.r, 0, 100000),
+    t: clamp(rect.t, 0, 100000),
+    b: clamp(rect.b, 0, 100000),
+  };
+}
+
+function readImageDimensions(src: string): { width: number; height: number } | undefined {
+  try {
+    const buffer = readFileSync(src);
+    return readPngDimensions(buffer) ?? readJpegDimensions(buffer);
+  } catch {
+    return undefined;
+  }
+}
+
+function readPngDimensions(buffer: Buffer): { width: number; height: number } | undefined {
+  if (
+    buffer.length < 24 ||
+    buffer[0] !== 0x89 ||
+    buffer[1] !== 0x50 ||
+    buffer[2] !== 0x4e ||
+    buffer[3] !== 0x47 ||
+    buffer[4] !== 0x0d ||
+    buffer[5] !== 0x0a ||
+    buffer[6] !== 0x1a ||
+    buffer[7] !== 0x0a
+  ) {
+    return undefined;
+  }
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  if (width === 0 || height === 0) return undefined;
+  return { width, height };
+}
+
+function readJpegDimensions(buffer: Buffer): { width: number; height: number } | undefined {
+  if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) return undefined;
+  let offset = 2;
+  while (offset + 9 < buffer.length) {
+    if (buffer[offset] !== 0xff) return undefined;
+    const marker = buffer[offset + 1];
+    offset += 2;
+    if (marker === 0xd9 || marker === 0xda) return undefined;
+    const segmentLength = buffer.readUInt16BE(offset);
+    if (segmentLength < 2 || offset + segmentLength > buffer.length) return undefined;
+    if (isJpegStartOfFrame(marker)) {
+      const height = buffer.readUInt16BE(offset + 3);
+      const width = buffer.readUInt16BE(offset + 5);
+      if (width === 0 || height === 0) return undefined;
+      return { width, height };
+    }
+    offset += segmentLength;
+  }
+  return undefined;
+}
+
+function isJpegStartOfFrame(marker: number): boolean {
+  return (
+    (marker >= 0xc0 && marker <= 0xc3) ||
+    (marker >= 0xc5 && marker <= 0xc7) ||
+    (marker >= 0xc9 && marker <= 0xcb) ||
+    (marker >= 0xcd && marker <= 0xcf)
+  );
 }
 
 function imageSafeInset(region: { w: number; h: number }): number {
@@ -394,6 +617,53 @@ function stripMarkdownEmphasis(value: string): string {
     .replace(/__([^_]+)__/g, "$1")
     .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, "$1")
     .replace(/(?<!_)_([^_\n]+)_(?!_)/g, "$1");
+}
+
+async function applyPptxImageCrops(outPath: string, requests: PptxImageCropRequest[]): Promise<void> {
+  if (!requests.length) return;
+  const zip = await JSZip.loadAsync(await readFile(outPath));
+  const requestsBySlide = new Map<number, PptxImageCropRequest[]>();
+  for (const request of requests) {
+    const existing = requestsBySlide.get(request.slideNumber) ?? [];
+    existing.push(request);
+    requestsBySlide.set(request.slideNumber, existing);
+  }
+
+  let changed = false;
+  for (const [slideNumber, slideRequests] of requestsBySlide) {
+    const slidePath = `ppt/slides/slide${slideNumber}.xml`;
+    const slideFile = zip.file(slidePath);
+    if (!slideFile) continue;
+    let xml = await slideFile.async("string");
+    for (const request of slideRequests) {
+      const nextXml = patchPictureSrcRect(xml, request);
+      if (nextXml !== xml) {
+        xml = nextXml;
+        changed = true;
+      }
+    }
+    zip.file(slidePath, xml);
+  }
+
+  if (changed) await writeFile(outPath, await zip.generateAsync({ type: "nodebuffer" }));
+}
+
+function patchPictureSrcRect(xml: string, request: PptxImageCropRequest): string {
+  const objectName = escapeXmlAttribute(request.objectName);
+  const srcRect = `<a:srcRect l="${request.srcRect.l}" r="${request.srcRect.r}" t="${request.srcRect.t}" b="${request.srcRect.b}"/>`;
+  return xml.replace(/<p:pic\b[\s\S]*?<\/p:pic>/g, (pictureXml) => {
+    if (!pictureXml.includes(`name="${objectName}"`)) return pictureXml;
+    if (/<a:srcRect\b[^>]*\/>/.test(pictureXml)) return pictureXml.replace(/<a:srcRect\b[^>]*\/>/, srcRect);
+    return pictureXml.replace(/<a:stretch\b/, `${srcRect}<a:stretch`);
+  });
+}
+
+function escapeXmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 async function writePptxThemeColors(outPath: string, preset: DesignTokens): Promise<void> {
