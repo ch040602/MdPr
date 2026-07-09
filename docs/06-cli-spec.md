@@ -100,6 +100,19 @@ default config < config file < CLI args
 
 ## Validation
 
+The local release preflight is available through the workspace script:
+
+```bash
+corepack pnpm test:preflight
+```
+
+It emits `mdpr-runtime-preflight-profile-v1` JSON and checks that parser and
+splitting coverage, readability/source preservation, generated-asset policy,
+template/master integrity, PPTX editability, validation, and clean package smoke
+remain documented and locally runnable. It is a static local gate; it does not
+require Office GUI inspection, credentials, paid services, browser automation,
+external assets, downloaded fonts, or manual visual QA.
+
 Validation reports:
 
 ```text

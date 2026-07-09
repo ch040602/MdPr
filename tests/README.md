@@ -2,6 +2,20 @@
 
 The test suite should lock behavior at the semantic contract level before visual output is reviewed.
 
+## Local Runtime Release Preflight
+
+`corepack pnpm test:preflight` runs
+`python scripts/validate-mdpr-runtime-profile.py --check` and emits
+`mdpr-runtime-preflight-profile-v1` JSON. This local static gate verifies the
+same runtime responsibilities documented here: parser/splitting behavior,
+readability/source preservation, image permission, template/master package
+integrity, PPTX editability, validation/CLI gates, and clean package smoke via
+`test:pack`.
+
+The preflight is intentionally local. It does not require Office GUI inspection,
+credentials, paid services, browser automation, external assets, downloaded
+fonts, or manual visual QA.
+
 ## Recommended Coverage
 
 ```text

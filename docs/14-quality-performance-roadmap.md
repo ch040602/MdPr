@@ -38,6 +38,10 @@ Implemented in the deterministic runtime:
 - `test:pack` builds workspace packages, packs each runtime package, installs
   those tarballs in a clean project, and verifies the installed `mdpresent`
   binary can generate PPTX and HTML outputs.
+- `test:preflight` emits the `mdpr-runtime-preflight-profile-v1` local release
+  gate, confirming parser/splitting, readability/source preservation,
+  image-permission, template/master, PPTX editability, validation, and package
+  smoke contracts without Office GUI inspection or external services.
 - Post-layout override operations `moveBlock`, `hideBlock`, and `pinBlock`
   operate on Layout IR region membership with missing block/slot diagnostics.
 - Build uses the same error-diagnostic gate as validation before rendering;
