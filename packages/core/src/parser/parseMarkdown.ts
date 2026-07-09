@@ -1,7 +1,7 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmFromMarkdown } from "mdast-util-gfm";
 import { gfm } from "micromark-extension-gfm";
-import type { BlockIR, ChartIR, HeadingLevel, InlineRunIR, ListItemIR, MarkdownDocument } from "../ir/types.js";
+import type { BlockIR, ChartIR, HeadingLevel, InlineRunIR, ListItemIR, MarkdownDocument, SourceCleanupDiagnostic } from "../ir/types.js";
 
 type MdastNode = {
   type: string;
@@ -22,7 +22,8 @@ type MdastNode = {
 
 export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDocument {
   const sourceLines = markdown.split(/\r?\n/);
-  const astMarkdown = markdown.replace(/^(\s*)[•·][ \t]+/gm, "$1- ");
+  const markerNormalization = normalizeParagraphMarkersForMarkdownAstWithReport(markdown);
+  const astMarkdown = markerNormalization.markdown;
   const tree = fromMarkdown(astMarkdown, {
     extensions: [gfm()],
     mdastExtensions: [gfmFromMarkdown()],
@@ -59,7 +60,8 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
       const text = normalizePlainText(inlineText(node.children));
       if (isDecorativeListText(text)) return;
 
-      const pipeline = parsePipelineDiagram(text);
+      const lines = sourceTextLines(node, sourceLines).map(normalizeInlineSpacing).filter(Boolean);
+      const pipeline = parseParagraphPipelineDiagram(text, lines);
       if (pipeline) {
         pushBlock({
           type: "diagram",
@@ -70,7 +72,6 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
         return;
       }
 
-      const lines = sourceTextLines(node, sourceLines).map(normalizeInlineSpacing).filter(Boolean);
       pushBlock({
         type: "paragraph",
         text,
@@ -198,7 +199,97 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
   const headings = blocks.filter((b) => b.type === "heading");
   const title = headings.find((h) => h.level === 1)?.text;
 
-  return { sourcePath, title, parser: "simple", blocks, headings };
+  return {
+    sourcePath,
+    title,
+    parser: "simple",
+    blocks,
+    headings,
+    sourceCleanupDiagnostics: markerNormalization.diagnostics,
+  };
+}
+
+export function normalizeParagraphMarkersForMarkdownAst(markdown: string): string {
+  return normalizeParagraphMarkersForMarkdownAstWithReport(markdown).markdown;
+}
+
+export function normalizeParagraphMarkersForMarkdownAstWithReport(markdown: string): {
+  markdown: string;
+  diagnostics: SourceCleanupDiagnostic[];
+} {
+  const diagnostics: SourceCleanupDiagnostic[] = [];
+  let fencedMarker: "`" | "~" | undefined;
+  let fencedLength = 0;
+  let inPreBlock = false;
+  const lines = markdown.split(/\r?\n/).map((line, index) => {
+    const fenced = fenceInfo(line);
+    if (fencedMarker) {
+      if (fenced && fenced.marker === fencedMarker && fenced.length >= fencedLength) {
+        fencedMarker = undefined;
+        fencedLength = 0;
+      }
+      return line;
+    }
+    if (fenced) {
+      fencedMarker = fenced.marker;
+      fencedLength = fenced.length;
+      return line;
+    }
+
+    if (inPreBlock) {
+      if (/<\/pre>/i.test(line)) inPreBlock = false;
+      return line;
+    }
+    if (/^\s{0,3}<pre\b/i.test(line)) {
+      if (!/<\/pre>/i.test(line)) inPreBlock = true;
+      return line;
+    }
+
+    if (isIndentedCodeLine(line)) return line;
+
+    const normalized = normalizeParagraphMarkerLine(line);
+    if (normalized.line !== line) diagnostics.push({
+      level: "info",
+      code: "paragraph-marker-normalized",
+      line: index + 1,
+      originalMarker: normalized.originalMarker,
+      normalizedMarker: "-",
+      action: "normalize-to-list-marker",
+      reason: "paragraph-marker-shorthand",
+    });
+    return normalized.line;
+  });
+
+  return { markdown: lines.join("\n"), diagnostics };
+}
+
+function normalizeParagraphMarkerLine(line: string): { line: string; originalMarker: string } {
+  const match = /^(\s*)([•·ㆍ▪◦‣–—−-])(?:[ \t]+|(?=\S)|$)(.*)$/.exec(line);
+  if (!match) return { line, originalMarker: "" };
+  const [, indent = "", marker = "", rest = ""] = match;
+
+  if (marker === "-" && shouldKeepAsciiDashLine(rest)) return { line, originalMarker: marker };
+  if (!rest) return { line: `${indent}-`, originalMarker: marker };
+  return { line: `${indent}- ${rest.trimStart()}`, originalMarker: marker };
+}
+
+function fenceInfo(line: string): { marker: "`" | "~"; length: number } | undefined {
+  const match = /^(?: {0,3})(`{3,}|~{3,})/.exec(line);
+  if (!match) return undefined;
+  const fence = match[1];
+  return { marker: fence[0] as "`" | "~", length: fence.length };
+}
+
+function isIndentedCodeLine(line: string): boolean {
+  return /^(?: {4,}|\t)/.test(line);
+}
+
+function shouldKeepAsciiDashLine(rest: string): boolean {
+  if (!rest) return false;
+  if (/^[-=*_]{1,}$/.test(rest)) return true;
+  if (/^>/.test(rest)) return true;
+  if (/^\d/.test(rest)) return true;
+  return false;
 }
 
 function sourceFromNode(node: MdastNode, sourcePath?: string) {
@@ -484,6 +575,12 @@ export function parsePipelineDiagram(line: string) {
   const labels = splitPipelineLabels(line);
   if (labels.length < 2) return undefined;
   return createPipelineDiagram(labels);
+}
+
+function parseParagraphPipelineDiagram(text: string, lines: string[]) {
+  if (lines.length <= 1) return parsePipelineDiagram(text);
+  if (!lines.every(hasPipelineArrow)) return undefined;
+  return parsePipelineDiagram(lines.join(" => "));
 }
 
 function splitPipelineLabels(text: string): string[] {

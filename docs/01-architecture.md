@@ -26,7 +26,13 @@ Markdown
 packages/core
   Markdown parsing, Pandoc JSON adaptation into MDPR semantic blocks, outline
   tree, split planning, density scoring, intent score profiles, and
-  Presentation IR.
+  Presentation IR. The Markdown parser owns paragraph marker normalization for
+  dash and bullet-like lines, including `-item`, `•`, `·`, `–`, `—`, `−`,
+  `ㆍ`, and `▪`, while preserving explicit `---` slide breaks, pipeline arrows,
+  negative-number prose, fenced code, indented code, and raw `<pre>` blocks.
+  Parser-owned cleanup can emit source diagnostics with line numbers and marker
+  kinds, but those diagnostics do not choose bullet glyphs, indentation,
+  typography, or renderer objects.
 
 packages/core/src/coherence
   Rule-based block roles, caption pairing, coherence groups, and weak accepted
@@ -90,6 +96,9 @@ packages/cli
 6. Optional agent hints may annotate coherence metadata, but deterministic MDPR rules own final output.
 7. Quality improvements preserve source semantics; they classify, group,
    measure, reflow, and validate content without summarizing or rewriting it.
+   Parser marker normalization may convert authoring shorthand into stable
+   list structure, but it must not turn mixed prose with inline arrows into a
+   diagram or rewrite literal code/pre blocks.
 8. Approved packs are token imports, not agent decisions. They can supply theme,
    component, and diagram tokens, while MDPR still owns final layout, z-order,
    object rendering, and validation.

@@ -96,6 +96,16 @@ export type Diagnostic = {
   slideId?: string;
 };
 
+export type SourceCleanupDiagnostic = {
+  level: "info";
+  code: "paragraph-marker-normalized";
+  line: number;
+  originalMarker: string;
+  normalizedMarker: "-";
+  action: "normalize-to-list-marker";
+  reason: "paragraph-marker-shorthand";
+};
+
 export type BlockType =
   | "heading"
   | "paragraph"
@@ -254,6 +264,7 @@ export type MarkdownDocument = {
   parser?: ParserMode;
   blocks: BlockIR[];
   headings: BlockIR[];
+  sourceCleanupDiagnostics?: SourceCleanupDiagnostic[];
 };
 
 export type Config = {

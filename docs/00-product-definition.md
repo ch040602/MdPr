@@ -17,6 +17,11 @@
 
 ```text
 - analyze Markdown headings and content blocks
+- normalize paragraph marker bullets such as `-`, `-item`, `•`, `·`, `–`,
+  `—`, `−`, `ㆍ`, and `▪` into list structure while preserving slide breaks,
+  arrows, negative-number prose, and literal code/pre blocks
+- emit source-cleanup diagnostics for parser-owned authoring shorthand without
+  turning cleanup into layout or rendering decisions
 - split slides from headings, density, and explicit separators
 - detect comparison, example, method, table, image, code, chart, and diagram structures
 - choose layouts through deterministic rules

@@ -12,6 +12,8 @@ import {
   DESIGN_PRESET_NAMES,
   applyAgentHintsToPresentation,
   parseMarkdown,
+  normalizeParagraphMarkersForMarkdownAst,
+  normalizeParagraphMarkersForMarkdownAstWithReport,
   parsePandocJson,
   planPresentation,
   resolveDesignTokens,
@@ -226,6 +228,92 @@ test("parseMarkdown keeps bullet glyph items and indented descriptions as struct
     ["Goal: Keep source readable", "Render the description on a separate indented line."],
     ["Output", "Preserve emphasis"],
   ]);
+});
+
+test("parseMarkdown normalizes paragraph marker bullets without damaging slide breaks arrows or negative numbers", () => {
+  const markdown = [
+    "# Deck",
+    "",
+    "## Marker Lists",
+    "",
+    "-공백 없는 하이픈 항목",
+    "– en dash item",
+    "— em dash item",
+    "− minus sign item",
+    "ㆍ한국어 중점 항목",
+    "▪ square marker item",
+    "",
+    "---",
+    "",
+    "## Protected Lines",
+    "",
+    "-3 point change is a sentence, not a bullet.",
+    "Score delta is -3 points.",
+    "Pipeline -> Render",
+  ].join("\n");
+  const normalized = normalizeParagraphMarkersForMarkdownAst(markdown);
+  const doc = parseMarkdown(markdown, "deck.md");
+  const list = doc.blocks.find((block) => block.type === "bulletList");
+  const protectedText = doc.blocks.filter((block) => block.type === "paragraph").map((block) => block.text).join("\n");
+
+  assert.match(normalized, /^- 공백 없는 하이픈 항목/m);
+  assert.match(normalized, /^- en dash item/m);
+  assert.match(normalized, /^- 한국어 중점 항목/m);
+  assert.equal(doc.blocks.some((block) => block.type === "slideBreak"), true);
+  assert.deepEqual(list.items, [
+    "공백 없는 하이픈 항목",
+    "en dash item",
+    "em dash item",
+    "minus sign item",
+    "한국어 중점 항목",
+    "square marker item",
+  ]);
+  assert.match(protectedText, /Score delta is -3 points\./);
+  assert.match(protectedText, /-3 point change is a sentence, not a bullet\./);
+  assert.match(protectedText, /Pipeline -> Render/);
+  assert.equal(doc.blocks.some((block) => block.type === "diagram"), false);
+});
+
+test("parseMarkdown skips marker normalization inside literal code blocks and reports prose cleanup", () => {
+  const markdown = [
+    "# Deck",
+    "",
+    "## Literal Blocks",
+    "",
+    "```yaml",
+    "-item: keep",
+    "– item: keep",
+    "ㆍitem: keep",
+    "▪ item: keep",
+    "```",
+    "",
+    "    -indented: keep",
+    "    — indented keep",
+    "",
+    "-prose shorthand",
+    "▪ prose square marker",
+  ].join("\n");
+  const normalized = normalizeParagraphMarkersForMarkdownAstWithReport(markdown);
+  const doc = parseMarkdown(markdown, "literal-blocks.md");
+  const codeBlocks = doc.blocks.filter((block) => block.type === "code");
+  const list = doc.blocks.find((block) => block.type === "bulletList");
+
+  assert.match(normalized.markdown, /^- prose shorthand/m);
+  assert.match(normalized.markdown, /^- prose square marker/m);
+  assert.match(normalized.markdown, /^-item: keep/m);
+  assert.match(normalized.markdown, /^– item: keep/m);
+  assert.match(codeBlocks[0].text, /-item: keep/);
+  assert.match(codeBlocks[0].text, /– item: keep/);
+  assert.match(codeBlocks[0].text, /ㆍitem: keep/);
+  assert.match(codeBlocks[0].text, /▪ item: keep/);
+  assert.match(codeBlocks[1].text, /-indented: keep/);
+  assert.match(codeBlocks[1].text, /— indented keep/);
+  assert.deepEqual(list.items, ["prose shorthand", "prose square marker"]);
+  assert.deepEqual(normalized.diagnostics.map((diagnostic) => [diagnostic.line, diagnostic.originalMarker]), [
+    [15, "-"],
+    [16, "▪"],
+  ]);
+  assert.deepEqual(doc.sourceCleanupDiagnostics, normalized.diagnostics);
 });
 
 test("parseMarkdown keeps inline arrow examples inside normal lists", () => {
