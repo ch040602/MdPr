@@ -39,6 +39,15 @@ export type TemplateDesignAssets = {
   theme: TemplateTheme;
 };
 
+export type TemplatePackageIntegrity = {
+  masterPartPaths: string[];
+  layoutPartPaths: string[];
+  themePartPaths: string[];
+  masterRelationshipPaths: string[];
+  layoutRelationshipPaths: string[];
+  preservationPolicy: "preserve-template-masters-and-themes-by-default";
+};
+
 const EMU_PER_INCH = 914400;
 
 export async function extractTemplateDesignAssets(templatePath?: string | null): Promise<TemplateDesignAssets> {
@@ -94,6 +103,29 @@ export async function extractTemplateDesignAssets(templatePath?: string | null):
 
 export async function extractTemplateImageAssets(templatePath?: string | null): Promise<TemplateImageAsset[]> {
   return (await extractTemplateDesignAssets(templatePath)).images;
+}
+
+export async function inspectTemplatePackageIntegrity(templatePath?: string | null): Promise<TemplatePackageIntegrity> {
+  if (!templatePath) {
+    return {
+      masterPartPaths: [],
+      layoutPartPaths: [],
+      themePartPaths: [],
+      masterRelationshipPaths: [],
+      layoutRelationshipPaths: [],
+      preservationPolicy: "preserve-template-masters-and-themes-by-default",
+    };
+  }
+  const zip = await JSZip.loadAsync(readFileSync(templatePath));
+  const paths = Object.keys(zip.files);
+  return {
+    masterPartPaths: paths.filter((path) => /^ppt\/slideMasters\/slideMaster\d+\.xml$/.test(path)).sort(),
+    layoutPartPaths: paths.filter((path) => /^ppt\/slideLayouts\/slideLayout\d+\.xml$/.test(path)).sort(),
+    themePartPaths: paths.filter((path) => /^ppt\/theme\/theme\d+\.xml$/.test(path)).sort(),
+    masterRelationshipPaths: paths.filter((path) => /^ppt\/slideMasters\/_rels\/slideMaster\d+\.xml\.rels$/.test(path)).sort(),
+    layoutRelationshipPaths: paths.filter((path) => /^ppt\/slideLayouts\/_rels\/slideLayout\d+\.xml\.rels$/.test(path)).sort(),
+    preservationPolicy: "preserve-template-masters-and-themes-by-default",
+  };
 }
 
 function scoreTemplatePart(path: string): number {

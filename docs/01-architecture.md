@@ -29,7 +29,9 @@ packages/core
   Presentation IR. The Markdown parser owns paragraph marker normalization for
   dash and bullet-like lines, including `-item`, `•`, `·`, `–`, `—`, `−`,
   `ㆍ`, and `▪`, while preserving explicit `---` slide breaks, pipeline arrows,
-  negative-number prose, fenced code, indented code, and raw `<pre>` blocks.
+  negative-number prose, year-leading prose such as `2026. Roadmap`, fenced
+  code, indented code, and raw `<pre>` blocks. Real ordered lists still retain
+  their source numbering and nested marker semantics through list splitting.
   Parser-owned cleanup can emit source diagnostics with line numbers and marker
   kinds, but those diagnostics do not choose bullet glyphs, indentation,
   typography, or renderer objects. `planPresentation()` promotes those source
@@ -46,8 +48,10 @@ packages/core/src/coherence
   readability, and icon-keyword hints are scoped by split lineage so a hint only
   applies to elements present on that generated slide. Schema-valid but
   media-policy-conflicting icon/image candidates are ignored with diagnostics.
-  It never chooses coordinates, colors, typography, exact icon assets, image
-  paths, crops, z-order, or renderer objects.
+  Generated-image requests require explicit request evidence before MDPR records
+  them. It never chooses coordinates, colors, typography, exact icon assets,
+  final image paths, crops, z-order, or renderer objects; runtime-owned field
+  leaks are surfaced as diagnostics rather than accepted as instructions.
 
 packages/layout
   Layout presets, deterministic candidate scoring, region planning, safe

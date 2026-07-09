@@ -8,6 +8,11 @@ Layout engine controls placement.
 ```
 
 Templates provide brand and background material. MDPR recalculates body placement.
+In template-fill workflows, the existing PPTX/POTX package is treated as the
+theme and master evidence source by default. MDPR may inspect slide master,
+layout, relationship, and theme parts to prove the package boundary, but body
+content placement remains deterministic MDPR layout output rather than copied
+placeholder coordinates.
 
 ## Import From Templates
 
@@ -30,6 +35,8 @@ Templates provide brand and background material. MDPR recalculates body placemen
 - arbitrary title/content box positions
 - sample slide layout coordinates
 - sample text inside templates
+- agent-provided replacement master/layout IDs
+- agent-provided final image crops, coordinates, or z-order
 ```
 
 ## Master-Layer Candidates
@@ -78,3 +85,5 @@ safeArea:
 ## Note
 
 Slide Master is not a security boundary. It only reduces accidental movement of repeated background elements during normal slide editing.
+Agent hints can request `preserve-existing-master-slides` as semantic policy,
+but they cannot transform, replace, or select concrete master slide parts.

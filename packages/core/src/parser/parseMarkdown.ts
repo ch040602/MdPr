@@ -247,6 +247,9 @@ export function normalizeParagraphMarkersForMarkdownAstWithReport(markdown: stri
 
     if (isIndentedCodeLine(line)) return line;
 
+    const protectedLine = protectLikelyProseOrderedMarkerLine(line);
+    if (protectedLine !== line) return protectedLine;
+
     const normalized = normalizeParagraphMarkerLine(line);
     if (normalized.line !== line) diagnostics.push({
       level: "info",
@@ -261,6 +264,13 @@ export function normalizeParagraphMarkersForMarkdownAstWithReport(markdown: stri
   });
 
   return { markdown: lines.join("\n"), diagnostics };
+}
+
+function protectLikelyProseOrderedMarkerLine(line: string): string {
+  const match = /^(\s{0,3})(19\d{2}|20\d{2})\.\s+(\S.*)$/.exec(line);
+  if (!match) return line;
+  const [, indent = "", year = "", rest = ""] = match;
+  return `${indent}${year}\\. ${rest}`;
 }
 
 function normalizeParagraphMarkerLine(line: string): { line: string; originalMarker: string } {

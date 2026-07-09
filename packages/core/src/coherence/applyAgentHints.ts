@@ -96,6 +96,34 @@ export type AcceptedAgentHint = {
 
 const MIN_HINT_CONFIDENCE = 0.5;
 const HINT_CHUNK_SEPARATOR = "-hint-chunk-";
+const RUNTIME_OWNED_AGENT_HINT_FIELDS = new Set([
+  "box",
+  "coordinates",
+  "crop",
+  "cropRect",
+  "color",
+  "colors",
+  "exactIcon",
+  "finalImageAsset",
+  "finalImagePath",
+  "fontFamily",
+  "fontSize",
+  "geometry",
+  "h",
+  "iconName",
+  "iconPath",
+  "layoutId",
+  "recipeId",
+  "rendererObject",
+  "rendererObjectId",
+  "typography",
+  "variantId",
+  "w",
+  "x",
+  "y",
+  "z-order",
+  "zOrder",
+]);
 
 type SplitLineageEntry = {
   slideId: string;
@@ -115,6 +143,7 @@ export function applyAgentHintsToPresentation(
   if (!hints.length) return presentation;
 
   const next = structuredClone(presentation);
+  next.diagnostics.push(...runtimeOwnershipDiagnostics(hints));
   let contentSplitApplied = false;
   const splitLineage = new Map<string, SplitLineageEntry[]>();
 
@@ -185,7 +214,7 @@ export function applyAgentHintsToPresentation(
         }))
         .filter((candidate) => candidate.elementIds.length > 0 && candidate.evidenceRefs.length > 0 && iconPolicyAllowsKeywords);
       const acceptedVisualAssets = (hint.visualAssetCandidates ?? [])
-        .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE && hint.mediaPolicyCandidate?.imageUse === "generated-asset-approved");
+        .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE && visualAssetHasPositivePermission(hint, candidate));
 
       recordIgnoredScopedHints(next, slide, hint, scope, {
         acceptedKeyMessages,
@@ -315,6 +344,7 @@ function mergeKeyMessageCandidates(
 }
 
 function readabilityDiagnostic(slide: SlideIR, candidate: AgentReadabilityCandidate): Diagnostic {
+  const sourceRanges = sourceRangesForElementIds(slide, candidate.elementIds);
   return {
     level: "info",
     code: "AGENT_HINT_READABILITY_NOTE",
@@ -326,6 +356,11 @@ function readabilityDiagnostic(slide: SlideIR, candidate: AgentReadabilityCandid
       reason: candidate.reason,
       confidence: candidate.confidence,
       sourcePreserved: true,
+      rewriteApplied: false,
+      summarizationApplied: false,
+      textDeletionApplied: false,
+      allowedRuntimeActions: ["split", "wrap", "overflow-handling"],
+      sourceRanges,
     },
   };
 }
@@ -343,6 +378,8 @@ function iconKeywordDiagnostic(slide: SlideIR, candidate: AgentIconKeywordCandid
       reason: candidate.reason,
       confidence: candidate.confidence,
       finalIconAssetSelected: false,
+      exactIconSelected: false,
+      visibleSlideTextInserted: false,
     },
   };
 }
@@ -361,6 +398,10 @@ function visualAssetDiagnostic(slide: SlideIR, candidate: AgentVisualAssetCandid
       confidence: candidate.confidence,
       finalAssetPathSelected: false,
       finalPlacementSelected: false,
+      contentChannel: "generated-asset-request",
+      visibleSlideTextInserted: false,
+      captionInserted: false,
+      altTextInserted: false,
     },
   };
 }
@@ -597,6 +638,80 @@ function recordPolicyConflictDiagnostics(
       },
     });
   }
+  if (policy.imageUse !== "no-image") {
+    const unauthorized = (hint.visualAssetCandidates ?? [])
+      .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE && !visualAssetHasPositivePermission(hint, candidate));
+    if (unauthorized.length) {
+      presentation.diagnostics.push({
+        level: "warning",
+        code: "AGENT_HINT_MEDIA_PERMISSION_MISSING",
+        message: `Ignored generated visual asset candidates for slide "${slide.title ?? slide.id}" because no explicit generated-asset request evidence was supplied.`,
+        slideId: slide.id,
+        details: {
+          candidateKind: "visualAssetCandidates",
+          candidateCount: unauthorized.length,
+          requiredEvidence: ["workflowIntent:generated-asset-request", "imageSearch:explicit-request-only", "request:* or instruction:generated-asset-request"],
+          sourcePreserved: true,
+        },
+      });
+    }
+  }
+}
+
+function runtimeOwnershipDiagnostics(hints: readonly AcceptedAgentHint[]): Diagnostic[] {
+  return hints.flatMap((hint) => {
+    const paths = runtimeOwnedFieldPaths(hint);
+    if (!paths.length) return [];
+    return [{
+      level: "warning" as const,
+      code: "AGENT_HINT_RUNTIME_OWNERSHIP_FIELD",
+      message: `Ignored runtime-owned final-decision fields in agent hint for slide "${hint.slideId}".`,
+      slideId: hint.slideId,
+      details: {
+        fieldPaths: paths,
+        rule: "agent-hints-must-not-own-geometry-theme-assets-or-renderer-objects",
+        runtimeOwner: "MDPR",
+      },
+    }];
+  });
+}
+
+function runtimeOwnedFieldPaths(value: unknown, path = "$"): string[] {
+  if (!value || typeof value !== "object") return [];
+  if (Array.isArray(value)) {
+    return value.flatMap((item, index) => runtimeOwnedFieldPaths(item, `${path}[${index}]`));
+  }
+  const paths: string[] = [];
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    const childPath = `${path}.${key}`;
+    if (RUNTIME_OWNED_AGENT_HINT_FIELDS.has(key)) paths.push(childPath);
+    paths.push(...runtimeOwnedFieldPaths(child, childPath));
+  }
+  return paths;
+}
+
+function visualAssetHasPositivePermission(hint: AcceptedAgentHint, candidate: AgentVisualAssetCandidate): boolean {
+  if (hint.mediaPolicyCandidate?.imageUse !== "generated-asset-approved") return false;
+  if (hint.mediaPolicyCandidate.imageSearch !== "explicit-request-only") return false;
+  if (candidate.trigger !== "explicit-generated-asset-request") return false;
+  const refs = [
+    ...(hint.workflowIntentCandidate?.evidenceRefs ?? []),
+    ...(hint.mediaPolicyCandidate.evidenceRefs ?? []),
+    candidate.requestRef,
+  ].filter(Boolean);
+  const hasRequestRef = refs.some((ref) => /^(?:request:|instruction:generated-asset-request\b)/i.test(ref));
+  return hint.workflowIntentCandidate?.intent === "generated-asset-request" && hasRequestRef;
+}
+
+function sourceRangesForElementIds(slide: SlideIR, elementIds: string[]): Array<{ elementId: string; startLine?: number; endLine?: number }> {
+  const ids = new Set(elementIds);
+  return slide.blocks
+    .filter((block) => ids.has(block.id))
+    .map((block) => ({
+      elementId: block.id,
+      ...(block.source?.startLine !== undefined ? { startLine: block.source.startLine } : {}),
+      ...(block.source?.endLine !== undefined ? { endLine: block.source.endLine } : {}),
+    }));
 }
 
 function isCoherenceGroupRole(role: string): role is CoherenceGroup["role"] {

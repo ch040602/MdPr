@@ -324,6 +324,40 @@ test("parseMarkdown skips marker normalization inside literal code blocks and re
   assert.equal(cleanupDiagnostics.every((diagnostic) => !JSON.stringify(diagnostic).includes("coordinates")), true);
 });
 
+test("parseMarkdown preserves prose year markers while retaining ordered list numbering", () => {
+  const doc = parseMarkdown([
+    "# Deck",
+    "",
+    "## Marker Semantics",
+    "",
+    "2026. Roadmap stays prose.",
+    "1.2 release stays prose.",
+    "",
+    "5. Ordered step",
+    "6. Continue",
+    "   - Nested detail",
+    "",
+    "```md",
+    "2026. code stays literal",
+    "-code stays literal",
+    "```",
+  ].join("\n"), "markers.md");
+  const paragraphText = doc.blocks.filter((block) => block.type === "paragraph").map((block) => block.text).join("\n");
+  const list = doc.blocks.find((block) => block.type === "bulletList");
+  const code = doc.blocks.find((block) => block.type === "code");
+
+  assert.match(paragraphText, /2026\. Roadmap stays prose\./);
+  assert.match(paragraphText, /1\.2 release stays prose\./);
+  assert.deepEqual(list.listItems.map((item) => [item.text, item.ordered, item.level, item.number, item.marker]), [
+    ["Ordered step", true, 0, 5, "5."],
+    ["Continue", true, 0, 6, "6."],
+    ["Nested detail", false, 1, undefined, "-"],
+  ]);
+  assert.match(code.text, /2026\. code stays literal/);
+  assert.match(code.text, /-code stays literal/);
+  assert.deepEqual(doc.sourceCleanupDiagnostics, []);
+});
+
 test("parseMarkdown keeps inline arrow examples inside normal lists", () => {
   const doc = parseMarkdown([
     "# Deck",
@@ -1721,6 +1755,51 @@ test("agent media policies reject schema-valid icon and generated-image conflict
       confidence: 0.72,
     }],
   }]);
+  const insufficientEvidenceImage = applyAgentHintsToPresentation(presentation, [{
+    slideId: slide.id,
+    confidence: 0.86,
+    mediaPolicyCandidate: {
+      imageUse: "generated-asset-approved",
+      imageSearch: "explicit-request-only",
+      iconUse: "semantic-keywords-only",
+      evidenceRefs: [],
+    },
+    visualAssetCandidates: [{
+      kind: "generated-image",
+      trigger: "explicit-generated-asset-request",
+      requestRef: "asset:hero",
+      semanticPrompt: "minimal hcs summary",
+      confidence: 0.72,
+    }],
+  }]);
+  const runtimeOwnedLeak = applyAgentHintsToPresentation(presentation, [{
+    slideId: slide.id,
+    confidence: 0.86,
+    mediaPolicyCandidate: {
+      imageUse: "no-image",
+      imageSearch: "disabled",
+      iconUse: "semantic-keywords-only",
+      evidenceRefs: ["instruction:no-image"],
+    },
+    readabilityCandidates: [{
+      action: "shorten-copy",
+      elementIds: [block.id],
+      reason: "Diagnostic only.",
+      confidence: 0.72,
+      x: 1,
+      crop: { x: 0, y: 0 },
+    }],
+    visualAssetCandidates: [{
+      kind: "generated-image",
+      trigger: "explicit-generated-asset-request",
+      requestRef: "request:hero",
+      semanticPrompt: "minimal hcs summary",
+      confidence: 0.72,
+      finalImagePath: "hero.png",
+      rendererObject: { id: "shape-1" },
+      exactIcon: "ShieldCheck",
+    }],
+  }]);
 
   assert.equal(allowedTemplateFill.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_POLICY_CONFLICT"), false);
   assert.equal(iconConflict.diagnostics.some((diagnostic) =>
@@ -1733,11 +1812,64 @@ test("agent media policies reject schema-valid icon and generated-image conflict
     && diagnostic.details.policy === "imageUse:no-image"
   ), true);
   assert.equal(imageConflict.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_VISUAL_ASSET_REQUEST"), false);
+  assert.equal(insufficientEvidenceImage.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_VISUAL_ASSET_REQUEST"), false);
+  assert.equal(insufficientEvidenceImage.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_MEDIA_PERMISSION_MISSING"), true);
+  assert.equal(runtimeOwnedLeak.diagnostics.some((diagnostic) =>
+    diagnostic.code === "AGENT_HINT_RUNTIME_OWNERSHIP_FIELD"
+    && diagnostic.details.fieldPaths.some((fieldPath) => fieldPath.endsWith(".x"))
+    && diagnostic.details.fieldPaths.some((fieldPath) => fieldPath.endsWith(".finalImagePath"))
+    && diagnostic.details.fieldPaths.some((fieldPath) => fieldPath.endsWith(".rendererObject"))
+  ), true);
+  assert.equal(runtimeOwnedLeak.diagnostics.some((diagnostic) =>
+    diagnostic.code === "AGENT_HINT_READABILITY_NOTE"
+    && diagnostic.details.rewriteApplied === false
+    && diagnostic.details.sourcePreserved === true
+  ), true);
   assert.equal(approvedImage.diagnostics.some((diagnostic) =>
     diagnostic.code === "AGENT_HINT_VISUAL_ASSET_REQUEST"
     && diagnostic.details.finalAssetPathSelected === false
     && diagnostic.details.finalPlacementSelected === false
+    && diagnostic.details.visibleSlideTextInserted === false
   ), true);
+});
+
+test("agent list-chunk split preserves ordered list markers across generated slides", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Numbered Proof",
+    "",
+    "5. Alpha",
+    "6. Beta",
+    "7. Gamma",
+    "8. Delta",
+    "9. Epsilon",
+    "10. Zeta",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Numbered Proof");
+  const listBlock = slide.blocks.find((block) => block.type === "bulletList");
+  const hinted = applyAgentHintsToPresentation(presentation, [{
+    slideId: slide.id,
+    confidence: 0.86,
+    contentSplitCandidates: [{
+      reason: "long-bullets",
+      elementIds: [listBlock.id],
+      preferredSplitBy: "list-chunk",
+      confidence: 0.84,
+    }],
+  }]);
+  const splitLists = hinted.slides
+    .filter((candidate) => candidate.title?.startsWith("Numbered Proof"))
+    .map((candidate) => candidate.blocks.find((block) => block.type === "bulletList"));
+
+  assert.deepEqual(splitLists.flatMap((block) => block.listItems.map((item) => [item.text, item.number, item.marker])), [
+    ["Alpha", 5, "5."],
+    ["Beta", 6, "6."],
+    ["Gamma", 7, "7."],
+    ["Delta", 8, "8."],
+    ["Epsilon", 9, "9."],
+    ["Zeta", 10, "10."],
+  ]);
 });
 
 test("low-confidence content split and readability hints are ignored with diagnostics", () => {

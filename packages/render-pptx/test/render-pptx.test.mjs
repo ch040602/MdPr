@@ -8,6 +8,7 @@ import PptxGenJSExport from "pptxgenjs";
 import JSZip from "jszip";
 import { renderPptx } from "../dist/index.js";
 import { iconKindForText } from "../dist/iconCatalog.js";
+import { inspectTemplatePackageIntegrity } from "../dist/templateImport.js";
 
 const PptxGenJS = typeof PptxGenJSExport === "function" ? PptxGenJSExport : PptxGenJSExport.default;
 const EMU_PER_INCH = 914400;
@@ -1551,6 +1552,34 @@ test("renderPptx keeps Markdown images inside their surfaced region safe frame",
       && Math.abs(w - expectedW) <= 3
       && Math.abs(h - expectedH) <= 3
     ), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("template import records master layout and theme parts as preserved template package evidence", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-template-integrity-"));
+  const templatePath = join(outDir, "template.pptx");
+
+  try {
+    const template = new PptxGenJS();
+    template.layout = "LAYOUT_WIDE";
+    template.theme = {
+      headFontFace: "Aptos Display",
+      bodyFontFace: "Aptos",
+      lang: "ko-KR",
+    };
+    template.addSlide().addText("Template sample", { x: 1, y: 1, w: 5, h: 0.5 });
+    await template.writeFile({ fileName: templatePath });
+
+    const integrity = await inspectTemplatePackageIntegrity(templatePath);
+
+    assert.equal(integrity.preservationPolicy, "preserve-template-masters-and-themes-by-default");
+    assert.equal(integrity.masterPartPaths.length >= 1, true);
+    assert.equal(integrity.layoutPartPaths.length >= 1, true);
+    assert.equal(integrity.themePartPaths.length >= 1, true);
+    assert.equal(integrity.masterRelationshipPaths.length >= 1, true);
+    assert.equal(integrity.layoutRelationshipPaths.length >= 1, true);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
