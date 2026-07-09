@@ -16,6 +16,16 @@ The preflight is intentionally local. It does not require Office GUI inspection,
 credentials, paid services, browser automation, external assets, downloaded
 fonts, or manual visual QA.
 
+Local preflight gate IDs:
+
+- `parser-splitting`
+- `readability-source-preservation`
+- `image-permission`
+- `template-master-package-integrity`
+- `pptx-editability`
+- `validation-cli`
+- `package-cli`
+
 ## Recommended Coverage
 
 ```text

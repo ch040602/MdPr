@@ -7,7 +7,7 @@
     "build": "corepack pnpm -r build",
     "test": "corepack pnpm -r test",
     "typecheck": "corepack pnpm -r typecheck",
-    "test:preflight": "python scripts/validate-mdpr-runtime-profile.py --check",
+    "test:preflight": "python scripts/validate-mdpr-runtime-profile.py --check --json && python scripts/validate-mdpr-runtime-profile.py --self-test --check --json",
     "test:pack": "node scripts/pack-smoke.mjs",
     "cli": "tsx packages/cli/src/index.ts",
     "perf:check": "node scripts/check-performance-regression.mjs",

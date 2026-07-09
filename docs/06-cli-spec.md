@@ -113,6 +113,11 @@ remain documented and locally runnable. It is a static local gate; it does not
 require Office GUI inspection, credentials, paid services, browser automation,
 external assets, downloaded fonts, or manual visual QA.
 
+The emitted gate IDs are `parser-splitting`,
+`readability-source-preservation`, `image-permission`,
+`template-master-package-integrity`, `pptx-editability`, `validation-cli`, and
+`package-cli`.
+
 Validation reports:
 
 ```text
