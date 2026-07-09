@@ -32,7 +32,10 @@ packages/core
   negative-number prose, fenced code, indented code, and raw `<pre>` blocks.
   Parser-owned cleanup can emit source diagnostics with line numbers and marker
   kinds, but those diagnostics do not choose bullet glyphs, indentation,
-  typography, or renderer objects.
+  typography, or renderer objects. `planPresentation()` promotes those source
+  cleanup diagnostics into `Presentation IR` diagnostics so build and validation
+  manifests can expose parser-owned authoring cleanup without adding render
+  decisions.
 
 packages/core/src/coherence
   Rule-based block roles, caption pairing, coherence groups, and weak accepted

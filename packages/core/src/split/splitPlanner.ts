@@ -1,4 +1,4 @@
-import type { BlockIR, Config, MarkdownDocument, OutlineNode, PresentationIR, SlideIR } from "../ir/types.js";
+import type { BlockIR, Config, Diagnostic, MarkdownDocument, OutlineNode, PresentationIR, SlideIR, SourceCleanupDiagnostic } from "../ir/types.js";
 import { buildOutlineTree } from "../outline/buildOutlineTree.js";
 import { calculateDensity } from "./density.js";
 import { detectSlideIntentProfile, countPrimaryItems } from "../intent/detectSlideIntent.js";
@@ -133,7 +133,22 @@ export function planPresentation(doc: MarkdownDocument, config: Config): Present
     slides,
     coherenceGroups: buildCoherenceGroups(slides),
     assets: [],
-    diagnostics: [],
+    diagnostics: (doc.sourceCleanupDiagnostics ?? []).map(sourceCleanupDiagnosticToDiagnostic),
+  };
+}
+
+function sourceCleanupDiagnosticToDiagnostic(diagnostic: SourceCleanupDiagnostic): Diagnostic {
+  return {
+    level: diagnostic.level,
+    code: "SOURCE_CLEANUP_PARAGRAPH_MARKER",
+    message: `Normalized paragraph marker "${diagnostic.originalMarker}" to "-" at source line ${diagnostic.line}.`,
+    details: {
+      sourceLine: diagnostic.line,
+      originalMarker: diagnostic.originalMarker,
+      normalizedMarker: diagnostic.normalizedMarker,
+      action: diagnostic.action,
+      reason: diagnostic.reason,
+    },
   };
 }
 

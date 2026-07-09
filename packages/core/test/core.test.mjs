@@ -295,8 +295,10 @@ test("parseMarkdown skips marker normalization inside literal code blocks and re
   ].join("\n");
   const normalized = normalizeParagraphMarkersForMarkdownAstWithReport(markdown);
   const doc = parseMarkdown(markdown, "literal-blocks.md");
+  const presentation = planPresentation(doc, defaultConfig);
   const codeBlocks = doc.blocks.filter((block) => block.type === "code");
   const list = doc.blocks.find((block) => block.type === "bulletList");
+  const cleanupDiagnostics = presentation.diagnostics.filter((diagnostic) => diagnostic.code === "SOURCE_CLEANUP_PARAGRAPH_MARKER");
 
   assert.match(normalized.markdown, /^- prose shorthand/m);
   assert.match(normalized.markdown, /^- prose square marker/m);
@@ -314,6 +316,12 @@ test("parseMarkdown skips marker normalization inside literal code blocks and re
     [16, "▪"],
   ]);
   assert.deepEqual(doc.sourceCleanupDiagnostics, normalized.diagnostics);
+  assert.deepEqual(cleanupDiagnostics.map((diagnostic) => [diagnostic.details.sourceLine, diagnostic.details.originalMarker]), [
+    [15, "-"],
+    [16, "▪"],
+  ]);
+  assert.equal(cleanupDiagnostics.every((diagnostic) => !JSON.stringify(diagnostic).includes("fontSize")), true);
+  assert.equal(cleanupDiagnostics.every((diagnostic) => !JSON.stringify(diagnostic).includes("coordinates")), true);
 });
 
 test("parseMarkdown keeps inline arrow examples inside normal lists", () => {

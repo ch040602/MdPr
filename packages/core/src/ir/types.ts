@@ -94,6 +94,7 @@ export type Diagnostic = {
   code?: string;
   message: string;
   slideId?: string;
+  details?: Record<string, unknown>;
 };
 
 export type SourceCleanupDiagnostic = {
