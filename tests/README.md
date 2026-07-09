@@ -22,6 +22,7 @@ Local preflight gate IDs:
 - `readability-source-preservation`
 - `image-permission`
 - `template-master-package-integrity`
+- `agent-runtime-bridge`
 - `pptx-editability`
 - `validation-cli`
 - `package-cli`

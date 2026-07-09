@@ -115,8 +115,8 @@ external assets, downloaded fonts, or manual visual QA.
 
 The emitted gate IDs are `parser-splitting`,
 `readability-source-preservation`, `image-permission`,
-`template-master-package-integrity`, `pptx-editability`, `validation-cli`, and
-`package-cli`.
+`template-master-package-integrity`, `agent-runtime-bridge`,
+`pptx-editability`, `validation-cli`, and `package-cli`.
 
 Validation reports:
 

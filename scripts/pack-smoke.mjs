@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { mkdir, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -10,6 +11,7 @@ const packageNames = [
   "core",
   "layout",
   "override",
+  "pack",
   "render-html",
   "render-pdf",
   "render-pptx",
@@ -31,6 +33,15 @@ function run(command, args, cwd) {
     shell: process.platform === "win32",
     stdio: "inherit",
   });
+}
+
+function runExpectFailure(command, args, cwd) {
+  try {
+    run(command, args, cwd);
+  } catch {
+    return;
+  }
+  throw new Error(`${command} ${args.join(" ")} unexpectedly succeeded`);
 }
 
 try {
@@ -61,7 +72,7 @@ try {
   }
 
   writeFileSync(join(smokeDir, "package.json"), JSON.stringify({ private: true, type: "module" }, null, 2));
-  writeFileSync(join(smokeDir, "deck.md"), [
+  const deckMarkdown = [
     "# Pack Smoke",
     "",
     "## Editable Output",
@@ -69,9 +80,51 @@ try {
     "- Native PPTX output remains installable from packed packages.",
     "- HTML output shares the same build path.",
     "",
-  ].join("\n"));
+  ].join("\n");
+  writeFileSync(join(smokeDir, "deck.md"), deckMarkdown);
+  const sourceSha256 = createHash("sha256").update(deckMarkdown).digest("hex");
+  writeFileSync(join(smokeDir, "bridge-allowed-hints.json"), JSON.stringify({
+    schemaVersion: "mdpr-agent-hint-v1",
+    sourceSha256,
+    hints: [
+      {
+        slideId: "editable-output",
+        confidence: 0.86,
+        workflowIntentCandidate: { intent: "template-fill", confidence: 0.86, evidenceRefs: ["template:hcs-template"] },
+        templateUseCandidate: {
+          templateSourceRef: "hcs-template",
+          masterSlidePolicy: "preserve-existing-master-slides",
+          placeholderPolicy: "prefer-existing-placeholders",
+          confidence: 0.86,
+        },
+        mediaPolicyCandidate: {
+          imageUse: "no-image",
+          imageSearch: "disabled",
+          iconUse: "no-new-icons",
+          evidenceRefs: ["template:hcs-template"],
+        },
+      },
+    ],
+  }, null, 2));
+  writeFileSync(join(smokeDir, "bridge-forbidden-hints.json"), JSON.stringify({
+    schemaVersion: "mdpr-agent-hint-v1",
+    sourceSha256,
+    hints: [
+      {
+        slideId: "editable-output",
+        confidence: 0.9,
+        imagePath: "assets/generated.png",
+        iconPath: "icons/check.svg",
+        masterId: "ppt/master-1",
+        layoutId: "ppt/layout-2",
+        cropRect: { x: 0, y: 0, w: 1, h: 1 },
+      },
+    ],
+  }, null, 2));
 
   run("npm", ["install", ...tarballs], smokeDir);
+  run("npm", ["exec", "--", "mdpresent", "validate", "deck.md", "--hints", "bridge-allowed-hints.json", "--json"], smokeDir);
+  runExpectFailure("npm", ["exec", "--", "mdpresent", "validate", "deck.md", "--hints", "bridge-forbidden-hints.json", "--json"], smokeDir);
   run("npm", ["exec", "--", "mdpresent", "build", "deck.md", "--to=pptx,html", "--out", "out"], smokeDir);
 
   const pptxPath = join(smokeDir, "out", "deck.pptx");

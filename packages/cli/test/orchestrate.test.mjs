@@ -673,6 +673,43 @@ test("validateDeck rejects forbidden final-decision fields in agent hints", () =
   }
 });
 
+test("validateDeck rejects renderer-owned asset and template fields in agent hints", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-agent-hints-renderer-bridge-"));
+  const deckPath = join(outDir, "deck.md");
+  const hintPath = join(outDir, "deck.mdpr-hints.json");
+  const markdown = "# Demo\n\n## Slide\n\nBody";
+
+  try {
+    writeFileSync(deckPath, markdown);
+    writeFileSync(hintPath, JSON.stringify({
+      schemaVersion: "mdpr-agent-hint-v1",
+      sourceSha256: sha256(markdown),
+      hints: [
+        {
+          slideId: "slide-slide",
+          confidence: 0.9,
+          workflowIntentCandidate: { intent: "template-fill", confidence: 0.86, evidenceRefs: ["template:hcs"] },
+          imagePath: "assets/generated.png",
+          iconPath: "icons/check.svg",
+          masterId: "ppt/master-1",
+          layoutId: "ppt/layout-2",
+          cropRect: { x: 0, y: 0, w: 1, h: 1 },
+        },
+      ],
+    }, null, 2));
+
+    const result = validateDeck(deckPath, { hintPath });
+
+    assert.equal(result.valid, false);
+    assert.equal(result.agentHints?.forbiddenFieldCount >= 5, true);
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_FORBIDDEN_FIELD"), true);
+    assert.match(result.diagnostics.map((diagnostic) => diagnostic.message).join("\n"), /imagePath/);
+    assert.match(result.diagnostics.map((diagnostic) => diagnostic.message).join("\n"), /masterId/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("validateDeck rejects unknown agent hint fields through the schema gate", () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-agent-hints-unknown-"));
   const deckPath = join(outDir, "deck.md");

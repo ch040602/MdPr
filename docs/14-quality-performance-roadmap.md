@@ -41,9 +41,9 @@ Implemented in the deterministic runtime:
 - `test:preflight` emits the `mdpr-runtime-preflight-profile-v1` local release
   gate, confirming `parser-splitting`,
   `readability-source-preservation`, `image-permission`,
-  `template-master-package-integrity`, `pptx-editability`, `validation-cli`,
-  and `package-cli` contracts without Office GUI inspection or external
-  services.
+  `template-master-package-integrity`, `agent-runtime-bridge`,
+  `pptx-editability`, `validation-cli`, and `package-cli` contracts without
+  Office GUI inspection or external services.
 - Post-layout override operations `moveBlock`, `hideBlock`, and `pinBlock`
   operate on Layout IR region membership with missing block/slot diagnostics.
 - Build uses the same error-diagnostic gate as validation before rendering;

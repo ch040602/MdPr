@@ -99,6 +99,24 @@ GATES = [
         },
     },
     {
+        "id": "agent-runtime-bridge",
+        "owner": "mdpr-runtime",
+        "riskArea": "agent-hint-to-renderer-boundary",
+        "responsibility": "Agent hints stay declarative while runtime validation owns image/icon/template renderer policy",
+        "commands": ["corepack pnpm --filter @mdpresent/cli test", "corepack pnpm test:pack"],
+        "testFiles": ["packages/cli/test/orchestrate.test.mjs", "scripts/pack-smoke.mjs"],
+        "assertionTags": [
+            "validateDeck rejects renderer-owned asset and template fields in agent hints",
+            "bridge-allowed-hints.json",
+            "bridge-forbidden-hints.json",
+        ],
+        "required_terms": {
+            "tests/README.md": ["agent-runtime-bridge"],
+            "docs/06-cli-spec.md": ["agent-runtime-bridge"],
+            "docs/14-quality-performance-roadmap.md": ["agent-runtime-bridge"],
+        },
+    },
+    {
         "id": "pptx-editability",
         "owner": "mdpr-runtime",
         "riskArea": "editable-pptx-output",
@@ -279,7 +297,7 @@ def build_report(gate_specs: list[dict] | None = None) -> dict:
         "profileId": "mdpr-runtime-local-preflight",
         "generatedBy": "scripts/validate-mdpr-runtime-profile.py",
         "valid": valid,
-        "inventoryReleaseProfile": "generic",
+        "inventoryReleaseProfile": "mdpresent-runtime",
         "runtimePreflightProfile": "mdpr-runtime-preflight-profile-v1",
         "boundaries": {
             "mdprOwns": [
