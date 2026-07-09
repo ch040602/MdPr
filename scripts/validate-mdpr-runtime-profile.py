@@ -92,6 +92,7 @@ GATES = [
         "testFiles": ["packages/render-pptx/test/render-pptx.test.mjs"],
         "assertionTags": [
             "template import records master layout and theme parts as preserved template package evidence",
+            "renderPptx preserves template master theme layout OOXML parts in output package",
             "template import reuses decorative shapes for matching layout types and preserves theme colors",
         ],
         "required_terms": {

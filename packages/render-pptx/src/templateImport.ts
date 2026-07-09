@@ -48,6 +48,10 @@ export type TemplatePackageIntegrity = {
   preservationPolicy: "preserve-template-masters-and-themes-by-default";
 };
 
+export type PreservedTemplatePackageParts = TemplatePackageIntegrity & {
+  copiedPartPaths: string[];
+};
+
 const EMU_PER_INCH = 914400;
 
 export async function extractTemplateDesignAssets(templatePath?: string | null): Promise<TemplateDesignAssets> {
@@ -126,6 +130,33 @@ export async function inspectTemplatePackageIntegrity(templatePath?: string | nu
     layoutRelationshipPaths: paths.filter((path) => /^ppt\/slideLayouts\/_rels\/slideLayout\d+\.xml\.rels$/.test(path)).sort(),
     preservationPolicy: "preserve-template-masters-and-themes-by-default",
   };
+}
+
+export async function preserveTemplatePackageParts(outputPath: string, templatePath?: string | null): Promise<PreservedTemplatePackageParts> {
+  const integrity = await inspectTemplatePackageIntegrity(templatePath);
+  if (!templatePath) return { ...integrity, copiedPartPaths: [] };
+
+  const outputZip = await JSZip.loadAsync(readFileSync(outputPath));
+  const templateZip = await JSZip.loadAsync(readFileSync(templatePath));
+  const copyPatterns = [
+    /^ppt\/theme\/theme\d+\.xml$/,
+    /^ppt\/slideMasters\/slideMaster\d+\.xml$/,
+    /^ppt\/slideMasters\/_rels\/slideMaster\d+\.xml\.rels$/,
+    /^ppt\/slideLayouts\/slideLayout\d+\.xml$/,
+    /^ppt\/slideLayouts\/_rels\/slideLayout\d+\.xml\.rels$/,
+  ];
+  const copiedPartPaths: string[] = [];
+
+  for (const path of Object.keys(templateZip.files).sort()) {
+    if (!copyPatterns.some((pattern) => pattern.test(path))) continue;
+    const file = templateZip.file(path);
+    if (!file) continue;
+    outputZip.file(path, await file.async("nodebuffer"));
+    copiedPartPaths.push(path);
+  }
+
+  writeFileSync(outputPath, await outputZip.generateAsync({ type: "nodebuffer" }));
+  return { ...integrity, copiedPartPaths };
 }
 
 function scoreTemplatePart(path: string): number {

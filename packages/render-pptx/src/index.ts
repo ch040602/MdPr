@@ -6,7 +6,7 @@ import type PptxGenJS from "pptxgenjs";
 import JSZip from "jszip";
 import { addPresetBackground, addRegionSurface, type DesignPresetName, resolveDesignPreset } from "./designPresets.js";
 import { iconKindForIndex, iconKindForText, iconSource, iconSvgDataUri, type IconKind } from "./iconCatalog.js";
-import { extractTemplateDesignAssets, type TemplateShapeAsset, type TemplateTheme } from "./templateImport.js";
+import { extractTemplateDesignAssets, preserveTemplatePackageParts, type TemplateShapeAsset, type TemplateTheme } from "./templateImport.js";
 
 export type { DesignPresetName } from "./designPresets.js";
 
@@ -196,6 +196,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
     await writePptxThemeColors(options.outPath, documentDesignPreset);
     if (documentDesignPreset.surfacePolicy.shadow === "glass") await addPptxGlowEffects(options.outPath, documentDesignPreset.primaryColor);
   }
+  await preserveTemplatePackageParts(options.outPath, options.templatePath);
   return { objectMap };
 }
 

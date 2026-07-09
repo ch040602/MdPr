@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import PptxGenJSExport from "pptxgenjs";
 import JSZip from "jszip";
 import { renderPptx } from "../dist/index.js";
@@ -12,6 +13,7 @@ import { inspectTemplatePackageIntegrity } from "../dist/templateImport.js";
 
 const PptxGenJS = typeof PptxGenJSExport === "function" ? PptxGenJSExport : PptxGenJSExport.default;
 const EMU_PER_INCH = 914400;
+const templateMasterPreservationFixture = fileURLToPath(new URL("../../../tests/fixtures/template-master-preservation.fixture.pptx", import.meta.url));
 
 async function assertPptxObjectsInsideSlide(pptxPath, widthIn = 13.333, heightIn = 7.5) {
   const zip = await JSZip.loadAsync(readFileSync(pptxPath));
@@ -94,6 +96,18 @@ async function readPptxThemeXml(pptxPath) {
   const themeFile = zip.file(themePath);
   assert.ok(themeFile);
   return themeFile.async("string");
+}
+
+async function zipTextByPath(pptxPath, path) {
+  const zip = await JSZip.loadAsync(readFileSync(pptxPath));
+  const file = zip.file(path);
+  assert.ok(file, `missing ${path}`);
+  return file.async("string");
+}
+
+async function zipPaths(pptxPath) {
+  const zip = await JSZip.loadAsync(readFileSync(pptxPath));
+  return Object.keys(zip.files).sort();
 }
 
 const sampleDeck = {
@@ -1660,6 +1674,43 @@ test("template import records master layout and theme parts as preserved templat
     assert.equal(integrity.themePartPaths.length >= 1, true);
     assert.equal(integrity.masterRelationshipPaths.length >= 1, true);
     assert.equal(integrity.layoutRelationshipPaths.length >= 1, true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx preserves template master theme layout OOXML parts in output package", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-template-ooxml-"));
+  const outPath = join(outDir, "deck.pptx");
+
+  try {
+    assert.equal(existsSync(templateMasterPreservationFixture), true, "template master preservation fixture must be committed");
+
+    await renderPptx(sampleDeck, { outPath, templatePath: templateMasterPreservationFixture, designPreset: "plain" });
+
+    const templatePaths = await zipPaths(templateMasterPreservationFixture);
+    const outputPaths = await zipPaths(outPath);
+    const requiredParts = [
+      "ppt/theme/theme1.xml",
+      "ppt/slideMasters/slideMaster1.xml",
+      "ppt/slideMasters/_rels/slideMaster1.xml.rels",
+      "ppt/slideLayouts/slideLayout1.xml",
+      "ppt/slideLayouts/_rels/slideLayout1.xml.rels",
+    ];
+
+    for (const partPath of requiredParts) {
+      assert.ok(templatePaths.includes(partPath), `template missing ${partPath}`);
+      assert.ok(outputPaths.includes(partPath), `output missing ${partPath}`);
+      assert.equal(await zipTextByPath(outPath, partPath), await zipTextByPath(templateMasterPreservationFixture, partPath), `${partPath} must be copied from template`);
+    }
+
+    const presentationRels = await zipTextByPath(outPath, "ppt/_rels/presentation.xml.rels");
+    const slideRels = await zipTextByPath(outPath, "ppt/slides/_rels/slide1.xml.rels");
+    const templateRasterAssets = templatePaths.filter((path) => /^ppt\/media\/.*\.(png|jpe?g|gif|webp)$/i.test(path));
+
+    assert.match(presentationRels, /Target="slideMasters\/slideMaster1\.xml"/);
+    assert.match(slideRels, /Target="\.\.\/slideLayouts\/slideLayout1\.xml"/);
+    assert.equal(templateRasterAssets.length, 0, "template preservation fixture must not require raster image assets");
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
