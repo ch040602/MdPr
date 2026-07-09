@@ -275,6 +275,13 @@
             "type": "string"
           }
         },
+        "lineIndents": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
         "sentences": {
           "type": "array",
           "items": {

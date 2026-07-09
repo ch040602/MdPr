@@ -1918,6 +1918,65 @@ test("paragraph rendering preserves markdown lines and sentence units as readabl
   }
 });
 
+test("renderPptx preserves paragraph indentation for dense prose slides", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-indented-paragraph-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "paragraph-1",
+      type: "paragraph",
+      text: "Main claim. Supporting detail. Deep caveat.",
+      lines: ["Main claim.", "Supporting detail.", "Deep caveat."],
+      lineIndents: [0, 1, 2],
+      sentences: ["Main claim.", "Supporting detail.", "Deep caveat."],
+    },
+  ];
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "body",
+      role: "body",
+      blockIds: ["paragraph-1"],
+      x: 0.9,
+      y: 1.6,
+      w: 5.5,
+      h: 3.2,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "plain" });
+
+    const expanded = join(outDir, "expanded");
+    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
+    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
+    const textBoxes = [...xml.matchAll(/<p:sp\b[\s\S]*?<\/p:sp>/g)]
+      .map((match) => match[0])
+      .filter((shapeXml) => /Main claim\.|Supporting detail\.|Deep caveat\./.test(shapeXml));
+
+    assert.equal(textBoxes.length, 3);
+    const positions = textBoxes.map((shapeXml) => {
+      const text = /<a:t>([^<]+)<\/a:t>/.exec(shapeXml)?.[1] ?? "";
+      const x = Number(/<a:off x="(-?\d+)"/.exec(shapeXml)?.[1] ?? 0);
+      return { text, x };
+    });
+    const base = positions.find((position) => position.text === "Main claim.");
+    const support = positions.find((position) => position.text === "Supporting detail.");
+    const caveat = positions.find((position) => position.text === "Deep caveat.");
+
+    assert.ok(base);
+    assert.ok(support);
+    assert.ok(caveat);
+    assert.equal(support.x > base.x, true);
+    assert.equal(caveat.x > support.x, true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx preserves paragraph emphasis while keeping markdown line breaks", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-rich-paragraph-"));
   const outPath = join(outDir, "deck.pptx");

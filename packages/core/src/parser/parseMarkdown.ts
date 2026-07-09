@@ -60,7 +60,11 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
       const text = normalizePlainText(inlineText(node.children));
       if (isDecorativeListText(text)) return;
 
-      const lines = sourceTextLines(node, sourceLines).map(normalizeInlineSpacing).filter(Boolean);
+      const lineEntries = sourceTextLineEntries(node, sourceLines)
+        .map((entry) => ({ text: normalizeInlineSpacing(entry.text), indent: entry.indent }))
+        .filter((entry) => entry.text);
+      const lines = lineEntries.map((entry) => entry.text);
+      const lineIndents = lineEntries.map((entry) => entry.indent);
       const pipeline = parseParagraphPipelineDiagram(text, lines);
       if (pipeline) {
         pushBlock({
@@ -76,6 +80,7 @@ export function parseMarkdown(markdown: string, sourcePath?: string): MarkdownDo
         type: "paragraph",
         text,
         lines: lines.length ? lines : [text],
+        lineIndents: lineIndents.some((indent) => indent > 0) ? lineIndents : undefined,
         sentences: splitSentences(text),
         inlineRuns: inlineRunsFromMdast(node.children),
         source: sourceFromNode(node, sourcePath),
@@ -311,10 +316,23 @@ function sourceFromNode(node: MdastNode, sourcePath?: string) {
 }
 
 function sourceTextLines(node: MdastNode, sourceLines: string[]): string[] {
+  return sourceTextLineEntries(node, sourceLines).map((entry) => entry.text.trim());
+}
+
+function sourceTextLineEntries(node: MdastNode, sourceLines: string[]): Array<{ text: string; indent: number }> {
   const start = node.position?.start?.line;
   const end = node.position?.end?.line;
   if (!start || !end) return [];
-  return sourceLines.slice(start - 1, end).map((line) => line.trim());
+  return sourceLines.slice(start - 1, end).map((line) => ({
+    text: line.trim(),
+    indent: paragraphIndentLevel(line),
+  }));
+}
+
+function paragraphIndentLevel(line: string): number {
+  const match = /^[ \t]*/.exec(line);
+  const width = [...(match?.[0] ?? "")].reduce((sum, char) => sum + (char === "\t" ? 4 : 1), 0);
+  return width <= 0 ? 0 : Math.min(3, Math.ceil(width / 2));
 }
 
 function singleParagraphImage(node: MdastNode): { src: string; alt: string } | undefined {

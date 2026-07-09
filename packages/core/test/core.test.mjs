@@ -89,6 +89,27 @@ test("parseMarkdown preserves markdown paragraph lines and sentence units", () =
   ]);
 });
 
+test("parseMarkdown preserves paragraph line indentation for dense prose hierarchy", () => {
+  const doc = parseMarkdown([
+    "# Deck",
+    "",
+    "## Dense Narrative",
+    "",
+    "Main claim stays at the base paragraph level.",
+    "  Supporting detail is visually subordinate.",
+    "   Deep caveat keeps its extra source indentation.",
+  ].join("\n"), "deck.md");
+
+  const paragraph = doc.blocks.find((block) => block.type === "paragraph");
+
+  assert.deepEqual(paragraph.lines, [
+    "Main claim stays at the base paragraph level.",
+    "Supporting detail is visually subordinate.",
+    "Deep caveat keeps its extra source indentation.",
+  ]);
+  assert.deepEqual(paragraph.lineIndents, [0, 1, 2]);
+});
+
 test("parseMarkdown extracts tables, block quotes, and explicit slide breaks", () => {
   const doc = parseMarkdown([
     "# Deck",

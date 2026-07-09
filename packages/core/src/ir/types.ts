@@ -168,6 +168,7 @@ export type BlockIR = {
   type: BlockType;
   text?: string;
   lines?: string[];
+  lineIndents?: number[];
   sentences?: string[];
   inlineRuns?: InlineRunIR[];
   level?: HeadingLevel;

@@ -534,6 +534,16 @@ function isShellLanguage(language?: string): boolean {
 function expandSentenceUnits(blocks: SlideIR["blocks"]): SlideIR["blocks"] {
   return blocks.flatMap((block) => {
     if (block.type !== "paragraph" || !block.sentences || block.sentences.length <= 1) return [block];
+    if (block.lineIndents?.some((indent) => indent > 0) && block.lines && block.lines.length > 1) {
+      return block.lines.map((line, index) => ({
+        ...block,
+        id: `${block.id}-l${index + 1}`,
+        text: line,
+        lines: [line],
+        lineIndents: [block.lineIndents?.[index] ?? 0],
+        sentences: [line],
+      }));
+    }
     return block.sentences.map((sentence, index) => ({
       ...block,
       id: `${block.id}-s${index + 1}`,

@@ -67,6 +67,7 @@ body { margin: 0; background: #111; font-family: var(--font); }
 .region li.level-1 { margin-left: 1.1em; }
 .region li.level-2 { margin-left: 2.2em; }
 .region p { margin: 0 0 .45em; }
+.paragraph-line { display: block; margin-left: calc(var(--indent-level, 0) * .28in); }
 .region img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .item-number { display: inline-flex; width: .28in; height: .28in; align-items: center; justify-content: center; margin-right: .1in; border-radius: 999px; background: var(--primary); color: var(--bg); font-weight: 700; vertical-align: middle; line-height: 1; }
 .item-label { font-weight: 700; display: block; margin-bottom: .12in; color: var(--primary); }
@@ -223,6 +224,7 @@ function renderBlock(block: BlockIR): string {
   }
   if (block.type === "chart" && block.chart?.kind === "bar") return renderBarChart(block.chart);
   if (block.type === "chart" && block.chart) return renderProofChart(block.chart);
+  if (block.type === "paragraph" && block.lineIndents?.some((indent) => indent > 0) && block.lines?.length) return renderIndentedParagraph(block);
   if (block.type === "paragraph" && block.inlineRuns?.length) return `<p>${renderInlineRuns(block.inlineRuns)}</p>`;
   if (block.type === "paragraph" && block.sentences?.length) return `<p>${block.sentences.map(escapeHtml).join("<br />")}</p>`;
   if (block.type === "paragraph" && block.lines?.length) return `<p>${block.lines.map(escapeHtml).join("<br />")}</p>`;
@@ -231,6 +233,13 @@ function renderBlock(block: BlockIR): string {
   if (block.inlineRuns?.length) return `<p>${renderInlineRuns(block.inlineRuns)}</p>`;
   if (block.text) return `<p>${escapeHtml(block.text)}</p>`;
   return "";
+}
+
+function renderIndentedParagraph(block: BlockIR): string {
+  return `<p>${(block.lines ?? []).map((line, index) => {
+    const indent = Math.max(0, block.lineIndents?.[index] ?? 0);
+    return `<span class="paragraph-line" style="--indent-level:${indent}">${escapeHtml(line)}</span>`;
+  }).join("")}</p>`;
 }
 
 function renderProofChart(chart: NonNullable<BlockIR["chart"]>): string {

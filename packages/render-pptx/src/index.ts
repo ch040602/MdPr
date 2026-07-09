@@ -195,6 +195,8 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           slide.addText(`${String(tocItemNumber).padStart(2, "0")}  ${plainRegionText}`, metadataTextCommon);
         } else if (shouldRenderAsPlainMultiline(blocks)) {
           renderPlainListRegion(slide, blocks, region.role, metadataTextCommon);
+        } else if (shouldRenderAsIndentedParagraphs(blocks)) {
+          renderIndentedParagraphRegion(slide, blocks, region.role, metadataTextCommon);
         } else {
           const richText = renderRichRegionContent(region.blockIds, blockIndex, sourceSlide, region.role, designPreset);
           slide.addText(hasVisibleRichText(richText) ? richText : plainRegionText, metadataTextCommon);
@@ -935,9 +937,105 @@ function blockSearchText(block: BlockIR): string {
 }
 
 function paragraphUnits(block: BlockIR): string[] {
+  if (block.lineIndents?.some((indent) => indent > 0) && block.lines?.length) return block.lines;
   if (block.sentences?.length) return block.sentences;
   if (block.lines?.length) return block.lines;
   return block.text ? [block.text] : [];
+}
+
+function shouldRenderAsIndentedParagraphs(blocks: BlockIR[]): boolean {
+  return blocks.some((block) => block.type === "paragraph" && block.lineIndents?.some((indent) => indent > 0));
+}
+
+type ParagraphRow = {
+  text: string;
+  indentLevel: number;
+  startsParagraph: boolean;
+};
+
+function renderIndentedParagraphRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: string, common: PptxGenJS.TextPropsOptions): void {
+  const rows = paragraphRows(blocks, role);
+  if (!rows.length) return;
+
+  const baseFontSize = Math.max(12, Number(common.fontSize ?? 16));
+  const lineHeightMultiple = Number(common.lineSpacingMultiple ?? 1.2);
+  const baseX = Number(common.x ?? 0);
+  const baseY = Number(common.y ?? 0);
+  const baseW = Number(common.w ?? 1);
+  const baseH = Number(common.h ?? 1);
+  const paragraphGap = Math.max(0.04, Math.min(0.12, baseFontSize / 240));
+  const rowHeights = rows.map((row) => {
+    const indent = paragraphIndentInches(row.indentLevel);
+    const usableW = Math.max(0.3, baseW - indent);
+    const wrappedLines = estimateWrappedLineCount(row.text, usableW, baseFontSize);
+    const gap = row.startsParagraph ? paragraphGap : 0;
+    return gap + Math.max(0.24, (baseFontSize * lineHeightMultiple * wrappedLines) / 72 + 0.04);
+  });
+  const totalH = rowHeights.reduce((sum, height) => sum + height, 0);
+  const heightScale = totalH > baseH ? baseH / totalH : 1;
+  const fittedRowHeights = rowHeights.map((height) => height * heightScale);
+  const rowFit = totalH <= baseH ? "none" : common.fit;
+  const rowAlign: PptxGenJS.HAlign = role === "item" ? "center" : "left";
+  let cursorY = baseY;
+
+  for (const [index, row] of rows.entries()) {
+    const rowH = fittedRowHeights[index] ?? 0.28;
+    const rawGap = row.startsParagraph ? paragraphGap * heightScale : 0;
+    const gap = Math.min(rawGap, rowH * 0.35);
+    const indent = paragraphIndentInches(row.indentLevel);
+    slide.addText(row.text, {
+      ...common,
+      x: baseX + indent,
+      y: cursorY + gap,
+      w: Math.max(0.3, baseW - indent),
+      h: Math.max(0.1, rowH - gap),
+      fontSize: baseFontSize,
+      margin: common.margin ?? [0, 0, 0, 0],
+      align: rowAlign,
+      valign: "top",
+      fit: rowFit,
+      breakLine: false,
+      isTextBox: true,
+    });
+    cursorY += rowH;
+  }
+}
+
+function paragraphRows(blocks: BlockIR[], role: string): ParagraphRow[] {
+  const rows: ParagraphRow[] = [];
+  for (const block of blocks) {
+    if (block.type === "paragraph") {
+      const units = block.lineIndents?.some((indent) => indent > 0) && block.lines?.length ? block.lines : paragraphUnits(block);
+      for (const [index, unit] of units.entries()) {
+        const text = normalizeRenderableText(unit);
+        if (!text) continue;
+        rows.push({
+          text,
+          indentLevel: Math.max(0, block.lineIndents?.[index] ?? 0),
+          startsParagraph: index === 0 && rows.length > 0,
+        });
+      }
+    } else if (block.type === "quote") {
+      const text = normalizeRenderableText(block.text ?? paragraphUnits(block).join(" "));
+      if (text) rows.push({ text, indentLevel: 1, startsParagraph: rows.length > 0 });
+    } else if (block.type === "bulletList" && block.listItems?.length) {
+      for (const item of block.listItems) {
+        rows.push({
+          text: formatListItemTextForRole(item, role),
+          indentLevel: Math.max(0, item.level),
+          startsParagraph: rows.length > 0,
+        });
+      }
+    } else {
+      const text = normalizeRenderableText(block.text ?? block.alt ?? "");
+      if (text) rows.push({ text, indentLevel: 0, startsParagraph: rows.length > 0 });
+    }
+  }
+  return rows;
+}
+
+function paragraphIndentInches(level: number): number {
+  return Math.min(0.72, Math.max(0, level) * 0.24);
 }
 
 function shouldRenderAsPlainMultiline(blocks: BlockIR[]): boolean {
