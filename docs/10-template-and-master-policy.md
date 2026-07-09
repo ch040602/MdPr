@@ -4,15 +4,18 @@
 
 ```text
 Template controls brand.
-Layout engine controls placement.
+Slide master/layout controls approved placeholder placement.
+Layout engine controls fallback placement.
+Layout engine controls placement when master/layout placeholders are absent, ambiguous, or unsafe.
 ```
 
-Templates provide brand and background material. MDPR recalculates body placement.
+Templates provide brand, background material, and approved placeholder geometry.
 In template-fill workflows, the existing PPTX/POTX package is treated as the
-theme and master evidence source by default. MDPR may inspect slide master,
-layout, relationship, and theme parts to prove the package boundary, but body
-content placement remains deterministic MDPR layout output rather than copied
-placeholder coordinates.
+theme and master evidence source by default. MDPR inspects slide master,
+layout, relationship, and theme parts to preserve the package boundary and to
+reuse compatible title/content placeholders when doing so is unambiguous.
+When compatible placeholders are absent or unsafe, body content placement
+falls back to deterministic MDPR layout output.
 
 ## Import From Templates
 
@@ -25,14 +28,14 @@ placeholder coordinates.
 - logo
 - footer
 - decorative image assets
+- title, subtitle, body, image, table, and chart placeholder geometry
 - safe-area hints where available
 ```
 
 ## Do Not Reuse Directly
 
 ```text
-- body placeholder positions
-- arbitrary title/content box positions
+- arbitrary title/content box positions that are not master/layout placeholders
 - sample slide layout coordinates
 - sample text inside templates
 - agent-provided replacement master/layout IDs

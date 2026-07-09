@@ -106,7 +106,7 @@ packages/cli
 2. `layout` owns coordinates, regions, slots, typography, and safe areas.
 3. Renderers implement target-format output only; they must not redo split or layout decisions.
 4. Overrides are the final exception layer after automatic planning.
-5. PPT templates provide brand and background assets; body placement is recalculated by MDPR.
+5. PPT templates provide brand, background assets, and compatible master/layout placeholder geometry; MDPR recalculates placement only when template placeholders are absent or unsafe.
 6. Optional agent hints may annotate coherence/planning metadata, but deterministic MDPR rules own final output.
 7. Quality improvements preserve source semantics; they classify, group,
    measure, reflow, and validate content without summarizing or rewriting it.

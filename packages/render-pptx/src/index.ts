@@ -7,7 +7,14 @@ import type PptxGenJS from "pptxgenjs";
 import JSZip from "jszip";
 import { addPresetBackground, addRegionSurface, type DesignPresetName, resolveDesignPreset } from "./designPresets.js";
 import { iconKindForIndex, iconKindForText, iconSource, iconSvgDataUri, type IconKind } from "./iconCatalog.js";
-import { extractTemplateDesignAssets, preserveTemplatePackageParts, type TemplateShapeAsset, type TemplateTheme } from "./templateImport.js";
+import {
+  extractTemplateDesignAssets,
+  preserveTemplatePackageParts,
+  type TemplateDesignAssets,
+  type TemplatePlaceholderAsset,
+  type TemplateShapeAsset,
+  type TemplateTheme,
+} from "./templateImport.js";
 
 export type { DesignPresetName } from "./designPresets.js";
 
@@ -41,6 +48,9 @@ export type RenderableDeckIR = {
 
 export type RenderPptxInput = LayoutIR | RenderableDeckIR;
 
+type LayoutSlide = LayoutIR["slides"][number];
+type LayoutRegion = LayoutSlide["regions"][number];
+
 type PptxImageCropRequest = {
   slideNumber: number;
   objectName: string;
@@ -48,7 +58,7 @@ type PptxImageCropRequest = {
 };
 
 export async function renderPptx(input: RenderPptxInput, options: RenderPptxOptions): Promise<RenderPptxResult> {
-  const layout = isRenderableDeck(input) ? input.layout : input;
+  let layout = isRenderableDeck(input) ? input.layout : input;
   const presentation = isRenderableDeck(input) ? input.presentation : undefined;
   const PptxGen = resolvePptxGenConstructor(PptxGenJSExport);
   const pptx = new PptxGen();
@@ -58,6 +68,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
     ? options.themeGalleryPresets.map((preset) => resolveDesignPreset(preset, layout.theme))
     : [resolveDesignPreset(options.designPreset ?? layout.theme.decorationStyle ?? layout.theme.designPreset, layout.theme)];
   const templateAssets = await extractTemplateDesignAssets(options.templatePath);
+  layout = applyTemplatePlaceholdersToLayout(layout, templateAssets);
   let documentDesignPreset: DesignTokens | undefined;
   const imageCropRequests: PptxImageCropRequest[] = [];
   let renderedSlideNumber = 0;
@@ -233,10 +244,161 @@ function objectKindForRegion(
   return "native-text";
 }
 
+function applyTemplatePlaceholdersToLayout(layout: LayoutIR, templateAssets: TemplateDesignAssets): LayoutIR {
+  if (!templateAssets.placeholders.length) return layout;
+
+  return {
+    ...layout,
+    slides: layout.slides.map((slide) => applyTemplatePlaceholdersToSlide(slide, templateAssets.placeholders)),
+  };
+}
+
+function applyTemplatePlaceholdersToSlide(slide: LayoutSlide, placeholders: TemplatePlaceholderAsset[]): LayoutSlide {
+  const group = bestPlaceholderGroupForSlide(slide, placeholders);
+  if (!group.length) return slide;
+
+  const titlePlaceholder = group.find((placeholder) => placeholder.role === "title");
+  const subtitlePlaceholder = group.find((placeholder) => placeholder.role === "subtitle");
+  const contentMappings = contentPlaceholderMappings(contentRegionsForTemplate(slide.regions), group);
+
+  if (!titlePlaceholder && !subtitlePlaceholder && !contentMappings.size) return slide;
+
+  return {
+    ...slide,
+    regions: slide.regions.map((region) => {
+      if (region.role === "title" && titlePlaceholder) return regionWithPlaceholder(region, titlePlaceholder);
+      if (region.role === "subtitle" && subtitlePlaceholder) return regionWithPlaceholder(region, subtitlePlaceholder);
+      const placeholder = contentMappings.get(region.id);
+      return placeholder ? regionWithPlaceholder(region, placeholder) : region;
+    }),
+  };
+}
+
+function bestPlaceholderGroupForSlide(slide: LayoutSlide, placeholders: TemplatePlaceholderAsset[]): TemplatePlaceholderAsset[] {
+  const groups = new Map<string, TemplatePlaceholderAsset[]>();
+  for (const placeholder of placeholders) {
+    const current = groups.get(placeholder.sourcePath) ?? [];
+    current.push(placeholder);
+    groups.set(placeholder.sourcePath, current);
+  }
+
+  const candidates = [...groups.values()].sort((left, right) =>
+    placeholderGroupScore(slide, right) - placeholderGroupScore(slide, left) ||
+    placeholderSourceScore(left[0]?.sourcePath ?? "") - placeholderSourceScore(right[0]?.sourcePath ?? ""),
+  );
+
+  return candidates[0] ?? [];
+}
+
+function placeholderGroupScore(slide: LayoutSlide, group: TemplatePlaceholderAsset[]): number {
+  const titleNeeded = slide.regions.some((region) => region.role === "title");
+  const contentRegions = contentRegionsForTemplate(slide.regions);
+  const contentPlaceholders = group.filter(isContentPlaceholder);
+  const exactCompatible = contentRegions.filter((region) =>
+    contentPlaceholders.some((placeholder) => placeholderMatchesRegion(placeholder, region)),
+  ).length;
+
+  let score = 0;
+  if (titleNeeded) score += group.some((placeholder) => placeholder.role === "title") ? 12 : -6;
+  score += Math.min(contentRegions.length, contentPlaceholders.length) * 8;
+  score += exactCompatible * 3;
+  score -= Math.abs(contentRegions.length - contentPlaceholders.length) * 2;
+  score -= placeholderSourceScore(group[0]?.sourcePath ?? "");
+  return score;
+}
+
+function contentPlaceholderMappings(regions: LayoutRegion[], placeholders: TemplatePlaceholderAsset[]): Map<string, TemplatePlaceholderAsset> {
+  const mappings = new Map<string, TemplatePlaceholderAsset>();
+  const available = placeholders.filter(isContentPlaceholder).sort(comparePlaceholderPosition);
+  const sortedRegions = [...regions].sort(compareRegionPosition);
+  if (!sortedRegions.length || !available.length) return mappings;
+
+  if (sortedRegions.length === 1) {
+    const region = sortedRegions[0]!;
+    const placeholder = bestPlaceholderForRegion(region, available);
+    if (placeholder) mappings.set(region.id, placeholder);
+    return mappings;
+  }
+
+  if (available.length < sortedRegions.length) return mappings;
+
+  const remaining = [...available];
+  for (const region of sortedRegions) {
+    const placeholder = bestPlaceholderForRegion(region, remaining);
+    if (!placeholder) return new Map();
+    mappings.set(region.id, placeholder);
+    remaining.splice(remaining.indexOf(placeholder), 1);
+  }
+  return mappings;
+}
+
+function bestPlaceholderForRegion(region: LayoutRegion, placeholders: TemplatePlaceholderAsset[]): TemplatePlaceholderAsset | undefined {
+  return placeholders
+    .filter((placeholder) => placeholderMatchesRegion(placeholder, region))
+    .sort((left, right) => placeholderRoleScore(right, region) - placeholderRoleScore(left, region) || comparePlaceholderPosition(left, right))[0];
+}
+
+function contentRegionsForTemplate(regions: LayoutRegion[]): LayoutRegion[] {
+  return regions.filter((region) =>
+    region.role !== "title" &&
+    region.role !== "subtitle" &&
+    region.role !== "icon" &&
+    (region.blockIds.length > 0 || region.role === "image" || region.role === "chart" || region.role === "table"),
+  );
+}
+
+function isContentPlaceholder(placeholder: TemplatePlaceholderAsset): boolean {
+  return placeholder.role !== "title" && placeholder.role !== "subtitle" && placeholder.role !== "footer" && placeholder.role !== "pageNumber";
+}
+
+function placeholderMatchesRegion(placeholder: TemplatePlaceholderAsset, region: LayoutRegion): boolean {
+  const preferred = preferredPlaceholderRoleForRegion(region);
+  return placeholder.role === preferred || placeholder.role === "body";
+}
+
+function placeholderRoleScore(placeholder: TemplatePlaceholderAsset, region: LayoutRegion): number {
+  return placeholder.role === preferredPlaceholderRoleForRegion(region) ? 2 : 1;
+}
+
+function preferredPlaceholderRoleForRegion(region: LayoutRegion): TemplatePlaceholderAsset["role"] {
+  if (region.role === "image") return "image";
+  if (region.role === "table") return "table";
+  if (region.role === "chart") return "chart";
+  return "body";
+}
+
+function regionWithPlaceholder(region: LayoutRegion, placeholder: TemplatePlaceholderAsset): LayoutRegion {
+  return {
+    ...region,
+    x: roundedInches(placeholder.x),
+    y: roundedInches(placeholder.y),
+    w: roundedInches(placeholder.w),
+    h: roundedInches(placeholder.h),
+  };
+}
+
+function compareRegionPosition(left: LayoutRegion, right: LayoutRegion): number {
+  return left.y - right.y || left.x - right.x;
+}
+
+function comparePlaceholderPosition(left: TemplatePlaceholderAsset, right: TemplatePlaceholderAsset): number {
+  return left.y - right.y || left.x - right.x;
+}
+
+function placeholderSourceScore(path: string): number {
+  if (path.includes("/slideLayouts/")) return 0;
+  if (path.includes("/slideMasters/")) return 1;
+  return 2;
+}
+
+function roundedInches(value: number): number {
+  return Number(value.toFixed(3));
+}
+
 function createObjectMapEntry(
   slideId: string,
   layoutSlideId: string,
-  region: LayoutIR["slides"][number]["regions"][number],
+  region: LayoutRegion,
   objectKind: PptxObjectMapEntry["objectKind"],
 ): PptxObjectMapEntry {
   const blockIds = region.blockIds.map((blockId) => blockId.split("#")[0] ?? blockId);

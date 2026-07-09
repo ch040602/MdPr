@@ -23,6 +23,18 @@ export type TemplateShapeAsset = {
   layoutPreset?: string;
 };
 
+export type TemplatePlaceholderRole = "title" | "subtitle" | "body" | "image" | "table" | "chart" | "footer" | "pageNumber";
+
+export type TemplatePlaceholderAsset = {
+  role: TemplatePlaceholderRole;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  sourcePath: string;
+  layoutPreset?: string;
+};
+
 export type TemplateTheme = {
   backgroundColor?: string;
   textColor?: string;
@@ -36,6 +48,7 @@ export type TemplateTheme = {
 export type TemplateDesignAssets = {
   images: TemplateImageAsset[];
   shapes: TemplateShapeAsset[];
+  placeholders: TemplatePlaceholderAsset[];
   theme: TemplateTheme;
 };
 
@@ -55,12 +68,13 @@ export type PreservedTemplatePackageParts = TemplatePackageIntegrity & {
 const EMU_PER_INCH = 914400;
 
 export async function extractTemplateDesignAssets(templatePath?: string | null): Promise<TemplateDesignAssets> {
-  if (!templatePath) return { images: [], shapes: [], theme: {} };
+  if (!templatePath) return { images: [], shapes: [], placeholders: [], theme: {} };
 
   const zip = await JSZip.loadAsync(readFileSync(templatePath));
   const tempDir = mkdtempSync(join(tmpdir(), "mdpresent-template-assets-"));
   const images: TemplateImageAsset[] = [];
   const shapes: TemplateShapeAsset[] = [];
+  const placeholders: TemplatePlaceholderAsset[] = [];
   const theme = await extractTemplateTheme(zip);
 
   const candidateXmlPaths = Object.keys(zip.files)
@@ -96,11 +110,13 @@ export async function extractTemplateDesignAssets(templatePath?: string | null):
     }
 
     shapes.push(...parseDecorativeShapes(xml, theme, layoutPreset));
+    placeholders.push(...parsePlaceholderShapes(xml, xmlPath, layoutPreset));
   }
 
   return {
     images: dedupeAssets(images),
     shapes: dedupeShapes(shapes).slice(0, 12),
+    placeholders: dedupePlaceholders(placeholders).sort(comparePlaceholders),
     theme,
   };
 }
@@ -234,7 +250,7 @@ async function extractTemplateTheme(zip: JSZip): Promise<TemplateTheme> {
 
 function parseDecorativeShapes(xml: string, theme: TemplateTheme, layoutPreset?: string): TemplateShapeAsset[] {
   const shapes: TemplateShapeAsset[] = [];
-  const shapePattern = /<p:sp[\s\S]*?<\/p:sp>/g;
+  const shapePattern = /<p:sp\b[\s\S]*?<\/p:sp>/g;
   const themeMap = themeColorMap(theme);
 
   for (const match of xml.matchAll(shapePattern)) {
@@ -266,10 +282,53 @@ function parseDecorativeShapes(xml: string, theme: TemplateTheme, layoutPreset?:
   return shapes;
 }
 
+function parsePlaceholderShapes(xml: string, sourcePath: string, layoutPreset?: string): TemplatePlaceholderAsset[] {
+  const placeholders: TemplatePlaceholderAsset[] = [];
+  const shapePattern = /<p:sp\b[\s\S]*?<\/p:sp>/g;
+
+  for (const match of xml.matchAll(shapePattern)) {
+    const block = match[0];
+    const placeholder = /<p:ph\b([^>]*)\/?>/.exec(block)?.[1];
+    if (!placeholder) continue;
+
+    const off = /<a:off x="(-?\d+)" y="(-?\d+)"\/>/.exec(block);
+    const ext = /<a:ext cx="(\d+)" cy="(\d+)"\/>/.exec(block);
+    if (!off || !ext) continue;
+
+    const w = Number(ext[1]) / EMU_PER_INCH;
+    const h = Number(ext[2]) / EMU_PER_INCH;
+    if (w < 0.1 || h < 0.1) continue;
+
+    placeholders.push({
+      role: placeholderRole(placeholder),
+      x: Number(off[1]) / EMU_PER_INCH,
+      y: Number(off[2]) / EMU_PER_INCH,
+      w,
+      h,
+      sourcePath,
+      layoutPreset,
+    });
+  }
+
+  return placeholders;
+}
+
+function placeholderRole(attrs: string): TemplatePlaceholderRole {
+  const type = /\btype="([^"]+)"/.exec(attrs)?.[1];
+  if (type === "ctrTitle" || type === "title") return "title";
+  if (type === "subTitle") return "subtitle";
+  if (type === "pic") return "image";
+  if (type === "tbl") return "table";
+  if (type === "chart") return "chart";
+  if (type === "dt" || type === "ftr") return "footer";
+  if (type === "sldNum") return "pageNumber";
+  return "body";
+}
+
 function inferLayoutPreset(xml: string, xmlPath: string): string | undefined {
   if (/\/(slideMasters|slideLayouts)\//.test(xmlPath)) return undefined;
 
-  const textShapeCount = [...xml.matchAll(/<p:sp[\s\S]*?<\/p:sp>/g)]
+  const textShapeCount = [...xml.matchAll(/<p:sp\b[\s\S]*?<\/p:sp>/g)]
     .filter((match) => hasVisibleText(match[0]))
     .length;
 
@@ -370,4 +429,32 @@ function dedupeShapes(shapes: TemplateShapeAsset[]): TemplateShapeAsset[] {
     seen.add(key);
     return true;
   });
+}
+
+function dedupePlaceholders(placeholders: TemplatePlaceholderAsset[]): TemplatePlaceholderAsset[] {
+  const seen = new Set<string>();
+  return placeholders.filter((placeholder) => {
+    const key = [
+      placeholder.role,
+      placeholder.x.toFixed(3),
+      placeholder.y.toFixed(3),
+      placeholder.w.toFixed(3),
+      placeholder.h.toFixed(3),
+    ].join(":");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function comparePlaceholders(left: TemplatePlaceholderAsset, right: TemplatePlaceholderAsset): number {
+  return scorePlaceholderSource(left.sourcePath) - scorePlaceholderSource(right.sourcePath) ||
+    left.y - right.y ||
+    left.x - right.x;
+}
+
+function scorePlaceholderSource(path: string): number {
+  if (path.includes("/slideLayouts/")) return 0;
+  if (path.includes("/slideMasters/")) return 1;
+  return 2;
 }

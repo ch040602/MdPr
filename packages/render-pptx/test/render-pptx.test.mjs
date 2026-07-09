@@ -89,6 +89,41 @@ async function patchTemplateTheme(templatePath, colors) {
   writeFileSync(templatePath, await zip.generateAsync({ type: "nodebuffer" }));
 }
 
+async function patchTemplatePlaceholders(templatePath, placeholders) {
+  const zip = await JSZip.loadAsync(readFileSync(templatePath));
+  const layoutPath = Object.keys(zip.files).find((path) => /^ppt\/slideLayouts\/slideLayout\d+\.xml$/.test(path));
+  assert.ok(layoutPath, "expected generated template to contain a slide layout");
+
+  const layoutFile = zip.file(layoutPath);
+  assert.ok(layoutFile);
+  const xml = await layoutFile.async("string");
+  const placeholderXml = placeholders.map((placeholder, index) => {
+    const id = 8000 + index;
+    const x = Math.round(placeholder.x * EMU_PER_INCH);
+    const y = Math.round(placeholder.y * EMU_PER_INCH);
+    const w = Math.round(placeholder.w * EMU_PER_INCH);
+    const h = Math.round(placeholder.h * EMU_PER_INCH);
+    const typeAttr = placeholder.type ? ` type="${placeholder.type}"` : "";
+    return `
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="${id}" name="${placeholder.name ?? "Template Placeholder"}"/>
+          <p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr>
+          <p:nvPr><p:ph${typeAttr} idx="${index + 1}"/></p:nvPr>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></a:xfrm>
+          <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        </p:spPr>
+        <p:txBody><a:bodyPr/><a:lstStyle/><a:p/></p:txBody>
+      </p:sp>`;
+  }).join("");
+
+  assert.match(xml, /<\/p:spTree>/);
+  zip.file(layoutPath, xml.replace("</p:spTree>", `${placeholderXml}</p:spTree>`));
+  writeFileSync(templatePath, await zip.generateAsync({ type: "nodebuffer" }));
+}
+
 async function readPptxThemeXml(pptxPath) {
   const zip = await JSZip.loadAsync(readFileSync(pptxPath));
   const themePath = Object.keys(zip.files).find((path) => /^ppt\/theme\/theme\d+\.xml$/.test(path));
@@ -1563,6 +1598,75 @@ test("template import reuses positioned image assets from a PPTX template", asyn
     assert.match(xml, /<p:pic>/);
     assert.match(xml, /<a:off x="228600" y="182880"\/>\s*<a:ext cx="457200" cy="457200"\/>/);
     assert.equal(Number(mediaFiles.trim()) > 0, true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx applies template title and body placeholder geometry without changing master parts", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-template-placeholders-"));
+  const templatePath = join(outDir, "template.pptx");
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  const titlePlaceholder = { type: "title", name: "Template Title", x: 1.25, y: 0.8, w: 10.5, h: 0.6 };
+  const bodyPlaceholder = { type: "body", name: "Template Body", x: 2.1, y: 2.0, w: 8.8, h: 3.1 };
+
+  deck.presentation.slides[0].title = "Template Title Alignment";
+  deck.presentation.slides[0].blocks = [{
+    id: "body-1",
+    type: "paragraph",
+    text: "Template body placement follows the master layout placeholder.",
+  }];
+  deck.layout.slides[0].layout = { preset: "title-body" };
+  deck.layout.slides[0].regions = [
+    {
+      ...deck.layout.slides[0].regions[0],
+      x: 0.5,
+      y: 0.25,
+      w: 12.0,
+      h: 0.75,
+    },
+    {
+      id: "body",
+      role: "body",
+      blockIds: ["body-1"],
+      x: 0.75,
+      y: 1.4,
+      w: 6.0,
+      h: 1.8,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    const template = new PptxGenJS();
+    template.layout = "LAYOUT_WIDE";
+    template.addSlide().addText("Template sample", { x: 1, y: 1, w: 5, h: 0.5 });
+    await template.writeFile({ fileName: templatePath });
+    await patchTemplatePlaceholders(templatePath, [titlePlaceholder, bodyPlaceholder]);
+
+    await renderPptx(deck, { outPath, templatePath, designPreset: "plain" });
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const titleShape = shapeXmlContainingText(xml, "Template Title Alignment");
+    const bodyShape = shapeXmlContainingText(xml, "Template body placement follows the master layout placeholder.");
+    assert.ok(titleShape, "expected rendered title text");
+    assert.ok(bodyShape, "expected rendered body text");
+
+    const titleTransform = shapeTransform(titleShape);
+    assert.equal(sameNumber(titleTransform.x, titlePlaceholder.x), true);
+    assert.equal(sameNumber(titleTransform.y, titlePlaceholder.y), true);
+    assert.equal(sameNumber(titleTransform.w, titlePlaceholder.w), true);
+    assert.equal(sameNumber(titleTransform.h, titlePlaceholder.h), true);
+
+    const bodyTransform = shapeTransform(bodyShape);
+    assert.equal(sameNumber(bodyTransform.x, bodyPlaceholder.x + 0.08), true);
+    assert.equal(sameNumber(bodyTransform.y, bodyPlaceholder.y + 0.12), true);
+    assert.equal(sameNumber(bodyTransform.w, bodyPlaceholder.w - 0.16), true);
+    assert.equal(sameNumber(bodyTransform.h, bodyPlaceholder.h - 0.24), true);
+    assert.equal(await zipTextByPath(outPath, "ppt/slideLayouts/slideLayout1.xml"), await zipTextByPath(templatePath, "ppt/slideLayouts/slideLayout1.xml"));
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

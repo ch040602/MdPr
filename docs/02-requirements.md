@@ -38,8 +38,8 @@
 
 - Generate editable PowerPoint objects.
 - Render text as text boxes, tables as native tables, charts as native charts where possible, images as image objects, and diagrams as editable nodes/connectors.
-- Import slide size, theme colors, fonts, master backgrounds, logos, and decorative assets from templates when configured.
-- Recalculate content placement rather than reusing arbitrary template placeholder positions.
+- Import slide size, theme colors, fonts, master backgrounds, logos, decorative assets, and compatible master/layout placeholder geometry from templates when configured.
+- Recalculate content placement when compatible template placeholders are absent, ambiguous, or unsafe.
 
 ### HTML and PDF Output
 
@@ -81,7 +81,7 @@
 
 ```text
 - complete Marp CSS compatibility
-- complete PPTX placeholder analysis
+- richer PPTX placeholder family matching
 - animation
 - video
 - speaker notes

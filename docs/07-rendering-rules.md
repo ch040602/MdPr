@@ -109,12 +109,13 @@ Template import may:
 - place imported assets before generated content so they behave as background decoration
 - read theme XML colors and apply them over the selected design preset
 - import non-text decorative vector shapes from master, layout, and example slides
+- read compatible title, subtitle, body, image, table, and chart placeholders from slide master/layout XML
+- apply placeholder geometry only when it maps one-to-one without collapsing multiple generated content regions
 - reuse example-slide decorations only when generated slides have the same inferred layout family
 
 Template import must not import:
 
-- body placeholder positions
-- arbitrary content box positions
+- arbitrary content box positions that are not master/layout placeholders
 - animations
 - editable sample text
 
