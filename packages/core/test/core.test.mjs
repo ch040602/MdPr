@@ -1569,6 +1569,177 @@ test("agent content split and readability hints remain source-preserving plannin
   assert.equal(hinted.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_READABILITY_NOTE" && diagnostic.details.sourcePreserved === true), true);
 });
 
+test("agent split lineage scopes key-message, readability, and icon hints to generated slides", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## 한국어 결정 로그",
+    "",
+    "핵심 결정은 원문 claim 문단에만 있다.",
+    "",
+    "- 첫 번째 근거는 원문 문장을 그대로 유지해야 한다.",
+    "- 두 번째 근거도 요약하거나 삭제하지 않는다.",
+    "- 세 번째 근거는 같은 목록에 남아 있어야 한다.",
+    "- 네 번째 근거는 continuation slide로 넘어간다.",
+    "- 다섯 번째 근거도 continuation slide에서 보존한다.",
+    "- 여섯 번째 근거는 같은 원본 list block의 일부다.",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "한국어 결정 로그");
+  const claimBlock = slide.blocks.find((block) => block.type === "paragraph");
+  const listBlock = slide.blocks.find((block) => block.type === "bulletList");
+
+  const hinted = applyAgentHintsToPresentation(presentation, [
+    {
+      slideId: slide.id,
+      confidence: 0.88,
+      contentSplitCandidates: [{
+        reason: "dense-content",
+        elementIds: [listBlock.id],
+        preferredSplitBy: "list-chunk",
+        confidence: 0.82,
+      }],
+      keyMessageCandidates: [{
+        messageRole: "main-takeaway",
+        emphasisLevel: "primary",
+        elementIds: [claimBlock.id],
+        evidenceRefs: [`element:${claimBlock.id}`],
+        reason: "Claim belongs only to the source slide intro.",
+        confidence: 0.84,
+      }],
+      readabilityCandidates: [{
+        action: "shorten-copy",
+        elementIds: [listBlock.id],
+        reason: "List chunks should stay readable without rewriting source text.",
+        confidence: 0.78,
+      }],
+      iconKeywordCandidates: [{
+        keyword: "decision",
+        elementIds: [listBlock.id],
+        evidenceRefs: [`element:${listBlock.id}`],
+        reason: "Semantic icon keyword only.",
+        confidence: 0.72,
+      }],
+    },
+  ]);
+  const splitSlides = hinted.slides.filter((candidate) => candidate.title?.startsWith("한국어 결정 로그"));
+  const firstGroup = hinted.coherenceGroups.find((candidate) => candidate.slideId === splitSlides[0].id);
+  const continuationGroup = hinted.coherenceGroups.find((candidate) => candidate.slideId === splitSlides[1].id);
+  const iconDiagnostics = hinted.diagnostics.filter((diagnostic) => diagnostic.code === "AGENT_HINT_ICON_KEYWORD");
+  const readabilityDiagnostics = hinted.diagnostics.filter((diagnostic) => diagnostic.code === "AGENT_HINT_READABILITY_NOTE");
+
+  assert.equal(splitSlides.length, 2);
+  assert.equal(firstGroup.primaryBlockId, claimBlock.id);
+  assert.notEqual(continuationGroup.primaryBlockId, claimBlock.id);
+  assert.equal(hinted.diagnostics.filter((diagnostic) => diagnostic.code === "AGENT_HINT_SPLIT_LINEAGE").length, 2);
+  assert.equal(hinted.diagnostics.some((diagnostic) =>
+    diagnostic.code === "AGENT_HINT_IGNORED_MISSING_ELEMENT"
+    && diagnostic.slideId === splitSlides[1].id
+    && diagnostic.details.missingElementIds.includes(claimBlock.id)
+  ), true);
+  assert.equal(readabilityDiagnostics.length, 2);
+  assert.equal(iconDiagnostics.length, 2);
+  assert.equal(readabilityDiagnostics.every((diagnostic) =>
+    diagnostic.details.elementIds.every((id) => id.includes("-hint-chunk-"))
+  ), true);
+  assert.equal(iconDiagnostics.every((diagnostic) =>
+    diagnostic.details.elementIds.every((id) => id.includes("-hint-chunk-"))
+  ), true);
+});
+
+test("agent media policies reject schema-valid icon and generated-image conflicts at runtime", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Template Fill",
+    "",
+    "Keep the existing master slide slots.",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Template Fill");
+  const block = slide.blocks[0];
+
+  const allowedTemplateFill = applyAgentHintsToPresentation(presentation, [{
+    slideId: slide.id,
+    confidence: 0.86,
+    workflowIntentCandidate: { intent: "template-fill", confidence: 0.86, evidenceRefs: ["template:hcs"] },
+    mediaPolicyCandidate: {
+      imageUse: "no-image",
+      imageSearch: "disabled",
+      iconUse: "no-new-icons",
+      evidenceRefs: ["template:hcs"],
+    },
+  }]);
+  const iconConflict = applyAgentHintsToPresentation(presentation, [{
+    slideId: slide.id,
+    confidence: 0.86,
+    workflowIntentCandidate: { intent: "template-fill", confidence: 0.86, evidenceRefs: ["template:hcs"] },
+    mediaPolicyCandidate: {
+      imageUse: "no-image",
+      imageSearch: "disabled",
+      iconUse: "no-new-icons",
+      evidenceRefs: ["template:hcs"],
+    },
+    iconKeywordCandidates: [{
+      keyword: "shield",
+      elementIds: [block.id],
+      evidenceRefs: [`element:${block.id}`],
+      reason: "Schema-valid but policy-conflicting icon keyword.",
+      confidence: 0.72,
+    }],
+  }]);
+  const imageConflict = applyAgentHintsToPresentation(presentation, [{
+    slideId: slide.id,
+    confidence: 0.86,
+    mediaPolicyCandidate: {
+      imageUse: "no-image",
+      imageSearch: "disabled",
+      iconUse: "semantic-keywords-only",
+      evidenceRefs: ["instruction:no-image"],
+    },
+    visualAssetCandidates: [{
+      kind: "generated-image",
+      trigger: "explicit-generated-asset-request",
+      requestRef: "request:hero",
+      semanticPrompt: "minimal hcs summary",
+      confidence: 0.72,
+    }],
+  }]);
+  const approvedImage = applyAgentHintsToPresentation(presentation, [{
+    slideId: slide.id,
+    confidence: 0.86,
+    workflowIntentCandidate: { intent: "generated-asset-request", confidence: 0.72, evidenceRefs: ["request:hero"] },
+    mediaPolicyCandidate: {
+      imageUse: "generated-asset-approved",
+      imageSearch: "explicit-request-only",
+      iconUse: "semantic-keywords-only",
+      evidenceRefs: ["request:hero"],
+    },
+    visualAssetCandidates: [{
+      kind: "generated-image",
+      trigger: "explicit-generated-asset-request",
+      requestRef: "request:hero",
+      semanticPrompt: "minimal hcs summary",
+      confidence: 0.72,
+    }],
+  }]);
+
+  assert.equal(allowedTemplateFill.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_POLICY_CONFLICT"), false);
+  assert.equal(iconConflict.diagnostics.some((diagnostic) =>
+    diagnostic.code === "AGENT_HINT_POLICY_CONFLICT"
+    && diagnostic.details.policy === "iconUse:no-new-icons"
+  ), true);
+  assert.equal(iconConflict.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_ICON_KEYWORD"), false);
+  assert.equal(imageConflict.diagnostics.some((diagnostic) =>
+    diagnostic.code === "AGENT_HINT_POLICY_CONFLICT"
+    && diagnostic.details.policy === "imageUse:no-image"
+  ), true);
+  assert.equal(imageConflict.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_VISUAL_ASSET_REQUEST"), false);
+  assert.equal(approvedImage.diagnostics.some((diagnostic) =>
+    diagnostic.code === "AGENT_HINT_VISUAL_ASSET_REQUEST"
+    && diagnostic.details.finalAssetPathSelected === false
+    && diagnostic.details.finalPlacementSelected === false
+  ), true);
+});
+
 test("low-confidence content split and readability hints are ignored with diagnostics", () => {
   const presentation = planPresentation(parseMarkdown([
     "# Demo",

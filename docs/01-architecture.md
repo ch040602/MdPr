@@ -41,9 +41,13 @@ packages/core/src/coherence
   Rule-based block roles, caption pairing, coherence groups, and weak accepted
   agent-hint metadata merge. High-confidence content-split hints may create
   deterministic continuation slides without rewriting source text; readability
-  and icon-keyword hints are recorded as diagnostics/metadata only. It never
-  chooses coordinates, colors, typography, exact icon assets, z-order, or
-  renderer objects.
+  and icon-keyword hints are recorded as diagnostics/metadata only. When a
+  content-split hint creates continuation slides, downstream key-message,
+  readability, and icon-keyword hints are scoped by split lineage so a hint only
+  applies to elements present on that generated slide. Schema-valid but
+  media-policy-conflicting icon/image candidates are ignored with diagnostics.
+  It never chooses coordinates, colors, typography, exact icon assets, image
+  paths, crops, z-order, or renderer objects.
 
 packages/layout
   Layout presets, deterministic candidate scoring, region planning, safe

@@ -69,6 +69,14 @@ export type AgentIconKeywordCandidate = {
   workflowIntentRef?: string;
 };
 
+export type AgentVisualAssetCandidate = {
+  kind: "generated-image";
+  trigger: "explicit-generated-asset-request";
+  requestRef: string;
+  semanticPrompt: string;
+  confidence: number;
+};
+
 export type AcceptedAgentHint = {
   slideId: string;
   workflowIntentCandidate?: AgentWorkflowIntentCandidate;
@@ -82,10 +90,23 @@ export type AcceptedAgentHint = {
   templateUseCandidate?: AgentTemplateUseCandidate;
   mediaPolicyCandidate?: AgentMediaPolicyCandidate;
   iconKeywordCandidates?: AgentIconKeywordCandidate[];
+  visualAssetCandidates?: AgentVisualAssetCandidate[];
   rationale?: string;
 };
 
 const MIN_HINT_CONFIDENCE = 0.5;
+const HINT_CHUNK_SEPARATOR = "-hint-chunk-";
+
+type SplitLineageEntry = {
+  slideId: string;
+  blockId: string;
+  sourceElementId: string;
+};
+
+type SplitResult = {
+  applied: boolean;
+  lineage: SplitLineageEntry[];
+};
 
 export function applyAgentHintsToPresentation(
   presentation: PresentationIR,
@@ -95,13 +116,18 @@ export function applyAgentHintsToPresentation(
 
   const next = structuredClone(presentation);
   let contentSplitApplied = false;
+  const splitLineage = new Map<string, SplitLineageEntry[]>();
 
   for (const hint of hints) {
     if (hint.confidence < MIN_HINT_CONFIDENCE) {
       next.diagnostics.push(ignoredHintDiagnostic(hint));
       continue;
     }
-    contentSplitApplied = applyContentSplitHints(next, hint) || contentSplitApplied;
+    const splitResult = applyContentSplitHints(next, hint);
+    if (splitResult.applied) {
+      contentSplitApplied = true;
+      splitLineage.set(hint.slideId, splitResult.lineage);
+    }
   }
 
   if (contentSplitApplied) {
@@ -116,69 +142,90 @@ export function applyAgentHintsToPresentation(
 
   for (const hint of hints) {
     if (hint.confidence < MIN_HINT_CONFIDENCE) continue;
-    const slide = slidesById.get(hint.slideId);
-    const group = groupsBySlideId.get(hint.slideId);
-    if (!slide || !group) continue;
+    const targetSlides = getHintTargetSlides(hint, slidesById, splitLineage);
+    for (const slide of targetSlides) {
+      const group = groupsBySlideId.get(slide.id);
+      if (!group) continue;
 
-    const blockIds = new Set(slide.blocks.map((block) => block.id));
-    const acceptedGroupCandidates = (hint.groupCandidates ?? [])
-      .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE)
-      .map((candidate) => ({
-        ...candidate,
-        elementIds: candidate.elementIds.filter((id) => blockIds.has(id)),
-      }))
-      .filter((candidate) => candidate.elementIds.length > 0);
-    const acceptedImportance = (hint.importanceCandidates ?? [])
-      .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE && blockIds.has(candidate.elementId));
-    const acceptedKeyMessages = (hint.keyMessageCandidates ?? [])
-      .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE)
-      .map((candidate) => ({
-        ...candidate,
-        elementIds: resolveHintElementIds(candidate.elementIds, blockIds),
-      }))
-      .filter((candidate) => candidate.elementIds.length > 0);
-    const acceptedReadability = (hint.readabilityCandidates ?? [])
-      .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE)
-      .map((candidate) => ({
-        ...candidate,
-        elementIds: resolveHintElementIds(candidate.elementIds, blockIds),
-      }))
-      .filter((candidate) => candidate.elementIds.length > 0);
-    const acceptedIconKeywords = (hint.iconKeywordCandidates ?? [])
-      .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE)
-      .map((candidate) => ({
-        ...candidate,
-        elementIds: resolveHintElementIds(candidate.elementIds, blockIds),
-      }))
-      .filter((candidate) => candidate.elementIds.length > 0 && candidate.evidenceRefs.length > 0);
+      const scope = buildSlideHintScope(slide);
+      const acceptedGroupCandidates = (hint.groupCandidates ?? [])
+        .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE)
+        .map((candidate) => ({
+          ...candidate,
+          elementIds: resolveScopedHintElementIds(candidate.elementIds, scope),
+        }))
+        .filter((candidate) => candidate.elementIds.length > 0);
+      const acceptedImportance = (hint.importanceCandidates ?? [])
+        .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE)
+        .map((candidate) => ({
+          ...candidate,
+          elementId: resolveScopedHintElementIds([candidate.elementId], scope)[0],
+        }))
+        .filter((candidate): candidate is AgentImportanceCandidate => Boolean(candidate.elementId));
+      const acceptedKeyMessages = (hint.keyMessageCandidates ?? [])
+        .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE)
+        .map((candidate) => ({
+          ...candidate,
+          elementIds: resolveScopedHintElementIds(candidate.elementIds, scope),
+        }))
+        .filter((candidate) => candidate.elementIds.length > 0);
+      const acceptedReadability = (hint.readabilityCandidates ?? [])
+        .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE)
+        .map((candidate) => ({
+          ...candidate,
+          elementIds: resolveScopedHintElementIds(candidate.elementIds, scope),
+        }))
+        .filter((candidate) => candidate.elementIds.length > 0);
+      const iconPolicyAllowsKeywords = hint.mediaPolicyCandidate?.iconUse !== "no-new-icons";
+      const acceptedIconKeywords = (hint.iconKeywordCandidates ?? [])
+        .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE)
+        .map((candidate) => ({
+          ...candidate,
+          elementIds: resolveScopedHintElementIds(candidate.elementIds, scope),
+        }))
+        .filter((candidate) => candidate.elementIds.length > 0 && candidate.evidenceRefs.length > 0 && iconPolicyAllowsKeywords);
+      const acceptedVisualAssets = (hint.visualAssetCandidates ?? [])
+        .filter((candidate) => candidate.confidence >= MIN_HINT_CONFIDENCE && hint.mediaPolicyCandidate?.imageUse === "generated-asset-approved");
 
-    if (
-      !acceptedGroupCandidates.length
-      && !acceptedImportance.length
-      && !acceptedKeyMessages.length
-      && !acceptedReadability.length
-      && !acceptedIconKeywords.length
-      && !hint.intentCandidate
-      && !hint.workflowIntentCandidate
-      && !hint.templateUseCandidate
-      && !hint.mediaPolicyCandidate
-    ) {
-      continue;
-    }
+      recordIgnoredScopedHints(next, slide, hint, scope, {
+        acceptedKeyMessages,
+        acceptedReadability,
+        acceptedIconKeywords,
+      });
+      recordPolicyConflictDiagnostics(next, slide, hint);
 
-    slide.tags = Array.from(new Set([...slide.tags, "agent-hint-semantic"]));
-    if (hint.intentCandidate && hint.intentCandidate !== slide.intent) {
-      slide.secondaryIntents = Array.from(new Set([...(slide.secondaryIntents ?? []), hint.intentCandidate]));
-    }
+      if (
+        !acceptedGroupCandidates.length
+        && !acceptedImportance.length
+        && !acceptedKeyMessages.length
+        && !acceptedReadability.length
+        && !acceptedIconKeywords.length
+        && !acceptedVisualAssets.length
+        && !hint.intentCandidate
+        && !hint.workflowIntentCandidate
+        && !hint.templateUseCandidate
+        && !hint.mediaPolicyCandidate
+      ) {
+        continue;
+      }
 
-    mergeGroupCandidates(group, acceptedGroupCandidates);
-    mergeImportanceCandidates(group, acceptedImportance, blockIds);
-    mergeKeyMessageCandidates(group, acceptedKeyMessages, blockIds);
-    for (const candidate of acceptedReadability) {
-      next.diagnostics.push(readabilityDiagnostic(slide, candidate));
-    }
-    for (const candidate of acceptedIconKeywords) {
-      next.diagnostics.push(iconKeywordDiagnostic(slide, candidate));
+      slide.tags = Array.from(new Set([...slide.tags, "agent-hint-semantic"]));
+      if (hint.intentCandidate && hint.intentCandidate !== slide.intent) {
+        slide.secondaryIntents = Array.from(new Set([...(slide.secondaryIntents ?? []), hint.intentCandidate]));
+      }
+
+      mergeGroupCandidates(group, acceptedGroupCandidates);
+      mergeImportanceCandidates(group, acceptedImportance, scope.blockIds);
+      mergeKeyMessageCandidates(group, acceptedKeyMessages, scope.blockIds);
+      for (const candidate of acceptedReadability) {
+        next.diagnostics.push(readabilityDiagnostic(slide, candidate));
+      }
+      for (const candidate of acceptedIconKeywords) {
+        next.diagnostics.push(iconKeywordDiagnostic(slide, candidate));
+      }
+      for (const candidate of acceptedVisualAssets) {
+        next.diagnostics.push(visualAssetDiagnostic(slide, candidate));
+      }
     }
   }
 
@@ -242,19 +289,6 @@ function mergeImportanceCandidates(
   ].filter((id) => id !== primary.elementId && blockIds.has(id))));
 }
 
-function resolveHintElementIds(elementIds: string[], blockIds: ReadonlySet<string>): string[] {
-  const resolved: string[] = [];
-  const available = [...blockIds];
-  for (const elementId of elementIds) {
-    if (blockIds.has(elementId)) {
-      resolved.push(elementId);
-      continue;
-    }
-    resolved.push(...available.filter((blockId) => blockId.startsWith(`${elementId}-hint-chunk-`)));
-  }
-  return Array.from(new Set(resolved));
-}
-
 function mergeKeyMessageCandidates(
   group: CoherenceGroup,
   candidates: AgentKeyMessageCandidate[],
@@ -313,22 +347,40 @@ function iconKeywordDiagnostic(slide: SlideIR, candidate: AgentIconKeywordCandid
   };
 }
 
-function applyContentSplitHints(presentation: PresentationIR, hint: AcceptedAgentHint): boolean {
+function visualAssetDiagnostic(slide: SlideIR, candidate: AgentVisualAssetCandidate): Diagnostic {
+  return {
+    level: "info",
+    code: "AGENT_HINT_VISUAL_ASSET_REQUEST",
+    message: `Generated visual asset request recorded for slide "${slide.title ?? slide.id}" without selecting an asset or placement.`,
+    slideId: slide.id,
+    details: {
+      kind: candidate.kind,
+      trigger: candidate.trigger,
+      requestRef: candidate.requestRef,
+      semanticPrompt: candidate.semanticPrompt,
+      confidence: candidate.confidence,
+      finalAssetPathSelected: false,
+      finalPlacementSelected: false,
+    },
+  };
+}
+
+function applyContentSplitHints(presentation: PresentationIR, hint: AcceptedAgentHint): SplitResult {
   const candidate = (hint.contentSplitCandidates ?? [])
     .filter((entry) => entry.confidence >= MIN_HINT_CONFIDENCE && entry.preferredSplitBy === "list-chunk")
     .sort((a, b) => b.confidence - a.confidence)[0];
-  if (!candidate) return false;
+  if (!candidate) return { applied: false, lineage: [] };
 
   const slideIndex = presentation.slides.findIndex((slide) => slide.id === hint.slideId);
-  if (slideIndex < 0) return false;
+  if (slideIndex < 0) return { applied: false, lineage: [] };
   const slide = presentation.slides[slideIndex]!;
   const targetIds = new Set(candidate.elementIds);
   const blockIndex = slide.blocks.findIndex((block) => block.type === "bulletList" && targetIds.has(block.id));
-  if (blockIndex < 0) return false;
+  if (blockIndex < 0) return { applied: false, lineage: [] };
 
   const block = slide.blocks[blockIndex]!;
   const chunks = splitListBlockForHint(block);
-  if (chunks.length <= 1) return false;
+  if (chunks.length <= 1) return { applied: false, lineage: [] };
 
   const before = slide.blocks.slice(0, blockIndex);
   const after = slide.blocks.slice(blockIndex + 1);
@@ -350,6 +402,15 @@ function applyContentSplitHints(presentation: PresentationIR, hint: AcceptedAgen
     };
   });
   presentation.slides.splice(slideIndex, 1, ...replacementSlides);
+  const lineage = replacementSlides.flatMap((replacementSlide) =>
+    replacementSlide.blocks
+      .filter((candidateBlock) => sourceElementIdForHintChunk(candidateBlock.id) === block.id)
+      .map((candidateBlock) => ({
+        slideId: replacementSlide.id,
+        blockId: candidateBlock.id,
+        sourceElementId: block.id,
+      }))
+  );
   presentation.diagnostics.push({
     level: "info",
     code: "AGENT_HINT_CONTENT_SPLIT_APPLIED",
@@ -361,9 +422,24 @@ function applyContentSplitHints(presentation: PresentationIR, hint: AcceptedAgen
       blockId: block.id,
       chunkCount: chunks.length,
       sourcePreserved: true,
+      lineage,
     },
   });
-  return true;
+  for (const entry of lineage) {
+    presentation.diagnostics.push({
+      level: "info",
+      code: "AGENT_HINT_SPLIT_LINEAGE",
+      message: `Recorded source lineage for split block "${entry.blockId}" on slide "${entry.slideId}".`,
+      slideId: entry.slideId,
+      details: {
+        sourceSlideId: hint.slideId,
+        sourceElementId: entry.sourceElementId,
+        blockId: entry.blockId,
+        boundarySafe: true,
+      },
+    });
+  }
+  return { applied: true, lineage };
 }
 
 function splitListBlockForHint(block: BlockIR): BlockIR[] {
@@ -388,6 +464,139 @@ function splitListBlockForHint(block: BlockIR): BlockIR[] {
   }
 
   return chunks;
+}
+
+function getHintTargetSlides(
+  hint: AcceptedAgentHint,
+  slidesById: ReadonlyMap<string, SlideIR>,
+  splitLineage: ReadonlyMap<string, SplitLineageEntry[]>,
+): SlideIR[] {
+  const slide = slidesById.get(hint.slideId);
+  const continuationIds = [...new Set((splitLineage.get(hint.slideId) ?? []).map((entry) => entry.slideId))];
+  const continuationSlides = continuationIds
+    .map((slideId) => slidesById.get(slideId))
+    .filter((candidate): candidate is SlideIR => Boolean(candidate));
+  if (continuationSlides.length) return continuationSlides;
+  return slide ? [slide] : [];
+}
+
+function buildSlideHintScope(slide: SlideIR): { blockIds: Set<string>; sourceToBlockIds: Map<string, string[]> } {
+  const blockIds = new Set(slide.blocks.map((block) => block.id));
+  const sourceToBlockIds = new Map<string, string[]>();
+  for (const block of slide.blocks) {
+    const sourceElementId = sourceElementIdForHintChunk(block.id);
+    if (!sourceElementId) continue;
+    sourceToBlockIds.set(sourceElementId, [...(sourceToBlockIds.get(sourceElementId) ?? []), block.id]);
+  }
+  return { blockIds, sourceToBlockIds };
+}
+
+function resolveScopedHintElementIds(
+  elementIds: string[],
+  scope: { blockIds: ReadonlySet<string>; sourceToBlockIds: ReadonlyMap<string, string[]> },
+): string[] {
+  const resolved: string[] = [];
+  for (const elementId of elementIds) {
+    if (scope.blockIds.has(elementId)) {
+      resolved.push(elementId);
+      continue;
+    }
+    resolved.push(...(scope.sourceToBlockIds.get(elementId) ?? []));
+  }
+  return Array.from(new Set(resolved));
+}
+
+function sourceElementIdForHintChunk(blockId: string): string | undefined {
+  const index = blockId.indexOf(HINT_CHUNK_SEPARATOR);
+  return index > 0 ? blockId.slice(0, index) : undefined;
+}
+
+function recordIgnoredScopedHints(
+  presentation: PresentationIR,
+  slide: SlideIR,
+  hint: AcceptedAgentHint,
+  scope: { blockIds: ReadonlySet<string>; sourceToBlockIds: ReadonlyMap<string, string[]> },
+  accepted: {
+    acceptedKeyMessages: AgentKeyMessageCandidate[];
+    acceptedReadability: AgentReadabilityCandidate[];
+    acceptedIconKeywords: AgentIconKeywordCandidate[];
+  },
+): void {
+  const acceptedKeyMessageIds = new Set(accepted.acceptedKeyMessages.flatMap((candidate) => candidate.elementIds));
+  const acceptedReadabilityIds = new Set(accepted.acceptedReadability.flatMap((candidate) => candidate.elementIds));
+  const acceptedIconIds = new Set(accepted.acceptedIconKeywords.flatMap((candidate) => candidate.elementIds));
+  for (const candidate of hint.keyMessageCandidates ?? []) {
+    recordMissingElementDiagnostic(presentation, slide, "keyMessageCandidates", candidate.elementIds, scope, acceptedKeyMessageIds);
+  }
+  for (const candidate of hint.readabilityCandidates ?? []) {
+    recordMissingElementDiagnostic(presentation, slide, "readabilityCandidates", candidate.elementIds, scope, acceptedReadabilityIds);
+  }
+  for (const candidate of hint.iconKeywordCandidates ?? []) {
+    recordMissingElementDiagnostic(presentation, slide, "iconKeywordCandidates", candidate.elementIds, scope, acceptedIconIds);
+  }
+}
+
+function recordMissingElementDiagnostic(
+  presentation: PresentationIR,
+  slide: SlideIR,
+  candidateKind: string,
+  elementIds: string[],
+  scope: { blockIds: ReadonlySet<string>; sourceToBlockIds: ReadonlyMap<string, string[]> },
+  acceptedIds: ReadonlySet<string>,
+): void {
+  const unresolved = elementIds.filter((elementId) => {
+    if (scope.blockIds.has(elementId)) return false;
+    const lineageMatches = scope.sourceToBlockIds.get(elementId) ?? [];
+    return !lineageMatches.some((blockId) => acceptedIds.has(blockId));
+  });
+  if (!unresolved.length) return;
+  presentation.diagnostics.push({
+    level: "info",
+    code: "AGENT_HINT_IGNORED_MISSING_ELEMENT",
+    message: `Ignored ${candidateKind} references not present on slide "${slide.title ?? slide.id}".`,
+    slideId: slide.id,
+    details: {
+      candidateKind,
+      missingElementIds: unresolved,
+      availableElementIds: [...scope.blockIds],
+      boundarySafe: true,
+    },
+  });
+}
+
+function recordPolicyConflictDiagnostics(
+  presentation: PresentationIR,
+  slide: SlideIR,
+  hint: AcceptedAgentHint,
+): void {
+  const policy = hint.mediaPolicyCandidate;
+  if (!policy) return;
+  if (policy.iconUse === "no-new-icons" && (hint.iconKeywordCandidates?.length ?? 0) > 0) {
+    presentation.diagnostics.push({
+      level: "warning",
+      code: "AGENT_HINT_POLICY_CONFLICT",
+      message: `Ignored semantic icon candidates for slide "${slide.title ?? slide.id}" because media policy forbids new icons.`,
+      slideId: slide.id,
+      details: {
+        policy: "iconUse:no-new-icons",
+        candidateKind: "iconKeywordCandidates",
+        candidateCount: hint.iconKeywordCandidates?.length ?? 0,
+      },
+    });
+  }
+  if (policy.imageUse === "no-image" && (hint.visualAssetCandidates?.length ?? 0) > 0) {
+    presentation.diagnostics.push({
+      level: "warning",
+      code: "AGENT_HINT_POLICY_CONFLICT",
+      message: `Ignored generated visual asset candidates for slide "${slide.title ?? slide.id}" because media policy forbids images.`,
+      slideId: slide.id,
+      details: {
+        policy: "imageUse:no-image",
+        candidateKind: "visualAssetCandidates",
+        candidateCount: hint.visualAssetCandidates?.length ?? 0,
+      },
+    });
+  }
 }
 
 function isCoherenceGroupRole(role: string): role is CoherenceGroup["role"] {

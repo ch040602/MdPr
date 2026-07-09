@@ -54,5 +54,8 @@ Overrides handle explicit exceptions.
 Optional agent hints may suggest compact semantic tags, source-preserving
 content splits, readability notes, media policy, and evidence-bound icon
 keywords, but MDPR owns final choices. Readability hints do not summarize,
-delete, or rewrite Markdown text.
+delete, or rewrite Markdown text. Split-generated continuation slides keep
+hint metadata scoped to the source elements actually present on each slide, and
+runtime media policy rejects conflicting icon/image candidates even when they
+are schema-valid.
 ```
