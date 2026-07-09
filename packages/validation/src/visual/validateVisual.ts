@@ -112,6 +112,17 @@ export function visualValidationDiagnostics(layout: LayoutIR): Diagnostic[] {
           code: "VISUAL_FONT_FLOOR",
           slideId: slide.sourceSlideId,
           message: `Region ${region.id} falls below the 8pt visual readability floor.`,
+          details: {
+            regionId: region.id,
+            fontSize,
+            minFontSize,
+            threshold: 8,
+            sourcePreserved: true,
+            rewriteApplied: false,
+            summarizationApplied: false,
+            textDeletionApplied: false,
+            runtimeOwner: "MDPR",
+          },
         });
       }
       if (region.role === "image") {

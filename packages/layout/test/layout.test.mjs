@@ -686,12 +686,89 @@ test("overflow validation emits errors when policy is fail", () => {
   ]);
 });
 
+test("overflow validation preserves CJK source evidence without rewrite decisions", () => {
+  const text = "한국어문장과日本語文章그리고中文句子를공백없이혼합해도원문을줄이거나삭제하지않고측정근거로남긴다".repeat(2);
+  const diagnostics = validateLayoutOverflow({
+    version: "1.0",
+    slideSize: { width: 10, height: 5, unit: "in" },
+    theme: {
+      fontFamily: "Pretendard",
+      backgroundColor: "#fff",
+      textColor: "#111",
+      primaryColor: "#2563eb",
+      titleFontSize: 34,
+      bodyFontSize: 18,
+      captionFontSize: 14,
+      minFontSize: 10,
+      lineHeight: 1.2,
+    },
+    slides: [
+      {
+        id: "layout-cjk",
+        sourceSlideId: "slide-cjk",
+        index: 0,
+        layout: { preset: "title-body" },
+        background: { color: "#fff" },
+        regions: [
+          {
+            id: "body",
+            role: "body",
+            blockIds: ["block-cjk"],
+            x: 0.8,
+            y: 1,
+            w: 1.4,
+            h: 0.3,
+            zIndex: 1,
+            typography: { fontSize: 18, minFontSize: 10, lineHeight: 1.2 },
+          },
+        ],
+        overflowPolicy: { action: "fail", minFontSize: 10, maxShrinkSteps: 0 },
+      },
+    ],
+    diagnostics: [],
+  }, new Map([["block-cjk", text]]));
+  const overflow = diagnostics.find((diagnostic) => diagnostic.code === "TEXT_OVERFLOW");
+
+  assert.ok(overflow);
+  assert.equal(overflow.details.sourcePreserved, true);
+  assert.equal(overflow.details.rewriteApplied, false);
+  assert.equal(overflow.details.summarizationApplied, false);
+  assert.equal(overflow.details.textDeletionApplied, false);
+  assert.equal(overflow.details.textLength, text.length);
+  assert.equal(overflow.details.textExcerpt, text.slice(0, 160));
+  assert.equal(overflow.details.lineCount > 1, true);
+});
+
 test("measureText treats CJK text as wider than ASCII for wrapping estimates", () => {
   const common = { fontFamily: "Arial", fontSize: 20, fontWeight: "normal", width: 1, lineHeight: 1.2 };
   const ascii = measureText({ ...common, text: "a".repeat(20) }, 10);
   const cjk = measureText({ ...common, text: "가".repeat(20) }, 10);
 
   assert.equal(cjk.lines > ascii.lines, true);
+});
+
+test("measureText handles CJK and mixed-language punctuation fixtures without unbreakable overflow", () => {
+  const samples = [
+    "가나다라마바사아자차카타파하".repeat(3),
+    "東京都心部再開発計画の進捗確認と品質検証".repeat(2),
+    "数据可视化质量验证流程持续追踪".repeat(3),
+    "MDPR검증Pipeline2026상태追跡데이터品質검사",
+    "요약:검증、배포、운영。품질;추적!다음결정?",
+  ];
+
+  for (const text of samples) {
+    const result = measureText({
+      text,
+      fontFamily: "Noto Sans CJK",
+      fontSize: 18,
+      width: 1.8,
+      lineHeight: 1.2,
+    }, 4);
+
+    assert.equal(result.overflowX, false, text);
+    assert.equal(result.lineCount > 1, true, text);
+    assert.equal(result.usedHeightIn > 0, true, text);
+  }
 });
 
 test("measureText accepts rich text runs and reports role-aware confidence and bounds", () => {

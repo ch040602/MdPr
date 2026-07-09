@@ -41,6 +41,7 @@ override
 render-pptx
   - editable text boxes
   - native tables and charts
+  - unzip-level editable OpenXML contracts for text/table/chart fixtures
   - SVG-backed surfaces
   - centered icon and badge slots
   - bounded connectors

@@ -225,6 +225,22 @@ export type OverflowDiagnostic = {
   message: string;
   slideId: string;
   regionId: string;
+  details?: {
+    textLength?: number;
+    textExcerpt?: string;
+    lineCount?: number;
+    usedWidthIn?: number;
+    usedHeightIn?: number;
+    regionWidthIn?: number;
+    regionHeightIn?: number;
+    fontSize?: number;
+    minFontSize?: number;
+    sourcePreserved?: true;
+    rewriteApplied?: false;
+    summarizationApplied?: false;
+    textDeletionApplied?: false;
+    runtimeOwner?: "MDPR";
+  };
 };
 
 export type OverflowLayout = {
@@ -284,6 +300,15 @@ export function validateLayoutOverflow(
           message: `Region ${region.id} font size ${fontSize} is smaller than min font size ${minFontSize}.`,
           slideId: slide.sourceSlideId,
           regionId: region.id,
+          details: {
+            fontSize,
+            minFontSize,
+            sourcePreserved: true,
+            rewriteApplied: false,
+            summarizationApplied: false,
+            textDeletionApplied: false,
+            runtimeOwner: "MDPR",
+          },
         });
       }
 
@@ -298,6 +323,20 @@ export function validateLayoutOverflow(
           message: `Region ${region.id} text height ${measurement.height.toFixed(2)} exceeds region height ${region.h}.`,
           slideId: slide.sourceSlideId,
           regionId: region.id,
+          details: {
+            textLength: text.length,
+            textExcerpt: text.slice(0, 160),
+            lineCount: measurement.lineCount,
+            usedWidthIn: measurement.usedWidthIn,
+            usedHeightIn: measurement.usedHeightIn,
+            regionWidthIn: region.w,
+            regionHeightIn: region.h,
+            sourcePreserved: true,
+            rewriteApplied: false,
+            summarizationApplied: false,
+            textDeletionApplied: false,
+            runtimeOwner: "MDPR",
+          },
         });
       }
     }

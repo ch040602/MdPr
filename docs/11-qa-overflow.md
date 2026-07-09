@@ -57,6 +57,14 @@ Safe-area and slot-bound checks use the same MVP rule: a region must stay inside
 
 Minimum font size validation compares the effective region font size against `region.typography.minFontSize`, then `overflowPolicy.minFontSize`, then the theme minimum.
 
+Overflow and font-floor diagnostics are evidence records, not editing orders.
+For CJK and mixed-language text they preserve deterministic text length,
+source excerpts, measured line/box data, and explicit
+`rewriteApplied: false`, `summarizationApplied: false`, and
+`textDeletionApplied: false` fields. Tests cover Korean, Japanese, Chinese,
+mixed Latin/CJK runs, and CJK punctuation-heavy strings without relying on
+screenshots, downloads, or manual Office rendering.
+
 ## Text Normalization
 
 Markdown normalization happens before overflow validation and rendering. Repeated spaces and tabs collapse inside paragraph lines, inline emphasis runs, list text, and table cells so measured text matches rendered text.

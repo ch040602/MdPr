@@ -55,6 +55,10 @@ Implemented baseline:
 - renders semantic icon slots from a local SVG catalog
 - renders preset-specific editable cover/title templates
 - renders pentagon layout edge accents as editable background line shapes
+- has package-level regression tests that unzip generated `.pptx` files and
+  assert text boxes, tables, and native charts are represented by editable
+  OpenXML (`txBox`, `a:tbl`, chart relationships, and `ppt/charts/chart*.xml`)
+  instead of raster-only fallback output
 
 ## Decoration Styles
 

@@ -57,6 +57,45 @@ test("visual validation flags unreadable pipeline-one-page evidence rails", () =
   assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "VISUAL_TEASER_EVIDENCE_RAIL"), true);
 });
 
+test("visual validation reports CJK font-floor risk without content rewrite fields", () => {
+  const diagnostics = visualValidationDiagnostics({
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme,
+    slides: [{
+      id: "layout-cjk",
+      sourceSlideId: "slide-cjk",
+      index: 0,
+      layout: { preset: "title-body" },
+      background: {},
+      overflowPolicy: { action: "warn", minFontSize: 8, maxShrinkSteps: 4 },
+      regions: [{
+        id: "body-cjk",
+        role: "body",
+        x: 1,
+        y: 1,
+        w: 6,
+        h: 2,
+        zIndex: 1,
+        blockIds: ["block-cjk"],
+        typography: { fontFamily: "Pretendard", fontSize: 7, minFontSize: 7, lineHeight: 1.2 },
+      }],
+    }],
+    diagnostics: [],
+  });
+  const fontFloor = diagnostics.find((diagnostic) => diagnostic.code === "VISUAL_FONT_FLOOR");
+
+  assert.ok(fontFloor);
+  assert.equal(fontFloor.details.regionId, "body-cjk");
+  assert.equal(fontFloor.details.fontSize, 7);
+  assert.equal(fontFloor.details.minFontSize, 7);
+  assert.equal(fontFloor.details.sourcePreserved, true);
+  assert.equal(fontFloor.details.rewriteApplied, false);
+  assert.equal(fontFloor.details.summarizationApplied, false);
+  assert.equal(fontFloor.details.textDeletionApplied, false);
+  assert.equal(fontFloor.details.runtimeOwner, "MDPR");
+});
+
 test("coherence validation reports detached captions from presentation/layout IR", () => {
   const presentation = {
     version: "1.0",

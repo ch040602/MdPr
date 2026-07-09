@@ -1154,6 +1154,86 @@ test("renderPptx renders chart blocks as native PowerPoint charts with theme col
   }
 });
 
+test("renderPptx keeps text tables and charts as native editable PPTX XML objects", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-native-editable-"));
+  const outPath = join(outDir, "native-editable.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides = [
+    {
+      id: "slide-native",
+      index: 0,
+      role: "content",
+      title: "Editable XML Contract",
+      headingPath: ["Editable XML Contract"],
+      source: {},
+      intent: "chart",
+      tags: [],
+      blocks: [
+        {
+          id: "body-1",
+          type: "paragraph",
+          text: "Native text remains editable after PPTX export.",
+        },
+        {
+          id: "table-1",
+          type: "table",
+          text: "Object | Contract\nText | txBox\nTable | a:tbl",
+          rows: [["Object", "Contract"], ["Text", "txBox"], ["Table", "a:tbl"]],
+        },
+        {
+          id: "chart-1",
+          type: "chart",
+          text: "Editable: 91, 87",
+          chart: {
+            kind: "bar",
+            labels: ["Text", "Table"],
+            series: [{ name: "Editable", values: [91, 87] }],
+          },
+        },
+      ],
+    },
+  ];
+  deck.layout.slides = [
+    {
+      id: "layout-slide-native",
+      sourceSlideId: "slide-native",
+      index: 0,
+      layout: { preset: "chart-table", direction: "horizontal" },
+      background: { color: "#FFFFFF" },
+      overflowPolicy: { action: "shrink", minFontSize: 14, maxShrinkSteps: 3 },
+      regions: [
+        { id: "title", role: "title", blockIds: ["__title:slide-native"], x: 0.7, y: 0.45, w: 12, h: 0.75, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 30, fontWeight: "bold", lineHeight: 1.2, minFontSize: 14 } },
+        { id: "body", role: "body", blockIds: ["body-1"], x: 0.9, y: 1.55, w: 4.8, h: 1.2, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 16, lineHeight: 1.2, minFontSize: 14 } },
+        { id: "table", role: "table", blockIds: ["table-1"], x: 0.9, y: 3.0, w: 4.8, h: 2.0, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 14, lineHeight: 1.2, minFontSize: 12 } },
+        { id: "chart", role: "chart", blockIds: ["chart-1"], x: 6.2, y: 1.55, w: 5.9, h: 3.6, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 16, lineHeight: 1.2, minFontSize: 14 } },
+      ],
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "plain" });
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const slideXml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const slideRels = await zip.file("ppt/slides/_rels/slide1.xml.rels").async("string");
+    const chartPaths = Object.keys(zip.files).filter((path) => /^ppt\/charts\/chart\d+\.xml$/.test(path));
+
+    assert.match(shapeXmlContainingText(slideXml, "Editable XML Contract"), /txBox="1"/);
+    assert.match(shapeXmlContainingText(slideXml, "Native text remains editable after PPTX export."), /txBox="1"/);
+    assert.match(slideXml, /<a:tbl>/);
+    assert.match(slideXml, /<a:t>Object<\/a:t>/);
+    assert.match(slideXml, /<a:t>a:tbl<\/a:t>/);
+    assert.equal(chartPaths.length, 1);
+    assert.match(slideRels, /Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/chart"/);
+    assert.match(slideRels, /Target="(?:\.\.\/charts|\/ppt\/charts)\/chart\d+\.xml"/);
+    const chartXml = await zip.file(chartPaths[0]).async("string");
+    assert.match(chartXml, /<c:barChart>/);
+    assert.match(chartXml, /<c:v>Text<\/c:v>/);
+    assert.match(chartXml, /<c:v>Editable<\/c:v>/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx renders chart proof objects as editable shapes without native chart parts", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-chart-proof-"));
   const outPath = join(outDir, "chart-proof.pptx");
