@@ -1446,7 +1446,13 @@ test("agent hints weakly merge into coherence metadata without changing slide co
           confidence: 0.86,
         },
       ],
-      iconKeywordCandidates: ["validation", "evidence"],
+      iconKeywordCandidates: [{
+        keyword: "validation",
+        elementIds: [evidence.id],
+        evidenceRefs: [`element:${evidence.id}`],
+        reason: "Explicit semantic icon keyword only.",
+        confidence: 0.7,
+      }],
       rationale: "Review note only.",
     },
   ]);
@@ -1497,7 +1503,13 @@ test("low-confidence agent hints are ignored by coherence metadata merge", () =>
           confidence: 0.2,
         },
       ],
-      iconKeywordCandidates: ["ignored"],
+      iconKeywordCandidates: [{
+        keyword: "ignored",
+        elementIds: [slide.blocks[0].id],
+        evidenceRefs: [`element:${slide.blocks[0].id}`],
+        reason: "Low-confidence candidate.",
+        confidence: 0.2,
+      }],
     },
   ]);
   const afterSlide = hinted.slides.find((candidate) => candidate.id === slide.id);
@@ -1505,6 +1517,96 @@ test("low-confidence agent hints are ignored by coherence metadata merge", () =>
 
   assert.equal(afterSlide.tags.includes("agent-hint-semantic"), false);
   assert.deepEqual(afterGroup, beforeGroup);
+  assert.equal(hinted.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_IGNORED_LOW_CONFIDENCE"), true);
+});
+
+test("agent content split and readability hints remain source-preserving planning metadata", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## 한국어 긴 목록",
+    "",
+    "- 첫 번째 근거는 원문 문장을 그대로 유지해야 한다.",
+    "- 두 번째 근거도 요약하거나 삭제하지 않는다.",
+    "- 세 번째 근거는 같은 목록에 남아 있어야 한다.",
+    "- 네 번째 근거는 새 슬라이드로 넘어갈 수 있다.",
+    "- 다섯 번째 근거도 텍스트를 보존한다.",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "한국어 긴 목록");
+  const listBlock = slide.blocks.find((block) => block.type === "bulletList");
+
+  const hinted = applyAgentHintsToPresentation(presentation, [
+    {
+      slideId: slide.id,
+      confidence: 0.84,
+      contentSplitCandidates: [
+        {
+          reason: "dense-content",
+          elementIds: [listBlock.id],
+          preferredSplitBy: "list-chunk",
+          confidence: 0.8,
+        },
+      ],
+      readabilityCandidates: [
+        {
+          action: "shorten-copy",
+          elementIds: [listBlock.id],
+          reason: "Keep copy concise in the existing theme.",
+          confidence: 0.78,
+        },
+      ],
+    },
+  ]);
+  const splitSlides = hinted.slides.filter((candidate) => candidate.title?.startsWith("한국어 긴 목록"));
+  const preservedText = splitSlides.flatMap((candidate) =>
+    candidate.blocks.flatMap((block) => block.listItems?.map((item) => item.text) ?? block.items ?? [])
+  );
+
+  assert.equal(splitSlides.length, 2);
+  assert.equal(splitSlides.every((candidate) => candidate.tags.includes("agent-hint-content-split")), true);
+  assert.deepEqual(preservedText, listBlock.items);
+  assert.equal(hinted.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_CONTENT_SPLIT_APPLIED"), true);
+  assert.equal(hinted.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_READABILITY_NOTE" && diagnostic.details.sourcePreserved === true), true);
+});
+
+test("low-confidence content split and readability hints are ignored with diagnostics", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Dense Notes",
+    "",
+    "- One",
+    "- Two",
+    "- Three",
+    "- Four",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Dense Notes");
+  const listBlock = slide.blocks.find((block) => block.type === "bulletList");
+  const hinted = applyAgentHintsToPresentation(presentation, [
+    {
+      slideId: slide.id,
+      confidence: 0.2,
+      contentSplitCandidates: [
+        {
+          reason: "dense-content",
+          elementIds: [listBlock.id],
+          preferredSplitBy: "list-chunk",
+          confidence: 0.2,
+        },
+      ],
+      readabilityCandidates: [
+        {
+          action: "shorten-copy",
+          elementIds: [listBlock.id],
+          reason: "Low confidence.",
+          confidence: 0.2,
+        },
+      ],
+    },
+  ]);
+
+  assert.equal(hinted.slides.filter((candidate) => candidate.title?.startsWith("Dense Notes")).length, 1);
+  assert.equal(hinted.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_IGNORED_LOW_CONFIDENCE"), true);
 });
 
 test("detectSlideIntent routes block quotes to quote intent for key-message layouts", () => {

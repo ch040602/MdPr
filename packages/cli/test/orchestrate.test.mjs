@@ -417,7 +417,13 @@ test("buildDeck accepts schema-valid agent hints as weak metadata only", async (
               confidence: 0.82,
             },
           ],
-          iconKeywordCandidates: ["funnel", "activation"],
+          iconKeywordCandidates: [{
+            keyword: "funnel",
+            elementIds: ["b2"],
+            evidenceRefs: ["element:b2"],
+            reason: "Semantic icon keyword only.",
+            confidence: 0.7,
+          }],
           rationale: "Human review note only.",
         },
       ],
@@ -482,7 +488,13 @@ test("buildDeck applies accepted agent hints to coherence metadata only", async 
               confidence: 0.87,
             },
           ],
-          iconKeywordCandidates: ["validation", "evidence"],
+          iconKeywordCandidates: [{
+            keyword: "validation",
+            elementIds: [evidence.id],
+            evidenceRefs: [`element:${evidence.id}`],
+            reason: "Semantic icon keyword only.",
+            confidence: 0.7,
+          }],
         },
       ],
     }, null, 2));
@@ -499,6 +511,131 @@ test("buildDeck applies accepted agent hints to coherence metadata only", async 
     assert.equal(group.primaryBlockId, evidence.id);
     assert.equal(group.supportingBlockIds.includes(claim.id), true);
     assert.equal(group.blockRoles[evidence.id], "evidence");
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("buildDeck accepts expanded mdpr-skill hint surface as weak planning metadata", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-agent-hints-expanded-"));
+  const deckPath = join(outDir, "deck.md");
+  const hintPath = join(outDir, "deck.mdpr-hints.json");
+  const markdown = [
+    "# Demo",
+    "",
+    "## Adoption Funnel",
+    "",
+    "Activation evidence should stay near the claim.",
+    "",
+    "- Awareness evidence is stable.",
+    "- Activation evidence is the key proof.",
+    "- Retention evidence supports the claim.",
+    "- Expansion evidence should move to a continuation slide.",
+    "- Revenue evidence stays preserved.",
+  ].join("\n");
+
+  try {
+    writeFileSync(deckPath, markdown);
+    const baseline = planDeck(deckPath);
+    const slide = baseline.presentation.slides.find((candidate) => candidate.title === "Adoption Funnel");
+    const claim = slide.blocks.find((block) => block.type === "paragraph");
+    const list = slide.blocks.find((block) => block.type === "bulletList");
+
+    writeFileSync(hintPath, JSON.stringify({
+      schemaVersion: "mdpr-agent-hint-v1",
+      sourceSha256: sha256(markdown),
+      generatedBy: "mdpr-skill",
+      generatedAt: "2026-07-09T00:00:00Z",
+      hints: [
+        {
+          slideId: slide.id,
+          workflowIntentCandidate: {
+            intent: "template-fill",
+            confidence: 0.86,
+            evidenceRefs: ["template:hcs-template"],
+          },
+          intentCandidate: "evidence",
+          confidence: 0.86,
+          groupCandidates: [
+            {
+              elementIds: [claim.id, list.id],
+              role: "evidence-pack",
+              confidence: 0.8,
+            },
+          ],
+          importanceCandidates: [
+            {
+              elementId: claim.id,
+              importance: "primary",
+              confidence: 0.82,
+            },
+          ],
+          keyMessageCandidates: [
+            {
+              messageRole: "main-takeaway",
+              emphasisLevel: "primary",
+              elementIds: [claim.id],
+              evidenceRefs: [`element:${claim.id}`],
+              preferredPlaceholderRole: "title",
+              reason: "The activation claim is the main takeaway.",
+              confidence: 0.78,
+            },
+          ],
+          contentSplitCandidates: [
+            {
+              reason: "dense-content",
+              elementIds: [list.id],
+              preferredSplitBy: "list-chunk",
+              confidence: 0.76,
+            },
+          ],
+          readabilityCandidates: [
+            {
+              action: "shorten-copy",
+              elementIds: [list.id],
+              reason: "Keep list evidence readable without rewriting source text.",
+              confidence: 0.76,
+            },
+          ],
+          templateUseCandidate: {
+            templateSourceRef: "hcs-template",
+            masterSlidePolicy: "preserve-existing-master-slides",
+            placeholderPolicy: "prefer-existing-placeholders",
+            confidence: 0.86,
+          },
+          mediaPolicyCandidate: {
+            imageUse: "no-image",
+            imageSearch: "disabled",
+            iconUse: "semantic-keywords-only",
+            evidenceRefs: ["template:hcs-template", `element:${claim.id}`],
+          },
+          iconKeywordCandidates: [
+            {
+              keyword: "validation",
+              elementIds: [claim.id],
+              evidenceRefs: [`element:${claim.id}`],
+              reason: "Semantic icon keyword only.",
+              confidence: 0.7,
+              workflowIntentRef: "workflow:template-fill",
+            },
+          ],
+        },
+      ],
+    }, null, 2));
+
+    const result = await buildDeck(deckPath, { formats: ["html"], outDir, hintPath });
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+    const splitSlides = result.presentation.slides.filter((candidate) => candidate.title?.startsWith("Adoption Funnel"));
+
+    assert.equal(result.agentHints.accepted, 1);
+    assert.equal(result.agentHints.rejected, 0);
+    assert.equal(manifest.agentHints.accepted, 1);
+    assert.equal(splitSlides.length, 2);
+    assert.equal(result.presentation.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_CONTENT_SPLIT_APPLIED"), true);
+    assert.equal(result.presentation.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_READABILITY_NOTE"), true);
+    assert.equal(result.presentation.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_ICON_KEYWORD"), true);
+    assert.equal(JSON.stringify(result.presentation).includes("iconPath"), false);
+    assert.equal(JSON.stringify(result.presentation).includes("coordinates"), false);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -531,6 +668,36 @@ test("validateDeck rejects forbidden final-decision fields in agent hints", () =
     assert.ok(result.agentHints);
     assert.equal(result.agentHints.forbiddenFieldCount >= 2, true);
     assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_FORBIDDEN_FIELD"), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("validateDeck rejects unknown agent hint fields through the schema gate", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-agent-hints-unknown-"));
+  const deckPath = join(outDir, "deck.md");
+  const hintPath = join(outDir, "deck.mdpr-hints.json");
+  const markdown = "# Demo\n\n## Slide\n\nBody";
+
+  try {
+    writeFileSync(deckPath, markdown);
+    writeFileSync(hintPath, JSON.stringify({
+      schemaVersion: "mdpr-agent-hint-v1",
+      sourceSha256: sha256(markdown),
+      hints: [
+        {
+          slideId: "slide-slide",
+          confidence: 0.9,
+          unknownCandidate: true,
+        },
+      ],
+    }, null, 2));
+
+    const result = validateDeck(deckPath, { hintPath });
+
+    assert.equal(result.valid, true);
+    assert.equal(result.agentHints?.rejected, 1);
+    assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "AGENT_HINT_FILE_INVALID"), true);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

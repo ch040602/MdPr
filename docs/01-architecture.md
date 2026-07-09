@@ -39,8 +39,11 @@ packages/core
 
 packages/core/src/coherence
   Rule-based block roles, caption pairing, coherence groups, and weak accepted
-  agent-hint metadata merge. It never chooses coordinates, colors, typography,
-  z-order, or renderer objects.
+  agent-hint metadata merge. High-confidence content-split hints may create
+  deterministic continuation slides without rewriting source text; readability
+  and icon-keyword hints are recorded as diagnostics/metadata only. It never
+  chooses coordinates, colors, typography, exact icon assets, z-order, or
+  renderer objects.
 
 packages/layout
   Layout presets, deterministic candidate scoring, region planning, safe
@@ -96,7 +99,7 @@ packages/cli
 3. Renderers implement target-format output only; they must not redo split or layout decisions.
 4. Overrides are the final exception layer after automatic planning.
 5. PPT templates provide brand and background assets; body placement is recalculated by MDPR.
-6. Optional agent hints may annotate coherence metadata, but deterministic MDPR rules own final output.
+6. Optional agent hints may annotate coherence/planning metadata, but deterministic MDPR rules own final output.
 7. Quality improvements preserve source semantics; they classify, group,
    measure, reflow, and validate content without summarizing or rewriting it.
    Parser marker normalization may convert authoring shorthand into stable

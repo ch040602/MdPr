@@ -22,7 +22,8 @@
   arrows, negative-number prose, and literal code/pre blocks
 - emit source-cleanup diagnostics for parser-owned authoring shorthand without
   turning cleanup into layout or rendering decisions
-- split slides from headings, density, and explicit separators
+- split slides from headings, density, explicit separators, and validated
+  source-preserving content split hints
 - detect comparison, example, method, table, image, code, chart, and diagram structures
 - choose layouts through deterministic rules
 - preserve configured font sizes and readable minimum font floors
@@ -30,6 +31,9 @@
 - use CLI/config theme tokens for HTML and PDF outputs
 - apply override manifests for selected slide exceptions
 - produce generated artifact manifests and QA diagnostics
+- consume optional source-bound agent hints as weak planning metadata without
+  accepting final coordinates, raw colors, exact fonts, icon assets, image
+  crops, or renderer objects
 ```
 
 ## Core Outputs
@@ -47,5 +51,8 @@ Manifest: source hashes, output paths, diagnostics, and visual summaries
 ```text
 Most output is produced by deterministic rules.
 Overrides handle explicit exceptions.
-Optional agent hints may suggest compact semantic tags, but MDPR owns final choices.
+Optional agent hints may suggest compact semantic tags, source-preserving
+content splits, readability notes, media policy, and evidence-bound icon
+keywords, but MDPR owns final choices. Readability hints do not summarize,
+delete, or rewrite Markdown text.
 ```
