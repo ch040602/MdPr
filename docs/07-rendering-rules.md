@@ -45,6 +45,7 @@ Implemented baseline:
 - preserves each code line as an editable OpenXML line boundary rather than adjacent runs in one visual line
 - routes every non-decoration source block to a layout region; table-focused slides keep accompanying lists and prose in a separate body region
 - renders indented paragraph rows as separate editable text boxes with a bounded `0.06-0.10in` inter-row safety gap, and includes that gap in font-fitting calculations
+- keeps pipeline-one-page feature summaries and table evidence at or above the required `16pt` polish floor
 - renders block quotes as separated key-message regions when planned
 - renders ordered item cards with editable badges and accent text
 - centers item-card text boxes from the leading badge/icon center and keeps

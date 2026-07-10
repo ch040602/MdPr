@@ -537,9 +537,9 @@ function createPipelineOnePageRegions(slide: SlideIR, titleRegion: LayoutRegion,
     const regions: LayoutRegion[] = [
       { ...titleRegion, y: 0.34, h: 0.66, typography: { ...titleRegion.typography, fontSize: Math.max(28, config.typography.titleFontSize - 2) } },
       { id: "diagram", role: "diagram", blockIds: diagramBlockIds.slice(0, 1), x: 0.62, y: 1.12, w: 7.42, h: 2.48, zIndex: 10, typography: compact },
-      { id: "feature-summary", role: "body", blockIds: featureBlockIds, x: 0.62, y: 3.86, w: 7.42, h: 2.74, zIndex: 10, typography: { ...compact, fontSize: 14, minFontSize: 14 } },
+      { id: "feature-summary", role: "body", blockIds: featureBlockIds, x: 0.62, y: 3.86, w: 7.42, h: 2.74, zIndex: 10, typography: { ...compact, fontSize: 16, minFontSize: 16 } },
       ...(chartBlockIds.length ? [{ id: "chart", role: "chart" as const, blockIds: chartBlockIds.slice(0, 1), x: 8.25, y: 1.12, w: 4.42, h: 1.86, zIndex: 10, typography: compact }] : []),
-      ...(tableBlockIds.length ? [{ id: "table", role: "table" as const, blockIds: tableBlockIds.slice(0, 1), x: 8.25, y: 3.26, w: 4.42, h: 2.72, zIndex: 10, typography: { ...compact, fontSize: Math.max(14, compact.fontSize - 2), minFontSize: 14 } }] : []),
+      ...(tableBlockIds.length ? [{ id: "table", role: "table" as const, blockIds: tableBlockIds.slice(0, 1), x: 8.25, y: 3.26, w: 4.42, h: 2.72, zIndex: 10, typography: { ...compact, fontSize: Math.max(16, compact.fontSize - 2), minFontSize: 16 } }] : []),
     ];
     const usedBlockIds = new Set(regions.flatMap((region) => region.blockIds));
     const remainingBlockIds = slide.blocks

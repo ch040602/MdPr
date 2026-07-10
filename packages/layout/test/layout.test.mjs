@@ -339,9 +339,13 @@ test("pipeline-one-page uses a CHI-style hero diagram with overview and evidence
   assert.equal(diagram.h >= 2.3, true);
   assert.equal(overview.y > diagram.y + diagram.h, true);
   assert.equal(overview.blockIds[0].endsWith("-teaser-overview"), true);
+  assert.equal(overview.typography.fontSize >= 16, true);
+  assert.equal(overview.typography.minFontSize >= 16, true);
   assert.equal(chart.x > diagram.x + diagram.w, true);
   assert.equal(table.x, chart.x);
   assert.equal(table.y > chart.y + chart.h, true);
+  assert.equal(table.typography.fontSize >= 16, true);
+  assert.equal(table.typography.minFontSize >= 16, true);
 });
 
 test("graph detail content stays with the diagram when it fits on one slide", () => {

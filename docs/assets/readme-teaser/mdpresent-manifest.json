@@ -49,15 +49,15 @@
       "path": "docs\\assets\\readme-teaser\\deck.html",
       "format": "html",
       "exists": true,
-      "bytes": 16107,
-      "sha256": "4e8a2849731f3c488482b9d815b168bdf78b1946768ac7b8e198d7da2c12167f"
+      "bytes": 16194,
+      "sha256": "be9dd06157cca7a4af93b99cf1ccb815eb7c1894712157fe16481286203f5bc3"
     },
     {
       "path": "docs\\assets\\readme-teaser\\deck.pptx",
       "format": "pptx",
       "exists": true,
       "bytes": 121981,
-      "sha256": "f2530c24f994fd55821b932250fa716bd052c8c283ad1176a533d05d3b0b8615"
+      "sha256": "0219a7fd98d3c065a60230b6a93fed9b17bf9825494556d4e8b4a9e74c83fbf8"
     }
   ],
   "designLock": "docs\\assets\\readme-teaser\\mdpresent-design-lock.json",
@@ -167,6 +167,7 @@
       "orphanEvidenceBlocks": 0,
       "captionDetached": 0,
       "claimlessSlides": 0,
+      "neutralTitleWithoutMessage": 0,
       "sectionMotifDrift": 0,
       "intraSlideSpacingDrift": 0,
       "textBackgroundLuminanceDrift": 0,
@@ -207,6 +208,7 @@
         "detachedCaptions": true,
         "orphanTables": true,
         "lowObjectCoverage": true,
+        "neutralTitleMessages": true,
         "sectionMotifDrift": true,
         "intraSlideSpacing": true,
         "textBackgroundLuminance": true
@@ -254,11 +256,11 @@
       "chapters": {
         "fontHierarchy": {
           "required": true,
-          "passed": false,
+          "passed": true,
           "evidence": "Title/body hierarchy, readable font floor, family availability, and same-role consistency are checked from Layout IR typography.",
           "titleFontPt": 32,
-          "bodyFontPt": 14,
-          "minFontPt": 14,
+          "bodyFontPt": 16,
+          "minFontPt": 16,
           "sameRoleFontVarianceCount": 0,
           "fontFamily": "Pretendard"
         },
@@ -301,7 +303,7 @@
           "presets": []
         }
       },
-      "requiredFailureCount": 1,
+      "requiredFailureCount": 0,
       "optionalFailureCount": 1
     },
     "overflowResolution": {
@@ -332,14 +334,14 @@
     "coherenceErrorCount": 0,
     "visualWarningCount": 0,
     "visualErrorCount": 0,
-    "polishWarningCount": 1,
-    "minFontPt": 14,
+    "polishWarningCount": 0,
+    "minFontPt": 16,
     "textClipRiskCount": 0,
     "contrastFailures": 0,
     "connectorWarnings": 0,
-    "buildMs": 78,
+    "buildMs": 91,
     "outputBytes": {
-      "html": 16107,
+      "html": 16194,
       "pptx": 121981
     }
   }
