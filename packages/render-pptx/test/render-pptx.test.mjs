@@ -1588,7 +1588,7 @@ test("renderPptx selects SVG icons from semantic source families", async () => {
   }
 });
 
-test("template import reuses positioned image assets from a PPTX template", async () => {
+test("renderPptx does not replay ordinary template slide images into generated output", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-template-"));
   const templatePath = join(outDir, "template.pptx");
   const logoPath = join(outDir, "logo.png");
@@ -1608,14 +1608,12 @@ test("template import reuses positioned image assets from a PPTX template", asyn
 
     await renderPptx(sampleDeck, { outPath, templatePath });
 
-    const expanded = join(outDir, "expanded");
-    execFileSync("powershell", ["-NoProfile", "-Command", `Expand-Archive -LiteralPath '${outPath}' -DestinationPath '${expanded}' -Force`]);
-    const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
-    const mediaFiles = execFileSync("powershell", ["-NoProfile", "-Command", `(Get-ChildItem -LiteralPath '${join(expanded, "ppt", "media")}' | Measure-Object).Count`], { encoding: "utf-8" });
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const mediaPaths = Object.keys(zip.files).filter((path) => /^ppt\/media\/[^/]+\.(png|jpe?g|gif|webp)$/i.test(path));
 
-    assert.match(xml, /<p:pic>/);
-    assert.match(xml, /<a:off x="228600" y="182880"\/>\s*<a:ext cx="457200" cy="457200"\/>/);
-    assert.equal(Number(mediaFiles.trim()) > 0, true);
+    assert.doesNotMatch(xml, /<p:pic>/);
+    assert.equal(mediaPaths.length, 0);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

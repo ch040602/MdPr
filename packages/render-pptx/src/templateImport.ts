@@ -91,22 +91,24 @@ export async function extractTemplateDesignAssets(templatePath?: string | null):
     const rels = relsFile ? parseRelationships(await relsFile.async("string"), xmlPath) : new Map<string, string>();
     const layoutPreset = inferLayoutPreset(xml, xmlPath);
 
-    for (const picture of parsePictures(xml)) {
-      const target = rels.get(picture.relationshipId);
-      if (!target) continue;
+    if (isMasterOrLayoutPart(xmlPath)) {
+      for (const picture of parsePictures(xml)) {
+        const target = rels.get(picture.relationshipId);
+        if (!target) continue;
 
-      const imageFile = zip.file(target);
-      if (!imageFile) continue;
+        const imageFile = zip.file(target);
+        if (!imageFile) continue;
 
-      const imagePath = join(tempDir, `${images.length}${extname(target) || ".png"}`);
-      writeFileSync(imagePath, await imageFile.async("nodebuffer"));
-      images.push({
-        path: imagePath,
-        x: picture.x / EMU_PER_INCH,
-        y: picture.y / EMU_PER_INCH,
-        w: picture.w / EMU_PER_INCH,
-        h: picture.h / EMU_PER_INCH,
-      });
+        const imagePath = join(tempDir, `${images.length}${extname(target) || ".png"}`);
+        writeFileSync(imagePath, await imageFile.async("nodebuffer"));
+        images.push({
+          path: imagePath,
+          x: picture.x / EMU_PER_INCH,
+          y: picture.y / EMU_PER_INCH,
+          w: picture.w / EMU_PER_INCH,
+          h: picture.h / EMU_PER_INCH,
+        });
+      }
     }
 
     shapes.push(...parseDecorativeShapes(xml, theme, layoutPreset));
@@ -161,10 +163,11 @@ export async function preserveTemplatePackageParts(outputPath: string, templateP
     /^ppt\/slideLayouts\/slideLayout\d+\.xml$/,
     /^ppt\/slideLayouts\/_rels\/slideLayout\d+\.xml\.rels$/,
   ];
+  const masterAndLayoutMediaPaths = await referencedMasterAndLayoutMediaPaths(templateZip);
   const copiedPartPaths: string[] = [];
 
   for (const path of Object.keys(templateZip.files).sort()) {
-    if (!copyPatterns.some((pattern) => pattern.test(path))) continue;
+    if (!copyPatterns.some((pattern) => pattern.test(path)) && !masterAndLayoutMediaPaths.has(path)) continue;
     const file = templateZip.file(path);
     if (!file) continue;
     outputZip.file(path, await file.async("nodebuffer"));
@@ -173,6 +176,29 @@ export async function preserveTemplatePackageParts(outputPath: string, templateP
 
   writeFileSync(outputPath, await outputZip.generateAsync({ type: "nodebuffer" }));
   return { ...integrity, copiedPartPaths };
+}
+
+function isMasterOrLayoutPart(path: string): boolean {
+  return /ppt\/(slideMasters|slideLayouts)\//.test(path);
+}
+
+async function referencedMasterAndLayoutMediaPaths(zip: JSZip): Promise<Set<string>> {
+  const mediaPaths = new Set<string>();
+  const relationshipPaths = Object.keys(zip.files).filter((path) =>
+    /^ppt\/(slideMasters|slideLayouts)\/_rels\/[^/]+\.xml\.rels$/.test(path),
+  );
+
+  for (const relationshipPath of relationshipPaths) {
+    const relationshipFile = zip.file(relationshipPath);
+    if (!relationshipFile) continue;
+    const sourcePartPath = relationshipPath
+      .replace("/_rels/", "/")
+      .replace(/\.rels$/, "");
+    const relationships = parseRelationships(await relationshipFile.async("string"), sourcePartPath);
+    for (const target of relationships.values()) mediaPaths.add(target);
+  }
+
+  return mediaPaths;
 }
 
 function scoreTemplatePart(path: string): number {

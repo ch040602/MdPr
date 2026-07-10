@@ -9,4 +9,5 @@ CODEX_PROMPT.md
 .env
 .tmp/
 tmp/
+artifacts/pro-readability/
 ~$*.pptx

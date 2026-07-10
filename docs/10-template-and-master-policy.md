@@ -38,6 +38,7 @@ falls back to deterministic MDPR layout output.
 - arbitrary title/content box positions that are not master/layout placeholders
 - sample slide layout coordinates
 - sample text inside templates
+- images placed on ordinary sample slides; they must not be replayed into every generated slide
 - agent-provided replacement master/layout IDs
 - agent-provided final image crops, coordinates, or z-order
 ```
