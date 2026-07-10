@@ -71,3 +71,11 @@ render-pptx
   - centered icon and badge slots
   - bounded connectors
 ```
+
+## Long Markdown Corpus
+
+`tests/fixtures/long-md-corpus/` contains ten authored stress fixtures for
+dense prose, Korean paragraphs, diagram flows, code, tables, charts, status
+lists, comparisons, and full-talk narratives. The CLI regression suite plans,
+validates, and renders every fixture to PPTX so source readability policies are
+checked through the same orchestration path used by real decks.

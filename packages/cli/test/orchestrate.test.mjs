@@ -10,6 +10,18 @@ import { buildDeck, inspectDeck, planDeck, validateDeck } from "../dist/orchestr
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const basicDeck = join(repoRoot, "examples/basic/deck.md");
+const longMarkdownCorpus = [
+  "long-01-dense-technical-prose.md",
+  "long-02-diagram-workflow.md",
+  "long-03-data-table-chart.md",
+  "long-04-status-agenda.md",
+  "long-05-korean-dense.md",
+  "long-06-code-and-notes.md",
+  "long-07-method-comparison.md",
+  "long-08-long-table.md",
+  "long-09-evidence-narrative.md",
+  "long-10-full-talk.md",
+].map((fileName) => join(repoRoot, "tests/fixtures/long-md-corpus", fileName));
 
 test("inspectDeck and planDeck expose a reusable orchestration boundary", () => {
   const slides = inspectDeck(basicDeck);
@@ -48,6 +60,29 @@ test("buildDeck writes PPTX output through the renderer boundary", async () => {
     assert.equal(result.writtenFiles.some((file) => file.endsWith("deck.pptx")), true);
     assert.equal(existsSync(join(outDir, "deck.pptx")), true);
     assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "PPTX_RENDERER_NOT_IMPLEMENTED"), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("the long Markdown corpus plans and renders to editable PPTX outputs", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-long-corpus-"));
+
+  try {
+    for (const [index, fixturePath] of longMarkdownCorpus.entries()) {
+      const planned = planDeck(fixturePath);
+      const validation = validateDeck(fixturePath);
+      const fixtureOutDir = join(outDir, String(index + 1));
+
+      assert.ok(planned.presentation.slides.length >= 2, `expected multiple slides for ${fixturePath}`);
+      assert.equal(planned.layout.slides.length, planned.presentation.slides.length, `expected layout coverage for ${fixturePath}`);
+      assert.equal(validation.valid, true, `expected valid layout for ${fixturePath}`);
+
+      const result = await buildDeck(fixturePath, { formats: ["pptx"], outDir: fixtureOutDir });
+      assert.equal(result.writtenFiles.includes(join(fixtureOutDir, "deck.pptx")), true, `expected PPTX output for ${fixturePath}`);
+      assert.equal(existsSync(join(fixtureOutDir, "deck.pptx")), true, `expected PPTX file for ${fixturePath}`);
+      assert.equal(result.diagnostics.some((diagnostic) => diagnostic.level === "error"), false, `expected no error diagnostics for ${fixturePath}`);
+    }
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

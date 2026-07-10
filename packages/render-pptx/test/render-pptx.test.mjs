@@ -9,7 +9,7 @@ import PptxGenJSExport from "pptxgenjs";
 import JSZip from "jszip";
 import { renderPptx } from "../dist/index.js";
 import { iconKindForText } from "../dist/iconCatalog.js";
-import { inspectTemplatePackageIntegrity } from "../dist/templateImport.js";
+import { extractTemplateDesignAssets, inspectTemplatePackageIntegrity } from "../dist/templateImport.js";
 
 const PptxGenJS = typeof PptxGenJSExport === "function" ? PptxGenJSExport : PptxGenJSExport.default;
 const EMU_PER_INCH = 914400;
@@ -89,14 +89,14 @@ async function patchTemplateTheme(templatePath, colors) {
   writeFileSync(templatePath, await zip.generateAsync({ type: "nodebuffer" }));
 }
 
-async function patchTemplatePlaceholders(templatePath, placeholders) {
+async function patchTemplatePartPlaceholders(templatePath, partPattern, placeholders, partLabel) {
   const zip = await JSZip.loadAsync(readFileSync(templatePath));
-  const layoutPath = Object.keys(zip.files).find((path) => /^ppt\/slideLayouts\/slideLayout\d+\.xml$/.test(path));
-  assert.ok(layoutPath, "expected generated template to contain a slide layout");
+  const partPath = Object.keys(zip.files).find((path) => partPattern.test(path));
+  assert.ok(partPath, `expected generated template to contain ${partLabel}`);
 
-  const layoutFile = zip.file(layoutPath);
-  assert.ok(layoutFile);
-  const xml = await layoutFile.async("string");
+  const partFile = zip.file(partPath);
+  assert.ok(partFile);
+  const xml = await partFile.async("string");
   const placeholderXml = placeholders.map((placeholder, index) => {
     const id = 8000 + index;
     const x = Math.round(placeholder.x * EMU_PER_INCH);
@@ -120,8 +120,26 @@ async function patchTemplatePlaceholders(templatePath, placeholders) {
   }).join("");
 
   assert.match(xml, /<\/p:spTree>/);
-  zip.file(layoutPath, xml.replace("</p:spTree>", `${placeholderXml}</p:spTree>`));
+  zip.file(partPath, xml.replace("</p:spTree>", `${placeholderXml}</p:spTree>`));
   writeFileSync(templatePath, await zip.generateAsync({ type: "nodebuffer" }));
+}
+
+async function patchTemplatePlaceholders(templatePath, placeholders) {
+  await patchTemplatePartPlaceholders(
+    templatePath,
+    /^ppt\/slideLayouts\/slideLayout\d+\.xml$/,
+    placeholders,
+    "a slide layout",
+  );
+}
+
+async function patchTemplateMasterPlaceholders(templatePath, placeholders) {
+  await patchTemplatePartPlaceholders(
+    templatePath,
+    /^ppt\/slideMasters\/slideMaster\d+\.xml$/,
+    placeholders,
+    "a slide master",
+  );
 }
 
 async function readPptxThemeXml(pptxPath) {
@@ -1646,6 +1664,26 @@ test("renderPptx applies template title and body placeholder geometry without ch
     await template.writeFile({ fileName: templatePath });
     await patchTemplatePlaceholders(templatePath, [titlePlaceholder, bodyPlaceholder]);
 
+    const assets = await extractTemplateDesignAssets(templatePath);
+    assert.equal(
+      assets.placeholders.some((placeholder) =>
+        placeholder.role === "title" &&
+        sameNumber(placeholder.x, titlePlaceholder.x) &&
+        placeholder.sourcePath.includes("/slideLayouts/"),
+      ),
+      true,
+      "expected parser to capture the first inserted title placeholder inside p:spTree",
+    );
+    assert.equal(
+      assets.placeholders.some((placeholder) =>
+        placeholder.role === "body" &&
+        sameNumber(placeholder.x, bodyPlaceholder.x) &&
+        placeholder.sourcePath.includes("/slideLayouts/"),
+      ),
+      true,
+      "expected parser to capture body placeholders from the slide layout",
+    );
+
     await renderPptx(deck, { outPath, templatePath, designPreset: "plain" });
 
     const zip = await JSZip.loadAsync(readFileSync(outPath));
@@ -1667,6 +1705,128 @@ test("renderPptx applies template title and body placeholder geometry without ch
     assert.equal(sameNumber(bodyTransform.w, bodyPlaceholder.w - 0.16), true);
     assert.equal(sameNumber(bodyTransform.h, bodyPlaceholder.h - 0.24), true);
     assert.equal(await zipTextByPath(outPath, "ppt/slideLayouts/slideLayout1.xml"), await zipTextByPath(templatePath, "ppt/slideLayouts/slideLayout1.xml"));
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx keeps generated content regions when a template has too few body placeholders", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-template-multi-body-"));
+  const templatePath = join(outDir, "template.pptx");
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  const titlePlaceholder = { type: "title", name: "Template Title", x: 1.0, y: 0.6, w: 11.0, h: 0.7 };
+  const loneBodyPlaceholder = { type: "body", name: "Only Body Placeholder", x: 3.0, y: 2.0, w: 7.0, h: 3.0 };
+
+  deck.presentation.slides[0].title = "Multiple Body Regions";
+  deck.presentation.slides[0].blocks = [
+    { id: "body-1", type: "paragraph", text: "First generated region must not collapse." },
+    { id: "body-2", type: "paragraph", text: "Second generated region must not collapse." },
+  ];
+  deck.layout.slides[0].layout = { preset: "comparison" };
+  deck.layout.slides[0].regions = [
+    { ...deck.layout.slides[0].regions[0], x: 0.5, y: 0.25, w: 12.0, h: 0.75 },
+    {
+      id: "body-left",
+      role: "body",
+      blockIds: ["body-1"],
+      x: 0.9,
+      y: 1.55,
+      w: 5.2,
+      h: 3.5,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+    {
+      id: "body-right",
+      role: "body",
+      blockIds: ["body-2"],
+      x: 7.0,
+      y: 1.55,
+      w: 5.2,
+      h: 3.5,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    const template = new PptxGenJS();
+    template.layout = "LAYOUT_WIDE";
+    template.addSlide().addText("Template sample", { x: 1, y: 1, w: 5, h: 0.5 });
+    await template.writeFile({ fileName: templatePath });
+    await patchTemplatePlaceholders(templatePath, [titlePlaceholder, loneBodyPlaceholder]);
+
+    await renderPptx(deck, { outPath, templatePath, designPreset: "plain" });
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const firstShape = shapeXmlContainingText(xml, "First generated region must not collapse.");
+    const secondShape = shapeXmlContainingText(xml, "Second generated region must not collapse.");
+    assert.ok(firstShape, "expected first body text");
+    assert.ok(secondShape, "expected second body text");
+
+    const firstTransform = shapeTransform(firstShape);
+    const secondTransform = shapeTransform(secondShape);
+    assert.equal(sameNumber(firstTransform.x, 0.9 + 0.08), true);
+    assert.equal(sameNumber(secondTransform.x, 7.0 + 0.08), true);
+    assert.equal(sameNumber(firstTransform.x, loneBodyPlaceholder.x + 0.08), false);
+    assert.equal(sameNumber(secondTransform.x, loneBodyPlaceholder.x + 0.08), false);
+    assert.equal(sameNumber(firstTransform.x, secondTransform.x), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx prefers slide layout placeholders over slide master placeholders", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-template-layout-priority-"));
+  const templatePath = join(outDir, "template.pptx");
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  const masterTitle = { type: "title", name: "Master Title", x: 0.4, y: 0.3, w: 12.1, h: 0.6 };
+  const masterBody = { type: "body", name: "Master Body", x: 0.7, y: 1.3, w: 5.5, h: 4.2 };
+  const layoutTitle = { type: "title", name: "Layout Title", x: 1.4, y: 0.75, w: 10.0, h: 0.65 };
+  const layoutBody = { type: "body", name: "Layout Body", x: 2.2, y: 2.1, w: 8.0, h: 2.8 };
+
+  deck.presentation.slides[0].title = "Layout Placeholder Priority";
+  deck.presentation.slides[0].blocks = [{ id: "body-1", type: "paragraph", text: "Layout placeholders should win over master placeholders." }];
+  deck.layout.slides[0].layout = { preset: "title-body" };
+  deck.layout.slides[0].regions = [
+    { ...deck.layout.slides[0].regions[0], x: 0.6, y: 0.25, w: 11.8, h: 0.8 },
+    {
+      id: "body",
+      role: "body",
+      blockIds: ["body-1"],
+      x: 0.8,
+      y: 1.3,
+      w: 6.5,
+      h: 2.0,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+    },
+  ];
+
+  try {
+    const template = new PptxGenJS();
+    template.layout = "LAYOUT_WIDE";
+    template.addSlide().addText("Template sample", { x: 1, y: 1, w: 5, h: 0.5 });
+    await template.writeFile({ fileName: templatePath });
+    await patchTemplateMasterPlaceholders(templatePath, [masterTitle, masterBody]);
+    await patchTemplatePlaceholders(templatePath, [layoutTitle, layoutBody]);
+
+    await renderPptx(deck, { outPath, templatePath, designPreset: "plain" });
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const titleTransform = shapeTransform(shapeXmlContainingText(xml, "Layout Placeholder Priority"));
+    const bodyTransform = shapeTransform(shapeXmlContainingText(xml, "Layout placeholders should win over master placeholders."));
+
+    assert.equal(sameNumber(titleTransform.x, layoutTitle.x), true);
+    assert.equal(sameNumber(titleTransform.y, layoutTitle.y), true);
+    assert.equal(sameNumber(bodyTransform.x, layoutBody.x + 0.08), true);
+    assert.equal(sameNumber(bodyTransform.y, layoutBody.y + 0.12), true);
+    assert.equal(sameNumber(titleTransform.x, masterTitle.x), false);
+    assert.equal(sameNumber(bodyTransform.x, masterBody.x + 0.08), false);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -1755,6 +1915,103 @@ test("renderPptx keeps Markdown images inside their surfaced region safe frame",
     assert.equal(x + w <= safeFrame.right + 3, true);
     assert.equal(y + h <= safeFrame.bottom + 3, true);
     assert.equal(Math.abs((w / h) - (20 / 12)) < 0.02, true, `image aspect ratio distorted: ${w / h}`);
+    assert.doesNotMatch(markdownPicture.xml, /<a:srcRect/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("renderPptx preserves Markdown image aspect ratio inside template picture placeholders", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-template-image-placeholder-"));
+  const templatePath = join(outDir, "template.pptx");
+  const imagePath = join(outDir, "preview.png");
+  const outPath = join(outDir, "deck.pptx");
+  const imagePlaceholder = { type: "pic", name: "Template Picture", x: 4.0, y: 1.55, w: 4.0, h: 4.0 };
+  const inset = 0.07;
+  const deck = {
+    presentation: {
+      version: "1.0",
+      meta: { title: "Template Image Placeholder" },
+      outline: [],
+      assets: [],
+      diagnostics: [],
+      slides: [{
+        id: "slide-image",
+        index: 0,
+        role: "content",
+        title: "Template Image Placeholder",
+        headingPath: ["Template Image Placeholder"],
+        source: {},
+        intent: "image",
+        tags: [],
+        blocks: [{ id: "image-1", type: "image", src: imagePath, alt: "template safe image" }],
+      }],
+    },
+    layout: {
+      version: "1.0",
+      slideSize: { width: 13.333, height: 7.5, unit: "in" },
+      theme: {
+        fontFamily: "Arial",
+        backgroundColor: "#FFFFFF",
+        textColor: "#111827",
+        primaryColor: "#2563EB",
+        titleFontSize: 30,
+        bodyFontSize: 20,
+        captionFontSize: 12,
+        minFontSize: 14,
+        lineHeight: 1.2,
+      },
+      diagnostics: [],
+      slides: [{
+        id: "layout-image",
+        sourceSlideId: "slide-image",
+        index: 0,
+        layout: { preset: "image-focus" },
+        background: { color: "#FFFFFF" },
+        overflowPolicy: { action: "shrink", minFontSize: 14, maxShrinkSteps: 3 },
+        regions: [
+          { id: "title", role: "title", blockIds: ["__title:slide-image"], x: 0.8, y: 0.45, w: 11.7, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 30, fontWeight: "bold", lineHeight: 1.2, minFontSize: 14 } },
+          { id: "image-1", role: "image", blockIds: ["image-1"], x: 0.9, y: 1.65, w: 4.5, h: 2.2, zIndex: 10 },
+        ],
+      }],
+    },
+  };
+
+  try {
+    writeFileSync(imagePath, Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAABQAAAAMCAYAAABiDJ37AAAAI0lEQVR42mP8z8Dwn4GKgImBjoEJRh1MDRgYGBgAAJ1CDxN5CHiFAAAAAElFTkSuQmCC",
+      "base64",
+    ));
+
+    const template = new PptxGenJS();
+    template.layout = "LAYOUT_WIDE";
+    template.addSlide().addText("Template sample", { x: 1, y: 1, w: 5, h: 0.5 });
+    await template.writeFile({ fileName: templatePath });
+    await patchTemplatePlaceholders(templatePath, [imagePlaceholder]);
+
+    await renderPptx(deck, { outPath, templatePath, designPreset: "plain" });
+    await assertPptxObjectsInsideSlide(outPath);
+
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const markdownPicture = [...xml.matchAll(/<p:pic\b[\s\S]*?<a:off x="(-?\d+)" y="(-?\d+)"\/>\s*<a:ext cx="(-?\d+)" cy="(-?\d+)"\/>[\s\S]*?<\/p:pic>/g)]
+      .map((match) => ({ xml: match[0], values: match.slice(1, 5).map(Number) }))
+      .find((picture) => picture.xml.includes("mdpr:slide-image:image-1:image-1"));
+    assert.ok(markdownPicture, "expected Markdown image picture");
+
+    const [x, y, w, h] = markdownPicture.values;
+    const safeFrame = {
+      left: Math.round((imagePlaceholder.x + inset) * EMU_PER_INCH),
+      top: Math.round((imagePlaceholder.y + inset) * EMU_PER_INCH),
+      right: Math.round((imagePlaceholder.x + imagePlaceholder.w - inset) * EMU_PER_INCH),
+      bottom: Math.round((imagePlaceholder.y + imagePlaceholder.h - inset) * EMU_PER_INCH),
+    };
+
+    assert.equal(x >= safeFrame.left - 3, true);
+    assert.equal(y >= safeFrame.top - 3, true);
+    assert.equal(x + w <= safeFrame.right + 3, true);
+    assert.equal(y + h <= safeFrame.bottom + 3, true);
+    assert.equal(Math.abs((w / h) - (20 / 12)) < 0.02, true, `template image aspect ratio distorted: ${w / h}`);
     assert.doesNotMatch(markdownPicture.xml, /<a:srcRect/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
