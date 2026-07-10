@@ -31,6 +31,10 @@ arc-ring, gauge, connected-strip, ranked-bars, metric-dots
 
 Generic `chart` fences may also declare `kind: arc-ring`, `kind: gauge`, `kind: connected-strip`, `kind: ranked-bars`, or `kind: metric-dots`.
 
+`metric-dots` uses a capped 0-100 range only to fill its five visual dots. Its
+editable value label always preserves the source number, including values above
+100; MDPR never silently replaces a source value with the visual cap.
+
 ## SVG Surface Path
 
 SVG-backed PowerPoint surfaces are generated in:

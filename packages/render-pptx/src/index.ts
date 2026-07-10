@@ -2157,10 +2157,11 @@ function renderMetricDotsChart(
   const baseY = region.y + region.h * 0.24;
 
   for (let index = 0; index < count; index++) {
-    const value = clamp(values[index] ?? 0, 0, 100);
+    const rawValue = values[index] ?? 0;
+    const dotFillValue = clamp(rawValue, 0, 100);
     const x = startX + index * (itemW + gap);
     const accent = preset.chartColors[index % Math.max(1, preset.chartColors.length)] ?? preset.primaryColor;
-    const activeDots = Math.max(1, Math.round(value / 20));
+    const activeDots = Math.max(1, Math.round(dotFillValue / 20));
     slide.addShape("roundRect", {
       x,
       y: baseY - 0.12,
@@ -2196,7 +2197,7 @@ function renderMetricDotsChart(
       margin: [0, 0, 0, 0],
       fit: "shrink",
     });
-    slide.addText(formatChartValue(value), {
+    slide.addText(formatChartValue(rawValue), {
       ...common,
       x: x + 0.08,
       y: baseY + region.h * 0.43,

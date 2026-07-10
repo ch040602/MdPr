@@ -1384,6 +1384,31 @@ test("renderPptx renders chart proof objects as editable shapes without native c
   }
 });
 
+test("renderPptx preserves raw metric-dot values while capping only dot fill", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-metric-dot-value-"));
+  const outPath = join(outDir, "metric-dot-value.pptx");
+  const deck = makeChartProofDeck([{
+    title: "Metric value parity",
+    chart: {
+      kind: "metric-dots",
+      labels: ["Grouping"],
+      series: [{ name: "Value", values: [107] }],
+    },
+  }]);
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "clean" });
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const slideXml = await zip.file("ppt/slides/slide1.xml").async("string");
+
+    assert.match(slideXml, /Grouping/);
+    assert.match(slideXml, />107</);
+    assert.doesNotMatch(slideXml, />100%</);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx keeps dense connected-strip proof chart text inside the chart region", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-dense-connected-strip-"));
   const outPath = join(outDir, "dense-connected-strip.pptx");
