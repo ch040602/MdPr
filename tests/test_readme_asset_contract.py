@@ -84,6 +84,27 @@ class ReadmeAssetContractTests(unittest.TestCase):
             self.assertNotIn("docs/assets/readme-slides", readme)
             self.assertNotIn("build-readme-slide-assets", readme)
 
+    def test_translated_readmes_mirror_readability_and_typography_contract(self):
+        required_identifiers = [
+            "<!-- mdpr-readability-typography-contract -->",
+            "OpenXML",
+            "0.06-0.10in",
+            "16pt",
+            "MDPR_POLISH_GATE_FAILED",
+            "source-neutral",
+            "focal-point",
+            "region.typography.minFontSize",
+            "fontHierarchy",
+            "Consolas",
+            "typography.fontFamily",
+            "--template",
+        ]
+
+        for readme_name in ["README.ko.md", "README.zh.md"]:
+            readme = (ROOT / readme_name).read_text(encoding="utf-8")
+            for identifier in required_identifiers:
+                self.assertIn(identifier, readme, f"{readme_name} is missing {identifier}")
+
     def test_readme_preview_script_explicitly_builds_pipeline_teaser(self):
         package_json = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
         preview_script = package_json["scripts"]["preview:readme"]

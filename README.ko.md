@@ -25,6 +25,47 @@
 - **Deterministic validation**: overflow, generated artifact contract, slide count, surface marker, 언어, manifest drift, post-AI PPT polish gate를 검사합니다.
 - **Skill-side review**: LLM 기반 레이아웃 비평, visual polish, high-quality deck guidance는 MDPR runtime이 아니라 [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage)의 역할입니다.
 
+<!-- mdpr-readability-typography-contract -->
+## 가독성 및 글꼴 계약
+
+가독성 규칙:
+
+- 장식용이 아닌 모든 source block은 layout region에 도달해야 하며,
+  list, prose, table, code가 섞여 있어도 evidence 중심 layout이 일부를
+  누락해서는 안 됩니다.
+- code line은 각각 편집 가능한 OpenXML line으로 유지합니다. 들여쓴
+  prose는 별도의 편집 가능한 row box로 배치하고 `0.06-0.10in`의 안전
+  간격을 둡니다.
+- `--pipeline-one-page`의 feature summary와 table evidence는 최소 `16pt`
+  글꼴 하한을 유지합니다.
+- `build`와 `validate --visual`은 필수 polish chapter가 실패하면 중단하고,
+  실패한 chapter와 함께 `MDPR_POLISH_GATE_FAILED`를 보고합니다.
+- image safe frame은 원본 aspect ratio를 보존하거나 명시적인 focal-point
+  crop을 사용합니다. source-neutral slide에는 근거 없는 image나 icon을
+  추가하지 않습니다.
+
+글꼴 규칙:
+
+- 기본 profile은 `Pretendard`, title `34pt`, body `22pt`, caption `14pt`,
+  configured minimum `18pt`, line height `1.2`를 사용합니다.
+- region의 실제 하한은 `region.typography.minFontSize`, slide overflow floor,
+  theme minimum 순서로 결정합니다. shrink와 containment resolution은 이
+  하한 아래로 내려가지 않으며, 그래도 맞지 않으면 diagnostic을 남깁니다.
+- 필수 `--visual` `fontHierarchy` chapter는 선언된 font family, title/body
+  사이 최소 `4pt` 차이, Layout IR 전체 최소 `16pt`, 동일 role의 font-size
+  variance 0을 요구합니다.
+- strict polish floor에는 caption이나 code의 silent exemption이 없습니다.
+  active region이 `16pt`보다 작으면 non-strict profile 기본값이 더 작더라도
+  required-gate failure로 남습니다.
+- PPTX는 resolved family를 document head/body theme과 편집 가능한 text run에
+  기록합니다. code region은 명시적 monospace 예외로 `Consolas`를 사용합니다.
+- `--template`은 기존 master, layout, theme OOXML을 보존하지만 generated text는
+  resolved MDPR typography를 사용합니다. 정확히 일치해야 하면
+  `typography.fontFamily`를 master theme family로 명시해야 합니다.
+- MDPR은 font를 embed하거나 host 설치 여부를 검증하지 않습니다. authoring과
+  rendering system에 선택한 family가 있어야 하며, CJK·mixed-language 측정은
+  fit을 위해 source text를 임의로 다시 쓰지 않습니다.
+
 ## 미리보기
 
 - [PPT 생성 기반 theme preview gallery 열기](https://ch040602.github.io/MdPr/theme-preview/)

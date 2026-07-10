@@ -25,6 +25,44 @@
 - **Deterministic validation**：检查 overflow、generated artifact contract、slide count、surface marker、语言和 manifest drift。
 - **Skill-side review**：LLM-advised layout critique, visual polish, and high-quality deck guidance belong in [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage), not MDPR runtime.
 
+<!-- mdpr-readability-typography-contract -->
+## 可读性与字体契约
+
+可读性规则：
+
+- 每个非装饰性 source block 都必须进入 layout region；即使 list、prose、
+  table 和 code 混合出现，evidence-oriented layout 也不能丢弃其中任何部分。
+- 每一行 code 都保留为可编辑的 OpenXML line。缩进 prose 使用独立、可编辑的
+  row box，并保留 `0.06-0.10in` 的安全间距。
+- `--pipeline-one-page` 中的 feature summary 与 table evidence 保持最低
+  `16pt` 字体下限。
+- `build` 和 `validate --visual` 在必需的 polish chapter 失败时停止，并以
+  `MDPR_POLISH_GATE_FAILED` 报告失败的 chapter。
+- image safe frame 保留原始 aspect ratio，或使用明确的 focal-point crop；
+  source-neutral slide 不会获得没有来源依据的 image 或 icon。
+
+字体规则：
+
+- 默认 profile 使用 `Pretendard`：title `34pt`、body `22pt`、caption `14pt`、
+  configured minimum `18pt`，line height 为 `1.2`。
+- region 的有效下限依次取自 `region.typography.minFontSize`、slide overflow
+  floor 和 theme minimum。shrink 与 containment resolution 不会低于该下限；
+  若内容仍无法容纳，则保留 diagnostic。
+- 必需的 `--visual` `fontHierarchy` chapter 要求已声明的 font family、
+  title 比 body 至少大 `4pt`、Layout IR 全局下限至少 `16pt`，并且同一 role
+  的 font-size variance 为 0。
+- strict polish floor 不会静默豁免 caption 或 code。active region 低于
+  `16pt` 时，即使 non-strict profile 的默认值更小，也仍是 required-gate
+  failure。
+- PPTX 将 resolved family 写入 document head/body theme 和可编辑 text run；
+  code region 是明确的 monospace 例外，使用 `Consolas`。
+- `--template` 会保留原始 master、layout 与 theme OOXML，但 generated text
+  仍使用 resolved MDPR typography。若要求完全一致，应将
+  `typography.fontFamily` 明确设置为 master theme family。
+- MDPR 不嵌入 font，也不验证 host 是否已安装所选 family。authoring 和
+  rendering system 必须具备该 family；CJK 与 mixed-language 测量不会为了
+  fit 而改写 source text。
+
 ## 预览
 
 - [Open the PPT-generated theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/)
