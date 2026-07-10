@@ -1384,15 +1384,15 @@ test("renderPptx renders chart proof objects as editable shapes without native c
   }
 });
 
-test("renderPptx preserves raw metric-dot values while capping only dot fill", async () => {
+test("renderPptx preserves a consistent raw scale for metric-dots with out-of-range values", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-metric-dot-value-"));
   const outPath = join(outDir, "metric-dot-value.pptx");
   const deck = makeChartProofDeck([{
     title: "Metric value parity",
     chart: {
       kind: "metric-dots",
-      labels: ["Grouping"],
-      series: [{ name: "Value", values: [107] }],
+      labels: ["Collection", "Grouping", "Fixtures", "Builds"],
+      series: [{ name: "Value", values: [100, 107, 10, 20] }],
     },
   }]);
 
@@ -1401,9 +1401,15 @@ test("renderPptx preserves raw metric-dot values while capping only dot fill", a
     const zip = await JSZip.loadAsync(readFileSync(outPath));
     const slideXml = await zip.file("ppt/slides/slide1.xml").async("string");
 
+    assert.match(slideXml, /Collection/);
     assert.match(slideXml, /Grouping/);
+    assert.match(slideXml, />100</);
     assert.match(slideXml, />107</);
+    assert.match(slideXml, />10</);
+    assert.match(slideXml, />20</);
     assert.doesNotMatch(slideXml, />100%</);
+    assert.doesNotMatch(slideXml, />10%</);
+    assert.doesNotMatch(slideXml, />20%</);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

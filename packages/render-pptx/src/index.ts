@@ -2148,6 +2148,7 @@ function renderMetricDotsChart(
   const fontFace = region.typography?.fontFamily ?? common.fontFace ?? "Arial";
   const bodySize = Math.max(14, region.typography?.fontSize ?? common.fontSize ?? 16);
   const values = chart.series[0]?.values ?? [];
+  const usesPercentLabels = values.length > 0 && values.every((value) => Number.isFinite(value) && value >= 0 && value <= 100);
   const count = Math.max(1, Math.min(chart.labels.length, values.length, 6));
   const gap = Math.min(0.34, Math.max(0.16, region.w * 0.03));
   const itemW = Math.min(1.35, (region.w - gap * (count - 1) - 0.5) / count);
@@ -2197,7 +2198,7 @@ function renderMetricDotsChart(
       margin: [0, 0, 0, 0],
       fit: "shrink",
     });
-    slide.addText(formatChartValue(rawValue), {
+    slide.addText(usesPercentLabels ? formatChartValue(rawValue) : formatRawChartValue(rawValue), {
       ...common,
       x: x + 0.08,
       y: baseY + region.h * 0.43,
@@ -2290,6 +2291,10 @@ function arcEndpoint(percent: number, ringX: number, ringY: number, ringSize: nu
 
 function formatChartValue(value: number): string {
   if (Math.abs(value) <= 100 && Number.isFinite(value)) return `${Math.round(value)}%`;
+  return formatRawChartValue(value);
+}
+
+function formatRawChartValue(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 

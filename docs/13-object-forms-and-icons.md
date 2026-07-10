@@ -31,9 +31,11 @@ arc-ring, gauge, connected-strip, ranked-bars, metric-dots
 
 Generic `chart` fences may also declare `kind: arc-ring`, `kind: gauge`, `kind: connected-strip`, `kind: ranked-bars`, or `kind: metric-dots`.
 
-`metric-dots` uses a capped 0-100 range only to fill its five visual dots. Its
-editable value label always preserves the source number, including values above
-100; MDPR never silently replaces a source value with the visual cap.
+`metric-dots` chooses one value-label policy for the entire metric group. A
+group whose values are all in the 0-100 range uses percentage labels; if any
+value is outside that range, every editable label uses its raw source number.
+The five visual dots still use a capped 0-100 fill range, so MDPR never silently
+replaces a source value with the visual cap or mixes scales within one group.
 
 ## SVG Surface Path
 
