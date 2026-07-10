@@ -77,6 +77,29 @@ Current readability contract:
 - image safe frames preserve aspect ratio or use explicit focal-point crops;
   source-neutral slides do not receive invented images or icons
 
+Typography rules:
+
+- the default profile uses `Pretendard` with `34pt` titles, `22pt` body text,
+  `14pt` captions, an `18pt` configured minimum, and `1.2` line height
+- a region resolves its effective floor from `region.typography.minFontSize`,
+  then the slide overflow floor, then the theme minimum; shrink and containment
+  resolution stop at that floor and leave a diagnostic when text still cannot fit
+- the required `--visual` `fontHierarchy` chapter needs a declared family,
+  title text at least `4pt` larger than body text, a deck-wide Layout IR floor of
+  at least `16pt`, and zero same-role font-size variance
+- the strict polish floor has no silent caption or code exemption; an active
+  region below `16pt` remains visible as a required-gate failure even when its
+  non-strict profile default is smaller
+- PPTX output writes the resolved family to the document head/body theme and
+  editable text runs; code regions are the explicit monospace exception and use
+  `Consolas`
+- `--template` preserves the original master, layout, and theme OOXML, while
+  generated text still uses resolved MDPR typography; set `typography.fontFamily`
+  to the master theme family when an exact match is required
+- MDPR does not embed fonts or verify host installation, so the selected family
+  must exist on authoring and rendering systems; CJK and mixed-language
+  measurement preserves source text instead of rewriting it to make content fit
+
 Best fit:
 
 - engineering reports that must become editable PowerPoint decks
