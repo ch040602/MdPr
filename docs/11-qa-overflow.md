@@ -197,6 +197,11 @@ The first five checks are required build-quality gates in the manifest. The
 before/after comparison is optional for normal builds and passes when the build
 uses at least two theme-gallery presets.
 
+When `build` or `validate` runs with `--visual`, any failed required chapter is
+reported as `MDPR_POLISH_GATE_FAILED`; validation is invalid and a build stops
+before rendering. Runs without `--visual` retain the manifest summary without
+promoting it to a failing diagnostic.
+
 Coherence summaries are always recorded in the manifest. `validate --coherence`
 promotes the same checks into user-facing diagnostics:
 

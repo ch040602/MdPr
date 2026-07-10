@@ -42,6 +42,9 @@ Implemented baseline:
 - preserves Layout IR coordinates and does not recompute layout
 - applies PowerPoint shrink behavior only when overflow policy is `shrink`
 - preserves Markdown line breaks, sentence units, ordered list numbers, nested list prefixes, bold, and italic runs
+- preserves each code line as an editable OpenXML line boundary rather than adjacent runs in one visual line
+- routes every non-decoration source block to a layout region; table-focused slides keep accompanying lists and prose in a separate body region
+- renders indented paragraph rows as separate editable text boxes with a bounded `0.06-0.10in` inter-row safety gap, and includes that gap in font-fitting calculations
 - renders block quotes as separated key-message regions when planned
 - renders ordered item cards with editable badges and accent text
 - centers item-card text boxes from the leading badge/icon center and keeps
@@ -161,6 +164,11 @@ mdpresent build deck.md --to html,pdf --background "#111827" --font Aptos
 ## Generated Preview Validation
 
 Actions theme preview is regenerated from PPTX output and checked by `scripts/evaluate-theme-preview.mjs`. The evaluator checks the 9-style redefined preview set, legacy deck removal, exported PNG count and size, manifest composition markers, proof object markers, rendered surface variants, required catalog slides, visible text language, and the absence of legacy iframe-based previews.
+
+`build-theme-preview.mjs` owns only `pptx/`, `slides/`, `index.html`, and
+`preview-manifest.json` under its output directory. Regeneration must preserve
+evaluation reports, review evidence, and any other files written by separate
+workflows in the same directory.
 
 The preview evaluator also emits design-quality gates:
 

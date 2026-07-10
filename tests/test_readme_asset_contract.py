@@ -1,6 +1,8 @@
 import json
 import hashlib
 import re
+import subprocess
+import tempfile
 from pathlib import Path
 import unittest
 
@@ -24,6 +26,40 @@ THEME_EXAMPLE_IMAGES = [
 
 
 class ReadmeAssetContractTests(unittest.TestCase):
+    def test_theme_preview_cleanup_preserves_unowned_evidence_files(self):
+        helper = ROOT / "scripts" / "theme-preview-outputs.mjs"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            preview_dir = Path(temp_dir)
+            (preview_dir / "pptx").mkdir()
+            (preview_dir / "slides").mkdir()
+            (preview_dir / "pptx" / "old.pptx").write_bytes(b"old")
+            (preview_dir / "slides" / "old.png").write_bytes(b"old")
+            (preview_dir / "index.html").write_text("old", encoding="utf-8")
+            (preview_dir / "preview-manifest.json").write_text("{}", encoding="utf-8")
+            (preview_dir / "readme-preview-evaluation.json").write_text("{}", encoding="utf-8")
+            (preview_dir / "external-review-sentinel.json").write_text("{}", encoding="utf-8")
+
+            subprocess.run(
+                [
+                    "node",
+                    "--input-type=module",
+                    "--eval",
+                    f'import {{ resetThemePreviewOutputs }} from {json.dumps(helper.as_uri())}; resetThemePreviewOutputs(process.argv[1]);',
+                    str(preview_dir),
+                ],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertFalse((preview_dir / "pptx").exists())
+            self.assertFalse((preview_dir / "slides").exists())
+            self.assertFalse((preview_dir / "index.html").exists())
+            self.assertFalse((preview_dir / "preview-manifest.json").exists())
+            self.assertTrue((preview_dir / "readme-preview-evaluation.json").exists())
+            self.assertTrue((preview_dir / "external-review-sentinel.json").exists())
+
     def test_readme_uses_shared_mdpr_preview_outputs(self):
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         teaser_manifest = json.loads(TEASER_MANIFEST.read_text(encoding="utf-8"))

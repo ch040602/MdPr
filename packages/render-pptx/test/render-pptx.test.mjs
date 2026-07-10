@@ -517,6 +517,45 @@ test("renderPptx renders plain lists as separate editable text boxes to avoid co
   }
 });
 
+test("renderPptx preserves editable code lines as OOXML line boundaries", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-code-lines-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].title = "Literal markers";
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "code-1",
+      type: "code",
+      text: "-literal marker must stay code\nㆍliteral bullet must stay code",
+    },
+  ];
+  deck.layout.slides[0].layout = { preset: "code-focus" };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "code",
+      role: "code",
+      blockIds: ["code-1"],
+      x: 0.9,
+      y: 1.55,
+      w: 11.5,
+      h: 4.9,
+      zIndex: 10,
+      typography: { fontFamily: "Consolas", fontSize: 18, lineHeight: 1.2, minFontSize: 12 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath });
+    const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
+    const codeShape = shapeXmlContainingText(xml, "-literal marker must stay code");
+    assert.ok(codeShape);
+    assert.match(codeShape, /-literal marker must stay code[\s\S]*(?:<a:br\/>|<\/a:p>\s*<a:p>)[\s\S]*ㆍliteral bullet must stay code/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx aligns and fits text inside table cells", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-table-fit-"));
   const outPath = join(outDir, "deck.pptx");
@@ -2309,18 +2348,23 @@ test("paragraph rendering preserves markdown lines and sentence units as readabl
   }
 });
 
-test("renderPptx preserves paragraph indentation for dense prose slides", async () => {
+test("renderPptx preserves hierarchy and nonoverlapping row bounds for dense Korean prose", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-indented-paragraph-"));
   const outPath = join(outDir, "deck.pptx");
   const deck = structuredClone(sampleDeck);
+  const lines = [
+    "이 슬라이드는 한국어 문장이 많고, 일부 영어 기술 용어가 섞여 있으며, 단락 들여쓰기를 통해 논리적 종속 관계를 표현한다. 발표 자료에서는 이런 문장이 한 페이지에 많이 들어갈 수 있으므로, MDPR은 원문을 임의로 줄이지 않고도 읽기 가능한 배치를 선택해야 한다.",
+    "보조 설명은 본문보다 낮은 계층으로 보여야 한다. 단순히 같은 크기의 텍스트 박스에 이어 붙이면 발표자가 강조하려는 구조가 사라진다.",
+    "예외 조건은 더 낮은 계층으로 남겨야 한다. 이 줄은 dense technical prose 프로필을 검증하기 위한 깊은 들여쓰기다.",
+  ];
   deck.presentation.slides[0].blocks = [
     {
       id: "paragraph-1",
       type: "paragraph",
-      text: "Main claim. Supporting detail. Deep caveat.",
-      lines: ["Main claim.", "Supporting detail.", "Deep caveat."],
+      text: lines.join(" "),
+      lines,
       lineIndents: [0, 1, 2],
-      sentences: ["Main claim.", "Supporting detail.", "Deep caveat."],
+      sentences: lines,
     },
   ];
   deck.layout.slides[0].regions = [
@@ -2329,12 +2373,12 @@ test("renderPptx preserves paragraph indentation for dense prose slides", async 
       id: "body",
       role: "body",
       blockIds: ["paragraph-1"],
-      x: 0.9,
-      y: 1.6,
-      w: 5.5,
-      h: 3.2,
+      x: 1.0,
+      y: 1.52,
+      w: 11.2,
+      h: 5.05,
       zIndex: 10,
-      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 14 },
+      typography: { fontFamily: "Pretendard", fontSize: 18, lineHeight: 1.2, minFontSize: 18 },
     },
   ];
 
@@ -2346,23 +2390,28 @@ test("renderPptx preserves paragraph indentation for dense prose slides", async 
     const xml = readFileSync(join(expanded, "ppt", "slides", "slide1.xml"), "utf-8");
     const textBoxes = [...xml.matchAll(/<p:sp\b[\s\S]*?<\/p:sp>/g)]
       .map((match) => match[0])
-      .filter((shapeXml) => /Main claim\.|Supporting detail\.|Deep caveat\./.test(shapeXml));
+      .filter((shapeXml) => lines.some((line) => shapeXml.includes(line)));
 
     assert.equal(textBoxes.length, 3);
     const positions = textBoxes.map((shapeXml) => {
       const text = /<a:t>([^<]+)<\/a:t>/.exec(shapeXml)?.[1] ?? "";
       const x = Number(/<a:off x="(-?\d+)"/.exec(shapeXml)?.[1] ?? 0);
-      return { text, x };
+      const y = Number(/<a:off x="-?\d+" y="(-?\d+)"/.exec(shapeXml)?.[1] ?? 0);
+      const h = Number(/<a:ext cx="-?\d+" cy="(-?\d+)"/.exec(shapeXml)?.[1] ?? 0);
+      return { text, x, y, h };
     });
-    const base = positions.find((position) => position.text === "Main claim.");
-    const support = positions.find((position) => position.text === "Supporting detail.");
-    const caveat = positions.find((position) => position.text === "Deep caveat.");
+    const base = positions.find((position) => position.text === lines[0]);
+    const support = positions.find((position) => position.text === lines[1]);
+    const caveat = positions.find((position) => position.text === lines[2]);
 
     assert.ok(base);
     assert.ok(support);
     assert.ok(caveat);
     assert.equal(support.x > base.x, true);
     assert.equal(caveat.x > support.x, true);
+    const minimumGapEmu = 0.05 * EMU_PER_INCH;
+    assert.equal(support.y - (base.y + base.h) >= minimumGapEmu, true);
+    assert.equal(caveat.y - (support.y + support.h) >= minimumGapEmu, true);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

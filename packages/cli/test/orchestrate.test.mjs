@@ -10,6 +10,8 @@ import { buildDeck, inspectDeck, planDeck, validateDeck } from "../dist/orchestr
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const basicDeck = join(repoRoot, "examples/basic/deck.md");
+const bridgeMarkerFixture = join(repoRoot, "tests/fixtures/bridge-paragraph-marker-edge.md");
+const koreanDenseFixture = join(repoRoot, "tests/fixtures/long-md-corpus/long-05-korean-dense.md");
 const longMarkdownCorpus = [
   "long-01-dense-technical-prose.md",
   "long-02-diagram-workflow.md",
@@ -60,6 +62,38 @@ test("buildDeck writes PPTX output through the renderer boundary", async () => {
     assert.equal(result.writtenFiles.some((file) => file.endsWith("deck.pptx")), true);
     assert.equal(existsSync(join(outDir, "deck.pptx")), true);
     assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "PPTX_RENDERER_NOT_IMPLEMENTED"), false);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("required polish chapters fail visual validation without rejecting a compliant dense deck", () => {
+  const failed = validateDeck(bridgeMarkerFixture, { visualValidation: true, coherenceValidation: true });
+  const passed = validateDeck(koreanDenseFixture, { visualValidation: true, coherenceValidation: true });
+
+  assert.equal(failed.valid, false);
+  assert.equal(failed.diagnostics.some((diagnostic) => diagnostic.code === "MDPR_POLISH_GATE_FAILED" && diagnostic.level === "error"), true);
+  assert.equal(passed.valid, true);
+  assert.equal(passed.diagnostics.some((diagnostic) => diagnostic.code === "MDPR_POLISH_GATE_FAILED"), false);
+});
+
+test("validateDeck reports each source-cleanup action once in stable source order", () => {
+  const result = validateDeck(bridgeMarkerFixture);
+  const cleanup = result.diagnostics.filter((diagnostic) => diagnostic.code === "SOURCE_CLEANUP_PARAGRAPH_MARKER");
+
+  assert.equal(cleanup.length, 2);
+  assert.deepEqual(cleanup.map((diagnostic) => diagnostic.details?.sourceLine), [5, 6]);
+  assert.deepEqual(cleanup.map((diagnostic) => diagnostic.details?.originalMarker), ["-", "–"]);
+});
+
+test("buildDeck rejects requested visual validation when a required polish chapter fails", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-polish-gate-"));
+
+  try {
+    await assert.rejects(
+      buildDeck(bridgeMarkerFixture, { formats: ["html"], outDir, visualValidation: true, coherenceValidation: true }),
+      /Build validation failed: MDPR_POLISH_GATE_FAILED/,
+    );
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

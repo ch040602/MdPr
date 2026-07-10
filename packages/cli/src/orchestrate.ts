@@ -14,7 +14,7 @@ import type { DesignPresetName, PptxObjectMapEntry } from "@mdpresent/render-ppt
 import { renderPptx } from "@mdpresent/render-pptx";
 import { applyOverrides, diffLayout, type LayoutDiff, type OverrideManifest, type OverrideOperation } from "@mdpresent/override";
 import { themeConfigFromPack, validateMdprPack, type MdprPack, type PackValidationResult } from "@mdpresent/pack";
-import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createPolishQualitySummary, createVisualValidationSummary, visualValidationDiagnostics } from "@mdpresent/validation";
+import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createPolishQualitySummary, createVisualValidationSummary, polishQualityDiagnostics, visualValidationDiagnostics } from "@mdpresent/validation";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import { parse as parseYaml } from "yaml";
 
@@ -114,12 +114,12 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
   });
   const layout = postLayoutOverrideManifest ? applyOverrides(initialLayout, postLayoutOverrideManifest, presentation) : initialLayout;
   const overrideDiff = overrideManifest ? diffLayout(initialLayout, layout) : undefined;
-  const diagnostics: Diagnostic[] = [
+  const diagnostics = dedupeDiagnostics([
     ...presentation.diagnostics,
     ...layout.diagnostics,
     ...configDiagnostics,
     ...agentHints.diagnostics,
-  ];
+  ]);
 
   return {
     config: planConfig,
@@ -277,6 +277,7 @@ function assertBuildCanRender(deck: DeckPlan, options: BuildOptions): void {
     ...deck.diagnostics,
     ...validateLayoutOverflow(deck.layout, createContentIndex(deck.presentation)),
     ...(options.visualValidation ? visualValidationDiagnostics(deck.layout) : []),
+    ...(options.visualValidation ? polishQualityDiagnostics(deck.presentation, deck.layout, { comparisonPresets: options.themeGalleryPresets ?? [] }) : []),
     ...(options.coherenceValidation ? coherenceValidationDiagnostics(deck.presentation, deck.layout) : []),
   ];
   const errors = diagnostics.filter((diagnostic) => diagnostic.level === "error");
@@ -295,15 +296,17 @@ export function validateDeck(inputPath: string, options: OrchestrationOptions = 
   const diagnostics = [...deck.diagnostics, ...overflowDiagnostics];
   if (options.visualValidation) {
     diagnostics.push(...visualValidationDiagnostics(deck.layout));
+    diagnostics.push(...polishQualityDiagnostics(deck.presentation, deck.layout));
   }
   if (options.coherenceValidation) {
     diagnostics.push(...coherenceValidationDiagnostics(deck.presentation, deck.layout));
   }
 
+  const uniqueDiagnostics = dedupeDiagnostics(diagnostics);
   return {
     ...deck,
-    diagnostics,
-    valid: diagnostics.every((diagnostic) => diagnostic.level !== "error"),
+    diagnostics: uniqueDiagnostics,
+    valid: uniqueDiagnostics.every((diagnostic) => diagnostic.level !== "error"),
   };
 }
 
@@ -747,6 +750,16 @@ function stableJson(value: unknown): string {
       .join(",")}}`;
   }
   return JSON.stringify(value);
+}
+
+function dedupeDiagnostics(diagnostics: Diagnostic[]): Diagnostic[] {
+  const seen = new Set<string>();
+  return diagnostics.filter((diagnostic) => {
+    const key = stableJson(diagnostic);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function sha256(value: string | Buffer): string {

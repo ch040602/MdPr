@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createPolishQualitySummary, visualValidationDiagnostics } from "../dist/index.js";
+import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createPolishQualitySummary, polishQualityDiagnostics, visualValidationDiagnostics } from "../dist/index.js";
 
 const theme = {
   fontFamily: "Aptos",
@@ -555,4 +555,13 @@ test("polish quality summary maps AI PPT polish chapters to deterministic checks
   assert.equal(summary.chapters.detailPolish.passed, true);
   assert.equal(summary.chapters.beforeAfterComparison.passed, true);
   assert.deepEqual(summary.chapters.beforeAfterComparison.presets, ["plain", "executive"]);
+
+  assert.deepEqual(polishQualityDiagnostics(presentation, layout), []);
+  const failingLayout = structuredClone(layout);
+  failingLayout.slides[1].regions[1].typography.fontSize = 14;
+  failingLayout.slides[1].regions[1].typography.minFontSize = 11;
+  const diagnostics = polishQualityDiagnostics(presentation, failingLayout);
+  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0].code, "MDPR_POLISH_GATE_FAILED");
+  assert.deepEqual(diagnostics[0].details.failedChapters, ["fontHierarchy"]);
 });

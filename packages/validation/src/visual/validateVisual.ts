@@ -56,6 +56,29 @@ export type PolishQualityOptions = {
   comparisonPresets?: string[];
 };
 
+export function polishQualityDiagnostics(
+  presentation: PresentationIR,
+  layout: LayoutIR,
+  options: PolishQualityOptions = {},
+): Diagnostic[] {
+  const summary = createPolishQualitySummary(presentation, layout, options);
+  const failedChapters = Object.entries(summary.chapters)
+    .filter(([, chapter]) => chapter.required && !chapter.passed)
+    .map(([key]) => key);
+  if (!failedChapters.length) return [];
+
+  return [{
+    level: "error",
+    code: "MDPR_POLISH_GATE_FAILED",
+    message: `Required polish chapters failed: ${failedChapters.join(", ")}.`,
+    details: {
+      failedChapters,
+      requiredFailureCount: summary.requiredFailureCount,
+      runtimeOwner: "MDPR",
+    },
+  }];
+}
+
 export function createVisualValidationSummary(layout: LayoutIR) {
   const diagnostics = visualValidationDiagnostics(layout);
   return {

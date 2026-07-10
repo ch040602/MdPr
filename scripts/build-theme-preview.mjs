@@ -1,10 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDeckPlan } from "../packages/cli/dist/orchestrate.js";
 import { DECORATION_STYLE_NAMES, resolveDesignTokens } from "../packages/core/dist/index.js";
 import { renderPptx } from "../packages/render-pptx/dist/index.js";
+import { resetThemePreviewOutputs } from "./theme-preview-outputs.mjs";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const inputPath = resolve(repoRoot, process.argv[2] ?? "examples/theme-preview-en/deck.md");
@@ -28,7 +29,7 @@ const previewStyleNames = [
 
 assertEnglishOnlyText(sourceMarkdown, inputPath);
 
-rmSync(outDir, { recursive: true, force: true });
+resetThemePreviewOutputs(outDir);
 mkdirSync(pptxDir, { recursive: true });
 mkdirSync(slidesDir, { recursive: true });
 

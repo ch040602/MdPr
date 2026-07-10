@@ -682,6 +682,28 @@ test("table-focus slides reserve a visible message band for source claims", () =
   assert.equal(table.h >= 4, true);
 });
 
+test("every mixed marker fixture block is routed to a layout region", () => {
+  const markdown = readFileSync(resolve(repoRoot, "tests/fixtures/bridge-paragraph-marker-edge.md"), "utf-8");
+  const presentation = planPresentation(parseMarkdown(markdown), defaultConfig);
+  const layout = planLayout(presentation, defaultConfig);
+
+  for (const sourceSlide of presentation.slides) {
+    const layoutSlide = layout.slides.find((candidate) => candidate.sourceSlideId === sourceSlide.id);
+    assert.ok(layoutSlide, `missing layout for ${sourceSlide.id}`);
+
+    const expectedBlockIds = sourceSlide.blocks
+      .filter((block) => block.type !== "slideBreak")
+      .map((block) => block.id)
+      .sort();
+    const routedBlockIds = new Set(layoutSlide.regions
+      .flatMap((region) => region.blockIds)
+      .map((blockId) => blockId.replace(/#\d+$/, "")));
+    const missingBlockIds = expectedBlockIds.filter((blockId) => !routedBlockIds.has(blockId));
+
+    assert.deepEqual(missingBlockIds, [], `${sourceSlide.title} contains unrouted source blocks`);
+  }
+});
+
 test("chart slides with prose keep the graph and explanation in parallel", () => {
   const layout = layoutFor([
     "# Demo",

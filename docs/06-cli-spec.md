@@ -88,7 +88,8 @@ default config < config file < CLI args
 - `--theme-color` provides the main color seed.
 - `--theme-harmony` derives `monochromatic`, `analogous`, `complementary`, `split-complementary`, or `triadic` palettes.
 - `--design-lock` checks the resolved design contract unless `--update-design-lock` is used.
-- `--visual` adds structural visual-validation summaries.
+- `--visual` adds structural visual-validation summaries and promotes any
+  required polish chapter failure to the `MDPR_POLISH_GATE_FAILED` error.
 - `--coherence` adds claim/evidence/caption/table grouping diagnostics.
 - Every build manifest records `validation.polish`, a deterministic post-AI PPT
   polish gate covering font hierarchy, layout composition, highlight pages,
@@ -119,6 +120,10 @@ The emitted gate IDs are `parser-splitting`,
 `pptx-editability`, `validation-cli`, and `package-cli`.
 
 Validation reports:
+
+Diagnostics from presentation, layout, config, hints, and optional validation
+gates are de-duplicated by their complete structured payload while preserving
+the first occurrence and source order.
 
 ```text
 - missing override targets

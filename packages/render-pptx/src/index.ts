@@ -176,6 +176,8 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
 
         if (region.role === "title" && sourceSlide?.title) {
           slide.addText(sourceSlide.title, metadataTextCommon);
+        } else if (blocks.length === 1 && blocks[0].type === "code") {
+          slide.addText(blocks[0].text ?? "", { ...metadataTextCommon, fontFace: "Consolas" });
         } else if (blocks.length === 1 && blocks[0].type === "chart" && blocks[0].chart) {
           renderChartRegion(slide, blocks[0].chart, region, designPreset, common);
         } else if (blocks.length > 1 && blocks.every((block) => block.type === "chart" && block.chart)) {
@@ -1151,13 +1153,14 @@ function renderIndentedParagraphRegion(slide: PptxGenJS.Slide, blocks: BlockIR[]
     const rowH = rowHeights[index] ?? 0.28;
     const rawGap = row.startsParagraph ? paragraphGap : 0;
     const gap = Math.min(rawGap, rowH * 0.35);
+    const trailingGap = index < rows.length - 1 ? paragraphRowGapForFont(fittedFontSize) : 0;
     const indent = paragraphIndentInches(row.indentLevel);
     slide.addText(row.text, {
       ...common,
       x: baseX + indent,
       y: cursorY + gap,
       w: Math.max(0.3, baseW - indent),
-      h: Math.max(0.1, rowH - gap),
+      h: Math.max(0.1, rowH - gap - trailingGap),
       fontSize: fittedFontSize,
       margin: common.margin ?? [0, 0, 0, 0],
       align: rowAlign,
@@ -1174,13 +1177,21 @@ function paragraphGapForFont(fontSizePt: number): number {
   return Math.max(0.04, Math.min(0.12, fontSizePt / 240));
 }
 
+const MIN_INDENTED_PARAGRAPH_ROW_GAP_IN = 0.06;
+const MAX_INDENTED_PARAGRAPH_ROW_GAP_IN = 0.1;
+
+function paragraphRowGapForFont(fontSizePt: number): number {
+  return Math.max(MIN_INDENTED_PARAGRAPH_ROW_GAP_IN, Math.min(MAX_INDENTED_PARAGRAPH_ROW_GAP_IN, fontSizePt / 220));
+}
+
 function indentedParagraphRowHeights(rows: ParagraphRow[], baseW: number, fontSizePt: number, lineHeightMultiple: number, paragraphGap: number): number[] {
-  return rows.map((row) => {
+  return rows.map((row, index) => {
     const indent = paragraphIndentInches(row.indentLevel);
     const usableW = Math.max(0.3, baseW - indent);
     const wrappedLines = estimateWrappedLineCount(row.text, usableW, fontSizePt);
     const gap = row.startsParagraph ? paragraphGap : 0;
-    return gap + Math.max(0.24, (fontSizePt * lineHeightMultiple * wrappedLines) / 72 + 0.04);
+    const trailingGap = index < rows.length - 1 ? paragraphRowGapForFont(fontSizePt) : 0;
+    return gap + Math.max(0.24, (fontSizePt * lineHeightMultiple * wrappedLines) / 72 + 0.04) + trailingGap;
   });
 }
 

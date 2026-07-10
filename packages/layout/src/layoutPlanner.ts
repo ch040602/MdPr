@@ -571,6 +571,10 @@ function createTableFocusRegions(slide: SlideIR, titleRegion: LayoutRegion, conf
   const tableBlockIds = slide.blocks.filter((block) => block.type === "table").map((block) => block.id);
   const imageBlockIds = slide.blocks.filter((block) => block.type === "image").map((block) => block.id);
   const claimBlockId = findSlideClaimMessageCandidate(slide)?.blockId;
+  const evidenceBlockIds = new Set([...tableBlockIds, ...imageBlockIds]);
+  const bodyBlockIds = slide.blocks
+    .filter((block) => block.type !== "slideBreak" && block.id !== claimBlockId && !evidenceBlockIds.has(block.id))
+    .map((block) => block.id);
   const claimRegion: LayoutRegion | undefined = claimBlockId
     ? { id: "key-message", role: "body", blockIds: [claimBlockId], x: 1.0, y: 1.34, w: 11.2, h: 0.72, zIndex: 10, typography: { ...compactBodyTypography(config), fontWeight: "bold" } }
     : undefined;
@@ -580,13 +584,27 @@ function createTableFocusRegions(slide: SlideIR, titleRegion: LayoutRegion, conf
   ];
 
   if (imageBlockIds.length) {
-    const evidenceTop = claimRegion ? 2.22 : 1.55;
-    const evidenceHeight = claimRegion ? 4.25 : 4.95;
+    const bodyTop = claimRegion ? 2.22 : 1.55;
+    const bodyHeight = bodyBlockIds.length ? 1.12 : 0;
+    const evidenceTop = bodyTop + (bodyBlockIds.length ? bodyHeight + 0.22 : 0);
+    const evidenceHeight = Math.max(2.85, 6.5 - evidenceTop);
     return [
       titleRegion,
       ...(claimRegion ? [claimRegion] : []),
+      ...(bodyBlockIds.length ? [{ id: "body", role: "body" as const, blockIds: bodyBlockIds, x: 0.9, y: bodyTop, w: 11.4, h: bodyHeight, zIndex: 10, typography: compactBodyTypography(config) }] : []),
       { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 0.9, y: evidenceTop, w: 6.15, h: evidenceHeight, zIndex: 10, typography: compactBodyTypography(config) },
       { id: "image-1", role: "image", blockIds: imageBlockIds.slice(0, 1), x: 7.45, y: evidenceTop + 0.05, w: 4.85, h: evidenceHeight, zIndex: 10 },
+    ];
+  }
+
+  if (bodyBlockIds.length) {
+    const contentTop = claimRegion ? 2.22 : 1.55;
+    const contentHeight = claimRegion ? 4.25 : 4.95;
+    return [
+      titleRegion,
+      ...(claimRegion ? [claimRegion] : []),
+      { id: "body", role: "body", blockIds: bodyBlockIds, x: 0.9, y: contentTop, w: 4.15, h: contentHeight, zIndex: 10, typography: compactBodyTypography(config) },
+      { id: "table", role: "table", blockIds: tableBlockIds.slice(0, 1), x: 5.45, y: contentTop, w: 6.85, h: contentHeight, zIndex: 10, typography: compactBodyTypography(config) },
     ];
   }
 
