@@ -63,6 +63,20 @@ codex-ppt image-only baselines, and zero missing evidence artifacts.
 - **Deterministic validation**: checks overflow, generated artifact contracts, slide counts, surface markers, language, manifest drift, and a post-AI PPT polish gate.
 - **Skill-side review**: LLM-advised layout critique, visual polish, icon keyword ideas, and high-quality deck guidance belong in [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage), not MDPR runtime.
 
+Current readability contract:
+
+- every non-decoration source block must reach a layout region; mixed lists,
+  prose, tables, and code are preserved instead of being dropped by an
+  evidence-focused layout
+- code lines remain separate editable OpenXML lines, while indented prose uses
+  separate editable row boxes with a bounded `0.06-0.10in` safety gap
+- pipeline-one-page feature summaries and table evidence keep a `16pt` minimum
+  font floor
+- `build` and `validate` with `--visual` stop on a failed required polish
+  chapter and report `MDPR_POLISH_GATE_FAILED` with the failed chapter names
+- image safe frames preserve aspect ratio or use explicit focal-point crops;
+  source-neutral slides do not receive invented images or icons
+
 Best fit:
 
 - engineering reports that must become editable PowerPoint decks
@@ -108,7 +122,8 @@ with the smallest reproducible Markdown snippet.
 
 - [Open the PPT-generated theme preview gallery](https://ch040602.github.io/MdPr/theme-preview/)
 - Preview scope: 9 redefined decoration styles, excluding palette-only or background-only swaps.
-- Gallery artifacts: generated PPTX decks plus PNG slides extracted from PowerPoint output.
+- Gallery artifacts: 9 generated PPTX decks plus 25 PNG slides per style
+  extracted from presentation output (225 rendered slides total).
 
 | Teaser Summary | Pipeline Diagram |
 | --- | --- |
@@ -215,7 +230,7 @@ Pandoc and uses the built-in CommonMark/GFM AST path.
 - `--pipeline-one-page`: creates a single-slide pipeline/teaser composition from multi-section Markdown while keeping the shared parser, layout planner, validation, and renderers
 - `--design`: compatibility alias for legacy/shared preset selection
 - `--theme-gallery`: repeats the same source deck under multiple style presets for visual comparison; README/Actions previews use the pruned distinct-style subset
-- `validation.polish`: every build manifest records the post-AI PPT polish gate for font hierarchy, layout composition, highlight pages, cover treatment, detail QA, and optional theme-gallery before/after evidence
+- `validation.polish`: every build manifest records the post-AI PPT polish gate for font hierarchy, layout composition, highlight pages, cover treatment, detail QA, and optional theme-gallery before/after evidence; `--visual` promotes required failures to `MDPR_POLISH_GATE_FAILED`
 - `--pack`: applies an approved, tokenized MDPR pack after schema validation. Packs may provide theme tokens, component tokens, diagram tokens, and PPT effect mappings without requiring an agent at runtime.
 
 Pack commands:
@@ -273,6 +288,9 @@ artifacts affect output.
 - `Theme Preview`: regenerates PPTX decks, rasterizes slides to PNG, verifies artifacts, and publishes the gallery to GitHub Pages.
 
 These checks must pass without an LLM or external API key.
+Theme preview regeneration removes only its owned PPTX, slide, index, and
+manifest outputs so separately generated evaluation or review evidence remains
+intact.
 
 ## Acknowledgements
 
