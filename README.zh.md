@@ -54,7 +54,7 @@
 - generated caption 与 code region 不再从低于 strict floor 的值开始。
   显式 override 低于 `16pt` 时仍是 required-gate failure。
 - generated list 与 diagram 的 number badge 也至少使用 `16pt`；内置 preset
-  不再自动为每个 title 添加装饰性下划线。
+  不再自动添加 title 下划线、TOC 横线或 cover 底部的孤立装饰线。
 - PPTX 将 resolved family 写入 document head/body theme 和可编辑 text run；
   code region 是明确的 monospace 例外，使用 `Consolas`。
 - `--template` 会保留原始 master、layout 与 theme OOXML，但 generated text

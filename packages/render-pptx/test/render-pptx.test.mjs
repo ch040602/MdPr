@@ -546,6 +546,34 @@ test("renderPptx renders plain lists as separate editable text boxes to avoid co
   }
 });
 
+test("renderPptx does not add horizontal rules above or below toc items", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-toc-rules-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].title = "Agenda";
+  deck.presentation.slides[0].blocks = [
+    { id: "toc-item-1", type: "listItem", text: "Architecture" },
+    { id: "toc-item-2", type: "listItem", text: "Validation" },
+  ];
+  deck.layout.slides[0].layout = { preset: "toc" };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    { id: "item-1", role: "item", blockIds: ["toc-item-1"], x: 0.9, y: 1.7, w: 5.4, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 18, lineHeight: 1.2, minFontSize: 16 } },
+    { id: "item-2", role: "item", blockIds: ["toc-item-2"], x: 6.9, y: 1.7, w: 5.4, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 18, lineHeight: 1.2, minFontSize: 16 } },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "clean" });
+    const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
+    const horizontalRules = slideObjectsWithTransforms(xml)
+      .filter((shape) => shape.tag === "sp" && shape.h <= 0.06 && shape.w >= 1);
+
+    assert.equal(horizontalRules.length, 0);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx preserves editable code lines as OOXML line boundaries", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-code-lines-"));
   const outPath = join(outDir, "deck.pptx");
@@ -1179,6 +1207,9 @@ test("renderPptx does not duplicate cover titles through empty body regions", as
     assert.equal((xml.match(/mdpresent/g) ?? []).length, 1);
     assert.match(xml, /val="1D4ED8"/);
     assert.doesNotMatch(xml, /<a:off x="822960" y="1463040"\/><a:ext cx="10515600" cy="4480560"\/>/);
+    const bottomRules = slideObjectsWithTransforms(xml)
+      .filter((shape) => shape.tag === "sp" && shape.y >= 6.8 && shape.h <= 0.1 && shape.w >= 1);
+    assert.equal(bottomRules.length, 0);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

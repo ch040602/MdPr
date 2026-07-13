@@ -2707,27 +2707,8 @@ function addTocDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides
   if (layoutSlide.layout.preset !== "toc") return;
   const itemRegions = layoutSlide.regions.filter((region) => region.role === "item");
   if (!itemRegions.length) return;
-  const minX = Math.min(...itemRegions.map((region) => region.x));
-  const maxX = Math.max(...itemRegions.map((region) => region.x + region.w));
   const minY = Math.min(...itemRegions.map((region) => region.y));
   const maxY = Math.max(...itemRegions.map((region) => region.y + region.h));
-
-  slide.addShape("rect", {
-    x: minX,
-    y: Math.max(1.18, minY - 0.22),
-    w: maxX - minX,
-    h: 0.05,
-    fill: { color: preset.primaryColor, transparency: 0 },
-    line: { color: preset.primaryColor, transparency: 100 },
-  });
-  slide.addShape("rect", {
-    x: minX,
-    y: maxY + 0.16,
-    w: Math.min(2.2, maxX - minX),
-    h: 0.05,
-    fill: { color: preset.secondaryColor, transparency: 0 },
-    line: { color: preset.secondaryColor, transparency: 100 },
-  });
 
   const columns = uniqueRounded(itemRegions.map((region) => region.x));
   if (columns.length > 1) {
@@ -2844,14 +2825,6 @@ function addCoverTemplateDecorations(slide: PptxGenJS.Slide, preset: DesignToken
       fill: { color: preset.secondaryColor, transparency: 8 },
       line: { color: preset.secondaryColor, transparency: 100 },
     });
-    slide.addShape("rect", {
-      x: 0.72,
-      y: slideSize.height - 1.42,
-      w: 4.1,
-      h: 0.08,
-      fill: { color: readableTextColor(preset.primaryColor) },
-      line: { color: readableTextColor(preset.primaryColor), transparency: 100 },
-    });
     return;
   }
 
@@ -2885,14 +2858,6 @@ function addCoverTemplateDecorations(slide: PptxGenJS.Slide, preset: DesignToken
       fill: { color: preset.primaryColor, transparency: 100 },
       line: { color, transparency: 15, pt: 1.5 },
     });
-    slide.addShape("rect", {
-      x: slideSize.width - 2.3,
-      y: slideSize.height - 0.72,
-      w: 1.75,
-      h: 0.08,
-      fill: { color: preset.secondaryColor },
-      line: { color: preset.secondaryColor, transparency: 100 },
-    });
     return;
   }
 
@@ -2903,14 +2868,6 @@ function addCoverTemplateDecorations(slide: PptxGenJS.Slide, preset: DesignToken
     h: 0.22,
     fill: { color: preset.secondaryColor },
     line: { color: preset.secondaryColor, transparency: 100 },
-  });
-  slide.addShape("rect", {
-    x: slideSize.width - 3.1,
-    y: slideSize.height - 0.36,
-    w: 2.35,
-    h: 0.08,
-    fill: { color: readableTextColor(preset.primaryColor), transparency: 10 },
-    line: { color: readableTextColor(preset.primaryColor), transparency: 100 },
   });
 }
 

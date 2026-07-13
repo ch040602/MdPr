@@ -58,7 +58,8 @@
   시작하지 않습니다. 명시적인 override가 `16pt`보다 작으면 required-gate
   failure로 남습니다.
 - generated list와 diagram의 number badge도 최소 `16pt`를 사용하며, 내장
-  preset은 모든 title 아래에 장식용 밑줄을 자동 추가하지 않습니다.
+  preset은 title 밑줄, TOC 가로선, cover 하단의 고립된 장식선을 자동
+  추가하지 않습니다.
 - PPTX는 resolved family를 document head/body theme과 편집 가능한 text run에
   기록합니다. code region은 명시적 monospace 예외로 `Consolas`를 사용합니다.
 - `--template`은 기존 master, layout, theme OOXML을 보존하지만 generated text는
