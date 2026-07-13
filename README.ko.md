@@ -66,6 +66,17 @@
   rendering system에 선택한 family가 있어야 하며, CJK·mixed-language 측정은
   fit을 위해 source text를 임의로 다시 쓰지 않습니다.
 
+<!-- mdpr-runtime-skill-comparison -->
+## MDPR과 mdpr-skill 한눈에 비교
+
+| 결정 경계 | MDPR | mdpr-skill |
+| --- | --- | --- |
+| 사용 목적 | Markdown parsing, layout, validation과 편집 가능한 `PPTX`/`HTML`/`PDF`를 결정론적으로 생성 | MDPR build 전후의 선택적 Codex hint, review finding, 비교 evidence |
+| 글꼴 결정권 | font family, point size, region floor, editable text run을 결정합니다. caption 기본값은 `14pt`이고 code는 `Consolas`와 non-strict `11pt` floor를 사용할 수 있습니다. | 더 짧은 문장이나 content split은 제안할 수 있지만 정확한 family, point size, line break, text-box geometry는 지정할 수 없습니다. |
+| Strict visual failure | 필수 `fontHierarchy`는 모든 active Layout IR region을 `16pt` 기준으로 검사합니다. 더 작은 code/caption region은 `MDPR_POLISH_GATE_FAILED`로 남습니다. | manifest failure를 evidence와 함께 mirror할 뿐 재계산, 완화, override하지 않습니다. |
+| Template font | `--template`은 master/layout/theme OOXML을 보존하지만 generated text는 resolved MDPR typography를 사용합니다. 정확한 family 일치는 `typography.fontFamily`로 지정합니다. | template mismatch를 보고할 수 있지만 master typography를 교체하거나 font 설치·embed를 주장하지 않습니다. |
+| 출력 책임 | 최종 좌표, 색상, z-order, object, rendering, pass/fail을 소유합니다. | hint, review report, evidence만 만들며 최종 runtime 결정은 모두 MDPR에 남깁니다. |
+
 ## 미리보기
 
 - [PPT 생성 기반 theme preview gallery 열기](https://ch040602.github.io/MdPr/theme-preview/)

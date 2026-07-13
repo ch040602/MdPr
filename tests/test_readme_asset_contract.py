@@ -105,6 +105,25 @@ class ReadmeAssetContractTests(unittest.TestCase):
             for identifier in required_identifiers:
                 self.assertIn(identifier, readme, f"{readme_name} is missing {identifier}")
 
+    def test_readmes_expose_the_mdpr_skill_typography_boundary_as_a_comparison(self):
+        required_identifiers = [
+            "<!-- mdpr-runtime-skill-comparison -->",
+            "MDPR",
+            "mdpr-skill",
+            "fontHierarchy",
+            "16pt",
+            "MDPR_POLISH_GATE_FAILED",
+            "--template",
+            "typography.fontFamily",
+        ]
+
+        for readme_name in ["README.md", "README.ko.md", "README.zh.md"]:
+            readme = (ROOT / readme_name).read_text(encoding="utf-8")
+            for identifier in required_identifiers:
+                self.assertIn(identifier, readme, f"{readme_name} is missing comparison identifier {identifier}")
+            comparison = readme.split("<!-- mdpr-runtime-skill-comparison -->", 1)[1][:3000]
+            self.assertRegex(comparison, re.compile(r"\|\s*MDPR\s*\|\s*mdpr-skill\s*\|"))
+
     def test_readme_preview_script_explicitly_builds_pipeline_teaser(self):
         package_json = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
         preview_script = package_json["scripts"]["preview:readme"]
