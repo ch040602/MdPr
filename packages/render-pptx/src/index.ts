@@ -1515,7 +1515,7 @@ function renderItemNumberBadge(
   slide.addText(String(number), {
     ...centeredMarkerTextOptions(common, x, y, size, Math.max(7.2, Math.min(10.5, (region.typography?.fontSize ?? 18) - 7)), readableTextColor(preset.primaryColor)),
     shape: shape as never,
-    rectRadius: 0.05,
+    ...(shape === "roundRect" ? { rectRadius: 0.05 } : {}),
     fill: { color: preset.primaryColor },
     line: { color: preset.primaryColor, transparency: 100 },
   });

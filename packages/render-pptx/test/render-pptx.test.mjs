@@ -435,6 +435,34 @@ test("renderPptx renders item text when a bullet list only contains structured l
   }
 });
 
+test("renderPptx does not write round-rectangle adjustment data into odd ellipse badges", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-ellipse-badge-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    {
+      id: "list-1",
+      type: "bulletList",
+      listItems: [{ text: "First ordered item", level: 0, ordered: true, number: 1 }],
+      listKind: "ordered",
+    },
+  ];
+  deck.layout.slides[0].regions = [deck.layout.slides[0].regions[0], deck.layout.slides[0].regions[1]];
+
+  try {
+    await renderPptx(deck, { outPath });
+    const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
+    const badge = [...xml.matchAll(/<p:sp>[^]*?<\/p:sp>/g)]
+      .map((match) => match[0])
+      .find((shape) => shape.includes('prst="ellipse"') && shape.includes("<a:t>1</a:t>"));
+
+    assert.ok(badge);
+    assert.doesNotMatch(badge, /<a:gd name="adj"/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx renders labeled list items with bold label, line break, and indented description", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-labeled-list-"));
   const outPath = join(outDir, "deck.pptx");
