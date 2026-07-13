@@ -184,7 +184,8 @@ maps the referenced presentation-polish checklist to runtime checks:
 
 - `00:24` font hierarchy: title/body scale, readable minimum font floor,
   configured font family, and same-role font consistency
-- `02:33` layout composition: structured presets and generic blocky-slide risk
+- `02:33` layout composition: structured presets, generic blocky-slide risk,
+  and visible geometry reuse across the deck
 - `05:20` highlight page: quote/key-message slides for important claims
 - `07:13` cover page: cover preset, visible title hierarchy, and no empty body
   artifacts
@@ -196,6 +197,14 @@ maps the referenced presentation-polish checklist to runtime checks:
 The first five checks are required build-quality gates in the manifest. The
 before/after comparison is optional for normal builds and passes when the build
 uses at least two theme-gallery presets.
+
+`layoutComposition` reports `eligibleSlideCount`, `dominantGeometry`,
+`dominantGeometryRatio`, and `maxSameGeometryInFive`. Diversity enforcement
+starts at eight eligible slides and fails when one visible geometry exceeds
+60% of the eligible deck or appears more than three times in any five-slide
+eligible window. The check uses region positions rather than preset labels, and
+it excludes layouts forced by tables, charts, images, code, diagrams, pipelines,
+timelines, quotes, covers, TOCs, and key messages to avoid false positives.
 
 When `build` or `validate` runs with `--visual`, any failed required chapter is
 reported as `MDPR_POLISH_GATE_FAILED`; validation is invalid and a build stops

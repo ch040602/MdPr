@@ -5,9 +5,18 @@
 ```text
 SlideIntentScoreProfile + itemCount + blockType + density
   -> candidate LayoutPresets
-  -> deterministic score
+  -> deterministic score + bounded recent-geometry reuse penalty
   -> selected LayoutPreset
 ```
+
+For eligible text-only content slides, the planner keeps the last five visible
+geometry signatures across section boundaries. Reusing one topology receives a
+bounded penalty after it appears twice in the current five-slide window, so a
+deck can alternate `card-grid-2x2`, `card-grid-3x2`, `vertical-stack`, and
+`split-columns` without random layout changes. Object coverage, semantic
+grouping, reading order, overflow avoidance, and the 16pt floor remain stronger
+constraints. Cover, TOC, table, chart, image, code, diagram, pipeline, timeline,
+quote, and key-message slides keep their required specialized layouts.
 
 ## Intent Detection
 

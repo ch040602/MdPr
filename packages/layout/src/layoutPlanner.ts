@@ -1,6 +1,7 @@
 import { findSlideClaimMessageCandidate, hasSlideClaimMessageCandidate, inferConferenceTemplateProfile, isNeutralSlideTitle, readableGrayscaleTextColor, type CoherenceGroup, type Config, type PresentationIR, type SlideIR } from "@mdpresent/core";
 import type { LayoutCandidateScore, LayoutIR, LayoutRegion, LayoutSlide, LayoutSpec, ScoredLayoutCandidate, ThemeTokens } from "./ir/types.js";
 import { chooseItemLayout, titleRect, bodyRect } from "./presets/presets.js";
+import { visibleGeometrySignature } from "./geometry.js";
 
 export function planLayout(presentation: PresentationIR, config: Config): LayoutIR {
   const theme: ThemeTokens = {
@@ -29,13 +30,13 @@ export function planLayout(presentation: PresentationIR, config: Config): Layout
   };
 }
 
-export function chooseLayout(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string): LayoutSpec {
-  return rankLayoutCandidates(slide, config, coherenceGroup, previousPresetInSection)[0]?.layout ?? { preset: config.layout.defaultPreset as LayoutSpec["preset"] };
+export function chooseLayout(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string, recentGeometryHistory: string[] = []): LayoutSpec {
+  return rankLayoutCandidates(slide, config, coherenceGroup, previousPresetInSection, recentGeometryHistory)[0]?.layout ?? { preset: config.layout.defaultPreset as LayoutSpec["preset"] };
 }
 
-export function rankLayoutCandidates(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string): ScoredLayoutCandidate[] {
+export function rankLayoutCandidates(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string, recentGeometryHistory: string[] = []): ScoredLayoutCandidate[] {
   return candidateLayoutsForSlide(slide, config)
-    .map((layout) => ({ layout, score: scoreLayoutCandidate(slide, layout, config, coherenceGroup, previousPresetInSection) }))
+    .map((layout) => ({ layout, score: scoreLayoutCandidate(slide, layout, config, coherenceGroup, previousPresetInSection, recentGeometryHistory) }))
     .sort((a, b) => a.score.total - b.score.total || layoutOrder(a.layout.preset) - layoutOrder(b.layout.preset));
 }
 
@@ -131,6 +132,7 @@ function scoreLayoutCandidate(
   config: Config,
   coherenceGroup?: CoherenceGroup,
   previousPresetInSection?: string,
+  recentGeometryHistory: string[] = [],
 ): LayoutCandidateScore {
   const objectCoveragePenalty = objectCoveragePenaltyFor(slide, layout);
   const semanticGroupPenalty = semanticGroupPenaltyFor(slide, layout, coherenceGroup);
@@ -141,9 +143,19 @@ function scoreLayoutCandidate(
   const overflowPenalty = roughOverflowPenaltyFor(slide, layout);
   const alignmentPenalty = ["grid", "vertical-list", "chart-table", "table-focus", "image-focus", "comparison"].includes(layout.preset) ? 0 : 1;
   const sectionConsistencyPenalty = sectionConsistencyPenaltyFor(layout, previousPresetInSection);
+  const geometryReusePenalty = geometryReusePenaltyFor(slide, layout, config, recentGeometryHistory);
   const conferenceProfilePenalty = conferenceProfilePenaltyFor(slide, layout);
-  const total = overflowPenalty + minFontPenalty + objectCoveragePenalty + semanticGroupPenalty + readingOrderPenalty + whitespacePenalty + alignmentPenalty + emphasisPenalty + sectionConsistencyPenalty + conferenceProfilePenalty;
-  return { overflowPenalty, minFontPenalty, objectCoveragePenalty, semanticGroupPenalty, readingOrderPenalty, whitespacePenalty, alignmentPenalty, emphasisPenalty, sectionConsistencyPenalty, conferenceProfilePenalty, total };
+  const total = overflowPenalty + minFontPenalty + objectCoveragePenalty + semanticGroupPenalty + readingOrderPenalty + whitespacePenalty + alignmentPenalty + emphasisPenalty + sectionConsistencyPenalty + geometryReusePenalty + conferenceProfilePenalty;
+  return { overflowPenalty, minFontPenalty, objectCoveragePenalty, semanticGroupPenalty, readingOrderPenalty, whitespacePenalty, alignmentPenalty, emphasisPenalty, sectionConsistencyPenalty, geometryReusePenalty, conferenceProfilePenalty, total };
+}
+
+function geometryReusePenaltyFor(slide: SlideIR, layout: LayoutSpec, config: Config, recentGeometryHistory: string[]): number {
+  if (!isGeometryDiversityEligibleSlide(slide)) return 0;
+  const signature = visibleGeometrySignature(planSlideLayoutWithSpec(slide, config, layout));
+  const occurrences = recentGeometryHistory.slice(-4).filter((candidate) => candidate === signature).length;
+  if (occurrences >= 3) return 4;
+  if (occurrences === 2) return 2;
+  return 0;
 }
 
 function objectCoveragePenaltyFor(slide: SlideIR, layout: LayoutSpec): number {
@@ -323,13 +335,24 @@ function sourceEvidenceAllowsIcon(slide: SlideIR): boolean {
 function planSlidesWithContinuity(presentation: PresentationIR, config: Config): LayoutSlide[] {
   const groupsBySlideId = new Map((presentation.coherenceGroups ?? []).map((group) => [group.slideId, group]));
   const previousPresetBySection = new Map<string, string>();
+  const recentGeometryHistory: string[] = [];
   return presentation.slides.map((slide) => {
     const sectionKey = sectionKeyForSlide(slide);
     const previousPreset = sectionKey ? previousPresetBySection.get(sectionKey) : undefined;
-    const layoutSlide = planSlideLayout(slide, config, groupsBySlideId.get(slide.id), previousPreset);
+    const layoutSlide = planSlideLayout(slide, config, groupsBySlideId.get(slide.id), previousPreset, recentGeometryHistory);
     if (sectionKey && slide.role === "content") previousPresetBySection.set(sectionKey, layoutSlide.layout.preset);
+    if (isGeometryDiversityEligibleSlide(slide)) {
+      recentGeometryHistory.push(visibleGeometrySignature(layoutSlide));
+      if (recentGeometryHistory.length > 5) recentGeometryHistory.shift();
+    }
     return layoutSlide;
   });
+}
+
+function isGeometryDiversityEligibleSlide(slide: SlideIR): boolean {
+  if (slide.role !== "content" || slide.intent !== "standard") return false;
+  if (isClaimMessageLayoutCandidate(slide)) return false;
+  return !slide.blocks.some((block) => ["table", "chart", "image", "code", "diagram", "quote"].includes(block.type));
 }
 
 function sectionKeyForSlide(slide: SlideIR): string | undefined {
@@ -338,8 +361,8 @@ function sectionKeyForSlide(slide: SlideIR): string | undefined {
   return undefined;
 }
 
-function planSlideLayout(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string): LayoutSlide {
-  const layout = chooseLayout(slide, config, coherenceGroup, previousPresetInSection);
+function planSlideLayout(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string, recentGeometryHistory: string[] = []): LayoutSlide {
+  const layout = chooseLayout(slide, config, coherenceGroup, previousPresetInSection, recentGeometryHistory);
   return planSlideLayoutWithSpec(slide, config, layout);
 }
 

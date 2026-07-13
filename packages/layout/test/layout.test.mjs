@@ -597,6 +597,82 @@ test("section continuity prefers same-family alternation over exact preset repet
   assert.equal(repeatedGrid.score.sectionConsistencyPenalty > sameFamilyAlternative.score.sectionConsistencyPenalty, true);
 });
 
+test("deck-wide geometry history breaks 2x2 grid saturation across section resets", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Geometry diversity" },
+    outline: [],
+    assets: [],
+    diagnostics: [],
+    coherenceGroups: [],
+    slides: Array.from({ length: 10 }, (_, index) => ({
+      id: `slide-${index + 1}`,
+      index,
+      role: "content",
+      title: `Section ${index + 1}`,
+      section: `section-${index + 1}`,
+      headingPath: [`Section ${index + 1}`],
+      source: {},
+      intent: "standard",
+      tags: [],
+      primaryItemCount: 4,
+      blocks: [{
+        id: `list-${index + 1}`,
+        type: "bulletList",
+        items: ["Alpha", "Beta", "Gamma", "Delta"],
+      }],
+    })),
+  };
+
+  const layout = planLayout(presentation, defaultConfig);
+  const geometries = layout.slides.map((slide) => {
+    if (slide.layout.preset === "grid" && slide.layout.columns === 2 && slide.layout.rows === 2) return "card-grid-2x2";
+    if (slide.layout.preset === "vertical-list") return "vertical-stack";
+    return slide.layout.preset;
+  });
+  const dominantCount = Math.max(...[...new Set(geometries)].map((geometry) => geometries.filter((candidate) => candidate === geometry).length));
+  const maxSameInFive = Math.max(...geometries.slice(4).map((_, endOffset) => {
+    const window = geometries.slice(endOffset, endOffset + 5);
+    return Math.max(...[...new Set(window)].map((geometry) => window.filter((candidate) => candidate === geometry).length));
+  }));
+
+  assert.equal(dominantCount / geometries.length <= 0.6, true);
+  assert.equal(maxSameInFive <= 3, true);
+});
+
+test("deck-wide geometry diversity never displaces specialized object layouts", () => {
+  const objectSlides = [
+    { intent: "table", block: { id: "table", type: "table", rows: [["A"], ["B"]] }, preset: "table-focus" },
+    { intent: "image", block: { id: "image", type: "image", src: "figure.png", alt: "Figure" }, preset: "image-focus" },
+    { intent: "code", block: { id: "code", type: "code", text: "const value = 1;", language: "js" }, preset: "code-focus" },
+    { intent: "diagram", block: { id: "diagram", type: "diagram", text: "A -> B" }, preset: "pipeline" },
+  ];
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Specialized objects" },
+    outline: [],
+    assets: [],
+    diagnostics: [],
+    coherenceGroups: [],
+    slides: objectSlides.flatMap((entry, pair) => [0, 1].map((copy) => ({
+      id: `${entry.intent}-${copy}`,
+      index: pair * 2 + copy,
+      role: "content",
+      title: `${entry.intent} ${copy}`,
+      section: `${entry.intent}-${copy}`,
+      headingPath: [`${entry.intent} ${copy}`],
+      source: {},
+      intent: entry.intent,
+      tags: [],
+      primaryItemCount: 0,
+      blocks: [{ ...entry.block, id: `${entry.block.id}-${copy}` }],
+    }))),
+  };
+
+  const layout = planLayout(presentation, defaultConfig);
+  assert.deepEqual(layout.slides.map((slide) => slide.layout.preset), objectSlides.flatMap((entry) => [entry.preset, entry.preset]));
+});
+
 test("conference profile scoring gives dense technical prose split-text relief", () => {
   const denseText = "Long standards prose should remain readable through hierarchy, line breaks, and separated argument columns. ".repeat(10);
   const slide = {

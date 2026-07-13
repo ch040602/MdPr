@@ -565,3 +565,117 @@ test("polish quality summary maps AI PPT polish chapters to deterministic checks
   assert.equal(diagnostics[0].code, "MDPR_POLISH_GATE_FAILED");
   assert.deepEqual(diagnostics[0].details.failedChapters, ["fontHierarchy"]);
 });
+
+test("polish quality summary rejects deck-wide 2x2 geometry saturation", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Repeated geometry" },
+    outline: [],
+    coherenceGroups: [],
+    assets: [],
+    diagnostics: [],
+    slides: Array.from({ length: 10 }, (_, index) => ({
+      id: `slide-${index + 1}`,
+      index,
+      role: "content",
+      title: `Slide ${index + 1}`,
+      headingPath: [`Slide ${index + 1}`],
+      source: {},
+      blocks: [{ id: `list-${index + 1}`, type: "bulletList", items: ["A", "B", "C", "D"] }],
+      intent: "standard",
+      tags: [],
+    })),
+  };
+  const titleRegion = (index) => ({
+    id: "title", role: "title", x: 0.8, y: 0.5, w: 11, h: 0.7, zIndex: 1,
+    blockIds: [`__title:slide-${index + 1}`], typography: { fontSize: 32, minFontSize: 16 },
+  });
+  const itemRegion = (index, item, x, y, w, h) => ({
+    id: `item-${item + 1}`, role: "item", x, y, w, h, zIndex: 1,
+    blockIds: [`list-${index + 1}#${item}`], typography: { fontSize: 18, minFontSize: 16 },
+  });
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme: { ...theme, titleFontSize: 32, bodyFontSize: 18, minFontSize: 16 },
+    slides: Array.from({ length: 10 }, (_, index) => ({
+      id: `layout-${index + 1}`,
+      sourceSlideId: `slide-${index + 1}`,
+      index,
+      layout: index < 8 ? { preset: "grid", columns: 2, rows: 2 } : { preset: "vertical-list" },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 16, maxShrinkSteps: 4 },
+      regions: index < 8
+        ? [
+            titleRegion(index),
+            itemRegion(index, 0, 0.9, 1.6, 5.5, 2.1),
+            itemRegion(index, 1, 6.9, 1.6, 5.5, 2.1),
+            itemRegion(index, 2, 0.9, 4.1, 5.5, 2.1),
+            itemRegion(index, 3, 6.9, 4.1, 5.5, 2.1),
+          ]
+        : [
+            titleRegion(index),
+            itemRegion(index, 0, 0.9, 1.5, 11.5, 1.0),
+            itemRegion(index, 1, 0.9, 2.7, 11.5, 1.0),
+            itemRegion(index, 2, 0.9, 3.9, 11.5, 1.0),
+            itemRegion(index, 3, 0.9, 5.1, 11.5, 1.0),
+          ],
+    })),
+    diagnostics: [],
+  };
+
+  const summary = createPolishQualitySummary(presentation, layout);
+  assert.equal(summary.chapters.layoutComposition.passed, false);
+  assert.equal(summary.chapters.layoutComposition.eligibleSlideCount, 10);
+  assert.equal(summary.chapters.layoutComposition.dominantGeometry, "card-grid-2x2");
+  assert.equal(summary.chapters.layoutComposition.dominantGeometryRatio, 0.8);
+  assert.equal(summary.chapters.layoutComposition.maxSameGeometryInFive, 5);
+  const diagnostics = polishQualityDiagnostics(presentation, layout);
+  assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "MDPR_POLISH_GATE_FAILED"
+    && diagnostic.details.failedChapters.includes("layoutComposition")), true);
+});
+
+test("polish geometry diversity excludes forced object layouts", () => {
+  const objectPresets = ["table-focus", "image-focus", "code-focus", "pipeline"];
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Forced objects" },
+    outline: [],
+    coherenceGroups: [],
+    assets: [],
+    diagnostics: [],
+    slides: objectPresets.flatMap((preset, pair) => [0, 1].map((copy) => ({
+      id: `${preset}-${copy}`,
+      index: pair * 2 + copy,
+      role: "content",
+      title: `${preset} ${copy}`,
+      headingPath: [`${preset} ${copy}`],
+      source: {},
+      blocks: [{ id: `object-${pair}-${copy}`, type: preset === "pipeline" ? "diagram" : preset.split("-")[0] }],
+      intent: preset === "pipeline" ? "diagram" : preset.split("-")[0],
+      tags: [],
+    }))),
+  };
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme: { ...theme, titleFontSize: 32, bodyFontSize: 18, minFontSize: 16 },
+    slides: presentation.slides.map((slide, index) => ({
+      id: `layout-${slide.id}`,
+      sourceSlideId: slide.id,
+      index,
+      layout: { preset: objectPresets[Math.floor(index / 2)] },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 16, maxShrinkSteps: 4 },
+      regions: [
+        { id: "title", role: "title", x: 0.8, y: 0.5, w: 11, h: 0.7, zIndex: 1, blockIds: [`__title:${slide.id}`], typography: { fontSize: 32, minFontSize: 16 } },
+        { id: "object", role: slide.intent === "diagram" ? "diagram" : slide.intent, x: 0.9, y: 1.5, w: 11.5, h: 5, zIndex: 1, blockIds: [slide.blocks[0].id], typography: { fontSize: 18, minFontSize: 16 } },
+      ],
+    })),
+    diagnostics: [],
+  };
+
+  const summary = createPolishQualitySummary(presentation, layout);
+  assert.equal(summary.chapters.layoutComposition.eligibleSlideCount, 0);
+  assert.equal(summary.chapters.layoutComposition.passed, true);
+});

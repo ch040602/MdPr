@@ -1,5 +1,5 @@
 import type { Diagnostic, PresentationIR } from "@mdpresent/core";
-import type { LayoutIR } from "@mdpresent/layout";
+import { visibleGeometrySignature, type LayoutIR } from "@mdpresent/layout";
 
 type LayoutRegion = LayoutIR["slides"][number]["regions"][number];
 
@@ -22,6 +22,10 @@ export type PolishQualitySummary = {
       structuredLayoutRatio: number;
       genericBlockySlideCount: number;
       averageRegionsPerContentSlide: number;
+      eligibleSlideCount: number;
+      dominantGeometry: string | null;
+      dominantGeometryRatio: number;
+      maxSameGeometryInFive: number;
     };
     highlightPage: PolishChapterCheck & {
       importantClaimSlideCount: number;
@@ -243,6 +247,7 @@ export function createPolishQualitySummary(
   const sameRoleFontVarianceCount = sameRoleFontVariance(layout);
   const structuredLayoutRatio = structuredLayoutRatioFor(layout);
   const genericBlockySlideCount = genericBlockySlides(layout);
+  const geometryDiversity = geometryDiversityFor(presentation, layout);
   const contentSlides = layout.slides.filter((slide) => !["cover", "toc"].includes(slide.layout.preset));
   const averageRegionsPerContentSlide = contentSlides.length
     ? contentSlides.reduce((sum, slide) => sum + slide.regions.filter(isContentRegion).length, 0) / contentSlides.length
@@ -281,11 +286,15 @@ export function createPolishQualitySummary(
     },
     layoutComposition: {
       required: true,
-      passed: structuredLayoutRatio >= 0.5 && genericBlockySlideCount === 0,
-      evidence: "Layout presets are checked for structured composition instead of generic dense AI-PPT blocks.",
+      passed: structuredLayoutRatio >= 0.5 && genericBlockySlideCount === 0 && geometryDiversity.passed,
+      evidence: "Layout presets and visible region geometry are checked for structured composition without deck-wide topology saturation.",
       structuredLayoutRatio: Number(structuredLayoutRatio.toFixed(3)),
       genericBlockySlideCount,
       averageRegionsPerContentSlide: Number(averageRegionsPerContentSlide.toFixed(3)),
+      eligibleSlideCount: geometryDiversity.eligibleSlideCount,
+      dominantGeometry: geometryDiversity.dominantGeometry,
+      dominantGeometryRatio: geometryDiversity.dominantGeometryRatio,
+      maxSameGeometryInFive: geometryDiversity.maxSameGeometryInFive,
     },
     highlightPage: {
       required: true,
@@ -403,6 +412,38 @@ function genericBlockySlides(layout: LayoutIR): number {
     const itemLikeCount = contentRegions.filter((region) => region.role === "item" || region.blockIds.some((blockId) => blockId.includes("#"))).length;
     return itemLikeCount >= 4 || contentRegions.length >= 5;
   }).length;
+}
+
+function geometryDiversityFor(presentation: PresentationIR, layout: LayoutIR) {
+  const presentationById = new Map(presentation.slides.map((slide) => [slide.id, slide]));
+  const signatures = layout.slides
+    .filter((layoutSlide) => {
+      const slide = presentationById.get(layoutSlide.sourceSlideId);
+      if (!slide || slide.role !== "content" || slide.intent !== "standard") return false;
+      if (["key-message", "quote", "pipeline", "pipeline-one-page", "timeline", "table-focus", "chart-table", "image-focus", "code-focus"].includes(layoutSlide.layout.preset)) return false;
+      return !slide.blocks.some((block) => ["table", "chart", "image", "code", "diagram", "quote"].includes(block.type));
+    })
+    .map(visibleGeometrySignature);
+  const counts = new Map<string, number>();
+  for (const signature of signatures) counts.set(signature, (counts.get(signature) ?? 0) + 1);
+  const dominant = [...counts.entries()].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))[0];
+  const dominantGeometry = dominant?.[0] ?? null;
+  const dominantGeometryRatio = signatures.length ? (dominant?.[1] ?? 0) / signatures.length : 0;
+  let maxSameGeometryInFive = 0;
+  for (let start = 0; start < signatures.length; start += 1) {
+    const window = signatures.slice(start, start + 5);
+    const windowCounts = new Map<string, number>();
+    for (const signature of window) windowCounts.set(signature, (windowCounts.get(signature) ?? 0) + 1);
+    maxSameGeometryInFive = Math.max(maxSameGeometryInFive, ...windowCounts.values());
+  }
+  const enforcementActive = signatures.length >= 8;
+  return {
+    passed: !enforcementActive || (dominantGeometryRatio <= 0.6 && maxSameGeometryInFive <= 3),
+    eligibleSlideCount: signatures.length,
+    dominantGeometry,
+    dominantGeometryRatio: Number(dominantGeometryRatio.toFixed(3)),
+    maxSameGeometryInFive,
+  };
 }
 
 function contrastRatio(foreground: string, background: string): number | undefined {

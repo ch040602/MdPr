@@ -47,6 +47,7 @@ export type LayoutCandidateScore = {
   alignmentPenalty: number;
   emphasisPenalty: number;
   sectionConsistencyPenalty: number;
+  geometryReusePenalty: number;
   conferenceProfilePenalty: number;
   total: number;
 };
