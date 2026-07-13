@@ -136,11 +136,13 @@ body[data-theme-style="minimalism"] .surface { background: transparent; border-c
         region.typography?.lineHeight ? `line-height:${region.typography.lineHeight}` : "",
       ].filter(Boolean).join(";");
       const content = renderRegionContent(region.role, region.blockIds, blockText, sourceSlide);
+      const hasSurface = shouldRenderSurface(region.role, region.id, region.blockIds, sourceSlide)
+        && !(region.role === "item" && ["horizontal-triptych", "horizontal-quartet"].includes(slide.layout.variant ?? ""));
       const classes = [
         "region",
         region.role,
-        shouldRenderSurface(region.role, region.id, region.blockIds, sourceSlide) ? "surface" : "",
-        shouldRenderSurface(region.role, region.id, region.blockIds, sourceSlide) ? surfaceVariantClass(design.decorationStyle, surfaceRole(region.role, region.blockIds, sourceSlide), region.id) : "",
+        hasSurface ? "surface" : "",
+        hasSurface ? surfaceVariantClass(design.decorationStyle, surfaceRole(region.role, region.blockIds, sourceSlide), region.id) : "",
         classNameForRegionId(region.id),
       ].filter(Boolean).join(" ");
       return `<div class="${classes}" style="${style}">${content}</div>`;

@@ -610,6 +610,32 @@ test("renderPptx does not add continuous decorative rails to vertical lists", as
   }
 });
 
+test("renderPptx renders horizontal triptych items without full card surfaces", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-open-triptych-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    { id: "item-a", type: "listItem", text: "Alpha" },
+    { id: "item-b", type: "listItem", text: "Beta" },
+    { id: "item-c", type: "listItem", text: "Gamma" },
+  ];
+  deck.layout.slides[0].layout = { preset: "vertical-list", variant: "horizontal-triptych", columns: 3, rows: 1, direction: "horizontal" };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    { id: "item-1", role: "item", blockIds: ["item-a"], x: 0.9, y: 2.12, w: 3.55, h: 2.75, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 16 } },
+    { id: "item-2", role: "item", blockIds: ["item-b"], x: 4.75, y: 2.12, w: 3.55, h: 2.75, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 16 } },
+    { id: "item-3", role: "item", blockIds: ["item-c"], x: 8.6, y: 2.12, w: 3.55, h: 2.75, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 16 } },
+  ];
+  try {
+    await renderPptx(deck, { outPath, designPreset: "clean" });
+    const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
+    const fullCards = slideObjectsWithTransforms(xml).filter((shape) => shape.tag === "sp" && !/<a:t>/.test(shape.xml) && shape.w >= 3 && shape.h >= 2);
+    assert.equal(fullCards.length, 0);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx uses bound global TOC block ordinals with a region fallback", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-toc-global-ordinal-"));
   const outPath = join(outDir, "deck.pptx");

@@ -50,6 +50,12 @@ test("renderHtml renders continuation markers as secondary title metadata", () =
   assert.match(html, /\.continuation-marker \{[^}]*font-size: 0\.6em/);
 });
 
+test("renderHtml renders horizontal triptych items as open cells", () => {
+  const html = renderHtmlForMarkdown(["# Demo", "", "## Three", "", "- Alpha", "- Beta", "- Gamma"].join("\n"));
+  assert.match(html, /data-layout="vertical-list"[\s\S]*?<div class="region item item-1"/);
+  assert.doesNotMatch(html, /data-layout="vertical-list"[\s\S]*?<div class="region item surface[^>]*item-1"/);
+});
+
 test("renderHtml uses a plain rounded surface for code instead of an ornamental folded corner", () => {
   const doc = parseMarkdown("# Demo\n\n## Quick Usage\n\n```js\nconst value = 1;\n```");
   const presentation = planPresentation(doc, defaultConfig);

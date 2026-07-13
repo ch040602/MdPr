@@ -114,6 +114,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
       for (const region of [...layoutSlide.regions].sort((left, right) => left.zIndex - right.zIndex)) {
         if (region.role !== "title" && region.blockIds.length === 0) continue;
         if (layoutSlide.layout.preset === "toc" && region.role === "item") continue;
+        if (region.role === "item" && ["horizontal-triptych", "horizontal-quartet"].includes(layoutSlide.layout.variant ?? "")) continue;
         addRegionSurface(slide, designPreset, region);
       }
 
