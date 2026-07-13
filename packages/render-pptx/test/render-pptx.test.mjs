@@ -574,6 +574,39 @@ test("renderPptx does not add horizontal rules above or below toc items", async 
   }
 });
 
+test("renderPptx does not add continuous decorative rails to vertical lists", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-vertical-list-rails-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].blocks = [
+    { id: "item-a", type: "listItem", text: "First bounded item" },
+    { id: "item-b", type: "listItem", text: "Second bounded item" },
+    { id: "item-c", type: "listItem", text: "Third bounded item" },
+  ];
+  deck.layout.slides[0].layout = { preset: "vertical-list", direction: "vertical" };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    { id: "item-1", role: "item", blockIds: ["item-a"], x: 0.95, y: 1.6, w: 11.4, h: 1.15, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 16 } },
+    { id: "item-2", role: "item", blockIds: ["item-b"], x: 0.95, y: 3.05, w: 11.4, h: 1.15, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 16 } },
+    { id: "item-3", role: "item", blockIds: ["item-c"], x: 0.95, y: 4.5, w: 11.4, h: 1.15, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 16 } },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "clean" });
+    const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
+    const continuousRails = slideObjectsWithTransforms(xml).filter((shape) =>
+      shape.tag === "sp"
+      && !/<a:t>/.test(shape.xml)
+      && shape.w <= 0.06
+      && shape.h >= 2,
+    );
+
+    assert.equal(continuousRails.length, 0);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx uses bound global TOC block ordinals with a region fallback", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-toc-global-ordinal-"));
   const outPath = join(outDir, "deck.pptx");

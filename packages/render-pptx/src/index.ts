@@ -2708,7 +2708,6 @@ function addLayoutBackgroundDecorations(slide: PptxGenJS.Slide, layoutSlide: Lay
 
 function addLayoutForegroundDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens, sourceSlide?: SlideIR): void {
   addTocDecorations(slide, layoutSlide, preset);
-  addVerticalListDecorations(slide, layoutSlide, preset);
   addRegionAccents(slide, layoutSlide, preset);
   addTextIconAsideDecoration(slide, layoutSlide, preset, sourceSlide);
 }
@@ -2729,41 +2728,6 @@ function addTocDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides
       w: 0.025,
       h: maxY - minY,
       fill: { color: preset.surfaceLine, transparency: 10 },
-      line: { color: preset.surfaceLine, transparency: 100 },
-    });
-  }
-}
-
-function addVerticalListDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
-  if (layoutSlide.layout.preset !== "vertical-list") return;
-  const itemRegions = layoutSlide.regions.filter((region) => region.role === "item");
-  if (itemRegions.length < 2) return;
-  const columns = uniqueRounded(itemRegions.map((region) => region.x));
-  const minY = Math.min(...itemRegions.map((region) => region.y));
-  const maxY = Math.max(...itemRegions.map((region) => region.y + region.h));
-
-  for (const columnX of columns) {
-    const regions = itemRegions.filter((region) => Math.abs(region.x - columnX) < 0.03);
-    if (regions.length < 2) continue;
-    const railX = Math.max(0, columnX - 0.14);
-    slide.addShape("rect", {
-      x: railX,
-      y: Math.min(...regions.map((region) => region.y)) + 0.1,
-      w: 0.035,
-      h: Math.max(0.1, Math.max(...regions.map((region) => region.y + region.h)) - Math.min(...regions.map((region) => region.y)) - 0.2),
-      fill: { color: preset.secondaryColor, transparency: 20 },
-      line: { color: preset.secondaryColor, transparency: 100 },
-    });
-  }
-
-  if (columns.length > 1) {
-    const separatorX = (columns[0]! + itemRegions.find((region) => Math.abs(region.x - columns[0]!) < 0.03)!.w + columns[1]!) / 2;
-    slide.addShape("rect", {
-      x: separatorX,
-      y: minY,
-      w: 0.025,
-      h: maxY - minY,
-      fill: { color: preset.surfaceLine, transparency: 25 },
       line: { color: preset.surfaceLine, transparency: 100 },
     });
   }
