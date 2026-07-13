@@ -574,6 +574,57 @@ test("renderPptx does not add horizontal rules above or below toc items", async 
   }
 });
 
+test("renderPptx suppresses comparison rules and top-aligns neutral split content", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-neutral-split-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].title = "Example decks from MDPR";
+  deck.presentation.slides[0].intent = "comparison";
+  deck.presentation.slides[0].blocks = [{
+    id: "inventory-list",
+    type: "bulletList",
+    items: [
+      "basic/deck.md covers core flow and expected effects.",
+      "comparison/deck.md exercises before/after content.",
+      "pipeline/deck.md exercises diagram conversion.",
+      "diagram-arrangements/deck.md exercises multiple diagram structures.",
+      "theme-preview decks exercise preset variety.",
+    ],
+  }];
+  deck.layout.slides[0].layout = { preset: "comparison", columns: 2, direction: "horizontal", variant: "neutral-split" };
+  deck.layout.slides[0].regions = [
+    { ...deck.layout.slides[0].regions[0], blockIds: ["__title:slide-1"] },
+    { id: "left", role: "body", blockIds: ["inventory-list#0", "inventory-list#1", "inventory-list#2"], x: 0.9, y: 1.48, w: 5.4, h: 4.9, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 16 } },
+    { id: "right", role: "body", blockIds: ["inventory-list#3", "inventory-list#4"], x: 7.0, y: 1.48, w: 5.4, h: 4.9, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 16 } },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "clean" });
+    const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
+    const titleBottom = 0.45 + 0.8;
+    const textlessRules = slideObjectsWithTransforms(xml).filter((shape) =>
+      shape.tag === "sp"
+      && !/<a:t>/.test(shape.xml)
+      && shape.w >= 2.5
+      && shape.h <= 0.12
+      && shape.y >= titleBottom
+      && shape.y <= 2.1,
+    );
+    assert.equal(textlessRules.length, 0);
+
+    const leftXml = shapeXmlContainingText(xml, "basic/deck.md covers core flow and expected effects.");
+    const rightXml = shapeXmlContainingText(xml, "diagram-arrangements/deck.md exercises multiple diagram structures.");
+    const left = shapeTransform(leftXml);
+    const right = shapeTransform(rightXml);
+    assert.equal(Math.abs(left.y - right.y) <= 0.1, true);
+    assert.equal(left.y - titleBottom <= 0.8, true);
+    assert.match(leftXml, /<a:bodyPr[^>]*anchor="t"/);
+    assert.match(rightXml, /<a:bodyPr[^>]*anchor="t"/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx preserves editable code lines as OOXML line boundaries", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-code-lines-"));
   const outPath = join(outDir, "deck.pptx");

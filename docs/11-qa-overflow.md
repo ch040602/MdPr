@@ -211,6 +211,13 @@ reported as `MDPR_POLISH_GATE_FAILED`; validation is invalid and a build stops
 before rendering. Runs without `--visual` retain the manifest summary without
 promoting it to a failing diagnostic.
 
+The required detail-polish chapter also reports
+`comparisonSemanticMismatchCount`. A full comparison layout without paired
+semantic evidence fails this chapter; the explicit `neutral-split` variant and
+genuine opposing content are valid controls. Planner and validator share the
+same semantic evidence function so a neutral inventory cannot pass one layer
+and fail the other.
+
 Coherence summaries are always recorded in the manifest. `validate --coherence`
 promotes the same checks into user-facing diagnostics:
 

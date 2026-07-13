@@ -1,5 +1,5 @@
 import type { Diagnostic, PresentationIR } from "@mdpresent/core";
-import { visibleGeometrySignature, type LayoutIR } from "@mdpresent/layout";
+import { hasSemanticComparisonEvidence, visibleGeometrySignature, type LayoutIR } from "@mdpresent/layout";
 
 type LayoutRegion = LayoutIR["slides"][number]["regions"][number];
 
@@ -37,6 +37,7 @@ export type PolishQualitySummary = {
     };
     detailPolish: PolishChapterCheck & {
       visualErrorCount: number;
+      comparisonSemanticMismatchCount: number;
       overlapCount: number;
       clippingRiskCount: number;
       contrastFailureCount: number;
@@ -267,6 +268,12 @@ export function createPolishQualitySummary(
       && !slide.regions.some((region) => region.role !== "title" && region.blockIds.length === 0);
   }).length;
   const visualErrorCount = diagnostics.filter((diagnostic) => diagnostic.level === "error").length;
+  const presentationSlidesById = new Map(presentation.slides.map((slide) => [slide.id, slide]));
+  const comparisonSemanticMismatchCount = layout.slides.filter((slide) => {
+    if (slide.layout.preset !== "comparison" || slide.layout.variant === "neutral-split") return false;
+    const sourceSlide = presentationSlidesById.get(slide.sourceSlideId);
+    return Boolean(sourceSlide) && !hasSemanticComparisonEvidence(sourceSlide!);
+  }).length;
   const overlapCount = diagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_REGION_OVERLAP").length;
   const clippingRiskCount = diagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_REGION_BOUNDS" || diagnostic.code === "VISUAL_FONT_FLOOR").length;
   const contrastFailureCount = diagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_CONTRAST").length;
@@ -312,9 +319,10 @@ export function createPolishQualitySummary(
     },
     detailPolish: {
       required: true,
-      passed: visualErrorCount === 0,
-      evidence: "Detail polish reuses visual diagnostics for overlap, clipping, contrast, image aspect, and connector clearance failures.",
+      passed: visualErrorCount === 0 && comparisonSemanticMismatchCount === 0,
+      evidence: "Detail polish reuses visual diagnostics and rejects semantic comparison chrome on neutral split content.",
       visualErrorCount,
+      comparisonSemanticMismatchCount,
       overlapCount,
       clippingRiskCount,
       contrastFailureCount,

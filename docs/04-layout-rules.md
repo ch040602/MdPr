@@ -208,6 +208,19 @@ not-applicable slide counts so a release profile can fail only covered
 deterministic cases and can separately decide whether skipped radial layouts
 need their own validator.
 
+## Semantic Comparison Chrome
+
+The `comparison` geometry is not sufficient evidence for comparison styling.
+MDPR applies full comparison chrome only when the title contains a paired
+contrast or separate content units provide opposing terms such as
+`Before`/`After`, `As-is`/`To-be`, or `Pros`/`Cons`. A keyword occurring inside
+one inventory item, filename, or example description does not qualify.
+
+Unqualified content keeps the useful two-column geometry as
+`variant: neutral-split`. That variant starts both columns on the same top
+baseline and omits body-region rules. It does not weaken the full comparison
+layout used by source-backed opposing content.
+
 ## Text/Background Luminance Coherence
 
 The resolved Layout IR theme must use text colors that behave as grayscale

@@ -362,8 +362,34 @@ function sectionKeyForSlide(slide: SlideIR): string | undefined {
 }
 
 function planSlideLayout(slide: SlideIR, config: Config, coherenceGroup?: CoherenceGroup, previousPresetInSection?: string, recentGeometryHistory: string[] = []): LayoutSlide {
-  const layout = chooseLayout(slide, config, coherenceGroup, previousPresetInSection, recentGeometryHistory);
+  const selectedLayout = chooseLayout(slide, config, coherenceGroup, previousPresetInSection, recentGeometryHistory);
+  const layout = selectedLayout.preset === "comparison" && !hasSemanticComparisonEvidence(slide)
+    ? { ...selectedLayout, variant: "neutral-split" }
+    : selectedLayout;
   return planSlideLayoutWithSpec(slide, config, layout);
+}
+
+export function hasSemanticComparisonEvidence(slide: SlideIR): boolean {
+  const pairedTerms: Array<[RegExp, RegExp]> = [
+    [/\bbefore\b|\bas[- ]?is\b|\bcurrent\b|\bexisting\b|기존|현재/i, /\bafter\b|\bto[- ]?be\b|\bfuture\b|\bimproved\b|개선|향후/i],
+    [/\bpros?\b|\badvantages?\b|장점/i, /\bcons?\b|\bdisadvantages?\b|단점/i],
+  ];
+  const title = slide.title ?? "";
+  if (pairedTerms.some(([left, right]) => left.test(title) && right.test(title))) return true;
+
+  const comparisonUnits = slide.blocks.flatMap((block) => {
+    if (block.listItems?.length) return block.listItems.map((item) => item.text);
+    if (block.items?.length) return block.items;
+    if (block.sentences?.length) return block.sentences;
+    if (block.lines?.length) return block.lines;
+    return block.text ? [block.text] : [];
+  }).filter((text) => text.trim().length > 0);
+
+  return pairedTerms.some(([left, right]) => {
+    const leftIndex = comparisonUnits.findIndex((text) => left.test(text));
+    const rightIndex = comparisonUnits.findIndex((text) => right.test(text));
+    return leftIndex >= 0 && rightIndex >= 0 && leftIndex !== rightIndex;
+  });
 }
 
 export function planSlideLayoutWithSpec(slide: SlideIR, config: Config, layout: LayoutSpec): LayoutSlide {
@@ -430,8 +456,9 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   if (layout.preset === "comparison") {
     const dense = isDenseProseSlide(slide);
     const typography = dense ? compactBodyTypography(config) : bodyTypography(config);
-    const y = dense ? 1.52 : 1.7;
-    const h = dense ? 5.05 : 4.8;
+    const neutralSplit = layout.variant === "neutral-split";
+    const y = neutralSplit ? 1.48 : dense ? 1.52 : 1.7;
+    const h = neutralSplit ? 4.9 : dense ? 5.05 : 4.8;
     return [
       titleRegion,
       { id: "left", role: "body", blockIds: itemBlockIds.slice(0, Math.ceil(itemBlockIds.length / 2)), x: 0.9, y, w: 5.4, h, zIndex: 10, typography },

@@ -211,7 +211,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
         } else if (tocItemNumber !== undefined) {
           slide.addText(`${String(tocItemNumber).padStart(2, "0")}  ${plainRegionText}`, metadataTextCommon);
         } else if (shouldRenderAsPlainMultiline(blocks)) {
-          renderPlainListRegion(slide, blocks, region.role, metadataTextCommon);
+          renderPlainListRegion(slide, blocks, region.role, metadataTextCommon, layoutSlide.layout.variant === "neutral-split");
         } else if (shouldRenderAsIndentedParagraphs(blocks)) {
           renderIndentedParagraphRegion(slide, blocks, region.role, metadataTextCommon);
         } else {
@@ -1243,7 +1243,7 @@ function shouldRenderAsPlainMultiline(blocks: BlockIR[]): boolean {
   });
 }
 
-function renderPlainListRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: string, common: PptxGenJS.TextPropsOptions): void {
+function renderPlainListRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: string, common: PptxGenJS.TextPropsOptions, topAlign = false): void {
   const items = blocks.flatMap((block) => {
     if (block.type === "listItem") return [{ text: normalizeRenderableText(block.text ?? ""), level: 0 }];
     if (block.type !== "bulletList") return [];
@@ -1268,7 +1268,7 @@ function renderPlainListRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: 
   const heightScale = totalH > baseH ? baseH / totalH : 1;
   const fittedRowHeights = rowHeights.map((height) => height * heightScale);
   const fittedTotalH = fittedRowHeights.reduce((sum, height) => sum + height, 0);
-  const startY = baseY + Math.max(0, (baseH - fittedTotalH) / 2);
+  const startY = topAlign ? baseY : baseY + Math.max(0, (baseH - fittedTotalH) / 2);
   const rowFit = totalH <= baseH ? "none" : common.fit;
   const rowAlign: PptxGenJS.HAlign = role === "item" ? "center" : "left";
   let cursorY = startY;
@@ -1285,7 +1285,7 @@ function renderPlainListRegion(slide: PptxGenJS.Slide, blocks: BlockIR[], role: 
       fontSize: baseFontSize,
       margin: common.margin ?? [0, 0, 0, 0],
       align: rowAlign,
-      valign: "middle",
+      valign: topAlign ? "top" : "middle",
       fit: rowFit,
       breakLine: false,
       isTextBox: true,
@@ -2884,6 +2884,7 @@ function addRegionAccents(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"
     if (!region.blockIds.length) continue;
     if (region.id === "key-message") continue;
     if (!["body", "item"].includes(region.role)) continue;
+    if (layoutSlide.layout.variant === "neutral-split" && region.role === "body") continue;
     const indexMatch = /(\d+)$/.exec(region.id);
     const index = indexMatch ? Number(indexMatch[1]) : 0;
     const color = index % 2 === 0 ? preset.secondaryColor : preset.primaryColor;

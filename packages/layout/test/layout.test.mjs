@@ -673,6 +673,72 @@ test("deck-wide geometry diversity never displaces specialized object layouts", 
   assert.deepEqual(layout.slides.map((slide) => slide.layout.preset), objectSlides.flatMap((entry) => [entry.preset, entry.preset]));
 });
 
+test("neutral inventory keywords use split geometry without semantic comparison chrome", () => {
+  const neutralSlide = {
+    id: "example-inventory",
+    index: 0,
+    role: "content",
+    title: "Example decks from MDPR",
+    headingPath: ["Example decks from MDPR"],
+    source: {},
+    intent: "comparison",
+    tags: [],
+    primaryItemCount: 5,
+    blocks: [{
+      id: "inventory-list",
+      type: "bulletList",
+      items: [
+        "basic/deck.md covers core flow and expected effects.",
+        "comparison/deck.md exercises before/after content.",
+        "pipeline/deck.md exercises diagram conversion.",
+        "diagram-arrangements/deck.md exercises multiple diagram structures.",
+        "theme-preview decks exercise preset variety.",
+      ],
+    }],
+  };
+  const layout = planLayout({
+    version: "1.0",
+    meta: { title: "Neutral inventory" },
+    outline: [],
+    assets: [],
+    diagnostics: [],
+    coherenceGroups: [],
+    slides: [neutralSlide],
+  }, defaultConfig).slides[0];
+
+  assert.equal(layout.layout.preset, "comparison");
+  assert.equal(layout.layout.variant, "neutral-split");
+  const columns = layout.regions.filter((region) => region.role === "body");
+  assert.equal(columns.length, 2);
+  assert.equal(columns[0].y, columns[1].y);
+  assert.equal(columns[0].y <= 1.5, true);
+  assert.deepEqual(columns.flatMap((region) => region.blockIds), [
+    "inventory-list#0",
+    "inventory-list#1",
+    "inventory-list#2",
+    "inventory-list#3",
+    "inventory-list#4",
+  ]);
+
+  const explicit = structuredClone(neutralSlide);
+  explicit.id = "explicit-comparison";
+  explicit.title = "Before and After";
+  explicit.blocks[0].id = "comparison-list";
+  explicit.blocks[0].items = ["Before: manual notes", "After: automated drafts"];
+  explicit.primaryItemCount = 2;
+  const explicitLayout = planLayout({
+    version: "1.0",
+    meta: { title: "Explicit comparison" },
+    outline: [],
+    assets: [],
+    diagnostics: [],
+    coherenceGroups: [],
+    slides: [explicit],
+  }, defaultConfig).slides[0];
+  assert.equal(explicitLayout.layout.preset, "comparison");
+  assert.notEqual(explicitLayout.layout.variant, "neutral-split");
+});
+
 test("conference profile scoring gives dense technical prose split-text relief", () => {
   const denseText = "Long standards prose should remain readable through hierarchy, line breaks, and separated argument columns. ".repeat(10);
   const slide = {

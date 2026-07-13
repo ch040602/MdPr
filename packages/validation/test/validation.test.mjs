@@ -679,3 +679,67 @@ test("polish geometry diversity excludes forced object layouts", () => {
   assert.equal(summary.chapters.layoutComposition.eligibleSlideCount, 0);
   assert.equal(summary.chapters.layoutComposition.passed, true);
 });
+
+test("polish quality rejects unqualified comparison chrome but accepts neutral and explicit controls", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Comparison semantics" },
+    outline: [],
+    coherenceGroups: [],
+    assets: [],
+    diagnostics: [],
+    slides: [{
+      id: "inventory",
+      index: 0,
+      role: "content",
+      title: "Example decks from MDPR",
+      headingPath: ["Example decks from MDPR"],
+      source: {},
+      blocks: [{ id: "inventory-list", type: "bulletList", items: [
+        "basic/deck.md covers core flow.",
+        "comparison/deck.md exercises before/after content.",
+        "pipeline/deck.md exercises diagram conversion.",
+      ] }],
+      intent: "comparison",
+      tags: [],
+    }],
+  };
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme: { ...theme, titleFontSize: 32, bodyFontSize: 18, minFontSize: 16 },
+    slides: [{
+      id: "layout-inventory",
+      sourceSlideId: "inventory",
+      index: 0,
+      layout: { preset: "comparison", columns: 2 },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 16, maxShrinkSteps: 4 },
+      regions: [
+        { id: "title", role: "title", x: 0.8, y: 0.5, w: 11, h: 0.7, zIndex: 1, blockIds: ["__title:inventory"], typography: { fontSize: 32, minFontSize: 16 } },
+        { id: "left", role: "body", x: 0.9, y: 1.48, w: 5.4, h: 4.9, zIndex: 1, blockIds: ["inventory-list#0", "inventory-list#1"], typography: { fontSize: 18, minFontSize: 16 } },
+        { id: "right", role: "body", x: 7.0, y: 1.48, w: 5.4, h: 4.9, zIndex: 1, blockIds: ["inventory-list#2"], typography: { fontSize: 18, minFontSize: 16 } },
+      ],
+    }],
+    diagnostics: [],
+  };
+
+  const mismatch = createPolishQualitySummary(presentation, layout);
+  assert.equal(mismatch.chapters.detailPolish.comparisonSemanticMismatchCount, 1);
+  assert.equal(mismatch.chapters.detailPolish.passed, false);
+  assert.equal(polishQualityDiagnostics(presentation, layout).some((diagnostic) =>
+    diagnostic.code === "MDPR_POLISH_GATE_FAILED" && diagnostic.details.failedChapters.includes("detailPolish")), true);
+
+  const neutralLayout = structuredClone(layout);
+  neutralLayout.slides[0].layout.variant = "neutral-split";
+  const neutral = createPolishQualitySummary(presentation, neutralLayout);
+  assert.equal(neutral.chapters.detailPolish.comparisonSemanticMismatchCount, 0);
+  assert.equal(neutral.chapters.detailPolish.passed, true);
+
+  const explicitPresentation = structuredClone(presentation);
+  explicitPresentation.slides[0].title = "Before and After";
+  explicitPresentation.slides[0].blocks[0].items = ["Before: manual notes", "After: automated drafts"];
+  const explicit = createPolishQualitySummary(explicitPresentation, layout);
+  assert.equal(explicit.chapters.detailPolish.comparisonSemanticMismatchCount, 0);
+  assert.equal(explicit.chapters.detailPolish.passed, true);
+});
