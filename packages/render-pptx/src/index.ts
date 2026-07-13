@@ -147,7 +147,9 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           .map((blockId) => blockIndex.get(blockId))
           .filter((block): block is BlockIR => Boolean(block));
         const orderedItemNumber = region.role === "item" ? orderedListItemNumber(blocks) : undefined;
-        const tocItemNumber = region.role === "item" && layoutSlide.layout.preset === "toc" ? itemIndexFromRegionId(region.id) : undefined;
+        const tocItemNumber = region.role === "item" && layoutSlide.layout.preset === "toc"
+          ? tocItemOrdinal(region.blockIds, region.id)
+          : undefined;
         const badgeNumber = orderedItemNumber;
         const badge = badgeNumber !== undefined ? renderItemNumberBadge(slide, region, badgeNumber, designPreset, common) : undefined;
         const itemIconKind = blocks.length
@@ -1416,6 +1418,14 @@ function orderedListItemNumber(blocks: BlockIR[]): number | undefined {
 function itemIndexFromRegionId(id: string): number | undefined {
   const match = /(\d+)$/.exec(id);
   return match ? Number(match[1]) : undefined;
+}
+
+function tocItemOrdinal(blockIds: string[], regionId: string): number | undefined {
+  if (blockIds.length === 1) {
+    const boundOrdinal = /^toc-item-(\d+)$/.exec(blockIds[0] ?? "");
+    if (boundOrdinal) return Number(boundOrdinal[1]);
+  }
+  return itemIndexFromRegionId(regionId);
 }
 
 type TextPlacement = {

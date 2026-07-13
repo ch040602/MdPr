@@ -42,6 +42,9 @@ Implemented baseline:
 - preserves Layout IR coordinates and does not recompute layout
 - applies PowerPoint shrink behavior only when overflow policy is `shrink`
 - preserves Markdown line breaks, sentence units, ordered list numbers, nested list prefixes, bold, and italic runs
+- renders generated TOC labels from the global `toc-item-N` block ordinal so
+  Agenda continuation slides keep one contiguous navigation sequence; a
+  slide-local region suffix is used only as a compatibility fallback
 - preserves each code line as an editable OpenXML line boundary rather than adjacent runs in one visual line
 - routes every non-decoration source block to a layout region; table-focused slides keep accompanying lists and prose in a separate body region
 - renders indented paragraph rows as separate editable text boxes with a bounded `0.06-0.10in` inter-row safety gap, and includes that gap in font-fitting calculations

@@ -574,6 +574,37 @@ test("renderPptx does not add horizontal rules above or below toc items", async 
   }
 });
 
+test("renderPptx uses bound global TOC block ordinals with a region fallback", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-toc-global-ordinal-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].title = "Agenda (Cont. 2/2)";
+  deck.presentation.slides[0].blocks = [
+    { id: "toc-item-9", type: "listItem", text: "Section Nine" },
+    { id: "toc-item-10", type: "listItem", text: "Section Ten" },
+    { id: "legacy-section", type: "listItem", text: "Legacy Section" },
+  ];
+  deck.layout.slides[0].layout = { preset: "toc" };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    { id: "toc-item-1", role: "item", blockIds: ["toc-item-9"], x: 0.9, y: 1.7, w: 5.4, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 18, lineHeight: 1.2, minFontSize: 16 } },
+    { id: "toc-item-2", role: "item", blockIds: ["toc-item-10"], x: 6.9, y: 1.7, w: 5.4, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 18, lineHeight: 1.2, minFontSize: 16 } },
+    { id: "toc-item-3", role: "item", blockIds: ["legacy-section"], x: 0.9, y: 2.7, w: 5.4, h: 0.8, zIndex: 10, typography: { fontFamily: "Arial", fontSize: 18, lineHeight: 1.2, minFontSize: 16 } },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "clean" });
+    const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
+
+    assert.match(xml, /<a:t>09  Section Nine<\/a:t>/);
+    assert.match(xml, /<a:t>10  Section Ten<\/a:t>/);
+    assert.match(xml, /<a:t>03  Legacy Section<\/a:t>/);
+    assert.equal((xml.match(/<a:t>(?:09  Section Nine|10  Section Ten|03  Legacy Section)<\/a:t>/g) ?? []).length, 3);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx suppresses comparison rules and top-aligns neutral split content", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-neutral-split-"));
   const outPath = join(outDir, "deck.pptx");
