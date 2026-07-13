@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultConfig, parseMarkdown, planPresentation } from "@mdpresent/core";
-import { layoutPresets, measureText, planLayout, rankLayoutCandidates, validateLayoutOverflow, visibleGeometrySignature } from "../dist/index.js";
+import { geometrySignatureForSpec, layoutPresets, measureText, planLayout, rankLayoutCandidates, validateLayoutOverflow, visibleGeometrySignature } from "../dist/index.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(packageRoot, "../..");
@@ -709,8 +709,8 @@ test("three-item slides alternate horizontal triptychs with vertical stacks", ()
   const layout = planLayout(presentation, defaultConfig);
   const signatures = layout.slides.map(visibleGeometrySignature);
 
-  assert.equal(signatures[0], "freeform-3");
-  assert.equal(signatures.includes("freeform-3"), true);
+  assert.equal(signatures[0], "card-row-3");
+  assert.equal(signatures.includes("card-row-3"), true);
   assert.equal(signatures.includes("vertical-stack"), true);
   for (const slide of layout.slides) {
     const itemRegions = slide.regions.filter((region) => region.role === "item");
@@ -718,6 +718,11 @@ test("three-item slides alternate horizontal triptychs with vertical stacks", ()
     assert.deepEqual(itemRegions.flatMap((region) => region.blockIds), ["list-" + (slide.index + 1) + "#0", "list-" + (slide.index + 1) + "#1", "list-" + (slide.index + 1) + "#2"]);
     assert.equal(itemRegions.every((region) => region.typography.minFontSize >= 16), true);
   }
+});
+
+test("horizontal triptych and quartet specs expose named visible geometry", () => {
+  assert.equal(geometrySignatureForSpec({ preset: "vertical-list", variant: "horizontal-triptych", columns: 3, rows: 1, direction: "horizontal" }), "card-row-3");
+  assert.equal(geometrySignatureForSpec({ preset: "grid", variant: "horizontal-quartet", columns: 4, rows: 1, direction: "horizontal" }), "card-row-4");
 });
 
 test("deck-wide geometry diversity never displaces specialized object layouts", () => {

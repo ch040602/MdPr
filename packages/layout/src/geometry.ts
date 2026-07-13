@@ -3,6 +3,8 @@ import type { LayoutSlide, LayoutSpec } from "./ir/types.js";
 export type LayoutGeometrySignature =
   | "card-grid-2x2"
   | "card-grid-3x2"
+  | "card-row-3"
+  | "card-row-4"
   | "vertical-stack"
   | "split-columns"
   | "single-panel"
@@ -11,6 +13,8 @@ export type LayoutGeometrySignature =
   | `freeform-${number}`;
 
 export function geometrySignatureForSpec(layout: LayoutSpec): LayoutGeometrySignature {
+  if (layout.columns === 3 && layout.rows === 1) return "card-row-3";
+  if (layout.columns === 4 && layout.rows === 1) return "card-row-4";
   if (layout.preset === "grid" && layout.columns === 2 && layout.rows === 2) return "card-grid-2x2";
   if (layout.preset === "grid" && layout.columns === 3 && layout.rows === 2) return "card-grid-3x2";
   if (layout.preset === "vertical-list") return "vertical-stack";
@@ -35,6 +39,8 @@ export function visibleGeometrySignature(slide: LayoutSlide): LayoutGeometrySign
 
   const xCount = clusteredCoordinateCount(regions.map((region) => region.x));
   const yCount = clusteredCoordinateCount(regions.map((region) => region.y));
+  if (regions.length === 3 && xCount === 3 && yCount === 1) return "card-row-3";
+  if (regions.length === 4 && xCount === 4 && yCount === 1) return "card-row-4";
   if (regions.length === 4 && xCount === 2 && yCount === 2) return "card-grid-2x2";
   if (regions.length === 6 && xCount === 3 && yCount === 2) return "card-grid-3x2";
   if (regions.length === 2 && xCount === 2 && yCount === 1) return "split-columns";
