@@ -72,11 +72,15 @@
 <!-- mdpr-runtime-skill-comparison -->
 ## MDPR과 mdpr-skill 한눈에 비교
 
+빠른 선택: deck 생성은 MDPR을 실행하고, agent review도 필요할 때
+`mdpr-skill`을 추가합니다. 둘은 경쟁 renderer가 아니라 상호 보완 관계입니다.
+
 | 결정 경계 | MDPR | mdpr-skill |
 | --- | --- | --- |
 | 사용 목적 | Markdown parsing, layout, validation과 편집 가능한 `PPTX`/`HTML`/`PDF`를 결정론적으로 생성 | MDPR build 전후의 선택적 Codex hint, review finding, 비교 evidence |
-| 글꼴 결정권 | font family, point size, region floor, editable text run을 결정합니다. caption 기본값은 `18pt`이고 code는 sub-`16pt` runtime 예외 없이 `Consolas`를 사용합니다. | 더 짧은 문장이나 content split은 제안할 수 있지만 정확한 family, point size, line break, text-box geometry는 지정할 수 없습니다. |
+| 글꼴 결정권 | font family, point size, region floor, editable text run을 결정합니다. caption 기본값은 `18pt`이고 generated code, caption, list badge, diagram badge에는 sub-`16pt` runtime 예외가 없습니다. | 더 짧은 문장이나 content split은 제안할 수 있지만 정확한 family, point size, line break, text-box geometry는 지정할 수 없습니다. |
 | Strict visual failure | 필수 `fontHierarchy`는 모든 active Layout IR region을 `16pt` 기준으로 검사합니다. 더 작은 명시적 override는 `MDPR_POLISH_GATE_FAILED`로 남습니다. | manifest failure를 evidence와 함께 mirror할 뿐 재계산, 완화, override하지 않습니다. |
+| 장식선 | Built-in preset은 자동 title underline, TOC horizontal rule, 고립된 cover-bottom rule을 만들지 않습니다. | source content가 요구하지 않는 synthetic subtitle, title rule, bottom takeaway band를 review evidence에 추가하지 않습니다. |
 | Template font | `--template`은 master/layout/theme OOXML을 보존하지만 generated text는 resolved MDPR typography를 사용합니다. 정확한 family 일치는 `typography.fontFamily`로 지정합니다. | template mismatch를 보고할 수 있지만 master typography를 교체하거나 font 설치·embed를 주장하지 않습니다. |
 | 출력 책임 | 최종 좌표, 색상, z-order, object, rendering, pass/fail을 소유합니다. | hint, review report, evidence만 만들며 최종 runtime 결정은 모두 MDPR에 남깁니다. |
 

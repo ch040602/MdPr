@@ -67,11 +67,15 @@
 <!-- mdpr-runtime-skill-comparison -->
 ## MDPR 与 mdpr-skill 一览
 
+快速选择：生成 deck 时运行 MDPR；还需要 agent review 时再加入
+`mdpr-skill`。两者互补，并非相互竞争的 renderer。
+
 | 决策边界 | MDPR | mdpr-skill |
 | --- | --- | --- |
 | 适用场景 | 确定性完成 Markdown parsing、layout、validation，并输出可编辑的 `PPTX`/`HTML`/`PDF` | 在 MDPR build 前后提供可选的 Codex hint、review finding 和 comparison evidence |
-| 字体决定权 | 决定 font family、point size、region floor 与 editable text run。caption 默认为 `18pt`；code 使用 `Consolas`，且没有 sub-`16pt` runtime 例外。 | 可以建议缩短文案或 content split，但不能指定精确 family、point size、line break 或 text-box geometry。 |
+| 字体决定权 | 决定 font family、point size、region floor 与 editable text run。caption 默认为 `18pt`；generated code、caption、list badge 和 diagram badge 均没有 sub-`16pt` runtime 例外。 | 可以建议缩短文案或 content split，但不能指定精确 family、point size、line break 或 text-box geometry。 |
 | Strict visual failure | 必需的 `fontHierarchy` 以 `16pt` 检查每个 active Layout IR region；更小的显式 override 会保留为 `MDPR_POLISH_GATE_FAILED`。 | 只用 evidence 镜像 manifest failure，不重新计算、放宽或 override。 |
+| 装饰线 | Built-in preset 不会自动添加 title underline、TOC horizontal rule 或孤立的 cover-bottom rule。 | 除非 source content 明确要求，否则 review evidence 不添加 synthetic subtitle、title rule 或 bottom takeaway band。 |
 | Template font | `--template` 保留 master/layout/theme OOXML，但 generated text 使用 resolved MDPR typography；精确匹配应设置 `typography.fontFamily`。 | 可以报告 template mismatch，但不会替换 master typography，也不会声称 font 已安装或嵌入。 |
 | 输出责任 | 拥有最终 coordinates、colors、z-order、objects、rendering 和 pass/fail。 | 只生成 hint、review report 与 evidence；所有最终 runtime 决策仍由 MDPR 作出。 |
 
