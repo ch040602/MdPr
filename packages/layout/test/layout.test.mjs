@@ -410,7 +410,7 @@ test("quoted key sentences are separated from supporting body text", () => {
   assert.equal(slide.regions.find((region) => region.id === "key-message").y < slide.regions.find((region) => region.id === "body").y, true);
 });
 
-test("code-focus slides use a dedicated code region with compact typography", () => {
+test("code-focus slides use a dedicated code region without a sub-16pt exception", () => {
   const layout = layoutFor([
     "# Demo",
     "",
@@ -427,7 +427,9 @@ test("code-focus slides use a dedicated code region with compact typography", ()
 
   assert.ok(code);
   assert.equal(code.role, "code");
-  assert.equal(code.typography.fontSize <= layout.theme.captionFontSize, true);
+  assert.equal(code.typography.fontSize >= 16, true);
+  assert.equal(code.typography.minFontSize >= 16, true);
+  assert.equal(layout.theme.captionFontSize >= 16, true);
 });
 
 test("mixed text and image slides use separate body and image regions", () => {

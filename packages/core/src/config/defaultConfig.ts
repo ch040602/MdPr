@@ -44,7 +44,7 @@ export const defaultConfig: Config = {
     fontFamily: "Pretendard",
     titleFontSize: 34,
     bodyFontSize: 22,
-    captionFontSize: 14,
+    captionFontSize: 18,
     minFontSize: 18,
     lineHeight: 1.2,
   },

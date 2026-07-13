@@ -46,7 +46,7 @@
 
 글꼴 규칙:
 
-- 기본 profile은 `Pretendard`, title `34pt`, body `22pt`, caption `14pt`,
+- 기본 profile은 `Pretendard`, title `34pt`, body `22pt`, caption `18pt`,
   configured minimum `18pt`, line height `1.2`를 사용합니다.
 - region의 실제 하한은 `region.typography.minFontSize`, slide overflow floor,
   theme minimum 순서로 결정합니다. shrink와 containment resolution은 이
@@ -54,9 +54,9 @@
 - 필수 `--visual` `fontHierarchy` chapter는 선언된 font family, title/body
   사이 최소 `4pt` 차이, Layout IR 전체 최소 `16pt`, 동일 role의 font-size
   variance 0을 요구합니다.
-- strict polish floor에는 caption이나 code의 silent exemption이 없습니다.
-  active region이 `16pt`보다 작으면 non-strict profile 기본값이 더 작더라도
-  required-gate failure로 남습니다.
+- generated caption과 code region은 더 이상 strict floor보다 작은 값으로
+  시작하지 않습니다. 명시적인 override가 `16pt`보다 작으면 required-gate
+  failure로 남습니다.
 - PPTX는 resolved family를 document head/body theme과 편집 가능한 text run에
   기록합니다. code region은 명시적 monospace 예외로 `Consolas`를 사용합니다.
 - `--template`은 기존 master, layout, theme OOXML을 보존하지만 generated text는
@@ -72,8 +72,8 @@
 | 결정 경계 | MDPR | mdpr-skill |
 | --- | --- | --- |
 | 사용 목적 | Markdown parsing, layout, validation과 편집 가능한 `PPTX`/`HTML`/`PDF`를 결정론적으로 생성 | MDPR build 전후의 선택적 Codex hint, review finding, 비교 evidence |
-| 글꼴 결정권 | font family, point size, region floor, editable text run을 결정합니다. caption 기본값은 `14pt`이고 code는 `Consolas`와 non-strict `11pt` floor를 사용할 수 있습니다. | 더 짧은 문장이나 content split은 제안할 수 있지만 정확한 family, point size, line break, text-box geometry는 지정할 수 없습니다. |
-| Strict visual failure | 필수 `fontHierarchy`는 모든 active Layout IR region을 `16pt` 기준으로 검사합니다. 더 작은 code/caption region은 `MDPR_POLISH_GATE_FAILED`로 남습니다. | manifest failure를 evidence와 함께 mirror할 뿐 재계산, 완화, override하지 않습니다. |
+| 글꼴 결정권 | font family, point size, region floor, editable text run을 결정합니다. caption 기본값은 `18pt`이고 code는 sub-`16pt` runtime 예외 없이 `Consolas`를 사용합니다. | 더 짧은 문장이나 content split은 제안할 수 있지만 정확한 family, point size, line break, text-box geometry는 지정할 수 없습니다. |
+| Strict visual failure | 필수 `fontHierarchy`는 모든 active Layout IR region을 `16pt` 기준으로 검사합니다. 더 작은 명시적 override는 `MDPR_POLISH_GATE_FAILED`로 남습니다. | manifest failure를 evidence와 함께 mirror할 뿐 재계산, 완화, override하지 않습니다. |
 | Template font | `--template`은 master/layout/theme OOXML을 보존하지만 generated text는 resolved MDPR typography를 사용합니다. 정확한 family 일치는 `typography.fontFamily`로 지정합니다. | template mismatch를 보고할 수 있지만 master typography를 교체하거나 font 설치·embed를 주장하지 않습니다. |
 | 출력 책임 | 최종 좌표, 색상, z-order, object, rendering, pass/fail을 소유합니다. | hint, review report, evidence만 만들며 최종 runtime 결정은 모두 MDPR에 남깁니다. |
 

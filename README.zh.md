@@ -43,7 +43,7 @@
 
 字体规则：
 
-- 默认 profile 使用 `Pretendard`：title `34pt`、body `22pt`、caption `14pt`、
+- 默认 profile 使用 `Pretendard`：title `34pt`、body `22pt`、caption `18pt`、
   configured minimum `18pt`，line height 为 `1.2`。
 - region 的有效下限依次取自 `region.typography.minFontSize`、slide overflow
   floor 和 theme minimum。shrink 与 containment resolution 不会低于该下限；
@@ -51,9 +51,8 @@
 - 必需的 `--visual` `fontHierarchy` chapter 要求已声明的 font family、
   title 比 body 至少大 `4pt`、Layout IR 全局下限至少 `16pt`，并且同一 role
   的 font-size variance 为 0。
-- strict polish floor 不会静默豁免 caption 或 code。active region 低于
-  `16pt` 时，即使 non-strict profile 的默认值更小，也仍是 required-gate
-  failure。
+- generated caption 与 code region 不再从低于 strict floor 的值开始。
+  显式 override 低于 `16pt` 时仍是 required-gate failure。
 - PPTX 将 resolved family 写入 document head/body theme 和可编辑 text run；
   code region 是明确的 monospace 例外，使用 `Consolas`。
 - `--template` 会保留原始 master、layout 与 theme OOXML，但 generated text
@@ -69,8 +68,8 @@
 | 决策边界 | MDPR | mdpr-skill |
 | --- | --- | --- |
 | 适用场景 | 确定性完成 Markdown parsing、layout、validation，并输出可编辑的 `PPTX`/`HTML`/`PDF` | 在 MDPR build 前后提供可选的 Codex hint、review finding 和 comparison evidence |
-| 字体决定权 | 决定 font family、point size、region floor 与 editable text run。caption 默认为 `14pt`；code 使用 `Consolas`，并可带有 non-strict `11pt` floor。 | 可以建议缩短文案或 content split，但不能指定精确 family、point size、line break 或 text-box geometry。 |
-| Strict visual failure | 必需的 `fontHierarchy` 以 `16pt` 检查每个 active Layout IR region；更小的 code/caption region 会保留为 `MDPR_POLISH_GATE_FAILED`。 | 只用 evidence 镜像 manifest failure，不重新计算、放宽或 override。 |
+| 字体决定权 | 决定 font family、point size、region floor 与 editable text run。caption 默认为 `18pt`；code 使用 `Consolas`，且没有 sub-`16pt` runtime 例外。 | 可以建议缩短文案或 content split，但不能指定精确 family、point size、line break 或 text-box geometry。 |
+| Strict visual failure | 必需的 `fontHierarchy` 以 `16pt` 检查每个 active Layout IR region；更小的显式 override 会保留为 `MDPR_POLISH_GATE_FAILED`。 | 只用 evidence 镜像 manifest failure，不重新计算、放宽或 override。 |
 | Template font | `--template` 保留 master/layout/theme OOXML，但 generated text 使用 resolved MDPR typography；精确匹配应设置 `typography.fontFamily`。 | 可以报告 template mismatch，但不会替换 master typography，也不会声称 font 已安装或嵌入。 |
 | 输出责任 | 拥有最终 coordinates、colors、z-order、objects、rendering 和 pass/fail。 | 只生成 hint、review report 与 evidence；所有最终 runtime 决策仍由 MDPR 作出。 |
 

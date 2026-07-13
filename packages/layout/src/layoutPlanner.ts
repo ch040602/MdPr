@@ -859,11 +859,12 @@ function compactBodyTypography(config: Config) {
 }
 
 function codeTypography(config: Config) {
+  const minFontSize = Math.max(config.typography.minFontSize, 16);
   return {
     fontFamily: "Consolas",
-    fontSize: Math.min(config.typography.captionFontSize, 14),
+    fontSize: Math.max(config.typography.captionFontSize, minFontSize),
     fontWeight: "normal" as const,
     lineHeight: 1.12,
-    minFontSize: Math.min(config.typography.minFontSize, 11),
+    minFontSize,
   };
 }

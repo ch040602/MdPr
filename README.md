@@ -80,16 +80,15 @@ Current readability contract:
 Typography rules:
 
 - the default profile uses `Pretendard` with `34pt` titles, `22pt` body text,
-  `14pt` captions, an `18pt` configured minimum, and `1.2` line height
+  `18pt` captions, an `18pt` configured minimum, and `1.2` line height
 - a region resolves its effective floor from `region.typography.minFontSize`,
   then the slide overflow floor, then the theme minimum; shrink and containment
   resolution stop at that floor and leave a diagnostic when text still cannot fit
 - the required `--visual` `fontHierarchy` chapter needs a declared family,
   title text at least `4pt` larger than body text, a deck-wide Layout IR floor of
   at least `16pt`, and zero same-role font-size variance
-- the strict polish floor has no silent caption or code exemption; an active
-  region below `16pt` remains visible as a required-gate failure even when its
-  non-strict profile default is smaller
+- generated caption and code regions no longer start below the strict floor;
+  an explicit override below `16pt` remains a required-gate failure
 - PPTX output writes the resolved family to the document head/body theme and
   editable text runs; code regions are the explicit monospace exception and use
   `Consolas`
@@ -131,8 +130,8 @@ Markdown
 | Decision boundary | MDPR | mdpr-skill |
 | --- | --- | --- |
 | Use it for | Deterministic Markdown parsing, layout, validation, and editable `PPTX`/`HTML`/`PDF` output | Optional Codex hints, review findings, and comparison evidence before or after an MDPR build |
-| Typography authority | Resolves font families, point sizes, region floors, and editable text runs; captions default to `14pt`, while code uses `Consolas` and may carry an `11pt` non-strict floor | May suggest shorter copy or a content split, but must not prescribe an exact family, point size, line break, or text-box geometry |
-| Strict visual failure | Required `fontHierarchy` checks every active Layout IR region against `16pt`; a smaller code/caption region stays visible as `MDPR_POLISH_GATE_FAILED` | Mirrors that manifest failure with evidence and must not recompute, soften, or override it |
+| Typography authority | Resolves font families, point sizes, region floors, and editable text runs; captions default to `18pt`, and code keeps `Consolas` without a sub-`16pt` runtime exception | May suggest shorter copy or a content split, but must not prescribe an exact family, point size, line break, or text-box geometry |
+| Strict visual failure | Required `fontHierarchy` checks every active Layout IR region against `16pt`; an explicit smaller override stays visible as `MDPR_POLISH_GATE_FAILED` | Mirrors that manifest failure with evidence and must not recompute, soften, or override it |
 | Template fonts | `--template` preserves master/layout/theme OOXML, but generated text uses resolved MDPR typography; set `typography.fontFamily` for an exact family match | Reports a template mismatch; it does not replace master typography or claim that a font is installed or embedded |
 | Output ownership | Owns final coordinates, colors, z-order, objects, rendering, and pass/fail | Produces hints, review reports, and evidence only; MDPR still makes every final runtime decision |
 
