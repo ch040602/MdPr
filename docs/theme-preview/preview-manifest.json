@@ -28,6 +28,7 @@
     "key-message",
     "pipeline",
     "table-focus",
+    "title-body",
     "toc",
     "vertical-list"
   ],
@@ -103,13 +104,13 @@
           "index": 9,
           "file": "slides/skeuomorphism/slide-09.png",
           "title": "Semantic Blocks",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 10,
           "file": "slides/skeuomorphism/slide-10.png",
           "title": "Semantic Blocks (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 11,
@@ -169,7 +170,7 @@
           "index": 20,
           "file": "slides/skeuomorphism/slide-20.png",
           "title": "Object Shape Grammar (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "title-body"
         },
         {
           "index": 21,
@@ -266,13 +267,13 @@
           "index": 9,
           "file": "slides/neomorphism/slide-09.png",
           "title": "Semantic Blocks",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 10,
           "file": "slides/neomorphism/slide-10.png",
           "title": "Semantic Blocks (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 11,
@@ -332,7 +333,7 @@
           "index": 20,
           "file": "slides/neomorphism/slide-20.png",
           "title": "Object Shape Grammar (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "title-body"
         },
         {
           "index": 21,
@@ -429,13 +430,13 @@
           "index": 9,
           "file": "slides/glassmorphism/slide-09.png",
           "title": "Semantic Blocks",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 10,
           "file": "slides/glassmorphism/slide-10.png",
           "title": "Semantic Blocks (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 11,
@@ -495,7 +496,7 @@
           "index": 20,
           "file": "slides/glassmorphism/slide-20.png",
           "title": "Object Shape Grammar (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "title-body"
         },
         {
           "index": 21,
@@ -592,13 +593,13 @@
           "index": 9,
           "file": "slides/claymorphism/slide-09.png",
           "title": "Semantic Blocks",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 10,
           "file": "slides/claymorphism/slide-10.png",
           "title": "Semantic Blocks (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 11,
@@ -658,7 +659,7 @@
           "index": 20,
           "file": "slides/claymorphism/slide-20.png",
           "title": "Object Shape Grammar (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "title-body"
         },
         {
           "index": 21,
@@ -755,13 +756,13 @@
           "index": 9,
           "file": "slides/minimalism/slide-09.png",
           "title": "Semantic Blocks",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 10,
           "file": "slides/minimalism/slide-10.png",
           "title": "Semantic Blocks (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 11,
@@ -821,7 +822,7 @@
           "index": 20,
           "file": "slides/minimalism/slide-20.png",
           "title": "Object Shape Grammar (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "title-body"
         },
         {
           "index": 21,
@@ -918,13 +919,13 @@
           "index": 9,
           "file": "slides/newmorphism/slide-09.png",
           "title": "Semantic Blocks",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 10,
           "file": "slides/newmorphism/slide-10.png",
           "title": "Semantic Blocks (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 11,
@@ -984,7 +985,7 @@
           "index": 20,
           "file": "slides/newmorphism/slide-20.png",
           "title": "Object Shape Grammar (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "title-body"
         },
         {
           "index": 21,
@@ -1081,13 +1082,13 @@
           "index": 9,
           "file": "slides/brutalism/slide-09.png",
           "title": "Semantic Blocks",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 10,
           "file": "slides/brutalism/slide-10.png",
           "title": "Semantic Blocks (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 11,
@@ -1147,7 +1148,7 @@
           "index": 20,
           "file": "slides/brutalism/slide-20.png",
           "title": "Object Shape Grammar (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "title-body"
         },
         {
           "index": 21,
@@ -1244,13 +1245,13 @@
           "index": 9,
           "file": "slides/liquid-glass/slide-09.png",
           "title": "Semantic Blocks",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 10,
           "file": "slides/liquid-glass/slide-10.png",
           "title": "Semantic Blocks (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 11,
@@ -1310,7 +1311,7 @@
           "index": 20,
           "file": "slides/liquid-glass/slide-20.png",
           "title": "Object Shape Grammar (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "title-body"
         },
         {
           "index": 21,
@@ -1407,13 +1408,13 @@
           "index": 9,
           "file": "slides/bentogrid/slide-09.png",
           "title": "Semantic Blocks",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 10,
           "file": "slides/bentogrid/slide-10.png",
           "title": "Semantic Blocks (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "vertical-list"
         },
         {
           "index": 11,
@@ -1473,7 +1474,7 @@
           "index": 20,
           "file": "slides/bentogrid/slide-20.png",
           "title": "Object Shape Grammar (Cont. 2/2)",
-          "composition": "comparison"
+          "composition": "title-body"
         },
         {
           "index": 21,
