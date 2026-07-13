@@ -949,9 +949,22 @@ test("planPresentation splits large generated toc slides into bounded continuati
   const tocSlides = presentation.slides.filter((slide) => slide.role === "toc");
 
   assert.equal(tocSlides.length, 2);
-  assert.deepEqual(tocSlides.map((slide) => slide.blocks.length), [14, 9]);
+  assert.deepEqual(tocSlides.map((slide) => slide.blocks.length), [12, 11]);
   assert.deepEqual(tocSlides.map((slide) => slide.title), ["Agenda", "Agenda (Cont. 2/2)"]);
   assert.equal(tocSlides.every((slide) => slide.primaryItemCount <= 14), true);
+});
+
+test("planPresentation balances a 16-item generated toc across two slides", () => {
+  const lines = ["# Demo", ""];
+  for (let index = 1; index <= 16; index++) {
+    lines.push(`## Topic ${index}`, "", "Body.", "");
+  }
+
+  const presentation = planPresentation(parseMarkdown(lines.join("\n")), defaultConfig);
+  const tocSlides = presentation.slides.filter((slide) => slide.role === "toc");
+
+  assert.deepEqual(tocSlides.map((slide) => slide.blocks.length), [8, 8]);
+  assert.deepEqual(tocSlides.flatMap((slide) => slide.blocks.map((block) => block.text)), Array.from({ length: 16 }, (_, index) => `Topic ${index + 1}`));
 });
 
 test("planPresentation autosplits dense h2 content by h3 subsections", () => {
@@ -1065,6 +1078,21 @@ test("planPresentation splits long ordered lists into continuation slides", () =
     "Implementation Priorities (Cont. 2/2)",
   ]);
   assert.deepEqual(contentSlides.map((slide) => slide.blocks[0].items.length), [4, 3]);
+});
+
+test("planPresentation balances ten short list items without an orphan tail", () => {
+  const doc = parseMarkdown([
+    "# Product",
+    "",
+    "## Balanced list",
+    "",
+    ...Array.from({ length: 10 }, (_, index) => `- Item ${index + 1}`),
+  ].join("\n"));
+  const presentation = planPresentation(doc, defaultConfig);
+  const slides = presentation.slides.filter((slide) => slide.title.startsWith("Balanced list"));
+
+  assert.deepEqual(slides.map((slide) => slide.primaryItemCount), [4, 3, 3]);
+  assert.deepEqual(slides.flatMap((slide) => slide.blocks[0].items), Array.from({ length: 10 }, (_, index) => `Item ${index + 1}`));
 });
 
 test("planPresentation keeps six short list items together for 3x2 grid layouts", () => {

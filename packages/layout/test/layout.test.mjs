@@ -162,7 +162,8 @@ test("large generated toc decks split before any toc region leaves slide bounds"
   const overflow = validateLayoutOverflow(layout, new Map());
 
   assert.equal(tocLayouts.length, 2);
-  assert.deepEqual(tocLayouts.map((slide) => slide.regions.filter((region) => region.role === "item").length), [14, 9]);
+  assert.deepEqual(tocLayouts.map((slide) => slide.regions.filter((region) => region.role === "item").length), [12, 11]);
+  assert.equal(tocLayouts.every((slide) => slide.regions.every((region) => region.typography.fontSize >= 16 && region.typography.minFontSize >= 16)), true);
   assert.equal(overflow.some((diagnostic) => diagnostic.code === "LAYOUT_REGION_OUT_OF_BOUNDS"), false);
 });
 

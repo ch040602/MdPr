@@ -320,12 +320,24 @@ function truncateTeaserText(value: string, maxLength: number): string {
 }
 
 function chunkTocBlocks<T>(blocks: T[]): T[][] {
-  if (blocks.length <= MAX_TOC_ITEMS_PER_SLIDE) return [blocks];
-  const chunks: T[][] = [];
-  for (let index = 0; index < blocks.length; index += MAX_TOC_ITEMS_PER_SLIDE) {
-    chunks.push(blocks.slice(index, index + MAX_TOC_ITEMS_PER_SLIDE));
+  return balancedChunkRanges(blocks.length, MAX_TOC_ITEMS_PER_SLIDE)
+    .map(({ start, end }) => blocks.slice(start, end));
+}
+
+function balancedChunkRanges(itemCount: number, maxSize: number): Array<{ start: number; end: number }> {
+  if (itemCount <= 0) return [];
+  const chunkCount = Math.ceil(itemCount / maxSize);
+  const baseSize = Math.floor(itemCount / chunkCount);
+  const largerChunkCount = itemCount % chunkCount;
+  const ranges: Array<{ start: number; end: number }> = [];
+  let start = 0;
+
+  for (let index = 0; index < chunkCount; index += 1) {
+    const size = baseSize + (index < largerChunkCount ? 1 : 0);
+    ranges.push({ start, end: start + size });
+    start += size;
   }
-  return chunks;
+  return ranges;
 }
 
 function tocTitleForLanguage(language?: string): string {
@@ -490,10 +502,10 @@ function splitListBlock(block: SlideIR["blocks"][number]): SlideIR["blocks"][num
     : itemCount === 5 && listItems.some((item) => item.description || item.text.length > 72) ? 3 : 4;
   const chunks: SlideIR["blocks"][number][] = [];
 
-  for (let index = 0; index < itemCount; index += chunkSize) {
-    const chunkListItems = listItems.slice(index, index + chunkSize);
+  for (const { start, end } of balancedChunkRanges(itemCount, chunkSize)) {
+    const chunkListItems = listItems.slice(start, end);
     const chunkItems = items.length
-      ? items.slice(index, index + chunkSize)
+      ? items.slice(start, end)
       : chunkListItems.map((item) => item.text);
     chunks.push({
       ...block,

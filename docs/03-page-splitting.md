@@ -121,13 +121,14 @@ MDPR preserves compact 4-item grids when the item text is short. If a 4-item
 list contains very long item text, it is split into 2-item continuation slides
 before layout validation has to force text down to the readable font floor.
 
-Longer lists keep the existing chunking behavior:
+Longer lists keep the same per-slide capacity, but MDPR balances the generated
+chunks so the final continuation is not a sparse orphan tail:
 
 ```text
 4 very long items  -> 2 + 2 continuation
 5 long items       -> 3 + 2 continuation
 6 short items      -> 3x2 grid
-7+ items           -> list chunks
+7+ items           -> balanced list chunks within the existing capacity
 ```
 
 The rule applies to list blocks only. A single diagram or graph block remains a
@@ -173,5 +174,7 @@ Stable IDs are preserved when body content is inserted above or below an existin
 
 Generated table-of-contents slides are list slides, not semantic diagrams. When
 the deck has many h2 sections, MDPR splits the TOC into continuation slides with
-at most 14 entries per slide. This prevents TOC item regions from leaving the
-slide bounds while preserving graph and diagram slides as whole objects.
+at most 14 entries per slide, then balances entries across the required slide
+count. For example, 16 entries become 8 + 8 and 23 become 12 + 11. This prevents
+TOC item regions from leaving the slide bounds without leaving a sparse final
+page, while preserving graph and diagram slides as whole objects.
