@@ -2707,34 +2707,8 @@ function addLayoutBackgroundDecorations(slide: PptxGenJS.Slide, layoutSlide: Lay
 }
 
 function addLayoutForegroundDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens, sourceSlide?: SlideIR): void {
-  addTocDecorations(slide, layoutSlide, preset);
   addRegionAccents(slide, layoutSlide, preset);
   addTextIconAsideDecoration(slide, layoutSlide, preset, sourceSlide);
-}
-
-function addTocDecorations(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens): void {
-  if (layoutSlide.layout.preset !== "toc") return;
-  const itemRegions = layoutSlide.regions.filter((region) => region.role === "item");
-  if (!itemRegions.length) return;
-  const minY = Math.min(...itemRegions.map((region) => region.y));
-  const maxY = Math.max(...itemRegions.map((region) => region.y + region.h));
-
-  const columns = uniqueRounded(itemRegions.map((region) => region.x));
-  if (columns.length > 1) {
-    const separatorX = (columns[0]! + itemRegions.find((region) => Math.abs(region.x - columns[0]!) < 0.03)!.w + columns[1]!) / 2;
-    slide.addShape("rect", {
-      x: separatorX,
-      y: minY,
-      w: 0.025,
-      h: maxY - minY,
-      fill: { color: preset.surfaceLine, transparency: 10 },
-      line: { color: preset.surfaceLine, transparency: 100 },
-    });
-  }
-}
-
-function uniqueRounded(values: number[]): number[] {
-  return [...new Set(values.map((value) => Number(value.toFixed(2))))].sort((left, right) => left - right);
 }
 
 function addTextIconAsideDecoration(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"][number], preset: DesignTokens, sourceSlide?: SlideIR): void {

@@ -567,8 +567,11 @@ test("renderPptx does not add horizontal rules above or below toc items", async 
     const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
     const horizontalRules = slideObjectsWithTransforms(xml)
       .filter((shape) => shape.tag === "sp" && shape.h <= 0.06 && shape.w >= 1);
+    const centerColumnSeparators = slideObjectsWithTransforms(xml)
+      .filter((shape) => shape.tag === "sp" && !/<a:t>/.test(shape.xml) && shape.x >= 6.4 && shape.x <= 6.8 && shape.w <= 0.06 && shape.h >= 0.7);
 
     assert.equal(horizontalRules.length, 0);
+    assert.equal(centerColumnSeparators.length, 0);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
