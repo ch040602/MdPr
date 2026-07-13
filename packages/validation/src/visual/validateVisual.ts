@@ -134,7 +134,7 @@ export function visualValidationDiagnostics(layout: LayoutIR): Diagnostic[] {
       }
       const minFontSize = region.typography?.minFontSize ?? layout.theme.minFontSize;
       const fontSize = region.typography?.fontSize ?? layout.theme.bodyFontSize;
-      if (region.role !== "image" && Math.min(fontSize, minFontSize) < 8) {
+      if (isFontBearingRegion(region) && Math.min(fontSize, minFontSize) < 8) {
         diagnostics.push({
           level: "error",
           code: "VISUAL_FONT_FLOOR",
@@ -284,7 +284,7 @@ export function createPolishQualitySummary(
     fontHierarchy: {
       required: true,
       passed: Boolean(layout.theme.fontFamily) && titleFontPt >= bodyFontPt + 4 && minFontPt >= 16 && sameRoleFontVarianceCount === 0,
-      evidence: "Title/body hierarchy, readable font floor, family availability, and same-role consistency are checked from Layout IR typography.",
+      evidence: "Title/body hierarchy, readable text-bearing font floor, configured family presence, and same-role consistency are checked from Layout IR typography; installed-font availability requires export-environment validation.",
       titleFontPt,
       bodyFontPt,
       minFontPt,
@@ -362,6 +362,11 @@ function isContentRegion(region: LayoutRegion): boolean {
   return region.role === "title" || region.blockIds.length > 0;
 }
 
+function isFontBearingRegion(region: LayoutRegion): boolean {
+  if (["image", "icon", "footer", "pageNumber"].includes(region.role)) return false;
+  return region.role === "title" || region.blockIds.length > 0;
+}
+
 function regionOverlapRatio(left: LayoutRegion, right: LayoutRegion): number {
   const x = Math.max(0, Math.min(left.x + left.w, right.x + right.w) - Math.max(left.x, right.x));
   const y = Math.max(0, Math.min(left.y + left.h, right.y + right.h) - Math.max(left.y, right.y));
@@ -383,6 +388,7 @@ function maxRegionFont(layout: LayoutIR, role: string, fallback: number): number
 function minimumRegionFont(layout: LayoutIR): number {
   const values = layout.slides
     .flatMap((slide) => slide.regions)
+    .filter(isFontBearingRegion)
     .flatMap((region) => [region.typography?.fontSize, region.typography?.minFontSize])
     .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
   return values.length ? Math.min(...values) : layout.theme.minFontSize;

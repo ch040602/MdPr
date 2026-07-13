@@ -557,6 +557,34 @@ test("polish quality summary maps AI PPT polish chapters to deterministic checks
   assert.deepEqual(summary.chapters.beforeAfterComparison.presets, ["plain", "executive"]);
 
   assert.deepEqual(polishQualityDiagnostics(presentation, layout), []);
+  const nonTextLayout = structuredClone(layout);
+  nonTextLayout.slides[1].regions.push({
+    id: "image",
+    role: "image",
+    x: 1,
+    y: 3.3,
+    w: 3,
+    h: 2,
+    zIndex: 1,
+    blockIds: ["image-1"],
+    typography: { fontSize: 6, minFontSize: 6 },
+  });
+  assert.equal(createPolishQualitySummary(presentation, nonTextLayout).chapters.fontHierarchy.passed, true);
+
+  const captionLayout = structuredClone(nonTextLayout);
+  captionLayout.slides[1].regions.push({
+    id: "caption",
+    role: "caption",
+    x: 4.2,
+    y: 3.3,
+    w: 3,
+    h: 0.5,
+    zIndex: 1,
+    blockIds: ["caption-1"],
+    typography: { fontSize: 12, minFontSize: 12 },
+  });
+  assert.equal(createPolishQualitySummary(presentation, captionLayout).chapters.fontHierarchy.passed, false);
+
   const failingLayout = structuredClone(layout);
   failingLayout.slides[1].regions[1].typography.fontSize = 14;
   failingLayout.slides[1].regions[1].typography.minFontSize = 11;
