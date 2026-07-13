@@ -68,7 +68,11 @@ test("buildDeck writes PPTX output through the renderer boundary", async () => {
 });
 
 test("required polish chapters fail visual validation without rejecting a compliant dense deck", () => {
-  const failed = validateDeck(bridgeMarkerFixture, { visualValidation: true, coherenceValidation: true });
+  const failed = validateDeck(bridgeMarkerFixture, {
+    visualValidation: true,
+    coherenceValidation: true,
+    cliConfig: { typography: { minFontSize: 12 } },
+  });
   const passed = validateDeck(koreanDenseFixture, { visualValidation: true, coherenceValidation: true });
 
   assert.equal(failed.valid, false);
@@ -91,7 +95,13 @@ test("buildDeck rejects requested visual validation when a required polish chapt
 
   try {
     await assert.rejects(
-      buildDeck(bridgeMarkerFixture, { formats: ["html"], outDir, visualValidation: true, coherenceValidation: true }),
+      buildDeck(bridgeMarkerFixture, {
+        formats: ["html"],
+        outDir,
+        visualValidation: true,
+        coherenceValidation: true,
+        cliConfig: { typography: { minFontSize: 12 } },
+      }),
       /Build validation failed: MDPR_POLISH_GATE_FAILED/,
     );
   } finally {
