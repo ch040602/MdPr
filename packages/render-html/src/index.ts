@@ -553,7 +553,7 @@ function surfaceRole(role: string, blockIds: string[], slide?: SlideIR): string 
 function surfaceVariantClass(style: string, role: string, id: string): string {
   if (role === "table") return "ticket";
   if (role === "chart") return style === "data" ? "notched-corner" : "flag-drop";
-  if (role === "code") return "notched-corner";
+  if (role === "code") return "rounded";
   if (id === "key-message" || id === "body-panel") return "two-corner-left";
   if (role !== "item") return "rounded";
 

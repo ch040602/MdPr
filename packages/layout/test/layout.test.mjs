@@ -428,9 +428,31 @@ test("code-focus slides use a dedicated code region without a sub-16pt exception
 
   assert.ok(code);
   assert.equal(code.role, "code");
+  assert.equal(code.h < 2.5, true, `sparse code should not occupy a ${code.h}in fixed-height panel`);
+  assert.equal(code.y > 2.4, true, `sparse code should be vertically balanced, got y=${code.y}`);
   assert.equal(code.typography.fontSize >= 16, true);
   assert.equal(code.typography.minFontSize >= 16, true);
   assert.equal(layout.theme.captionFontSize >= 16, true);
+});
+
+test("code-focus slides keep dense code inside the bounded full-height region", () => {
+  const denseCode = Array.from({ length: 30 }, (_, index) => `const value${index} = ${index};`).join("\n");
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Dense Usage",
+    "",
+    "```js",
+    denseCode,
+    "```",
+  ]);
+
+  const slide = layout.slides.find((candidate) => candidate.layout.preset === "code-focus");
+  const code = slide.regions.find((region) => region.id === "code");
+
+  assert.ok(code);
+  assert.equal(code.y, 1.55);
+  assert.equal(code.h, 5.25);
 });
 
 test("mixed text and image slides use separate body and image regions", () => {

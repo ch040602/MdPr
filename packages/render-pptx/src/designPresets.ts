@@ -613,7 +613,7 @@ function surfaceRadius(preset: DesignPreset, region: LayoutRegion): number {
 function surfaceVariant(preset: DesignPreset, region: LayoutRegion): SurfaceVariant {
   if (region.role === "table") return "ticket";
   if (region.role === "chart") return preset.decorationStyle === "data" ? "notched-corner" : "flag-drop";
-  if (region.role === "code") return "notched-corner";
+  if (region.role === "code") return "rounded";
   if (region.id === "key-message" || region.id === "body-panel") return "two-corner-left";
   if (region.role !== "item") return "rounded";
 

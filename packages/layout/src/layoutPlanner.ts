@@ -557,9 +557,10 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   }
 
   if (layout.preset === "code-focus") {
+    const codeRect = codeFocusRect(slide);
     return [
       titleRegion,
-      { id: "code", role: "code", blockIds: slide.blocks.filter((b) => b.type === "code").map((b) => b.id), x: 0.85, y: 1.55, w: 11.65, h: 5.25, zIndex: 10, typography: codeTypography(config) },
+      { id: "code", role: "code", blockIds: slide.blocks.filter((b) => b.type === "code").map((b) => b.id), ...codeRect, zIndex: 10, typography: codeTypography(config) },
     ];
   }
 
@@ -917,4 +918,15 @@ function codeTypography(config: Config) {
     lineHeight: 1.12,
     minFontSize,
   };
+}
+
+function codeFocusRect(slide: SlideIR) {
+  const lineCount = Math.max(1, slide.blocks
+    .filter((block) => block.type === "code")
+    .reduce((total, block) => total + String(block.text ?? "").split(/\r?\n/).length, 0));
+  const maxHeight = 5.25;
+  const height = Math.min(maxHeight, Math.max(1.55, 0.7 + lineCount * 0.34));
+  const top = 1.55;
+  const y = Number((top + (maxHeight - height) / 2).toFixed(2));
+  return { x: 0.85, y, w: 11.65, h: Number(height.toFixed(2)) };
 }

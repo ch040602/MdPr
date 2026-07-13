@@ -38,6 +38,17 @@ test("renderHtml keeps LayoutIR-only rendering backward compatible", () => {
   assert.match(html, />title</);
 });
 
+test("renderHtml uses a plain rounded surface for code instead of an ornamental folded corner", () => {
+  const doc = parseMarkdown("# Demo\n\n## Quick Usage\n\n```js\nconst value = 1;\n```");
+  const presentation = planPresentation(doc, defaultConfig);
+  const layout = planLayout(presentation, defaultConfig);
+
+  const html = renderHtml({ presentation, layout });
+
+  assert.match(html, /class="region code surface rounded/);
+  assert.doesNotMatch(html, /class="region code surface notched-corner/);
+});
+
 test("renderHtml preserves ordered list numbering, nesting, and inline emphasis", () => {
   const doc = parseMarkdown([
     "# Demo Deck",

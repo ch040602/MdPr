@@ -690,6 +690,11 @@ test("renderPptx preserves editable code lines as OOXML line boundaries", async 
     const codeShape = shapeXmlContainingText(xml, "-literal marker must stay code");
     assert.ok(codeShape);
     assert.match(codeShape, /-literal marker must stay code[\s\S]*(?:<a:br\/>|<\/a:p>\s*<a:p>)[\s\S]*ㆍliteral bullet must stay code/);
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const surfaceSvgs = await Promise.all(Object.keys(zip.files)
+      .filter((path) => /^ppt\/media\/.*\.svg$/.test(path))
+      .map((path) => zip.file(path).async("string")));
+    assert.doesNotMatch(surfaceSvgs.join("\n"), /data-mdpr-surface="notched-corner"|data-mdpr-surface-accent="notched-corner-fold"/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
