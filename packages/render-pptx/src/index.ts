@@ -177,7 +177,15 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
         const metadataTextCommon = { ...textCommon, ...objectMetadata };
 
         if (region.role === "title" && sourceSlide?.title) {
-          slide.addText(sourceSlide.title, metadataTextCommon);
+          const continuation = /^(.*?)(\s+\(Cont\. \d+\/\d+\))$/.exec(sourceSlide.title);
+          if (continuation) {
+            slide.addText([
+              { text: continuation[1]!, options: { bold: true, fontSize, color: common.color } },
+              { text: continuation[2]!, options: { bold: false, fontSize: Math.max(16, Math.round(fontSize * 0.6)), color: designPreset.mutedTextColor } },
+            ], { ...metadataTextCommon, bold: false });
+          } else {
+            slide.addText(sourceSlide.title, metadataTextCommon);
+          }
         } else if (blocks.length === 1 && blocks[0].type === "code") {
           slide.addText(blocks[0].text ?? "", { ...metadataTextCommon, fontFace: "Consolas" });
         } else if (blocks.length === 1 && blocks[0].type === "chart" && blocks[0].chart) {

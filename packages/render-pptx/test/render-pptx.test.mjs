@@ -636,6 +636,9 @@ test("renderPptx uses bound global TOC block ordinals with a region fallback", a
     assert.match(xml, /<a:t>10  Section Ten<\/a:t>/);
     assert.match(xml, /<a:t>03  Legacy Section<\/a:t>/);
     assert.equal((xml.match(/<a:t>(?:09  Section Nine|10  Section Ten|03  Legacy Section)<\/a:t>/g) ?? []).length, 3);
+    assert.match(xml, /<a:t>Agenda<\/a:t>/);
+    assert.match(xml, /sz="1800"[^>]*>.*?<a:t> \(Cont\. 2\/2\)<\/a:t>/);
+    assert.doesNotMatch(xml, /<a:t>Agenda \(Cont\. 2\/2\)<\/a:t>/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }

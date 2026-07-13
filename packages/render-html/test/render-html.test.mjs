@@ -38,6 +38,18 @@ test("renderHtml keeps LayoutIR-only rendering backward compatible", () => {
   assert.match(html, />title</);
 });
 
+test("renderHtml renders continuation markers as secondary title metadata", () => {
+  const doc = parseMarkdown("# Demo\n\n## Long Narrative\n\nBody text");
+  const presentation = planPresentation(doc, defaultConfig);
+  presentation.slides[1].title = "Long Narrative (Cont. 2/3)";
+  const layout = planLayout(presentation, defaultConfig);
+
+  const html = renderHtml({ presentation, layout });
+
+  assert.match(html, /Long Narrative<span class="continuation-marker"> \(Cont\. 2\/3\)<\/span>/);
+  assert.match(html, /\.continuation-marker \{[^}]*font-size: 0\.6em/);
+});
+
 test("renderHtml uses a plain rounded surface for code instead of an ornamental folded corner", () => {
   const doc = parseMarkdown("# Demo\n\n## Quick Usage\n\n```js\nconst value = 1;\n```");
   const presentation = planPresentation(doc, defaultConfig);

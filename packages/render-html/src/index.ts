@@ -49,6 +49,7 @@ body { margin: 0; background: #111; font-family: var(--font); }
 .region { position: absolute; box-sizing: border-box; overflow: hidden; z-index: 2; overflow-wrap: anywhere; }
 .region > * { position: relative; z-index: 1; }
 .title { font-weight: 700; }
+.continuation-marker { font-size: 0.6em; color: var(--muted); font-weight: 600; white-space: nowrap; }
 .body.key-message { background: var(--surface); border-left: .08in solid var(--primary); padding: .18in .28in; }
 .body.key-message blockquote { margin: 0; font-weight: 700; color: var(--text); }
 .surface { background: color-mix(in srgb, var(--surface) 94%, transparent); border: .012in solid var(--surface-line); padding: .17in .22in; }
@@ -195,7 +196,11 @@ function renderRegionContent(
   blockText: Map<string, string>,
   slide?: SlideIR,
 ): string {
-  if (role === "title" && slide?.title) return escapeHtml(slide.title);
+  if (role === "title" && slide?.title) {
+    const continuation = /^(.*?)(\s+\(Cont\. \d+\/\d+\))$/.exec(slide.title);
+    if (continuation) return `${escapeHtml(continuation[1]!)}<span class="continuation-marker">${escapeHtml(continuation[2]!)}</span>`;
+    return escapeHtml(slide.title);
+  }
 
   const content = blockIds
     .map((blockId) => blockText.get(blockId))
