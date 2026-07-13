@@ -7,7 +7,7 @@ export function chooseItemLayout(itemCount: number): LayoutSpec {
     case 2:
       return { preset: "comparison", columns: 2, direction: "horizontal" };
     case 3:
-      return { preset: "vertical-list", direction: "vertical" };
+      return { preset: "vertical-list", variant: "horizontal-triptych", direction: "horizontal" };
     case 4:
       return { preset: "grid", columns: 2, rows: 2 };
     case 5:

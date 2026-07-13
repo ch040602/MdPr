@@ -502,7 +502,7 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   }
 
   if (layout.preset === "vertical-list") {
-    return createVerticalListRegions(itemBlockIds, titleRegion, config);
+    return createVerticalListRegions(itemBlockIds, titleRegion, config, layout);
   }
 
   if (layout.preset === "text-icon-aside") {
@@ -705,9 +705,27 @@ function createTocRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Con
   ];
 }
 
-function createVerticalListRegions(itemBlockIds: string[], titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
+function createVerticalListRegions(itemBlockIds: string[], titleRegion: LayoutRegion, config: Config, layout: LayoutSpec): LayoutRegion[] {
   const count = itemBlockIds.length;
   if (!count) return [titleRegion];
+
+  if (count === 3 && layout.variant === "horizontal-triptych") {
+    const cells = [0.9, 4.75, 8.6];
+    return [
+      titleRegion,
+      ...itemBlockIds.map((blockId, index) => ({
+        id: `item-${index + 1}`,
+        role: "item" as const,
+        blockIds: [blockId],
+        x: cells[index]!,
+        y: 2.12,
+        w: 3.55,
+        h: 2.75,
+        zIndex: 10,
+        typography: bodyTypography(config),
+      })),
+    ];
+  }
 
   if (count <= 4) {
     const bodyTop = 1.52;

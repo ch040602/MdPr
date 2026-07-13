@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultConfig, parseMarkdown, planPresentation } from "@mdpresent/core";
-import { layoutPresets, measureText, planLayout, rankLayoutCandidates, validateLayoutOverflow } from "../dist/index.js";
+import { layoutPresets, measureText, planLayout, rankLayoutCandidates, validateLayoutOverflow, visibleGeometrySignature } from "../dist/index.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(packageRoot, "../..");
@@ -660,6 +660,43 @@ test("deck-wide geometry history breaks 2x2 grid saturation across section reset
 
   assert.equal(dominantCount / geometries.length <= 0.6, true);
   assert.equal(maxSameInFive <= 3, true);
+});
+
+test("three-item slides alternate horizontal triptychs with vertical stacks", () => {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Three-item geometry diversity" },
+    outline: [],
+    assets: [],
+    diagnostics: [],
+    coherenceGroups: [],
+    slides: Array.from({ length: 8 }, (_, index) => ({
+      id: `triptych-${index + 1}`,
+      index,
+      role: "content",
+      title: `Three choices ${index + 1}`,
+      section: `section-${index + 1}`,
+      headingPath: [`Three choices ${index + 1}`],
+      source: {},
+      intent: "standard",
+      tags: [],
+      primaryItemCount: 3,
+      blocks: [{ id: `list-${index + 1}`, type: "bulletList", items: ["Alpha", "Beta", "Gamma"] }],
+    })),
+  };
+
+  const layout = planLayout(presentation, defaultConfig);
+  const signatures = layout.slides.map(visibleGeometrySignature);
+
+  assert.equal(signatures[0], "freeform-3");
+  assert.equal(signatures.includes("freeform-3"), true);
+  assert.equal(signatures.includes("vertical-stack"), true);
+  for (const slide of layout.slides) {
+    const itemRegions = slide.regions.filter((region) => region.role === "item");
+    if (!itemRegions.length) continue;
+    assert.deepEqual(itemRegions.flatMap((region) => region.blockIds), ["list-" + (slide.index + 1) + "#0", "list-" + (slide.index + 1) + "#1", "list-" + (slide.index + 1) + "#2"]);
+    assert.equal(itemRegions.every((region) => region.typography.minFontSize >= 16), true);
+  }
 });
 
 test("deck-wide geometry diversity never displaces specialized object layouts", () => {
