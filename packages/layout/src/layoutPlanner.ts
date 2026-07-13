@@ -209,7 +209,7 @@ function semanticGroupPenaltyFor(slide: SlideIR, layout: LayoutSpec, group?: Coh
 
 function sectionConsistencyPenaltyFor(layout: LayoutSpec, previousPresetInSection?: string): number {
   if (!previousPresetInSection) return 0;
-  if (previousPresetInSection === layout.preset) return 0;
+  if (previousPresetInSection === layout.preset) return 2;
   return layoutFamily(previousPresetInSection) === layoutFamily(layout.preset) ? 1 : 3;
 }
 

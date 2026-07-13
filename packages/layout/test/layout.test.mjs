@@ -575,6 +575,27 @@ test("layout candidate scoring uses coherence group semantics and section contin
   assert.equal(ranked[0].layout.preset, "image-focus");
 });
 
+test("section continuity prefers same-family alternation over exact preset repetition", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Four related choices",
+    "",
+    "- Alpha",
+    "- Beta",
+    "- Gamma",
+    "- Delta",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Four related choices");
+  const ranked = rankLayoutCandidates(slide, defaultConfig, undefined, "grid");
+  const repeatedGrid = ranked.find((candidate) => candidate.layout.preset === "grid");
+  const sameFamilyAlternative = ranked.find((candidate) => candidate.layout.preset === "vertical-list");
+
+  assert.ok(repeatedGrid);
+  assert.ok(sameFamilyAlternative);
+  assert.equal(repeatedGrid.score.sectionConsistencyPenalty > sameFamilyAlternative.score.sectionConsistencyPenalty, true);
+});
+
 test("conference profile scoring gives dense technical prose split-text relief", () => {
   const denseText = "Long standards prose should remain readable through hierarchy, line breaks, and separated argument columns. ".repeat(10);
   const slide = {
