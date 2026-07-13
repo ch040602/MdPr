@@ -69,6 +69,7 @@ function candidateLayoutsForSlide(slide: SlideIR, config: Config): LayoutSpec[] 
 
   const itemCount = slide.primaryItemCount ?? 0;
   if (itemCount > 0) add(chooseItemLayout(itemCount));
+  if (itemCount === 4) add({ preset: "grid", variant: "horizontal-quartet", columns: 4, rows: 1, direction: "horizontal" });
 
   add({ preset: config.layout.defaultPreset as LayoutSpec["preset"] });
   add({ preset: "vertical-list" });
@@ -350,7 +351,7 @@ function planSlidesWithContinuity(presentation: PresentationIR, config: Config):
 }
 
 function isGeometryDiversityEligibleSlide(slide: SlideIR): boolean {
-  if (slide.role !== "content" || slide.intent !== "standard") return false;
+  if (slide.role !== "content" || !["standard", "list", "grid", "summary"].includes(slide.intent)) return false;
   if (isClaimMessageLayoutCandidate(slide)) return false;
   return !slide.blocks.some((block) => ["table", "chart", "image", "code", "diagram", "quote"].includes(block.type));
 }
@@ -463,6 +464,24 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
       titleRegion,
       { id: "left", role: "body", blockIds: itemBlockIds.slice(0, Math.ceil(itemBlockIds.length / 2)), x: 0.9, y, w: 5.4, h, zIndex: 10, typography },
       { id: "right", role: "body", blockIds: itemBlockIds.slice(Math.ceil(itemBlockIds.length / 2)), x: 7.0, y, w: 5.4, h, zIndex: 10, typography },
+    ];
+  }
+
+  if (layout.preset === "grid" && layout.columns === 4 && layout.rows === 1) {
+    const cells = [0.75, 3.85, 6.95, 10.05];
+    return [
+      titleRegion,
+      ...cells.map((x, index) => ({
+        id: `item-${index + 1}`,
+        role: "item" as const,
+        blockIds: itemBlockIds.slice(index, index + 1),
+        x,
+        y: 2.3,
+        w: 2.55,
+        h: 2.45,
+        zIndex: 10,
+        typography: bodyTypography(config),
+      })),
     ];
   }
 

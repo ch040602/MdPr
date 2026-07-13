@@ -40,7 +40,7 @@ test("layout preset schemas stay aligned with runtime presets", () => {
   }
 });
 
-test("four primary items use a 2x2 grid with stable item regions", () => {
+test("four equal grid-intent items retain a stable 2x2 default", () => {
   const layout = layoutFor([
     "# Demo",
     "",
@@ -57,6 +57,27 @@ test("four primary items use a 2x2 grid with stable item regions", () => {
   assert.equal(slide.layout.columns, 2);
   assert.equal(slide.layout.rows, 2);
   assert.deepEqual(slide.regions.map((region) => region.id), ["title", "item-1", "item-2", "item-3", "item-4"]);
+});
+
+test("repeated 2x2 history selects an equal-weight horizontal quartet", () => {
+  const presentation = planPresentation(parseMarkdown([
+    "# Demo",
+    "",
+    "## Four choices",
+    "",
+    "- Alpha",
+    "- Beta",
+    "- Gamma",
+    "- Delta",
+  ].join("\n")), defaultConfig);
+  const slide = presentation.slides.find((candidate) => candidate.title === "Four choices");
+  assert.equal(slide.intent, "grid");
+  const ranked = rankLayoutCandidates(slide, defaultConfig, undefined, undefined, ["card-grid-2x2", "card-grid-2x2"]);
+
+  assert.equal(ranked[0].layout.preset, "grid");
+  assert.equal(ranked[0].layout.columns, 4);
+  assert.equal(ranked[0].layout.rows, 1);
+  assert.equal(ranked[0].layout.variant, "horizontal-quartet");
 });
 
 test("six primary items use a compact 3x2 grid with stable item regions", () => {
