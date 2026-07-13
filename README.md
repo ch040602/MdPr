@@ -89,6 +89,8 @@ Typography rules:
   at least `16pt`, and zero same-role font-size variance
 - generated caption and code regions no longer start below the strict floor;
   an explicit override below `16pt` remains a required-gate failure
+- generated list and diagram number badges use at least `16pt`; built-in
+  presets do not add a decorative underline below every title
 - PPTX output writes the resolved family to the document head/body theme and
   editable text runs; code regions are the explicit monospace exception and use
   `Consolas`

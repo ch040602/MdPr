@@ -458,6 +458,7 @@ test("renderPptx does not write round-rectangle adjustment data into odd ellipse
 
     assert.ok(badge);
     assert.doesNotMatch(badge, /<a:gd name="adj"/);
+    assert.match(badge, /sz="1600"/);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
@@ -2827,6 +2828,9 @@ test("renderPptx renders pipeline diagrams as editable nodes and connectors", as
     assert.match(xml, />1</);
     assert.match(xml, />2</);
     assert.match(xml, />3</);
+    for (const number of ["1", "2", "3"]) {
+      assert.match(shapeXmlContainingText(xml, number), /sz="1600"/);
+    }
     assert.equal((xml.match(/prst="roundRect"/g) ?? []).length >= 3, true);
     assert.equal((xml.match(/prst="ellipse"/g) ?? []).length >= 3, true);
     assert.equal((xml.match(/<a:ln/g) ?? []).length >= 2, true);

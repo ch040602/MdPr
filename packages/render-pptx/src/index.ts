@@ -1513,7 +1513,7 @@ function renderItemNumberBadge(
   const y = region.y + (region.h - size) / 2;
   const shape = number % 2 === 0 ? "roundRect" : "ellipse";
   slide.addText(String(number), {
-    ...centeredMarkerTextOptions(common, x, y, size, Math.max(7.2, Math.min(10.5, (region.typography?.fontSize ?? 18) - 7)), readableTextColor(preset.primaryColor)),
+    ...centeredMarkerTextOptions(common, x, y, size, 16, readableTextColor(preset.primaryColor)),
     shape: shape as never,
     ...(shape === "roundRect" ? { rectRadius: 0.05 } : {}),
     fill: { color: preset.primaryColor },
@@ -2367,7 +2367,7 @@ function renderDiagramRegion(
         badgeX,
         badgeY,
         badgeSize,
-        Math.max(14, Math.min(15, (region.typography?.fontSize ?? common.fontSize ?? 14) - 4)),
+        16,
         preset.backgroundColor,
       ),
     });

@@ -2116,6 +2116,12 @@ test("design preset catalog exposes named presentation palettes as shared tokens
   assert.equal(nord.ruleColor, "81A1C1");
 });
 
+test("built-in design presets do not add an automatic title underline", () => {
+  for (const name of [...DESIGN_PRESET_NAMES, ...DECORATION_STYLE_NAMES]) {
+    assert.equal(resolveDesignTokens(name, defaultConfig.theme).titleRule, false, name);
+  }
+});
+
 test("design tokens can derive Adobe-style color combinations for PPT and charts", () => {
   const tokens = resolveDesignTokens("clean", {
     ...defaultConfig.theme,

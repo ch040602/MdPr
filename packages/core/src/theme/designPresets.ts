@@ -584,6 +584,9 @@ function normalizeReadableTextTokens(tokens: BaseDesignTokens): BaseDesignTokens
   const mutedTextColor = readableGrayscaleTextColor(tokens.backgroundColor, tokens.surfaceFill, 3);
   return {
     ...tokens,
+    // A title rule repeats the title boundary without carrying information and
+    // makes every preset look mechanically decorated.
+    titleRule: false,
     textColor,
     mutedTextColor: mutedTextColor === textColor ? softenReadableGray(textColor, tokens.backgroundColor, tokens.surfaceFill, 3) : mutedTextColor,
   };
