@@ -2881,31 +2881,18 @@ function addRegionAccents(slide: PptxGenJS.Slide, layoutSlide: LayoutIR["slides"
   for (const region of layoutSlide.regions) {
     if (!region.blockIds.length) continue;
     if (region.id === "key-message") continue;
-    if (!["body", "item"].includes(region.role)) continue;
-    if (layoutSlide.layout.variant === "neutral-split" && region.role === "body") continue;
+    if (region.role !== "item") continue;
     const indexMatch = /(\d+)$/.exec(region.id);
     const index = indexMatch ? Number(indexMatch[1]) : 0;
     const color = index % 2 === 0 ? preset.secondaryColor : preset.primaryColor;
 
-    if (region.role === "item") {
-      slide.addShape("rect", {
-        x: region.x,
-        y: region.y,
-        w: 0.08,
-        h: region.h,
-        fill: { color },
-        line: { color, transparency: 100 },
-      });
-      continue;
-    }
-
     slide.addShape("rect", {
       x: region.x,
       y: region.y,
-      w: region.w,
-      h: 0.08,
-      fill: { color: preset.primaryColor },
-      line: { color: preset.primaryColor, transparency: 100 },
+      w: 0.08,
+      h: region.h,
+      fill: { color },
+      line: { color, transparency: 100 },
     });
   }
 }

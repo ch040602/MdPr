@@ -74,6 +74,8 @@ Current readability contract:
   font floor
 - eligible three-column comparison tables reserve a compact leading label
   column and split the remaining width evenly between the evidence columns
+- body regions do not receive automatic full-width title-band accents; item
+  accents remain attached to their semantic list regions
 - `build` and `validate` with `--visual` stop on a failed required polish
   chapter and report `MDPR_POLISH_GATE_FAILED` with the failed chapter names
 - image safe frames preserve aspect ratio or use explicit focal-point crops;
@@ -140,7 +142,7 @@ agent review. They are complementary, not competing renderers.
 | Use it for | Deterministic Markdown parsing, layout, validation, and editable `PPTX`/`HTML`/`PDF` output | Optional Codex hints, review findings, and comparison evidence before or after an MDPR build |
 | Typography authority | Resolves font families, point sizes, region floors, and editable text runs; captions default to `18pt`, and generated code, captions, list badges, and diagram badges have no sub-`16pt` runtime exception | May suggest shorter copy or a content split, but must not prescribe an exact family, point size, line break, or text-box geometry |
 | Strict visual failure | Required `fontHierarchy` checks every active Layout IR region against `16pt`; an explicit smaller override stays visible as `MDPR_POLISH_GATE_FAILED` | Mirrors that manifest failure with evidence and must not recompute, soften, or override it |
-| Decorative lines | Built-in presets omit automatic title underlines, TOC horizontal rules, and isolated cover-bottom rules | Review evidence omits synthetic subtitles, title rules, and bottom takeaway bands unless source content requires them |
+| Decorative lines | Built-in presets omit automatic title underlines, body title bands, TOC horizontal rules, and isolated cover-bottom rules while retaining semantic item/container accents | Review evidence omits synthetic subtitles, title rules, and bottom takeaway bands unless source content requires them |
 | Native tables | Keeps tables editable; eligible three-column comparisons use a compact label column and two equal evidence columns | Reviews rendered balance and source fidelity, but does not set column widths |
 | Template fonts | `--template` preserves master/layout/theme OOXML, but generated text uses resolved MDPR typography; set `typography.fontFamily` for an exact family match | Reports a template mismatch; it does not replace master typography or claim that a font is installed or embedded |
 | Output ownership | Owns final coordinates, colors, z-order, objects, rendering, and pass/fail | Produces hints, review reports, and evidence only; MDPR still makes every final runtime decision |

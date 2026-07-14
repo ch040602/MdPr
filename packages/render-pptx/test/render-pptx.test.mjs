@@ -577,6 +577,53 @@ test("renderPptx does not add horizontal rules above or below toc items", async 
   }
 });
 
+test("renderPptx does not add an unassigned horizontal accent above a body list", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-body-title-band-"));
+  const outPath = join(outDir, "deck.pptx");
+  const deck = structuredClone(sampleDeck);
+  deck.presentation.slides[0].title = "Rendering Rules";
+  deck.presentation.slides[0].blocks = [{
+    id: "body-list",
+    type: "bulletList",
+    items: ["Shared Renderer Contract", "PPTX Renderer", "Decoration Styles"],
+  }];
+  deck.layout.slides[0].layout = { preset: "vertical-list", direction: "vertical" };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "body",
+      role: "body",
+      blockIds: ["body-list"],
+      x: 1.0,
+      y: 1.6,
+      w: 11.2,
+      h: 4.8,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 20, lineHeight: 1.2, minFontSize: 16 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "clean" });
+    const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
+    const titleBands = slideObjectsWithTransforms(xml).filter((shape) =>
+      shape.tag === "sp"
+      && !/<a:t>/.test(shape.xml)
+      && shape.w >= 9.3
+      && shape.h <= 0.12
+      && shape.y >= 1.3
+      && shape.y <= 2.0,
+    );
+
+    assert.equal(titleBands.length, 0);
+    for (const text of ["Rendering Rules", "Shared Renderer Contract", "PPTX Renderer", "Decoration Styles"]) {
+      assert.equal((xml.match(new RegExp(`<a:t>${text}</a:t>`, "g")) ?? []).length, 1);
+    }
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx does not add continuous decorative rails to vertical lists", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-vertical-list-rails-"));
   const outPath = join(outDir, "deck.pptx");
@@ -630,7 +677,11 @@ test("renderPptx renders horizontal triptych items without full card surfaces", 
     await renderPptx(deck, { outPath, designPreset: "clean" });
     const xml = await zipTextByPath(outPath, "ppt/slides/slide1.xml");
     const fullCards = slideObjectsWithTransforms(xml).filter((shape) => shape.tag === "sp" && !/<a:t>/.test(shape.xml) && shape.w >= 3 && shape.h >= 2);
+    const itemAccents = slideObjectsWithTransforms(xml).filter((shape) =>
+      shape.tag === "sp" && !/<a:t>/.test(shape.xml) && shape.w <= 0.1 && shape.h >= 2.5,
+    );
     assert.equal(fullCards.length, 0);
+    assert.equal(itemAccents.length, 3);
   } finally {
     rmSync(outDir, { recursive: true, force: true });
   }
