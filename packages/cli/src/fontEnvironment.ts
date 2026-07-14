@@ -2,6 +2,7 @@ import type { BlockIR, Diagnostic, PresentationIR } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 import { inspectOpenTypeFont, type EmbeddedFontStyle, type FontEmbeddingResult, type OpenTypeFontInspection } from "@mdpresent/render-pptx";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { platform } from "node:os";
 import { extname, join } from "node:path";
@@ -30,16 +31,43 @@ export type FontEmbeddingCoverage = {
   complete: boolean;
 };
 
+export type FontLicenseEvidenceRecord = {
+  fontSha256: string;
+  licenseId: string;
+  licenseSource: string;
+  pptxEmbeddingAllowed: boolean;
+  redistributionAllowed: boolean;
+  attestedBy: string;
+  attestedAt: string;
+};
+
+export type FontLicenseEvidenceSummary = {
+  supplied: boolean;
+  required: boolean;
+  evidencePath?: string;
+  schemaVersion?: "mdpr-font-license-evidence-v1";
+  records: FontLicenseEvidenceRecord[];
+  missingFontSha256: string[];
+  unusedFontSha256: string[];
+  complete: boolean;
+  legalDetermination: "external";
+};
+
 export type FontEmbeddingSummary =
-  | { performed: false; reason: "font-embedding-not-requested" }
+  | { performed: false; reason: "font-embedding-not-requested"; licenseEvidence: FontLicenseEvidenceSummary }
   | {
     performed: false;
     reason: "font-embedding-pending-build";
     requestedFiles: string[];
-    fonts: Array<OpenTypeFontInspection & { sourcePath: string }>;
+    fonts: Array<OpenTypeFontInspection & { sourcePath: string; sha256: string }>;
     coverage: FontEmbeddingCoverage;
+    licenseEvidence: FontLicenseEvidenceSummary;
   }
-  | (Omit<FontEmbeddingResult, "performed"> & { performed: true; coverage: FontEmbeddingCoverage });
+  | (Omit<FontEmbeddingResult, "performed"> & {
+    performed: true;
+    coverage: FontEmbeddingCoverage;
+    licenseEvidence: FontLicenseEvidenceSummary;
+  });
 
 let cachedNativeCatalog: FontEnvironmentCatalog | undefined;
 
@@ -80,7 +108,12 @@ export function inspectFontEnvironment(
   layout: LayoutIR,
   catalog: FontEnvironmentCatalog | undefined,
   required: boolean,
-  embeddingRequest: { fontPaths?: string[]; requireComplete?: boolean } = {},
+  embeddingRequest: {
+    fontPaths?: string[];
+    requireComplete?: boolean;
+    licenseEvidencePath?: string;
+    requireLicenseEvidence?: boolean;
+  } = {},
   presentation?: PresentationIR,
 ): { summary: FontEnvironmentSummary; diagnostics: Diagnostic[] } {
   const requestedFamilies = uniqueFamilies([
@@ -112,7 +145,15 @@ export function inspectFontEnvironment(
     }
   }
 
-  const embedding = inspectEmbeddingRequest(layout, embeddingRequest.fontPaths ?? [], Boolean(embeddingRequest.requireComplete), diagnostics, presentation);
+  const embedding = inspectEmbeddingRequest(
+    layout,
+    embeddingRequest.fontPaths ?? [],
+    Boolean(embeddingRequest.requireComplete),
+    diagnostics,
+    presentation,
+    embeddingRequest.licenseEvidencePath,
+    Boolean(embeddingRequest.requireLicenseEvidence),
+  );
 
   return {
     summary: {
@@ -136,7 +177,16 @@ export function completeFontEmbeddingSummary(
   const coverage = current.performed === false && current.reason === "font-embedding-pending-build"
     ? current.coverage
     : coverageFor([], result.fonts.map((font) => ({ family: font.family, style: font.style })));
-  return { performed: true, format: result.format, fonts: result.fonts, coverage };
+  return {
+    performed: true,
+    format: result.format,
+    fonts: result.fonts,
+    coverage,
+    licenseEvidence: bindFontLicenseEvidence(
+      current.licenseEvidence ?? emptyLicenseEvidence(false),
+      result.fonts.map((font) => font.sha256),
+    ),
+  };
 }
 
 function inspectEmbeddingRequest(
@@ -145,9 +195,17 @@ function inspectEmbeddingRequest(
   requireComplete: boolean,
   diagnostics: Diagnostic[],
   presentation?: PresentationIR,
+  licenseEvidencePath?: string,
+  requireLicenseEvidence = false,
 ): FontEmbeddingSummary {
-  if (fontPaths.length === 0 && !requireComplete) return { performed: false, reason: "font-embedding-not-requested" };
-  const fonts: Array<OpenTypeFontInspection & { sourcePath: string }> = [];
+  if (fontPaths.length === 0 && !requireComplete && !licenseEvidencePath && !requireLicenseEvidence) {
+    return {
+      performed: false,
+      reason: "font-embedding-not-requested",
+      licenseEvidence: emptyLicenseEvidence(false),
+    };
+  }
+  const fonts: Array<OpenTypeFontInspection & { sourcePath: string; sha256: string }> = [];
   const seenFaces = new Set<string>();
   const requestedFamilies = new Set(requiredFontFaces(layout, presentation).map((face) => fontKey(face.family)));
 
@@ -162,7 +220,8 @@ function inspectEmbeddingRequest(
       continue;
     }
     try {
-      const inspection = inspectOpenTypeFont(readFileSync(sourcePath));
+      const fontBytes = readFileSync(sourcePath);
+      const inspection = inspectOpenTypeFont(fontBytes);
       const faceKey = `${fontKey(inspection.family)}:${inspection.style}`;
       if (seenFaces.has(faceKey)) {
         diagnostics.push({
@@ -189,7 +248,7 @@ function inspectEmbeddingRequest(
           details: { sourcePath, family: inspection.family },
         });
       }
-      fonts.push({ ...inspection, sourcePath });
+      fonts.push({ ...inspection, sourcePath, sha256: sha256(fontBytes) });
     } catch (error) {
       diagnostics.push({
         level: "error",
@@ -212,13 +271,215 @@ function inspectEmbeddingRequest(
       });
     }
   }
+  const licenseEvidence = inspectFontLicenseEvidence(
+    licenseEvidencePath,
+    requireLicenseEvidence,
+    fonts.map((font) => font.sha256),
+    diagnostics,
+  );
   return {
     performed: false,
     reason: "font-embedding-pending-build",
     requestedFiles: [...fontPaths],
     fonts,
     coverage,
+    licenseEvidence,
   };
+}
+
+function inspectFontLicenseEvidence(
+  evidencePath: string | undefined,
+  required: boolean,
+  fontSha256Values: string[],
+  diagnostics: Diagnostic[],
+): FontLicenseEvidenceSummary {
+  if (!evidencePath) {
+    if (required) {
+      diagnostics.push({
+        level: "error",
+        code: "FONT_LICENSE_EVIDENCE_REQUIRED",
+        message: "Strict font portability requires a font license evidence file.",
+        details: { required: true, legalDetermination: "external" },
+      });
+    }
+    return emptyLicenseEvidence(required);
+  }
+  if (!existsSync(evidencePath)) {
+    diagnostics.push({
+      level: "error",
+      code: "FONT_LICENSE_EVIDENCE_FILE_MISSING",
+      message: `Font license evidence file does not exist: ${evidencePath}.`,
+      details: { evidencePath },
+    });
+    return { ...emptyLicenseEvidence(required), supplied: true, evidencePath };
+  }
+
+  let value: unknown;
+  try {
+    value = JSON.parse(readFileSync(evidencePath, "utf8"));
+  } catch (error) {
+    diagnostics.push({
+      level: "error",
+      code: "FONT_LICENSE_EVIDENCE_INVALID",
+      message: `Font license evidence could not be parsed: ${error instanceof Error ? error.message : String(error)}`,
+      details: { evidencePath },
+    });
+    return { ...emptyLicenseEvidence(required), supplied: true, evidencePath };
+  }
+
+  if (!isRecord(value) || value.schemaVersion !== "mdpr-font-license-evidence-v1" || !Array.isArray(value.fonts)) {
+    diagnostics.push({
+      level: "error",
+      code: "FONT_LICENSE_EVIDENCE_INVALID",
+      message: "Font license evidence must use schemaVersion mdpr-font-license-evidence-v1 and contain a fonts array.",
+      details: { evidencePath },
+    });
+    return { ...emptyLicenseEvidence(required), supplied: true, evidencePath };
+  }
+
+  const records: FontLicenseEvidenceRecord[] = [];
+  const seen = new Set<string>();
+  let structurallyValid = true;
+  let authorizationComplete = true;
+  for (const [index, candidate] of value.fonts.entries()) {
+    if (!isFontLicenseEvidenceRecord(candidate)) {
+      structurallyValid = false;
+      diagnostics.push({
+        level: "error",
+        code: "FONT_LICENSE_EVIDENCE_INVALID",
+        message: `Font license evidence record ${index} is malformed.`,
+        details: { evidencePath, index },
+      });
+      continue;
+    }
+    const hash = candidate.fontSha256.toLowerCase();
+    if (seen.has(hash)) {
+      structurallyValid = false;
+      diagnostics.push({
+        level: "error",
+        code: "FONT_LICENSE_EVIDENCE_DUPLICATE_RECORD",
+        message: `Font license evidence contains duplicate SHA-256 ${hash}.`,
+        details: { evidencePath, fontSha256: hash },
+      });
+      continue;
+    }
+    seen.add(hash);
+    if (candidate.pptxEmbeddingAllowed !== true || candidate.redistributionAllowed !== true) {
+      authorizationComplete = false;
+      diagnostics.push({
+        level: "error",
+        code: "FONT_LICENSE_EVIDENCE_AUTHORIZATION_REQUIRED",
+        message: `Font license evidence for ${hash} does not explicitly authorize editable PPTX embedding and redistribution.`,
+        details: { evidencePath, fontSha256: hash },
+      });
+    }
+    records.push({ ...candidate, fontSha256: hash });
+  }
+
+  const fontHashes = new Set(fontSha256Values.map((value) => value.toLowerCase()));
+  const recordHashes = new Set(records.map((record) => record.fontSha256));
+  const missingFontSha256 = Array.from(fontHashes).filter((hash) => !recordHashes.has(hash));
+  const unusedFontSha256 = Array.from(recordHashes).filter((hash) => !fontHashes.has(hash));
+  for (const fontSha256 of missingFontSha256) {
+    diagnostics.push({
+      level: "error",
+      code: "FONT_LICENSE_EVIDENCE_FONT_MISSING",
+      message: `No complete license evidence is bound to embedded font SHA-256 ${fontSha256}.`,
+      details: { evidencePath, fontSha256 },
+    });
+  }
+  for (const fontSha256 of unusedFontSha256) {
+    diagnostics.push({
+      level: "error",
+      code: "FONT_LICENSE_EVIDENCE_UNUSED_RECORD",
+      message: `Font license evidence SHA-256 ${fontSha256} does not match an embedded font input.`,
+      details: { evidencePath, fontSha256 },
+    });
+  }
+  if (required && fontHashes.size === 0) {
+    diagnostics.push({
+      level: "error",
+      code: "FONT_LICENSE_EVIDENCE_EMBEDDED_FONT_REQUIRED",
+      message: "Strict font license evidence requires at least one embedded font input.",
+      details: { evidencePath },
+    });
+  }
+
+  return {
+    supplied: true,
+    required,
+    evidencePath,
+    schemaVersion: "mdpr-font-license-evidence-v1",
+    records,
+    missingFontSha256,
+    unusedFontSha256,
+    complete: structurallyValid
+      && authorizationComplete
+      && fontHashes.size > 0
+      && missingFontSha256.length === 0
+      && unusedFontSha256.length === 0,
+    legalDetermination: "external",
+  };
+}
+
+function bindFontLicenseEvidence(
+  evidence: FontLicenseEvidenceSummary,
+  fontSha256Values: string[],
+): FontLicenseEvidenceSummary {
+  const fontHashes = new Set(fontSha256Values.map((value) => value.toLowerCase()));
+  const recordHashes = new Set(evidence.records.map((record) => record.fontSha256.toLowerCase()));
+  const missingFontSha256 = Array.from(fontHashes).filter((hash) => !recordHashes.has(hash));
+  const unusedFontSha256 = Array.from(recordHashes).filter((hash) => !fontHashes.has(hash));
+  const authorizationComplete = evidence.records.every((record) => (
+    record.pptxEmbeddingAllowed === true && record.redistributionAllowed === true
+  ));
+  return {
+    ...evidence,
+    missingFontSha256,
+    unusedFontSha256,
+    complete: evidence.supplied
+      && authorizationComplete
+      && fontHashes.size > 0
+      && missingFontSha256.length === 0
+      && unusedFontSha256.length === 0,
+  };
+}
+
+function emptyLicenseEvidence(required: boolean): FontLicenseEvidenceSummary {
+  return {
+    supplied: false,
+    required,
+    records: [],
+    missingFontSha256: [],
+    unusedFontSha256: [],
+    complete: false,
+    legalDetermination: "external",
+  };
+}
+
+function isFontLicenseEvidenceRecord(value: unknown): value is FontLicenseEvidenceRecord {
+  if (!isRecord(value)) return false;
+  return typeof value.fontSha256 === "string"
+    && /^[a-f0-9]{64}$/i.test(value.fontSha256)
+    && nonEmptyString(value.licenseId)
+    && nonEmptyString(value.licenseSource)
+    && typeof value.pptxEmbeddingAllowed === "boolean"
+    && typeof value.redistributionAllowed === "boolean"
+    && nonEmptyString(value.attestedBy)
+    && nonEmptyString(value.attestedAt)
+    && !Number.isNaN(Date.parse(value.attestedAt));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function sha256(value: Buffer): string {
+  return createHash("sha256").update(value).digest("hex");
 }
 
 function requiredFontFaces(layout: LayoutIR, presentation?: PresentationIR): FontFaceRequirement[] {

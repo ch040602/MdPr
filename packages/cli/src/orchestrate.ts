@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Config, Diagnostic, OutputFormat, ParserMode, PresentationIR, SlideIR } from "@mdpresent/core";
@@ -62,6 +62,8 @@ export type OrchestrationOptions = {
   requireFontInstalled?: boolean;
   embedFontPaths?: string[];
   requireFontEmbedded?: boolean;
+  fontLicenseEvidencePath?: string;
+  requireFontLicenseEvidence?: boolean;
   fontEnvironment?: FontEnvironmentCatalog;
 };
 
@@ -124,7 +126,12 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
     layout,
     options.fontEnvironment ?? probeInstalledFontEnvironment(),
     Boolean(options.requireFontInstalled),
-    { fontPaths: options.embedFontPaths, requireComplete: options.requireFontEmbedded },
+    {
+      fontPaths: options.embedFontPaths,
+      requireComplete: options.requireFontEmbedded,
+      licenseEvidencePath: options.fontLicenseEvidencePath,
+      requireLicenseEvidence: options.requireFontLicenseEvidence,
+    },
     presentation,
   );
   const diagnostics = dedupeDiagnostics([
@@ -263,6 +270,15 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
       );
       pptxObjects = result.objectMap;
       pptxFontEmbedding = result.fontEmbedding;
+      if (options.requireFontLicenseEvidence) {
+        const embedding = completeFontEmbeddingSummary(deck.fontEnvironment.embedding, result.fontEmbedding);
+        if (!embedding.licenseEvidence.complete) {
+          rmSync(outPath, { force: true });
+          throw new Error(
+            "FONT_LICENSE_EVIDENCE_POST_BUILD_MISMATCH: rendered PPTX font hashes do not match the required license evidence.",
+          );
+        }
+      }
       return outPath;
     })();
     if (formats.includes("pptx")) renderJobs.push(pptxJob);
@@ -280,9 +296,10 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
 
   const writtenFiles = await Promise.all(renderJobs);
   if (pptxFontEmbedding) {
+    const embedding = completeFontEmbeddingSummary(deck.fontEnvironment.embedding, pptxFontEmbedding);
     deck.fontEnvironment = {
       ...deck.fontEnvironment,
-      embedding: completeFontEmbeddingSummary(deck.fontEnvironment.embedding, pptxFontEmbedding),
+      embedding,
     };
   }
   const designLockPath = options.designLockPath ?? join(outDir, "mdpresent-design-lock.json");

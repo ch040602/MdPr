@@ -10,8 +10,8 @@ mdpresent job-state status dist --json
 mdpresent generated-assets validate mdpr-generated-assets.json --json
 mdpresent inspect deck.md --json
 mdpresent plan deck.md --json > layout.plan.json
-mdpresent validate deck.md --override deck.override.yaml --hints deck.mdpr-hints.json --coherence --require-font-installed --embed-font Pretendard-Regular.ttf --embed-font Pretendard-Bold.ttf --require-font-embedded
-mdpresent build deck.md --to pptx,pdf,html --out dist --require-font-installed --embed-font Pretendard-Regular.ttf --embed-font Pretendard-Bold.ttf --require-font-embedded
+mdpresent validate deck.md --override deck.override.yaml --hints deck.mdpr-hints.json --coherence --require-font-installed --embed-font Pretendard-Regular.ttf --embed-font Pretendard-Bold.ttf --require-font-embedded --font-license-evidence font-license-evidence.json --require-font-license-evidence
+mdpresent build deck.md --to pptx,pdf,html --out dist --require-font-installed --embed-font Pretendard-Regular.ttf --embed-font Pretendard-Bold.ttf --require-font-embedded --font-license-evidence font-license-evidence.json --require-font-license-evidence
 mdpresent diff deck.md --override deck.override.yaml
 ```
 
@@ -77,7 +77,11 @@ default config < config file < CLI args
   `--embed-font` inputs are inspected during validate/build and packaged only
   for PPTX/PDF builds. `--require-font-embedded` gates the family/style faces
   actually planned by the deck. A successful package records EOT part paths,
-  source hashes, `fsType`, and coverage after mutation.
+  source hashes, `fsType`, and coverage after mutation. Optional
+  `--font-license-evidence` binds a versioned caller attestation to those exact
+  hashes; `--require-font-license-evidence` rechecks the rendered hashes and
+  fails closed on incomplete or stale evidence. This gate records
+  `legalDetermination: external` and does not replace license review.
 - `job-state validate/status` reads `mdpr-job-state-v1` from an explicit JSON
   file or `mdpr-job-state.json` inside a build directory. It verifies
   evidence-bound completion states for long-running review/repair workflows.

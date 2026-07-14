@@ -73,6 +73,11 @@
 - `--require-font-embedded`는 title, region, inline run, table, chart, diagram이
   실제 사용하는 family/style coverage가 완전해야 통과합니다. manifest의
   `embedding.performed: true`는 PPTX package 변경 후에만 기록됩니다.
+- `--font-license-evidence <evidence.json>`는 각 font SHA-256에 license source와
+  PPTX embedding/redistribution 승인 진술을 결합합니다.
+  `--require-font-license-evidence`는 누락, malformed, 미승인, stale record와
+  post-render hash 불일치를 실패시킵니다. 이는 증거 결합 검증이지 법률 판단이
+  아니므로 manifest에는 `legalDetermination: external`이 유지됩니다.
 - MDPR은 font를 다운로드하거나 family 이름만으로 설치 font를 자동 선택하지
   않습니다. restricted, preview/print-only, bitmap-only, malformed, duplicate,
   unused face와 TTC/OTC/WOFF container는 거부합니다. CJK·mixed-language 측정은
@@ -91,7 +96,7 @@
 | Strict visual failure | 필수 `fontHierarchy`는 모든 active Layout IR region을 `16pt` 기준으로 검사합니다. 더 작은 명시적 override는 `MDPR_POLISH_GATE_FAILED`로 남습니다. | manifest failure를 evidence와 함께 mirror할 뿐 재계산, 완화, override하지 않습니다. |
 | 장식선 | Built-in preset은 자동 title underline, TOC horizontal rule, 고립된 cover-bottom rule을 만들지 않습니다. | source content가 요구하지 않는 synthetic subtitle, title rule, bottom takeaway band를 review evidence에 추가하지 않습니다. |
 | Template font | `--template`은 master/layout/theme OOXML을 보존하지만 generated text는 resolved MDPR typography를 사용합니다. 정확한 family 일치는 `typography.fontFamily`로 지정합니다. | template mismatch를 보고할 수 있지만 master typography를 교체하거나 font 설치·embed를 주장하지 않습니다. |
-| Font portability | 명시한 `--embed-font` face를 license-check 후 PPTX에 포함하고 exact coverage를 기록합니다. `--require-font-embedded`는 portable set 누락을 거부합니다. | MDPR manifest의 coverage를 검토할 수 있지만 font를 embed하거나 MDPR의 license/pass-fail 결정을 바꾸지 않습니다. |
+| Font portability | 명시한 `--embed-font` face를 `fsType` 검사 후 PPTX에 포함하고 exact coverage를 기록합니다. 선택적 hash-bound license evidence와 두 strict gate는 incomplete/stale 증거를 거부합니다. | MDPR manifest의 coverage와 attestation을 검토할 수 있지만 font를 embed하거나 법적 증거를 만들거나 runtime pass/fail을 바꾸지 않습니다. |
 | 출력 책임 | 최종 좌표, 색상, z-order, object, rendering, pass/fail을 소유합니다. | hint, review report, evidence만 만들며 최종 runtime 결정은 모두 MDPR에 남깁니다. |
 
 ## 미리보기

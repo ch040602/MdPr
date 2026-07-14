@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -34,6 +35,78 @@ test("missing embedding inputs are errors and are never reported as performed", 
   assert.equal(result.summary.embedding.reason, "font-embedding-pending-build");
   assert.equal(result.summary.embedding.fonts.length, 0);
   assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "FONT_EMBEDDING_FILE_MISSING"));
+});
+
+test("required font license evidence fails closed when it is absent", () => {
+  const result = inspectFontEnvironment(sampleLayout(), { source: "test", installedFamilies: [] }, false, {
+    requireLicenseEvidence: true,
+  });
+
+  assert.equal(result.summary.embedding.licenseEvidence.supplied, false);
+  assert.equal(result.summary.embedding.licenseEvidence.complete, false);
+  assert.equal(result.summary.embedding.licenseEvidence.legalDetermination, "external");
+  assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), [
+    "FONT_LICENSE_EVIDENCE_REQUIRED",
+  ]);
+});
+
+test("font license evidence is bound to exact bytes and explicit distribution authorization", () => {
+  const root = mkdtempSync(join(tmpdir(), "mdpresent-font-license-"));
+  try {
+    const fontPath = join(root, "regular.ttf");
+    const evidencePath = join(root, "font-license-evidence.json");
+    writeFileSync(fontPath, syntheticFont("Regular", 400));
+    writeFileSync(evidencePath, JSON.stringify({
+      schemaVersion: "mdpr-font-license-evidence-v1",
+      fonts: [{
+        fontSha256: "0".repeat(64),
+        licenseId: "OFL-1.1",
+        licenseSource: "https://openfontlicense.org/",
+        pptxEmbeddingAllowed: true,
+        redistributionAllowed: false,
+        attestedBy: "release-owner@example.test",
+        attestedAt: "2026-07-14T00:00:00Z",
+      }],
+    }));
+
+    const result = inspectFontEnvironment(sampleLayout(), { source: "test", installedFamilies: [] }, false, {
+      fontPaths: [fontPath],
+      licenseEvidencePath: evidencePath,
+      requireLicenseEvidence: true,
+    });
+
+    assert.equal(result.summary.embedding.licenseEvidence.complete, false);
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), [
+      "FONT_LICENSE_EVIDENCE_AUTHORIZATION_REQUIRED",
+      "FONT_LICENSE_EVIDENCE_FONT_MISSING",
+      "FONT_LICENSE_EVIDENCE_UNUSED_RECORD",
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("required font license evidence cannot pass without an embedded font input", () => {
+  const root = mkdtempSync(join(tmpdir(), "mdpresent-empty-font-license-"));
+  try {
+    const evidencePath = join(root, "font-license-evidence.json");
+    writeFileSync(evidencePath, JSON.stringify({
+      schemaVersion: "mdpr-font-license-evidence-v1",
+      fonts: [],
+    }));
+
+    const result = inspectFontEnvironment(sampleLayout(), { source: "test", installedFamilies: [] }, false, {
+      licenseEvidencePath: evidencePath,
+      requireLicenseEvidence: true,
+    });
+
+    assert.equal(result.summary.embedding.licenseEvidence.complete, false);
+    assert.deepEqual(result.diagnostics.map((diagnostic) => diagnostic.code), [
+      "FONT_LICENSE_EVIDENCE_EMBEDDED_FONT_REQUIRED",
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("embedding coverage includes inline style faces that the renderer will emit", () => {
@@ -76,6 +149,43 @@ test("completed package evidence preserves preflight coverage", () => {
   assert.deepEqual(completed.coverage, coverage);
 });
 
+test("completed package evidence rebinds license records to post-mutation font hashes", () => {
+  const completed = completeFontEmbeddingSummary({
+    performed: false,
+    reason: "font-embedding-pending-build",
+    requestedFiles: ["regular.ttf"],
+    fonts: [],
+    coverage: { requiredFaces: [], suppliedFaces: [], missingFaces: [], complete: true },
+    licenseEvidence: {
+      supplied: true,
+      required: true,
+      evidencePath: "font-license-evidence.json",
+      schemaVersion: "mdpr-font-license-evidence-v1",
+      records: [{
+        fontSha256: "1".repeat(64),
+        licenseId: "OFL-1.1",
+        licenseSource: "https://openfontlicense.org/",
+        pptxEmbeddingAllowed: true,
+        redistributionAllowed: true,
+        attestedBy: "release-owner@example.test",
+        attestedAt: "2026-07-14T00:00:00Z",
+      }],
+      missingFontSha256: [],
+      unusedFontSha256: [],
+      complete: true,
+      legalDetermination: "external",
+    },
+  }, {
+    performed: true,
+    format: "eot-uncompressed",
+    fonts: [{ sha256: "2".repeat(64) }],
+  });
+
+  assert.equal(completed.licenseEvidence.complete, false);
+  assert.deepEqual(completed.licenseEvidence.missingFontSha256, ["2".repeat(64)]);
+  assert.deepEqual(completed.licenseEvidence.unusedFontSha256, ["1".repeat(64)]);
+});
+
 test("build records performed font embedding only after PPTX package mutation", async () => {
   const root = mkdtempSync(join(tmpdir(), "mdpresent-font-build-"));
   try {
@@ -101,6 +211,55 @@ test("build records performed font embedding only after PPTX package mutation", 
     assert.equal(manifest.validation.fontEnvironment.embedding.coverage.complete, true);
     assert.deepEqual(manifest.validation.fontEnvironment.embedding.fonts.map((font) => font.style), ["regular", "bold"]);
     assert.match(manifest.validation.fontEnvironment.embedding.fonts[0].partPath, /^ppt\/fonts\/font\d+\.fntdata$/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("build manifest records hash-bound font license evidence without claiming legal adjudication", async () => {
+  const root = mkdtempSync(join(tmpdir(), "mdpresent-font-license-build-"));
+  try {
+    const deckPath = join(root, "deck.md");
+    const regularPath = join(root, "regular.ttf");
+    const boldPath = join(root, "bold.ttf");
+    const evidencePath = join(root, "font-license-evidence.json");
+    const outDir = join(root, "dist");
+    writeFileSync(deckPath, "# Font proof\n\nPortable body text.");
+    writeFileSync(regularPath, syntheticFont("Regular", 400));
+    writeFileSync(boldPath, syntheticFont("Bold", 700));
+    const record = (fontPath) => ({
+      fontSha256: sha256(readFileSync(fontPath)),
+      licenseId: "OFL-1.1",
+      licenseSource: "https://openfontlicense.org/",
+      pptxEmbeddingAllowed: true,
+      redistributionAllowed: true,
+      attestedBy: "release-owner@example.test",
+      attestedAt: "2026-07-14T00:00:00Z",
+    });
+    writeFileSync(evidencePath, JSON.stringify({
+      schemaVersion: "mdpr-font-license-evidence-v1",
+      fonts: [record(regularPath), record(boldPath)],
+    }));
+
+    const result = await buildDeck(deckPath, {
+      formats: ["pptx"],
+      outDir,
+      cliConfig: { typography: { fontFamily: "MDPR Test Sans" } },
+      embedFontPaths: [regularPath, boldPath],
+      requireFontEmbedded: true,
+      fontLicenseEvidencePath: evidencePath,
+      requireFontLicenseEvidence: true,
+      fontEnvironment: { source: "test", installedFamilies: ["MDPR Test Sans"] },
+    });
+
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf8"));
+    const evidence = manifest.validation.fontEnvironment.embedding.licenseEvidence;
+    assert.equal(evidence.complete, true);
+    assert.equal(evidence.legalDetermination, "external");
+    assert.deepEqual(evidence.records.map((entry) => entry.fontSha256), [
+      sha256(readFileSync(regularPath)),
+      sha256(readFileSync(boldPath)),
+    ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -169,4 +328,8 @@ function utf16be(value) {
   const bytes = Buffer.from(value, "utf16le");
   for (let index = 0; index < bytes.length; index += 2) [bytes[index], bytes[index + 1]] = [bytes[index + 1], bytes[index]];
   return bytes;
+}
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
 }

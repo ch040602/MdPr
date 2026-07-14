@@ -251,6 +251,8 @@ function readCommonOptions(args: string[]) {
     requireFontInstalled: args.includes("--require-font-installed"),
     embedFontPaths: readOptions(args, "--embed-font"),
     requireFontEmbedded: args.includes("--require-font-embedded"),
+    fontLicenseEvidencePath: readOption(args, "--font-license-evidence"),
+    requireFontLicenseEvidence: args.includes("--require-font-license-evidence"),
   };
 }
 
@@ -358,8 +360,8 @@ Usage:
   mdpresent generated-assets validate <mdpr-generated-assets.json> [--json]
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
-  mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--hints deck.mdpr-hints.json] [--visual] [--coherence] [--strict] [--require-font-installed] [--embed-font face.ttf ...] [--require-font-embedded] [--json]
-  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style skeuomorphism|neomorphism|glassmorphism|claymorphism|minimalism|newmorphism|brutalism|liquid-glass|bentogrid] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,nord] [--pack mdpr.pack.json] [--hints deck.mdpr-hints.json] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence] [--strict] [--require-font-installed] [--embed-font face.ttf ...] [--require-font-embedded]
+  mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--hints deck.mdpr-hints.json] [--visual] [--coherence] [--strict] [--require-font-installed] [--embed-font face.ttf ...] [--require-font-embedded] [--font-license-evidence evidence.json] [--require-font-license-evidence] [--json]
+  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style skeuomorphism|neomorphism|glassmorphism|claymorphism|minimalism|newmorphism|brutalism|liquid-glass|bentogrid] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,nord] [--pack mdpr.pack.json] [--hints deck.mdpr-hints.json] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence] [--strict] [--require-font-installed] [--embed-font face.ttf ...] [--require-font-embedded] [--font-license-evidence evidence.json] [--require-font-license-evidence]
 
 Config files are validated against schemas/config.schema.json before merging. Approved packs are validated against schemas/mdpr-pack.schema.json and can provide tokenized theme inputs. Optional agent hints are validated against schemas/agent-hint.schema.json and cannot set final layout/style decisions. Generated asset metadata is validated as provenance and request policy only; it cannot provide secrets or become a full-slide renderer. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
 `);

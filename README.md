@@ -115,6 +115,11 @@ Typography rules:
   planned by titles, regions, inline runs, tables, charts, and diagrams. The
   manifest records source hashes, `fsType`, package parts, face coverage, and
   `embedding.performed: true` only after the PPTX package was mutated
+- pass `--font-license-evidence <evidence.json>` to bind caller-provided
+  license source and distribution attestations to each exact font SHA-256;
+  `--require-font-license-evidence` fails on missing, malformed, unauthorized,
+  stale, or post-render hash-mismatched records. This proves evidence binding,
+  not legal sufficiency, so the manifest keeps `legalDetermination: external`
 - font selection remains explicit: MDPR does not download fonts or embed a
   matching installed font by name, and TTC/OTC/WOFF containers are rejected.
   CJK and mixed-language measurement preserves source text instead of rewriting
@@ -159,7 +164,7 @@ agent review. They are complementary, not competing renderers.
 | Decorative lines | Built-in presets omit automatic title underlines, body title bands, TOC horizontal rules, and isolated cover-bottom rules while retaining semantic item/container accents | Review evidence omits synthetic subtitles, title rules, and bottom takeaway bands unless source content requires them |
 | Native tables | Keeps tables editable; eligible three-column comparisons use a compact label column and two equal evidence columns | Reviews rendered balance and source fidelity, but does not set column widths |
 | Template fonts | `--template` preserves master/layout/theme OOXML, but generated text uses resolved MDPR typography; set `typography.fontFamily` for an exact family match | Reports a template mismatch; it does not replace master typography or infer installation/embedding from a family name |
-| Font portability | Explicit `--embed-font` inputs are license-checked, packaged into PPTX, and recorded with exact face coverage; `--require-font-embedded` rejects an incomplete portable set | Reads MDPR manifest evidence and may flag missing coverage, but never embeds a font or overrides MDPR licensing/pass-fail decisions |
+| Font portability | Explicit `--embed-font` inputs are `fsType`-checked and packaged with exact face coverage; optional hash-bound license evidence records caller attestations, while both strict gates fail incomplete or stale proof | Reads MDPR manifest evidence and may flag missing coverage or attestations, but never embeds a font, creates legal evidence, or overrides runtime pass/fail |
 | Output ownership | Owns final coordinates, colors, z-order, objects, rendering, and pass/fail | Produces hints, review reports, and evidence only; MDPR still makes every final runtime decision |
 
 ## How MDPR Differs

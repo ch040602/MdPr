@@ -177,6 +177,42 @@ SHA-256, permission bits, part paths, and coverage. A preflight pass or host
 catalog match alone never sets `performed: true`; MDPR does not download fonts
 or select an installed file from a family name.
 
+For distribution workflows, pass `--font-license-evidence <path>` with a
+versioned JSON document:
+
+```json
+{
+  "schemaVersion": "mdpr-font-license-evidence-v1",
+  "fonts": [
+    {
+      "fontSha256": "<64 lowercase hex characters>",
+      "licenseId": "OFL-1.1",
+      "licenseSource": "https://openfontlicense.org/",
+      "pptxEmbeddingAllowed": true,
+      "redistributionAllowed": true,
+      "attestedBy": "release-owner@example.com",
+      "attestedAt": "2026-07-14T00:00:00Z"
+    }
+  ]
+}
+```
+
+`--require-font-license-evidence` requires at least one embedded font and one
+complete record for every exact SHA-256. Missing files, malformed/duplicate
+records, absent authorization statements, unmatched records, and missing font
+hashes are errors. After PPTX mutation, MDPR rebinds the records to the hashes
+reported by the renderer and fails before manifest creation if they changed.
+`licenseId` may be an SPDX expression or an organization policy identifier;
+MDPR records but does not legally interpret it. The summary therefore always
+states `legalDetermination: external`.
+
+Normative references: Microsoft OpenType [`OS/2.fsType`](https://learn.microsoft.com/en-us/typography/opentype/spec/os2#fstype)
+defines the machine-readable embedding restrictions, while the
+[SPDX license-expression grammar](https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/)
+provides an interoperable option for `licenseId`. Neither source authorizes a
+specific caller's redistribution; that remains the attesting party's external
+responsibility.
+
 The manifest also exposes normalized `metrics` for companion tools and CI:
 `slideCount`, `overflowCount`, coherence warning/error counts, visual
 warning/error counts, polish warning count, `minFontPt`, text clip risk count,

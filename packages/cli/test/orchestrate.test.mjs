@@ -58,7 +58,19 @@ test("buildDeck delegates rendering through the orchestration boundary", async (
       installedFamilies: ["Pretendard"],
       missingFamilies: [],
       allAvailable: true,
-      embedding: { performed: false, reason: "font-embedding-not-requested" },
+      embedding: {
+        performed: false,
+        reason: "font-embedding-not-requested",
+        licenseEvidence: {
+          supplied: false,
+          required: false,
+          records: [],
+          missingFontSha256: [],
+          unusedFontSha256: [],
+          complete: false,
+          legalDetermination: "external",
+        },
+      },
     });
     assert.match(html, /AI Workflow Automation Proposal/);
     assert.match(html, /Automatic meeting summary/);
