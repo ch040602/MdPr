@@ -803,7 +803,8 @@ function createVerticalListRegions(slide: SlideIR, itemBlockIds: string[], title
 
 function horizontalTriptychGeometry(slide: SlideIR, itemBlockIds: string[], config: Config): { y: number; h: number } {
   const full = { y: 2.12, h: 2.75 };
-  if (!/\(Cont\.\s+[2-9]\d*\/\d+\)$/.test(slide.title ?? "")) return full;
+  const continuation = /\(Cont\.\s+(\d+)\/(\d+)\)$/.exec(slide.title ?? "");
+  if (!continuation || Number(continuation[1]) <= 1) return full;
 
   const texts = itemBlockIds.map((blockId) => textForMappedItem(slide, blockId));
   const resolvedTexts = texts.filter((text): text is string => text !== undefined);

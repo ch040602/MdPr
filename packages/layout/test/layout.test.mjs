@@ -761,6 +761,23 @@ test("long continuation triptychs retain their full vertical capacity", () => {
   assert.deepEqual(items.map((region) => region.y), [2.12, 2.12, 2.12]);
 });
 
+test("two-digit continuation indices still compact short triptychs", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Review notes (Cont. 10/10)",
+    "",
+    "- Alpha note",
+    "- Beta note",
+    "- Gamma note",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.variant === "horizontal-triptych");
+  const items = slide.regions.filter((region) => region.role === "item");
+
+  assert.ok(slide);
+  assert.equal(items.every((region) => region.h >= 1.55 && region.h < 2), true);
+});
+
 test("horizontal triptych and quartet specs expose named visible geometry", () => {
   assert.equal(geometrySignatureForSpec({ preset: "vertical-list", variant: "horizontal-triptych", columns: 3, rows: 1, direction: "horizontal" }), "card-row-3");
   assert.equal(geometrySignatureForSpec({ preset: "grid", variant: "horizontal-quartet", columns: 4, rows: 1, direction: "horizontal" }), "card-row-4");
