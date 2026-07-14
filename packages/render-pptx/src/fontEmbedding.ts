@@ -1,4 +1,7 @@
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
+import { readFile, writeFile } from "node:fs/promises";
+import JSZip from "jszip";
 
 export type EmbeddedFontStyle = "regular" | "bold" | "italic" | "boldItalic";
 
@@ -15,6 +18,21 @@ export type OpenTypeFontInspection = {
   editableEmbeddingAllowed: boolean;
   noSubsetting: boolean;
   bitmapOnly: boolean;
+};
+
+export type EmbeddedFontRecord = OpenTypeFontInspection & {
+  sourcePath: string;
+  sha256: string;
+  partPath: string;
+  relationshipId: string;
+  sourceBytes: number;
+  eotBytes: number;
+};
+
+export type FontEmbeddingResult = {
+  performed: boolean;
+  format: "eot-uncompressed";
+  fonts: EmbeddedFontRecord[];
 };
 
 type SfntTable = { offset: number; length: number };
@@ -75,6 +93,86 @@ export function createEotFromOpenType(input: Uint8Array): Buffer {
   ]);
   eot.writeUInt32LE(eot.length, 0);
   return eot;
+}
+
+export async function embedOpenTypeFontsInPptx(pptxPath: string, fontPaths: string[]): Promise<FontEmbeddingResult> {
+  if (fontPaths.length === 0) return { performed: false, format: "eot-uncompressed", fonts: [] };
+  const prepared = await Promise.all(fontPaths.map(async (sourcePath) => {
+    const source = await readFile(sourcePath);
+    const inspection = inspectOpenTypeFont(source);
+    const eot = createEotFromOpenType(source);
+    return {
+      sourcePath,
+      source,
+      inspection,
+      eot,
+      sha256: createHash("sha256").update(source).digest("hex"),
+    };
+  }));
+
+  const faceKeys = new Set<string>();
+  for (const font of prepared) {
+    const key = `${fontKey(font.inspection.family)}:${font.inspection.style}`;
+    if (faceKeys.has(key)) {
+      throw new Error(`FONT_EMBEDDING_DUPLICATE_STYLE: ${font.inspection.family} ${font.inspection.style} was supplied more than once.`);
+    }
+    faceKeys.add(key);
+  }
+
+  const zip = await JSZip.loadAsync(await readFile(pptxPath));
+  let presentationXml = await requiredZipText(zip, "ppt/presentation.xml");
+  let relationshipsXml = await requiredZipText(zip, "ppt/_rels/presentation.xml.rels");
+  let contentTypesXml = await requiredZipText(zip, "[Content_Types].xml");
+  const existingTypefaces = new Set(Array.from(presentationXml.matchAll(/<p:font\b[^>]*\btypeface="([^"]+)"/g), (match) => fontKey(decodeXml(match[1]!))));
+  for (const family of new Set(prepared.map((font) => font.inspection.family))) {
+    if (existingTypefaces.has(fontKey(family))) {
+      throw new Error(`FONT_EMBEDDING_FAMILY_ALREADY_PRESENT: ${family} is already declared in the PPTX package.`);
+    }
+  }
+
+  let relationshipIndex = Math.max(0, ...Array.from(relationshipsXml.matchAll(/\bId="rId(\d+)"/g), (match) => Number(match[1]))) + 1;
+  let fontPartIndex = Math.max(0, ...Object.keys(zip.files).flatMap((path) => {
+    const match = /^ppt\/fonts\/font(\d+)\.fntdata$/i.exec(path);
+    return match ? [Number(match[1])] : [];
+  })) + 1;
+  const records: EmbeddedFontRecord[] = [];
+  const familyEntries = new Map<string, { family: string; faces: Array<{ style: EmbeddedFontStyle; relationshipId: string }> }>();
+
+  for (const font of prepared) {
+    const relationshipId = `rId${relationshipIndex++}`;
+    const partPath = `ppt/fonts/font${fontPartIndex++}.fntdata`;
+    zip.file(partPath, font.eot);
+    relationshipsXml = insertBeforeClosingTag(relationshipsXml, "Relationships",
+      `<Relationship Id="${relationshipId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/font" Target="${partPath.slice(4)}"/>`);
+    const familyKey = fontKey(font.inspection.family);
+    const entry = familyEntries.get(familyKey) ?? { family: font.inspection.family, faces: [] };
+    entry.faces.push({ style: font.inspection.style, relationshipId });
+    familyEntries.set(familyKey, entry);
+    records.push({
+      ...font.inspection,
+      sourcePath: font.sourcePath,
+      sha256: font.sha256,
+      partPath,
+      relationshipId,
+      sourceBytes: font.source.length,
+      eotBytes: font.eot.length,
+    });
+  }
+
+  const declarations = Array.from(familyEntries.values()).map((entry) => {
+    const faces = entry.faces.map((face) => `<p:${face.style} r:id="${face.relationshipId}"/>`).join("");
+    return `<p:embeddedFont><p:font typeface="${escapeXml(entry.family)}"/>${faces}</p:embeddedFont>`;
+  }).join("");
+  presentationXml = addEmbeddedFontDeclarations(presentationXml, declarations);
+  if (!/<Default\b[^>]*\bExtension="fntdata"/i.test(contentTypesXml)) {
+    contentTypesXml = insertBeforeClosingTag(contentTypesXml, "Types", '<Default Extension="fntdata" ContentType="application/x-fontdata"/>');
+  }
+
+  zip.file("ppt/presentation.xml", presentationXml);
+  zip.file("ppt/_rels/presentation.xml.rels", relationshipsXml);
+  zip.file("[Content_Types].xml", contentTypesXml);
+  await writeFile(pptxPath, await zip.generateAsync({ type: "nodebuffer" }));
+  return { performed: true, format: "eot-uncompressed", fonts: records };
 }
 
 function parseOpenTypeFont(input: Uint8Array): ParsedOpenTypeFont {
@@ -201,6 +299,41 @@ function sizedUtf16Le(value: string): Buffer {
   const size = Buffer.alloc(2);
   size.writeUInt16LE(encoded.length, 0);
   return Buffer.concat([size, encoded]);
+}
+
+async function requiredZipText(zip: JSZip, path: string): Promise<string> {
+  const file = zip.file(path);
+  if (!file) throw new Error(`PPTX_PACKAGE_INVALID: required part ${path} is missing.`);
+  return file.async("string");
+}
+
+function addEmbeddedFontDeclarations(presentationXml: string, declarations: string): string {
+  if (/<p:embeddedFontLst\b/.test(presentationXml)) {
+    return presentationXml.replace("</p:embeddedFontLst>", `${declarations}</p:embeddedFontLst>`);
+  }
+  const list = `<p:embeddedFontLst>${declarations}</p:embeddedFontLst>`;
+  const followingElement = /<(p:(?:custShowLst|photoAlbum|custDataLst|kinsoku|defaultTextStyle|modifyVerifier|extLst))\b/;
+  const match = followingElement.exec(presentationXml);
+  if (match?.index !== undefined) return `${presentationXml.slice(0, match.index)}${list}${presentationXml.slice(match.index)}`;
+  return presentationXml.replace("</p:presentation>", `${list}</p:presentation>`);
+}
+
+function insertBeforeClosingTag(xml: string, localName: string, fragment: string): string {
+  const closing = `</${localName}>`;
+  if (!xml.includes(closing)) throw new Error(`PPTX_PACKAGE_INVALID: ${localName} closing tag is missing.`);
+  return xml.replace(closing, `${fragment}${closing}`);
+}
+
+function escapeXml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+function decodeXml(value: string): string {
+  return value.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&");
+}
+
+function fontKey(value: string): string {
+  return value.normalize("NFKC").replace(/[\s_-]+/g, "").toLocaleLowerCase("en-US");
 }
 
 function invalidFont(message: string): never {

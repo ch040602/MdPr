@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
+import JSZip from "jszip";
 
-import { createEotFromOpenType, inspectOpenTypeFont } from "../dist/index.js";
+import { createEotFromOpenType, embedOpenTypeFontsInPptx, inspectOpenTypeFont } from "../dist/index.js";
 
 test("inspects an installable OpenType font and wraps it as uncompressed EOT", () => {
   const font = syntheticOpenTypeFont({
@@ -63,6 +67,65 @@ test("rejects malformed sfnt offsets instead of reading outside the font", () =>
   const font = syntheticOpenTypeFont({});
   font.writeUInt32BE(0xfffffff0, 12 + 8);
   assert.throws(() => inspectOpenTypeFont(font), /FONT_FILE_INVALID/);
+});
+
+test("adds grouped EOT font parts, relationships, and PresentationML declarations", async () => {
+  const root = mkdtempSync(join(tmpdir(), "mdpresent-font-embed-"));
+  try {
+    const pptxPath = join(root, "deck.pptx");
+    const regularPath = join(root, "regular.ttf");
+    const boldPath = join(root, "bold.ttf");
+    writeFileSync(regularPath, syntheticOpenTypeFont({ family: "MDPR Test Sans" }));
+    writeFileSync(boldPath, syntheticOpenTypeFont({
+      family: "MDPR Test Sans",
+      subfamily: "Bold",
+      fullName: "MDPR Test Sans Bold",
+      weight: 700,
+      fsType: 0x0008,
+    }));
+    writeFileSync(pptxPath, await minimalPptxPackage());
+
+    const result = await embedOpenTypeFontsInPptx(pptxPath, [regularPath, boldPath]);
+
+    assert.equal(result.performed, true);
+    assert.equal(result.fonts.length, 2);
+    assert.deepEqual(result.fonts.map((font) => font.style), ["regular", "bold"]);
+    assert.match(result.fonts[0].sha256, /^[a-f0-9]{64}$/);
+    const zip = await JSZip.loadAsync(readFileSync(pptxPath));
+    const presentation = await zip.file("ppt/presentation.xml").async("string");
+    const relationships = await zip.file("ppt/_rels/presentation.xml.rels").async("string");
+    const contentTypes = await zip.file("[Content_Types].xml").async("string");
+    assert.match(presentation, /<p:embeddedFontLst>/);
+    assert.match(presentation, /<p:font typeface="MDPR Test Sans"\/>/);
+    assert.match(presentation, /<p:regular r:id="rId2"\/>/);
+    assert.match(presentation, /<p:bold r:id="rId3"\/>/);
+    assert.match(relationships, /Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/font" Target="fonts\/font1\.fntdata"/);
+    assert.match(contentTypes, /Extension="fntdata" ContentType="application\/x-fontdata"/);
+    const eot = await zip.file("ppt/fonts/font1.fntdata").async("nodebuffer");
+    assert.equal(eot.readUInt16LE(34), 0x504c);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("rejects duplicate family/style inputs before changing the PPTX", async () => {
+  const root = mkdtempSync(join(tmpdir(), "mdpresent-font-embed-"));
+  try {
+    const pptxPath = join(root, "deck.pptx");
+    const firstPath = join(root, "first.ttf");
+    const secondPath = join(root, "second.ttf");
+    writeFileSync(firstPath, syntheticOpenTypeFont({}));
+    writeFileSync(secondPath, syntheticOpenTypeFont({}));
+    const original = await minimalPptxPackage();
+    writeFileSync(pptxPath, original);
+    await assert.rejects(
+      embedOpenTypeFontsInPptx(pptxPath, [firstPath, secondPath]),
+      /FONT_EMBEDDING_DUPLICATE_STYLE/,
+    );
+    assert.deepEqual(readFileSync(pptxPath), original);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 function syntheticOpenTypeFont({
@@ -146,4 +209,12 @@ function sfnt(tables) {
     entry.data.copy(out, entry.offset);
   });
   return out;
+}
+
+async function minimalPptxPackage() {
+  const zip = new JSZip();
+  zip.file("[Content_Types].xml", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"xml\" ContentType=\"application/xml\"/></Types>");
+  zip.file("ppt/presentation.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><p:presentation xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><p:sldIdLst/><p:sldSz cx=\"12192000\" cy=\"6858000\"/><p:notesSz cx=\"6858000\" cy=\"9144000\"/><p:defaultTextStyle/></p:presentation>");
+  zip.file("ppt/_rels/presentation.xml.rels", "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide\" Target=\"slides/slide1.xml\"/></Relationships>");
+  return zip.generateAsync({ type: "nodebuffer" });
 }
