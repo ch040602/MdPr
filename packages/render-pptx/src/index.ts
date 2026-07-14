@@ -17,6 +17,8 @@ import {
 } from "./templateImport.js";
 
 export type { DesignPresetName } from "./designPresets.js";
+export { createEotFromOpenType, inspectOpenTypeFont } from "./fontEmbedding.js";
+export type { EmbeddedFontStyle, OpenTypeFontInspection } from "./fontEmbedding.js";
 
 export type RenderPptxOptions = {
   outPath: string;
