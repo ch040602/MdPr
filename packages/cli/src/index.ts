@@ -249,6 +249,8 @@ function readCommonOptions(args: string[]) {
     coherenceValidation: args.includes("--coherence"),
     strict: args.includes("--strict"),
     requireFontInstalled: args.includes("--require-font-installed"),
+    embedFontPaths: readOptions(args, "--embed-font"),
+    requireFontEmbedded: args.includes("--require-font-embedded"),
   };
 }
 
@@ -271,6 +273,17 @@ function readOption(args: string[], name: string): string | undefined {
   const prefix = `${name}=`;
   const inline = args.find((arg) => arg.startsWith(prefix));
   return inline ? inline.slice(prefix.length) : undefined;
+}
+
+function readOptions(args: string[], name: string): string[] {
+  const values: string[] = [];
+  const prefix = `${name}=`;
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]!;
+    if (arg === name && args[index + 1] && !args[index + 1]!.startsWith("--")) values.push(args[index + 1]!);
+    else if (arg.startsWith(prefix) && arg.length > prefix.length) values.push(arg.slice(prefix.length));
+  }
+  return values;
 }
 
 function readParserMode(args: string[]): ParserMode | undefined {
@@ -345,8 +358,8 @@ Usage:
   mdpresent generated-assets validate <mdpr-generated-assets.json> [--json]
   mdpresent inspect <deck.md> [--parser simple|pandoc] [--json]
   mdpresent plan <deck.md> [--parser simple|pandoc] [--json]
-  mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--hints deck.mdpr-hints.json] [--visual] [--coherence] [--strict] [--require-font-installed] [--json]
-  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style skeuomorphism|neomorphism|glassmorphism|claymorphism|minimalism|newmorphism|brutalism|liquid-glass|bentogrid] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,nord] [--pack mdpr.pack.json] [--hints deck.mdpr-hints.json] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence] [--strict] [--require-font-installed]
+  mdpresent validate <deck.md> [--parser simple|pandoc] [--override deck.override.yaml] [--hints deck.mdpr-hints.json] [--visual] [--coherence] [--strict] [--require-font-installed] [--embed-font face.ttf ...] [--require-font-embedded] [--json]
+  mdpresent build <deck.md> --to pptx,html --out dist [--parser simple|pandoc] [--pipeline-one-page] [--design executive] [--theme-style skeuomorphism|neomorphism|glassmorphism|claymorphism|minimalism|newmorphism|brutalism|liquid-glass|bentogrid] [--theme-color #2563EB] [--theme-harmony analogous] [--theme-gallery executive,nord] [--pack mdpr.pack.json] [--hints deck.mdpr-hints.json] [--template master.pptx] [--design-lock lock.json] [--update-design-lock] [--visual] [--coherence] [--strict] [--require-font-installed] [--embed-font face.ttf ...] [--require-font-embedded]
 
 Config files are validated against schemas/config.schema.json before merging. Approved packs are validated against schemas/mdpr-pack.schema.json and can provide tokenized theme inputs. Optional agent hints are validated against schemas/agent-hint.schema.json and cannot set final layout/style decisions. Generated asset metadata is validated as provenance and request policy only; it cannot provide secrets or become a full-slide renderer. HTML, PPTX, and PDF rendering are wired through the shared orchestration path.
 `);

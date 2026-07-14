@@ -1,7 +1,8 @@
 import type { Diagnostic } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
+import { inspectOpenTypeFont, type EmbeddedFontStyle, type FontEmbeddingResult, type OpenTypeFontInspection } from "@mdpresent/render-pptx";
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { platform } from "node:os";
 import { extname, join } from "node:path";
 
@@ -17,11 +18,28 @@ export type FontEnvironmentSummary = {
   installedFamilies: string[];
   missingFamilies: string[];
   allAvailable: boolean;
-  embedding: {
-    performed: false;
-    reason: "font-embedding-not-requested";
-  };
+  embedding: FontEmbeddingSummary;
 };
+
+export type FontFaceRequirement = { family: string; styles: EmbeddedFontStyle[] };
+
+export type FontEmbeddingCoverage = {
+  requiredFaces: FontFaceRequirement[];
+  suppliedFaces: FontFaceRequirement[];
+  missingFaces: FontFaceRequirement[];
+  complete: boolean;
+};
+
+export type FontEmbeddingSummary =
+  | { performed: false; reason: "font-embedding-not-requested" }
+  | {
+    performed: false;
+    reason: "font-embedding-pending-build";
+    requestedFiles: string[];
+    fonts: Array<OpenTypeFontInspection & { sourcePath: string }>;
+    coverage: FontEmbeddingCoverage;
+  }
+  | (Omit<FontEmbeddingResult, "performed"> & { performed: true; coverage: FontEmbeddingCoverage });
 
 let cachedNativeCatalog: FontEnvironmentCatalog | undefined;
 
@@ -62,6 +80,7 @@ export function inspectFontEnvironment(
   layout: LayoutIR,
   catalog: FontEnvironmentCatalog | undefined,
   required: boolean,
+  embeddingRequest: { fontPaths?: string[]; requireComplete?: boolean } = {},
 ): { summary: FontEnvironmentSummary; diagnostics: Diagnostic[] } {
   const requestedFamilies = uniqueFamilies([
     layout.theme.fontFamily,
@@ -92,6 +111,8 @@ export function inspectFontEnvironment(
     }
   }
 
+  const embedding = inspectEmbeddingRequest(layout, embeddingRequest.fontPaths ?? [], Boolean(embeddingRequest.requireComplete), diagnostics);
+
   return {
     summary: {
       checked,
@@ -100,10 +121,145 @@ export function inspectFontEnvironment(
       installedFamilies,
       missingFamilies,
       allAvailable: checked && missingFamilies.length === 0,
-      embedding: { performed: false, reason: "font-embedding-not-requested" },
+      embedding,
     },
     diagnostics,
   };
+}
+
+export function completeFontEmbeddingSummary(
+  current: FontEmbeddingSummary,
+  result: FontEmbeddingResult,
+): FontEmbeddingSummary {
+  if (!result.performed) return current;
+  const coverage = current.performed === false && current.reason === "font-embedding-pending-build"
+    ? current.coverage
+    : coverageFor([], result.fonts.map((font) => ({ family: font.family, style: font.style })));
+  return { performed: true, format: result.format, fonts: result.fonts, coverage };
+}
+
+function inspectEmbeddingRequest(
+  layout: LayoutIR,
+  fontPaths: string[],
+  requireComplete: boolean,
+  diagnostics: Diagnostic[],
+): FontEmbeddingSummary {
+  if (fontPaths.length === 0 && !requireComplete) return { performed: false, reason: "font-embedding-not-requested" };
+  const fonts: Array<OpenTypeFontInspection & { sourcePath: string }> = [];
+  const seenFaces = new Set<string>();
+  const requestedFamilies = new Set(requiredFontFaces(layout).map((face) => fontKey(face.family)));
+
+  for (const sourcePath of fontPaths) {
+    if (!existsSync(sourcePath)) {
+      diagnostics.push({
+        level: "error",
+        code: "FONT_EMBEDDING_FILE_MISSING",
+        message: `Requested font file does not exist: ${sourcePath}.`,
+        details: { sourcePath },
+      });
+      continue;
+    }
+    try {
+      const inspection = inspectOpenTypeFont(readFileSync(sourcePath));
+      const faceKey = `${fontKey(inspection.family)}:${inspection.style}`;
+      if (seenFaces.has(faceKey)) {
+        diagnostics.push({
+          level: "error",
+          code: "FONT_EMBEDDING_DUPLICATE_STYLE",
+          message: `Font family ${inspection.family} has more than one ${inspection.style} embedding source.`,
+          details: { sourcePath, family: inspection.family, style: inspection.style },
+        });
+      }
+      seenFaces.add(faceKey);
+      if (!inspection.editableEmbeddingAllowed) {
+        diagnostics.push({
+          level: "error",
+          code: "FONT_EMBEDDING_NOT_EDITABLE",
+          message: `Font ${inspection.fullName} cannot be embedded in an editable PPTX (${inspection.bitmapOnly ? "bitmap-only" : inspection.embeddingPermission}).`,
+          details: { sourcePath, family: inspection.family, fsType: inspection.fsType, permission: inspection.embeddingPermission },
+        });
+      }
+      if (!requestedFamilies.has(fontKey(inspection.family))) {
+        diagnostics.push({
+          level: "error",
+          code: "FONT_EMBEDDING_UNUSED_FAMILY",
+          message: `Embedded font family ${inspection.family} is not used by the planned presentation.`,
+          details: { sourcePath, family: inspection.family },
+        });
+      }
+      fonts.push({ ...inspection, sourcePath });
+    } catch (error) {
+      diagnostics.push({
+        level: "error",
+        code: "FONT_EMBEDDING_FILE_INVALID",
+        message: `Requested font file could not be inspected: ${sourcePath}. ${error instanceof Error ? error.message : String(error)}`,
+        details: { sourcePath },
+      });
+    }
+  }
+
+  const requiredFaces = requiredFontFaces(layout);
+  const coverage = coverageFor(requiredFaces, fonts.map((font) => ({ family: font.family, style: font.style })));
+  if (requireComplete) {
+    for (const face of coverage.missingFaces) {
+      diagnostics.push({
+        level: "error",
+        code: "FONT_EMBEDDING_FACE_MISSING",
+        message: `Portable PPTX output requires embedded ${face.styles.join("/")} face(s) for ${face.family}.`,
+        details: face,
+      });
+    }
+  }
+  return {
+    performed: false,
+    reason: "font-embedding-pending-build",
+    requestedFiles: [...fontPaths],
+    fonts,
+    coverage,
+  };
+}
+
+function requiredFontFaces(layout: LayoutIR): FontFaceRequirement[] {
+  const faces = new Map<string, { family: string; styles: Set<EmbeddedFontStyle> }>();
+  const add = (family: string | undefined, style: EmbeddedFontStyle) => {
+    const resolved = family?.trim();
+    if (!resolved) return;
+    const key = fontKey(resolved);
+    const entry = faces.get(key) ?? { family: resolved, styles: new Set<EmbeddedFontStyle>() };
+    entry.styles.add(style);
+    faces.set(key, entry);
+  };
+  for (const slide of layout.slides) {
+    for (const region of slide.regions) {
+      const family = region.typography?.fontFamily ?? layout.theme.fontFamily;
+      add(family, region.role === "title" || region.typography?.fontWeight === "bold" ? "bold" : "regular");
+    }
+  }
+  return Array.from(faces.values(), (entry) => ({ family: entry.family, styles: styleOrder(entry.styles) }));
+}
+
+function coverageFor(
+  requiredFaces: FontFaceRequirement[],
+  supplied: Array<{ family: string; style: EmbeddedFontStyle }>,
+): FontEmbeddingCoverage {
+  const suppliedMap = new Map<string, { family: string; styles: Set<EmbeddedFontStyle> }>();
+  for (const face of supplied) {
+    const key = fontKey(face.family);
+    const entry = suppliedMap.get(key) ?? { family: face.family, styles: new Set<EmbeddedFontStyle>() };
+    entry.styles.add(face.style);
+    suppliedMap.set(key, entry);
+  }
+  const suppliedFaces = Array.from(suppliedMap.values(), (entry) => ({ family: entry.family, styles: styleOrder(entry.styles) }));
+  const missingFaces = requiredFaces.flatMap((required) => {
+    const suppliedStyles = suppliedMap.get(fontKey(required.family))?.styles ?? new Set<EmbeddedFontStyle>();
+    const missing = required.styles.filter((style) => !suppliedStyles.has(style));
+    return missing.length ? [{ family: required.family, styles: missing }] : [];
+  });
+  return { requiredFaces, suppliedFaces, missingFaces, complete: missingFaces.length === 0 };
+}
+
+function styleOrder(styles: Set<EmbeddedFontStyle>): EmbeddedFontStyle[] {
+  return (["regular", "bold", "italic", "boldItalic"] as const).filter((style) => styles.has(style));
 }
 
 function uniqueFamilies(values: Array<string | undefined>): string[] {

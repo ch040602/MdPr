@@ -10,14 +10,14 @@ import type { LayoutIR } from "@mdpresent/layout";
 import { planLayout, planSlideLayoutWithSpec, rankLayoutCandidates, validateLayoutOverflow } from "@mdpresent/layout";
 import { renderHtml } from "@mdpresent/render-html";
 import { renderPdf } from "@mdpresent/render-pdf";
-import type { DesignPresetName, PptxObjectMapEntry } from "@mdpresent/render-pptx";
+import type { DesignPresetName, FontEmbeddingResult, PptxObjectMapEntry } from "@mdpresent/render-pptx";
 import { renderPptx } from "@mdpresent/render-pptx";
 import { applyOverrides, diffLayout, type LayoutDiff, type OverrideManifest, type OverrideOperation } from "@mdpresent/override";
 import { themeConfigFromPack, validateMdprPack, type MdprPack, type PackValidationResult } from "@mdpresent/pack";
 import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createPolishQualitySummary, createVisualValidationSummary, polishQualityDiagnostics, visualValidationDiagnostics } from "@mdpresent/validation";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import { parse as parseYaml } from "yaml";
-import { inspectFontEnvironment, probeInstalledFontEnvironment, type FontEnvironmentCatalog, type FontEnvironmentSummary } from "./fontEnvironment.js";
+import { completeFontEmbeddingSummary, inspectFontEnvironment, probeInstalledFontEnvironment, type FontEnvironmentCatalog, type FontEnvironmentSummary } from "./fontEnvironment.js";
 
 export type ConfigSource =
   | { kind: "default" }
@@ -60,6 +60,8 @@ export type OrchestrationOptions = {
   strict?: boolean;
   packPath?: string;
   requireFontInstalled?: boolean;
+  embedFontPaths?: string[];
+  requireFontEmbedded?: boolean;
   fontEnvironment?: FontEnvironmentCatalog;
 };
 
@@ -122,6 +124,7 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
     layout,
     options.fontEnvironment ?? probeInstalledFontEnvironment(),
     Boolean(options.requireFontInstalled),
+    { fontPaths: options.embedFontPaths, requireComplete: options.requireFontEmbedded },
   );
   const diagnostics = dedupeDiagnostics([
     ...presentation.diagnostics,
@@ -215,10 +218,14 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
   const deck = createDeckPlan(inputPath, options);
   assertBuildCanRender(deck, options);
   const formats = options.formats ?? ["html"];
+  if ((options.embedFontPaths?.length ?? 0) > 0 && !formats.some((format) => format === "pptx" || format === "pdf")) {
+    throw new Error("FONT_EMBEDDING_OUTPUT_UNSUPPORTED: --embed-font requires PPTX or PDF output.");
+  }
   const outDir = options.outDir ?? "dist";
   const renderJobs: Promise<string>[] = [];
   let pptxJob: Promise<string> | undefined;
   let pptxObjects: PptxObjectMapEntry[] = [];
+  let pptxFontEmbedding: FontEmbeddingResult | undefined;
 
   mkdirSync(outDir, { recursive: true });
 
@@ -250,9 +257,11 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
           designPreset: options.designPreset,
           themeGalleryPresets: options.themeGalleryPresets,
           lockBackgroundToMaster: deck.config.pptx.lockBackgroundToMaster,
+          embeddedFontPaths: options.embedFontPaths,
         },
       );
       pptxObjects = result.objectMap;
+      pptxFontEmbedding = result.fontEmbedding;
       return outPath;
     })();
     if (formats.includes("pptx")) renderJobs.push(pptxJob);
@@ -269,6 +278,12 @@ export async function buildDeck(inputPath: string, options: BuildOptions = {}): 
   }
 
   const writtenFiles = await Promise.all(renderJobs);
+  if (pptxFontEmbedding) {
+    deck.fontEnvironment = {
+      ...deck.fontEnvironment,
+      embedding: completeFontEmbeddingSummary(deck.fontEnvironment.embedding, pptxFontEmbedding),
+    };
+  }
   const designLockPath = options.designLockPath ?? join(outDir, "mdpresent-design-lock.json");
   const designLock = createDesignLock(deck);
   enforceOrWriteDesignLock(designLockPath, designLock, Boolean(options.updateDesignLock));

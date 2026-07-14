@@ -6,6 +6,7 @@ import PptxGenJSExport from "pptxgenjs";
 import type PptxGenJS from "pptxgenjs";
 import JSZip from "jszip";
 import { addPresetBackground, addRegionSurface, type DesignPresetName, resolveDesignPreset } from "./designPresets.js";
+import { embedOpenTypeFontsInPptx, type FontEmbeddingResult } from "./fontEmbedding.js";
 import { iconKindForIndex, iconKindForText, iconSource, iconSvgDataUri, type IconKind } from "./iconCatalog.js";
 import {
   extractTemplateDesignAssets,
@@ -26,6 +27,7 @@ export type RenderPptxOptions = {
   lockBackgroundToMaster?: boolean;
   designPreset?: DesignPresetName;
   themeGalleryPresets?: DesignPresetName[];
+  embeddedFontPaths?: string[];
 };
 
 export type PptxObjectMapEntry = {
@@ -41,6 +43,7 @@ export type PptxObjectMapEntry = {
 
 export type RenderPptxResult = {
   objectMap: PptxObjectMapEntry[];
+  fontEmbedding: FontEmbeddingResult;
 };
 
 export type RenderableDeckIR = {
@@ -252,7 +255,8 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
     if (documentDesignPreset.surfacePolicy.shadow === "glass") await addPptxGlowEffects(options.outPath, documentDesignPreset.primaryColor);
   }
   await preserveTemplatePackageParts(options.outPath, options.templatePath);
-  return { objectMap };
+  const fontEmbedding = await embedOpenTypeFontsInPptx(options.outPath, options.embeddedFontPaths ?? []);
+  return { objectMap, fontEmbedding };
 }
 
 function objectKindForRegion(
