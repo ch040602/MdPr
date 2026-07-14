@@ -558,9 +558,10 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   }
 
   if (layout.preset === "pipeline") {
+    const diagramRect = pipelineRegionRect(slide, config);
     return [
       titleRegion,
-      { id: "diagram", role: "diagram", blockIds: slide.blocks.filter((b) => b.type === "diagram").map((b) => b.id), x: 0.7, y: 1.32, w: 11.95, h: 5.75, zIndex: 10, typography: bodyTypography(config) },
+      { id: "diagram", role: "diagram", blockIds: slide.blocks.filter((b) => b.type === "diagram").map((b) => b.id), ...diagramRect, zIndex: 10, typography: bodyTypography(config) },
     ];
   }
 
@@ -1002,4 +1003,34 @@ function codeFocusRect(slide: SlideIR) {
   const top = 1.55;
   const y = Number((top + (maxHeight - height) / 2).toFixed(2));
   return { x: 0.85, y, w: 11.65, h: Number(height.toFixed(2)) };
+}
+
+function pipelineRegionRect(slide: SlideIR, config: Config) {
+  const full = { x: 0.7, y: 1.32, w: 11.95, h: 5.75 };
+  const continuation = /\(Cont\.\s+(\d+)\/(\d+)\)$/.exec(slide.title ?? "");
+  if (!continuation || Number(continuation[1]) <= 1) return full;
+
+  const pipelineBlocks = slide.blocks.filter((block) => block.type === "diagram" && block.diagram?.kind === "pipeline");
+  if (pipelineBlocks.length !== 1) return full;
+  const nodes = pipelineBlocks[0]?.diagram?.nodes ?? [];
+  if (nodes.length < 2 || nodes.length > 3) return full;
+  const longestLabel = Math.max(...nodes.map((node) => node.label.length));
+  const averageLabel = nodes.reduce((sum, node) => sum + node.label.length, 0) / nodes.length;
+  if (longestLabel <= 34 && averageLabel <= 24) return full;
+
+  const typography = bodyTypography(config);
+  const measures = nodes.map((node) => measureText({
+    text: node.label.replace(/\s+/g, " ").trim(),
+    fontFamily: typography.fontFamily,
+    fontSize: typography.fontSize,
+    width: 7.64,
+    lineHeight: typography.lineHeight,
+  }, full.h));
+  if (measures.some((measure) => measure.lineCount > 2 || measure.overflowX)) return full;
+
+  const gap = 0.34;
+  const contentHeight = Math.max(...measures.map((measure) => measure.usedHeightIn));
+  const nodeHeight = Math.max(0.95, Math.min(1.45, contentHeight + 0.42));
+  const h = Number(Math.min(full.h, nodeHeight * nodes.length + gap * (nodes.length - 1)).toFixed(2));
+  return { ...full, y: Number((full.y + (full.h - h) / 2).toFixed(2)), h };
 }

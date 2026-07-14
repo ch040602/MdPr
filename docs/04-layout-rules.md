@@ -107,6 +107,14 @@ Draft => Review => Render => Validate
 
 The parser emits ordered nodes and directed edges. The layout planner routes the slide to the `pipeline` preset and creates a `diagram` region. Renderers must preserve the node/edge relationship rather than flattening the flow into bullets.
 
+For generated continuation titles after the first page, a vertical pipeline of
+two or three short text-only nodes content-sizes the existing `diagram` region
+from font-metric label measurements. The region keeps its full width and prior
+vertical center, so the renderer preserves the same cards, numbering, accents,
+and edge-derived connectors. Labels needing more than two lines, non-pipeline
+objects, larger graphs, and non-continuation slides retain the full 5.75in
+diagram capacity.
+
 ## Pipeline-One-Page Teaser Rule
 
 `deck.presentationMode: pipeline-one-page` creates one summary-first slide for README

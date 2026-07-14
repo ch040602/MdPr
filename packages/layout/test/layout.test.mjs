@@ -778,6 +778,34 @@ test("two-digit continuation indices still compact short triptychs", () => {
   assert.equal(items.every((region) => region.h >= 1.55 && region.h < 2), true);
 });
 
+test("sparse pipeline continuations content-size their diagram region", () => {
+  const slide = pipelineContinuationFixture([
+    "MDPR manifest and previews",
+    "mdpr-skill hints or review findings",
+    "MDPR remains the only renderer",
+  ]);
+  const diagram = slide.regions.find((region) => region.role === "diagram");
+
+  assert.equal(slide.layout.preset, "pipeline");
+  assert.ok(diagram);
+  assert.equal(diagram.x, 0.7);
+  assert.equal(diagram.w, 11.95);
+  assert.equal(diagram.h >= 3.5 && diagram.h < 4, true);
+  assert.equal(Math.abs(diagram.y + diagram.h / 2 - 4.195) <= 0.01, true);
+  assert.deepEqual(diagram.blockIds, ["diagram-1"]);
+});
+
+test("long pipeline continuation labels retain full diagram capacity", () => {
+  const longItem = "UnbreakablePipelineBoundary".repeat(3);
+  const slide = pipelineContinuationFixture([longItem, longItem, longItem]);
+  const diagram = slide.regions.find((region) => region.role === "diagram");
+
+  assert.equal(slide.layout.preset, "pipeline");
+  assert.ok(diagram);
+  assert.equal(diagram.y, 1.32);
+  assert.equal(diagram.h, 5.75);
+});
+
 test("horizontal triptych and quartet specs expose named visible geometry", () => {
   assert.equal(geometrySignatureForSpec({ preset: "vertical-list", variant: "horizontal-triptych", columns: 3, rows: 1, direction: "horizontal" }), "card-row-3");
   assert.equal(geometrySignatureForSpec({ preset: "grid", variant: "horizontal-quartet", columns: 4, rows: 1, direction: "horizontal" }), "card-row-4");
@@ -1321,4 +1349,38 @@ test("measureText wraps CJK prose instead of treating the whole run as horizonta
 function layoutFor(lines) {
   const presentation = planPresentation(parseMarkdown(lines.join("\n")), defaultConfig);
   return planLayout(presentation, defaultConfig);
+}
+
+function pipelineContinuationFixture(labels) {
+  const presentation = {
+    version: "1.0",
+    meta: { title: "Pipeline fixture" },
+    outline: [],
+    assets: [],
+    diagnostics: [],
+    coherenceGroups: [],
+    slides: [{
+      id: "pipeline-continuation",
+      index: 0,
+      role: "content",
+      title: "Pipeline boundary (Cont. 2/2)",
+      section: "pipeline",
+      headingPath: ["Pipeline boundary"],
+      source: {},
+      intent: "diagram",
+      tags: [],
+      primaryItemCount: 0,
+      blocks: [{
+        id: "diagram-1",
+        type: "diagram",
+        text: labels.join(" => "),
+        diagram: {
+          kind: "pipeline",
+          nodes: labels.map((label, index) => ({ id: `node-${index + 1}`, label })),
+          edges: labels.slice(1).map((_, index) => ({ from: `node-${index + 1}`, to: `node-${index + 2}` })),
+        },
+      }],
+    }],
+  };
+  return planLayout(presentation, defaultConfig).slides[0];
 }
