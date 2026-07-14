@@ -17,6 +17,7 @@ import { themeConfigFromPack, validateMdprPack, type MdprPack, type PackValidati
 import { coherenceValidationDiagnostics, createCoherenceValidationSummary, createPolishQualitySummary, createVisualValidationSummary, polishQualityDiagnostics, visualValidationDiagnostics } from "@mdpresent/validation";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import { parse as parseYaml } from "yaml";
+import { inspectFontEnvironment, probeInstalledFontEnvironment, type FontEnvironmentCatalog, type FontEnvironmentSummary } from "./fontEnvironment.js";
 
 export type ConfigSource =
   | { kind: "default" }
@@ -58,6 +59,8 @@ export type OrchestrationOptions = {
   coherenceValidation?: boolean;
   strict?: boolean;
   packPath?: string;
+  requireFontInstalled?: boolean;
+  fontEnvironment?: FontEnvironmentCatalog;
 };
 
 export type DeckPlan = {
@@ -69,6 +72,7 @@ export type DeckPlan = {
   overrideDiff?: LayoutDiff[];
   pack?: PackSource;
   agentHints: AgentHintSummary;
+  fontEnvironment: FontEnvironmentSummary;
   diagnostics: Diagnostic[];
 };
 
@@ -114,11 +118,17 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
   });
   const layout = postLayoutOverrideManifest ? applyOverrides(initialLayout, postLayoutOverrideManifest, presentation) : initialLayout;
   const overrideDiff = overrideManifest ? diffLayout(initialLayout, layout) : undefined;
+  const fontEnvironment = inspectFontEnvironment(
+    layout,
+    options.fontEnvironment ?? probeInstalledFontEnvironment(),
+    Boolean(options.requireFontInstalled),
+  );
   const diagnostics = dedupeDiagnostics([
     ...presentation.diagnostics,
     ...layout.diagnostics,
     ...configDiagnostics,
     ...agentHints.diagnostics,
+    ...fontEnvironment.diagnostics,
   ]);
 
   return {
@@ -134,6 +144,7 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
     layout,
     overrideDiff,
     agentHints,
+    fontEnvironment: fontEnvironment.summary,
     diagnostics,
   };
 }
@@ -401,6 +412,7 @@ function createBuildManifest(
     pptxObjects: runtime.pptxObjects,
     diagnostics: deck.diagnostics,
     validation: {
+      fontEnvironment: deck.fontEnvironment,
       layoutOverflow,
       visual,
       coherence,

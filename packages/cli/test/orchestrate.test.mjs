@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -39,13 +39,27 @@ test("buildDeck delegates rendering through the orchestration boundary", async (
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-cli-"));
 
   try {
-    const result = await buildDeck(basicDeck, { formats: ["html"], outDir });
+    const result = await buildDeck(basicDeck, {
+      formats: ["html"],
+      outDir,
+      fontEnvironment: { source: "test-catalog", installedFamilies: ["Pretendard"] },
+    });
     const htmlPath = result.writtenFiles.find((file) => file.endsWith("deck.html"));
     assert.ok(htmlPath);
     const html = readFileSync(htmlPath, "utf-8");
 
     assert.equal(result.writtenFiles.some((file) => file.endsWith("mdpresent-manifest.json")), true);
     assert.equal(result.writtenFiles.some((file) => file.endsWith("mdpresent-design-lock.json")), true);
+    const manifest = JSON.parse(readFileSync(result.manifestPath, "utf-8"));
+    assert.deepEqual(manifest.validation.fontEnvironment, {
+      checked: true,
+      source: "test-catalog",
+      requestedFamilies: ["Pretendard"],
+      installedFamilies: ["Pretendard"],
+      missingFamilies: [],
+      allAvailable: true,
+      embedding: { performed: false, reason: "font-embedding-not-requested" },
+    });
     assert.match(html, /AI Workflow Automation Proposal/);
     assert.match(html, /Automatic meeting summary/);
   } finally {
@@ -1560,6 +1574,78 @@ test("validateDeck returns structured diagnostics and validity", () => {
 
   assert.equal(result.valid, true);
   assert.equal(result.diagnostics.some((diagnostic) => diagnostic.code === "OVERRIDE_FILE_NOT_IMPLEMENTED"), false);
+});
+
+test("validateDeck can require the configured font in the export environment", () => {
+  const result = validateDeck(basicDeck, {
+    requireFontInstalled: true,
+    fontEnvironment: {
+      source: "test-catalog",
+      installedFamilies: ["Arial", "Aptos"],
+    },
+  });
+
+  assert.equal(result.valid, false);
+  const diagnostic = result.diagnostics.find((candidate) => candidate.code === "FONT_FAMILY_NOT_INSTALLED");
+  assert.equal(diagnostic?.level, "error");
+  assert.deepEqual(diagnostic?.details, {
+    requestedFamily: "Pretendard",
+    probeSource: "test-catalog",
+    installed: false,
+  });
+});
+
+test("validateDeck distinguishes an unavailable font probe from a missing font", () => {
+  const result = validateDeck(basicDeck, {
+    requireFontInstalled: true,
+    fontEnvironment: {
+      source: "unavailable",
+      installedFamilies: [],
+    },
+  });
+
+  assert.equal(result.valid, false);
+  assert.equal(result.fontEnvironment.checked, false);
+  assert.equal(result.diagnostics.some((candidate) => candidate.code === "FONT_FAMILY_NOT_INSTALLED"), false);
+  const diagnostic = result.diagnostics.find((candidate) => candidate.code === "FONT_ENVIRONMENT_UNAVAILABLE");
+  assert.equal(diagnostic?.level, "error");
+  assert.deepEqual(diagnostic?.details, {
+    probeSource: "unavailable",
+    requestedFamilies: ["Pretendard"],
+  });
+});
+
+test("CLI require-font-installed rejects a missing export font", () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-font-preflight-"));
+  const configPath = join(outDir, "mdpresent.config.yaml");
+  const cliPath = join(repoRoot, "packages/cli/dist/index.js");
+
+  try {
+    writeFileSync(configPath, [
+      'version: "1.0"',
+      "typography:",
+      '  fontFamily: "MDPR Definitely Missing Font 9F4C"',
+    ].join("\n"));
+    const result = spawnSync(process.execPath, [
+      cliPath,
+      "validate",
+      basicDeck,
+      "--config",
+      configPath,
+      "--require-font-installed",
+      "--json",
+    ], { cwd: repoRoot, encoding: "utf-8" });
+
+    assert.equal(result.status, 1);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.valid, false);
+    assert.equal(output.diagnostics.some((diagnostic) =>
+      diagnostic.code === "FONT_FAMILY_NOT_INSTALLED"
+      && diagnostic.details?.requestedFamily === "MDPR Definitely Missing Font 9F4C"
+      && typeof diagnostic.details?.probeSource === "string"), true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
 });
 
 test("validateDeck includes title text in overflow diagnostics", () => {

@@ -10,8 +10,8 @@ mdpresent job-state status dist --json
 mdpresent generated-assets validate mdpr-generated-assets.json --json
 mdpresent inspect deck.md --json
 mdpresent plan deck.md --json > layout.plan.json
-mdpresent validate deck.md --override deck.override.yaml --hints deck.mdpr-hints.json --coherence
-mdpresent build deck.md --to pptx,pdf,html --out dist
+mdpresent validate deck.md --override deck.override.yaml --hints deck.mdpr-hints.json --coherence --require-font-installed
+mdpresent build deck.md --to pptx,pdf,html --out dist --require-font-installed
 mdpresent diff deck.md --override deck.override.yaml
 ```
 
@@ -71,6 +71,10 @@ default config < config file < CLI args
 - `html` writes `dist/deck.html` through `@mdpresent/render-html`.
 - `pptx` writes `dist/deck.pptx` through `@mdpresent/render-pptx`.
 - Build writes `mdpresent-design-lock.json` and `mdpresent-manifest.json`.
+- Every build records `validation.fontEnvironment`, including requested,
+  installed, and missing families, the probe source, and explicit embedding
+  status. `--require-font-installed` turns a missing configured family into an
+  error and distinguishes it from an unavailable host font catalog.
 - `job-state validate/status` reads `mdpr-job-state-v1` from an explicit JSON
   file or `mdpr-job-state.json` inside a build directory. It verifies
   evidence-bound completion states for long-running review/repair workflows.

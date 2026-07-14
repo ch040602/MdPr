@@ -102,9 +102,16 @@ Typography rules:
 - `--template` preserves the original master, layout, and theme OOXML, while
   generated text still uses resolved MDPR typography; set `typography.fontFamily`
   to the master theme family when an exact match is required
-- MDPR does not embed fonts or verify host installation, so the selected family
-  must exist on authoring and rendering systems; CJK and mixed-language
-  measurement preserves source text instead of rewriting it to make content fit
+- every build manifest records the configured families, detected host families,
+  missing families, probe source, and explicit non-embedding status under
+  `validation.fontEnvironment`
+- `validate` and `build` accept `--require-font-installed`; the command fails
+  when a configured theme or region family is missing, and reports a distinct
+  error when the host font catalog itself cannot be inspected
+- MDPR does not embed fonts automatically; the manifest keeps
+  `embedding.performed: false` so a successful host check is never presented as
+  a portable-font guarantee. CJK and mixed-language measurement preserves
+  source text instead of rewriting it to make content fit
 
 Best fit:
 

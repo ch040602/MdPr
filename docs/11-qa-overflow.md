@@ -156,6 +156,15 @@ counts for pre-split continuation, candidate reflow, region expansion, and font
 shrink; continuation reasons; continuation group counts; and whether a graph or
 diagram block was split.
 
+The manifest records `validation.fontEnvironment` for every build. It lists the
+theme and region families requested by Layout IR, the host catalog source,
+installed and missing families, and `embedding.performed: false`. The optional
+`--require-font-installed` gate fails on a proven missing family with
+`FONT_FAMILY_NOT_INSTALLED`; if no host catalog can be read, it emits the
+separate `FONT_ENVIRONMENT_UNAVAILABLE` diagnostic rather than claiming every
+family is absent. MDPR does not automatically embed fonts, so this evidence
+describes the export host and is not a cross-machine portability guarantee.
+
 The manifest also exposes normalized `metrics` for companion tools and CI:
 `slideCount`, `overflowCount`, coherence warning/error counts, visual
 warning/error counts, polish warning count, `minFontPt`, text clip risk count,
