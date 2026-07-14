@@ -1,5 +1,5 @@
 import type { BlockIR, ChartIR, DesignTokens, DiagramIR, InlineRunIR, ListItemIR, PresentationIR, SlideIR } from "@mdpresent/core";
-import type { LayoutIR } from "@mdpresent/layout";
+import { measureText, type LayoutIR } from "@mdpresent/layout";
 import { readFileSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import PptxGenJSExport from "pptxgenjs";
@@ -197,13 +197,21 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
           renderDiagramRegion(slide, blocks[0].diagram, region, designPreset, common);
         } else if (blocks.length === 1 && blocks[0].type === "table" && blocks[0].rows?.length) {
           const minTableFontSize = region.typography?.minFontSize ?? layoutSlide.overflowPolicy.minFontSize ?? layout.theme.minFontSize;
+          const resolvedTableFontSize = tableFontSize(blocks[0].rows, region, fontSize, minTableFontSize);
+          const columnWidths = comparisonTableColumnWidths(
+            blocks[0].rows,
+            region.w,
+            common.fontFace,
+            resolvedTableFontSize,
+            common.lineSpacingMultiple ?? layout.theme.lineHeight,
+          );
           slide.addTable(buildAlignedTableRows(blocks[0].rows, region, common, designPreset), {
             x: region.x,
             y: region.y,
             w: region.w,
             h: region.h,
             fontFace: common.fontFace,
-            fontSize: tableFontSize(blocks[0].rows, region, fontSize, minTableFontSize),
+            fontSize: resolvedTableFontSize,
             color: common.color,
             margin: [0.04, 0.06, 0.04, 0.06],
             breakLine: false,
@@ -212,6 +220,7 @@ export async function renderPptx(input: RenderPptxInput, options: RenderPptxOpti
             autoPageCharWeight: 0.25,
             autoPageLineWeight: 0.25,
             border: { color: designPreset.surfaceLine, type: "solid", pt: 1 },
+            ...(columnWidths ? { colW: columnWidths } : {}),
             ...objectMetadata,
           });
         } else if (blocks.length === 1 && blocks[0].type === "image" && blocks[0].src) {
@@ -781,6 +790,38 @@ function tableFontSize(rows: string[][], region: { w: number; h: number }, baseF
   if (rowCount > 7) size -= 1;
 
   return Math.max(Math.max(14, minFontSize), Math.min(baseFontSize, Math.round(size)));
+}
+
+function comparisonTableColumnWidths(
+  rows: string[][],
+  tableWidth: number,
+  fontFamily: string,
+  fontSize: number,
+  lineHeight: number,
+): number[] | undefined {
+  if (rows.length < 2 || rows.some((row) => row.length !== 3)) return undefined;
+
+  const labels = rows.slice(1).map((row) => row[0] ?? "");
+  if (labels.some((label) => /[\r\n]/.test(label) || normalizeTableCellText(label).length > 18)) return undefined;
+
+  const minimumWidth = 1.35;
+  const maximumWidth = tableWidth * 0.24;
+  if (maximumWidth < minimumWidth) return undefined;
+
+  const measurements = labels.map((label) => measureText({
+    runs: [{ text: normalizeTableCellText(label), bold: true }],
+    box: { widthIn: maximumWidth - 0.12, heightIn: 100 },
+    fontFamily,
+    fontSize,
+    lineHeight,
+    role: "table-cell",
+  }));
+  if (measurements.some((measurement) => measurement.lineCount !== 1 || measurement.overflowX)) return undefined;
+
+  const measuredWidth = Math.max(0, ...measurements.map((measurement) => measurement.usedWidthIn)) + 0.12;
+  const leadingWidth = Math.max(minimumWidth, Math.min(maximumWidth, measuredWidth));
+  const remainingWidth = (tableWidth - leadingWidth) / 2;
+  return [leadingWidth, remainingWidth, remainingWidth];
 }
 
 function tableCellAlign(value: string, columnIndex: number): PptxGenJS.HAlign {

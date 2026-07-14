@@ -821,6 +821,66 @@ test("renderPptx aligns and fits text inside table cells", async () => {
   }
 });
 
+test("renderPptx content-weights eligible three-column comparison tables", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-comparison-columns-"));
+  const outPath = join(outDir, "deck.pptx");
+  const controlPath = join(outDir, "control.pptx");
+  const deck = structuredClone(sampleDeck);
+  const rows = [
+    ["Area", "MDPR runtime", "mdpr-skill review companion"],
+    ["Role", "Builds editable PowerPoint", "Guides semantic and visual review"],
+    ["Parser", "Markdown to Presentation IR", "Checks source and rendered evidence"],
+    ["Layout", "Deterministic Layout IR", "Audits coherence and visual quality"],
+    ["Output", "Native editable objects", "Review notes and regression checks"],
+  ];
+  deck.presentation.slides[0].title = "Comparison";
+  deck.presentation.slides[0].intent = "table";
+  deck.presentation.slides[0].blocks = [{ id: "table-1", type: "table", rows }];
+  deck.layout.slides[0].layout = { preset: "table-focus" };
+  deck.layout.slides[0].regions = [
+    deck.layout.slides[0].regions[0],
+    {
+      id: "table",
+      role: "table",
+      blockIds: ["table-1"],
+      x: 1.0,
+      y: 1.55,
+      w: 11.2,
+      h: 4.9,
+      zIndex: 10,
+      typography: { fontFamily: "Arial", fontSize: 18, lineHeight: 1.2, minFontSize: 16 },
+    },
+  ];
+
+  try {
+    await renderPptx(deck, { outPath, designPreset: "executive" });
+    const zip = await JSZip.loadAsync(readFileSync(outPath));
+    const xml = await zip.file("ppt/slides/slide1.xml").async("string");
+    const widths = [...xml.matchAll(/<a:gridCol w="(\d+)"/g)].map((match) => Number(match[1]));
+    const total = widths.reduce((sum, width) => sum + width, 0);
+
+    assert.equal(widths.length, 3);
+    assert.equal(widths[0] >= 1.35 * EMU_PER_INCH, true);
+    assert.equal(widths[0] <= total * 0.24 + 2, true);
+    assert.equal(Math.abs(widths[1] - widths[2]) <= 2, true);
+    assert.equal(Math.abs(total - 11.2 * EMU_PER_INCH) <= 3, true);
+    for (const cell of rows.flat()) {
+      assert.equal((xml.match(new RegExp(`<a:t>${cell}</a:t>`, "g")) ?? []).length, 1);
+    }
+
+    const control = structuredClone(deck);
+    control.presentation.slides[0].blocks[0].rows[1][0] = "Long descriptive comparison dimension";
+    await renderPptx(control, { outPath: controlPath, designPreset: "executive" });
+    const controlZip = await JSZip.loadAsync(readFileSync(controlPath));
+    const controlXml = await controlZip.file("ppt/slides/slide1.xml").async("string");
+    const controlWidths = [...controlXml.matchAll(/<a:gridCol w="(\d+)"/g)].map((match) => Number(match[1]));
+    assert.equal(controlWidths.length, 3);
+    assert.equal(Math.max(...controlWidths) - Math.min(...controlWidths) <= 2, true);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
 test("renderPptx keeps stressed plain-list row text boxes inside the source region", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "mdpresent-pptx-plain-list-bounds-"));
   const outPath = join(outDir, "deck.pptx");
