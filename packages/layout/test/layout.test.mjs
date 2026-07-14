@@ -720,6 +720,47 @@ test("three-item slides alternate horizontal triptychs with vertical stacks", ()
   }
 });
 
+test("sparse continuation horizontal triptych content-sizes its vertical extent", () => {
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Example: examples/basic/deck.md (Cont. 3/3)",
+    "",
+    "- Report draft writing",
+    "- Data collection",
+    "- Source location is unclear",
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.variant === "horizontal-triptych");
+  const items = slide.regions.filter((region) => region.role === "item");
+
+  assert.ok(slide);
+  assert.equal(slide.layout.preset, "vertical-list");
+  assert.deepEqual(items.map((region) => region.x), [0.9, 4.75, 8.6]);
+  assert.deepEqual(items.map((region) => region.w), [3.55, 3.55, 3.55]);
+  assert.equal(items.every((region) => region.h >= 1.55 && region.h < 2), true);
+  assert.equal(items.every((region) => Math.abs(region.y + region.h / 2 - 3.495) <= 0.01), true);
+  assert.deepEqual(items.flatMap((region) => region.blockIds), ["block-3#0", "block-3#1", "block-3#2"]);
+});
+
+test("long continuation triptychs retain their full vertical capacity", () => {
+  const longItem = "This continuation item carries enough source detail to require the existing full-height region without compaction.";
+  const layout = layoutFor([
+    "# Demo",
+    "",
+    "## Detailed evidence (Cont. 2/2)",
+    "",
+    `- ${longItem}`,
+    `- ${longItem}`,
+    `- ${longItem}`,
+  ]);
+  const slide = layout.slides.find((candidate) => candidate.layout.variant === "horizontal-triptych");
+  const items = slide.regions.filter((region) => region.role === "item");
+
+  assert.ok(slide);
+  assert.deepEqual(items.map((region) => region.h), [2.75, 2.75, 2.75]);
+  assert.deepEqual(items.map((region) => region.y), [2.12, 2.12, 2.12]);
+});
+
 test("horizontal triptych and quartet specs expose named visible geometry", () => {
   assert.equal(geometrySignatureForSpec({ preset: "vertical-list", variant: "horizontal-triptych", columns: 3, rows: 1, direction: "horizontal" }), "card-row-3");
   assert.equal(geometrySignatureForSpec({ preset: "grid", variant: "horizontal-quartet", columns: 4, rows: 1, direction: "horizontal" }), "card-row-4");

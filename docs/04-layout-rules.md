@@ -63,6 +63,14 @@ type SlideIntentScores = {
 | 6 | grid 3x2 | grid 2x3 |
 | 7+ | vertical-list | autosplit |
 
+Three-item content uses the existing `horizontal-triptych` alternative when
+selected by layout scoring. For generated continuation titles after the first
+page, a short text-only triptych content-sizes its shared item height from the
+existing font-metric measurer and keeps the previous vertical center. Long,
+wrapped, object-bearing, and non-continuation triptychs retain the full-height
+region. The rule never changes source order, block mapping, typography, column
+widths, or the layout variant.
+
 ## Presets
 
 ```text

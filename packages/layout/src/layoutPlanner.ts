@@ -2,6 +2,7 @@ import { findSlideClaimMessageCandidate, hasSlideClaimMessageCandidate, inferCon
 import type { LayoutCandidateScore, LayoutIR, LayoutRegion, LayoutSlide, LayoutSpec, ScoredLayoutCandidate, ThemeTokens } from "./ir/types.js";
 import { chooseItemLayout, titleRect, bodyRect } from "./presets/presets.js";
 import { visibleGeometrySignature } from "./geometry.js";
+import { measureText } from "./overflow/textMeasurer.js";
 
 export function planLayout(presentation: PresentationIR, config: Config): LayoutIR {
   const theme: ThemeTokens = {
@@ -521,7 +522,7 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
   }
 
   if (layout.preset === "vertical-list") {
-    return createVerticalListRegions(itemBlockIds, titleRegion, config, layout);
+    return createVerticalListRegions(slide, itemBlockIds, titleRegion, config, layout);
   }
 
   if (layout.preset === "text-icon-aside") {
@@ -724,12 +725,13 @@ function createTocRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Con
   ];
 }
 
-function createVerticalListRegions(itemBlockIds: string[], titleRegion: LayoutRegion, config: Config, layout: LayoutSpec): LayoutRegion[] {
+function createVerticalListRegions(slide: SlideIR, itemBlockIds: string[], titleRegion: LayoutRegion, config: Config, layout: LayoutSpec): LayoutRegion[] {
   const count = itemBlockIds.length;
   if (!count) return [titleRegion];
 
   if (count === 3 && layout.variant === "horizontal-triptych") {
     const cells = [0.9, 4.75, 8.6];
+    const geometry = horizontalTriptychGeometry(slide, itemBlockIds, config);
     return [
       titleRegion,
       ...itemBlockIds.map((blockId, index) => ({
@@ -737,9 +739,9 @@ function createVerticalListRegions(itemBlockIds: string[], titleRegion: LayoutRe
         role: "item" as const,
         blockIds: [blockId],
         x: cells[index]!,
-        y: 2.12,
+        y: geometry.y,
         w: 3.55,
-        h: 2.75,
+        h: geometry.h,
         zIndex: 10,
         typography: bodyTypography(config),
       })),
@@ -797,6 +799,39 @@ function createVerticalListRegions(itemBlockIds: string[], titleRegion: LayoutRe
       };
     }),
   ];
+}
+
+function horizontalTriptychGeometry(slide: SlideIR, itemBlockIds: string[], config: Config): { y: number; h: number } {
+  const full = { y: 2.12, h: 2.75 };
+  if (!/\(Cont\.\s+[2-9]\d*\/\d+\)$/.test(slide.title ?? "")) return full;
+
+  const texts = itemBlockIds.map((blockId) => textForMappedItem(slide, blockId));
+  const resolvedTexts = texts.filter((text): text is string => text !== undefined);
+  if (resolvedTexts.length !== itemBlockIds.length) return full;
+  const normalized = resolvedTexts.map((text) => text.replace(/\s+/g, " ").trim());
+  if (normalized.reduce((sum, text) => sum + text.length, 0) > 96) return full;
+
+  const typography = bodyTypography(config);
+  const measures = normalized.map((text) => measureText({
+    text,
+    fontFamily: typography.fontFamily,
+    fontSize: typography.fontSize,
+    width: 3.55,
+    lineHeight: typography.lineHeight,
+  }, full.h));
+  if (measures.some((measure) => measure.lineCount > 2 || measure.overflowX)) return full;
+
+  const contentHeight = Math.max(...measures.map((measure) => measure.usedHeightIn));
+  const h = Number(Math.max(1.55, Math.min(full.h, contentHeight + 0.55)).toFixed(2));
+  return { y: Number((full.y + (full.h - h) / 2).toFixed(2)), h };
+}
+
+function textForMappedItem(slide: SlideIR, blockId: string): string | undefined {
+  const [sourceId, itemIndex] = blockId.split("#");
+  const block = slide.blocks.find((candidate) => candidate.id === sourceId);
+  if (!block) return undefined;
+  if (itemIndex !== undefined) return block.items?.[Number(itemIndex)];
+  return block.text;
 }
 
 function createChartTableRegions(slide: SlideIR, titleRegion: LayoutRegion, config: Config): LayoutRegion[] {
