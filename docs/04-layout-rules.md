@@ -71,6 +71,14 @@ wrapped, object-bearing, and non-continuation triptychs retain the full-height
 region. The rule never changes source order, block mapping, typography, column
 widths, or the layout variant.
 
+Generated continuation pages with only one or two short text items also use
+content-sized focal geometry. A single remaining item narrows to a centered
+card; a two-item split keeps both source-mapped columns but reduces their shared
+height around the content. Font metrics and character limits guard the compact
+path, so long or heavily wrapped items retain the full regions. This addresses
+orphan-tail whitespace without merging unrelated source sections or inventing
+caption, code, or decorative rule content.
+
 ## Presets
 
 ```text

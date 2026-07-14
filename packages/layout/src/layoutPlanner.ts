@@ -459,8 +459,11 @@ function createRegionsForLayout(slide: SlideIR, layout: LayoutSpec, config: Conf
     const dense = isDenseProseSlide(slide);
     const typography = dense ? compactBodyTypography(config) : bodyTypography(config);
     const neutralSplit = layout.variant === "neutral-split";
-    const y = neutralSplit ? 1.48 : dense ? 1.52 : 1.7;
-    const h = neutralSplit ? 4.9 : dense ? 5.05 : 4.8;
+    const fullY = neutralSplit ? 1.48 : dense ? 1.52 : 1.7;
+    const fullH = neutralSplit ? 4.9 : dense ? 5.05 : 4.8;
+    const compactH = compactContinuationHeight(slide, itemBlockIds, config, 5.4, fullH, 120);
+    const h = compactH ?? fullH;
+    const y = compactH ? Number((4.03 - compactH / 2).toFixed(2)) : fullY;
     return [
       titleRegion,
       { id: "left", role: "body", blockIds: itemBlockIds.slice(0, Math.ceil(itemBlockIds.length / 2)), x: 0.9, y, w: 5.4, h, zIndex: 10, typography },
@@ -756,15 +759,16 @@ function createVerticalListRegions(slide: SlideIR, itemBlockIds: string[], title
     const rowH = Math.max(0.88, Math.min(1.12, (bodyHeight - gap * (count - 1)) / count));
     const totalH = rowH * count + gap * (count - 1);
     const startY = bodyTop + Math.max(0, (bodyHeight - totalH) / 2);
+    const compactSingle = count === 1 && compactContinuationHeight(slide, itemBlockIds, config, 8.4, bodyHeight, 96) !== undefined;
     return [
       titleRegion,
       ...itemBlockIds.map((blockId, index) => ({
         id: `item-${index + 1}`,
         role: "item" as const,
         blockIds: [blockId],
-        x: 1.0,
+        x: compactSingle ? 2.47 : 1.0,
         y: Number((startY + index * (rowH + gap)).toFixed(2)),
-        w: 11.2,
+        w: compactSingle ? 8.4 : 11.2,
         h: Number(rowH.toFixed(2)),
         zIndex: 10,
         typography: bodyTypography(config),
@@ -800,6 +804,37 @@ function createVerticalListRegions(slide: SlideIR, itemBlockIds: string[], title
       };
     }),
   ];
+}
+
+function compactContinuationHeight(
+  slide: SlideIR,
+  itemBlockIds: string[],
+  config: Config,
+  width: number,
+  fullHeight: number,
+  maxTotalCharacters: number,
+): number | undefined {
+  const continuation = /\(Cont\.\s+(\d+)\/(\d+)\)$/.exec(slide.title ?? "");
+  if (!continuation || Number(continuation[1]) <= 1) return undefined;
+
+  const texts = itemBlockIds.map((blockId) => textForMappedItem(slide, blockId));
+  const resolvedTexts = texts.filter((text): text is string => text !== undefined);
+  if (!itemBlockIds.length || resolvedTexts.length !== itemBlockIds.length) return undefined;
+  const normalized = resolvedTexts.map((text) => text.replace(/\s+/g, " ").trim());
+  if (normalized.reduce((sum, text) => sum + text.length, 0) > maxTotalCharacters) return undefined;
+
+  const typography = bodyTypography(config);
+  const measures = normalized.map((text) => measureText({
+    text,
+    fontFamily: typography.fontFamily,
+    fontSize: typography.fontSize,
+    width,
+    lineHeight: typography.lineHeight,
+  }, fullHeight));
+  if (measures.some((measure) => measure.lineCount > 2 || measure.overflowX)) return undefined;
+
+  const contentHeight = Math.max(...measures.map((measure) => measure.usedHeightIn));
+  return Number(Math.max(1.55, Math.min(fullHeight, contentHeight + 0.55)).toFixed(2));
 }
 
 function horizontalTriptychGeometry(slide: SlideIR, itemBlockIds: string[], config: Config): { y: number; h: number } {

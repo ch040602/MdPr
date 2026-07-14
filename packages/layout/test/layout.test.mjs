@@ -742,6 +742,52 @@ test("sparse continuation horizontal triptych content-sizes its vertical extent"
   assert.deepEqual(items.flatMap((region) => region.blockIds), ["block-3#0", "block-3#1", "block-3#2"]);
 });
 
+test("short one- and two-item continuations use compact focal geometry", () => {
+  const single = layoutFor([
+    "# Demo",
+    "",
+    "## Remaining evidence (Cont. 2/2)",
+    "",
+    "- Only the final source-backed finding remains",
+  ]).slides.find((candidate) => candidate.index === 3);
+  const pair = layoutFor([
+    "# Demo",
+    "",
+    "## Remaining checks (Cont. 2/2)",
+    "",
+    "- Verify the export host font",
+    "- Preserve the source hierarchy",
+  ]).slides.find((candidate) => candidate.index === 3);
+
+  assert.ok(single);
+  const singleItem = single.regions.find((region) => region.role === "item");
+  assert.ok(singleItem);
+  assert.equal(singleItem.w < 10, true);
+  assert.equal(Math.abs(singleItem.x + singleItem.w / 2 - 6.665) <= 0.01, true);
+
+  assert.ok(pair);
+  const pairBodies = pair.regions.filter((region) => region.role === "body");
+  assert.equal(pairBodies.length, 2);
+  assert.equal(pairBodies.every((region) => region.h >= 1.55 && region.h < 2), true);
+  assert.equal(pairBodies.every((region) => Math.abs(region.y + region.h / 2 - 4.03) <= 0.01), true);
+});
+
+test("long two-item continuations retain full comparison capacity", () => {
+  const longItem = "This remaining source paragraph is intentionally long enough to require full comparison capacity without clipping or shrinking below the readable floor. ".repeat(3);
+  const slide = layoutFor([
+    "# Demo",
+    "",
+    "## Detailed checks (Cont. 2/2)",
+    "",
+    `- ${longItem}`,
+    `- ${longItem}`,
+  ]).slides.find((candidate) => candidate.index === 3);
+  const bodies = slide.regions.filter((region) => region.role === "body");
+
+  assert.ok(slide);
+  assert.deepEqual(bodies.map((region) => region.h), [4.9, 4.9]);
+});
+
 test("long continuation triptychs retain their full vertical capacity", () => {
   const longItem = "This continuation item carries enough source detail to require the existing full-height region without compaction.";
   const layout = layoutFor([
