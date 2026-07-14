@@ -3128,7 +3128,19 @@ test("renderPptx renders pipeline diagrams as editable nodes and connectors", as
     assert.equal((xml.match(/prst="roundRect"/g) ?? []).length >= 3, true);
     assert.equal((xml.match(/prst="ellipse"/g) ?? []).length >= 3, true);
     assert.equal((xml.match(/<a:ln/g) ?? []).length >= 2, true);
-    assert.equal(xml.indexOf('prst="line"') < xml.indexOf('prst="roundRect"'), true);
+    const diagramShapes = [...xml.matchAll(/<p:sp\b[\s\S]*?<\/p:sp>/g)].map((match) => match[0]);
+    const connectorIndexes = diagramShapes
+      .map((shape, index) => shape.includes('prst="line"') && /<a:(?:headEnd|tailEnd) type="triangle"\/>/.test(shape) ? index : -1)
+      .filter((index) => index >= 0);
+    const nodeSurfaceIndexes = diagramShapes
+      .map((shape, index) => shape.includes('prst="roundRect"') && !shape.includes("<a:t>") ? index : -1)
+      .filter((index) => index >= 0)
+      .slice(-3);
+    const firstBadgeIndex = diagramShapes.findIndex((shape) => shape.includes('prst="ellipse"'));
+    assert.equal(connectorIndexes.length, 2);
+    assert.equal(nodeSurfaceIndexes.length, 3);
+    assert.equal(connectorIndexes.every((index) => index > Math.max(...nodeSurfaceIndexes)), true);
+    assert.equal(connectorIndexes.every((index) => index < firstBadgeIndex), true);
     assert.doesNotMatch(xml, /<a:off x="914400" y="2286000"\/>\s*<a:ext cx="10241280" cy="1371600"\/>[\s\S]{0,420}<a:prstGeom prst="roundRect"/);
     assert.doesNotMatch(xml, /<a:off x="914400" y="2286000"\/>\s*<a:ext cx="10241280" cy="73152"\/>[\s\S]{0,420}<a:prstGeom prst="rect"/);
   } finally {

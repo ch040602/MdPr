@@ -2385,23 +2385,23 @@ function renderDiagramRegion(
   const arrangement = arrangeDiagramNodes(diagram, region);
   const boxesById = new Map(arrangement.boxes.map((box) => [box.node.id, box]));
   const labelFontSize = uniformDiagramLabelFontSize(arrangement.boxes, region.typography?.fontSize ?? common.fontSize ?? 14);
-
-  for (const edge of diagram.edges) {
+  const connectors = diagram.edges.flatMap((edge) => {
     const from = boxesById.get(edge.from);
     const to = boxesById.get(edge.to);
-    if (!from || !to) continue;
+    if (!from || !to) return [];
     const { start, end } = connectorEndpoints(from, to);
-    renderConnector(slide, start, end, preset.ruleColor);
+    return [connectorSegments(start, end)];
+  });
+
+  for (const segments of connectors) {
+    for (const [from, to] of segments.slice(0, -1)) {
+      addNormalizedLine(slide, from, to, preset.ruleColor, false);
+    }
   }
 
-  for (const [index, box] of arrangement.boxes.entries()) {
-    const { node, x, y, w, h } = box;
+  for (const box of arrangement.boxes) {
+    const { x, y, w, h } = box;
     const accentColor = preset.primaryColor;
-    const badgeSize = Math.min(0.44, Math.max(0.38, h * 0.32));
-    const badgeX = x + Math.min(0.18, Math.max(0.1, w * 0.06));
-    const badgeY = y + (h - badgeSize) / 2;
-    const labelX = badgeX + badgeSize + 0.16;
-    const labelRightPadding = 0.18;
     slide.addShape("roundRect", {
       x,
       y,
@@ -2412,6 +2412,21 @@ function renderDiagramRegion(
       line: { color: accentColor, pt: 1.4 },
       shadow: { type: "outer", color: "000000", opacity: 0.12, blur: 1, angle: 45 },
     });
+  }
+
+  for (const segments of connectors) {
+    const terminal = segments.at(-1);
+    if (terminal) addNormalizedLine(slide, terminal[0], terminal[1], preset.ruleColor, true);
+  }
+
+  for (const [index, box] of arrangement.boxes.entries()) {
+    const { node, x, y, w, h } = box;
+    const accentColor = preset.primaryColor;
+    const badgeSize = Math.min(0.44, Math.max(0.38, h * 0.32));
+    const badgeX = x + Math.min(0.18, Math.max(0.1, w * 0.06));
+    const badgeY = y + (h - badgeSize) / 2;
+    const labelX = badgeX + badgeSize + 0.16;
+    const labelRightPadding = 0.18;
     decorateDiagramNode(slide, box, index, arrangement.kind, accentColor, preset);
     slide.addShape("ellipse", {
       x: badgeX,
@@ -2613,12 +2628,10 @@ function connectorEndpoints(
     : { start: { x: fromCenter.x, y: from.y + overlap }, end: { x: toCenter.x, y: to.y + to.h - overlap } };
 }
 
-function renderConnector(
-  slide: PptxGenJS.Slide,
+function connectorSegments(
   start: { x: number; y: number },
   end: { x: number; y: number },
-  color: string,
-): void {
+): Array<[{ x: number; y: number }, { x: number; y: number }]> {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const points = Math.abs(dx) < 0.05 || Math.abs(dy) < 0.05
@@ -2629,9 +2642,18 @@ function renderConnector(
         { x: start.x + dx / 2, y: end.y },
         end,
       ];
+  return points.slice(0, -1).map((point, index) => [point, points[index + 1]!] as const);
+}
 
-  for (let index = 0; index < points.length - 1; index++) {
-    addNormalizedLine(slide, points[index]!, points[index + 1]!, color, index === points.length - 2);
+function renderConnector(
+  slide: PptxGenJS.Slide,
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  color: string,
+): void {
+  const segments = connectorSegments(start, end);
+  for (const [index, [from, to]] of segments.entries()) {
+    addNormalizedLine(slide, from, to, color, index === segments.length - 1);
   }
 }
 

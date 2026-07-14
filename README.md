@@ -59,7 +59,7 @@ codex-ppt image-only baselines, and zero missing evidence artifacts.
 - **One-page teaser mode**: `--pipeline-one-page` keeps dense pipeline, feature, chart, and table summaries on one rendered slide.
 - **Markdown semantics**: parses CommonMark/GFM Markdown into an AST, then preserves headings, lists, links, emphasis, tables, HTML blocks, charts, images, code, quotes, and pipeline diagrams.
 - **Design grammar**: separates decoration style from color seed and derives PPT theme/chart colors from the selected harmony.
-- **Object coverage**: supports native tables, native charts, proof objects, icon slots, SVG-backed surfaces, and bounded diagram connectors.
+- **Object coverage**: supports native tables, native charts, proof objects, icon slots, SVG-backed surfaces, and bounded directed connectors whose target arrowheads stay visible above node surfaces.
 - **Deterministic validation**: checks overflow, generated artifact contracts, slide counts, surface markers, language, manifest drift, and a post-AI PPT polish gate.
 - **Skill-side review**: LLM-advised layout critique, visual polish, icon keyword ideas, and high-quality deck guidance belong in [`mdpr-skill`](https://github.com/ch040602/mdpr-skill#usage), not MDPR runtime.
 
