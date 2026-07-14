@@ -179,6 +179,13 @@ routing. The manifest records the current thresholds for minimum contrast,
 maximum same-layer overlap ratio, readable font size, image aspect range, and
 minimum diagram connector space.
 
+Mapped title and block-bearing content regions must also have finite geometry
+and strictly positive width and height. A violation emits one
+`VISUAL_REGION_BOUNDS` diagnostic with a `non-finite-geometry` or
+`non-positive-size` reason. Empty icon, footer, and page-number placeholders
+remain outside this content-only extent rule, while ordinary slide-boundary
+checks still apply to every region.
+
 `validation.polish` records the deterministic post-AI PPT polish gate. The gate
 maps the referenced presentation-polish checklist to runtime checks:
 

@@ -33,6 +33,51 @@ test("visual validation flags out-of-bounds regions", () => {
   assert.equal(diagnostics.some((diagnostic) => diagnostic.code === "VISUAL_REGION_BOUNDS"), true);
 });
 
+test("visual validation rejects mapped content regions with non-positive extent", () => {
+  const layout = {
+    version: "1.0",
+    slideSize: { width: 13.333, height: 7.5, unit: "in" },
+    theme,
+    slides: [{
+      id: "layout-zero-extent",
+      sourceSlideId: "slide-zero-extent",
+      index: 0,
+      layout: { preset: "title-body" },
+      background: {},
+      overflowPolicy: { action: "reflow", minFontSize: 16, maxShrinkSteps: 4 },
+      regions: [
+        { id: "title", role: "title", x: 1, y: 0.5, w: 10, h: 0.7, zIndex: 1, blockIds: ["__title:slide-zero-extent"], typography: { fontSize: 32, minFontSize: 24 } },
+        { id: "body", role: "body", x: 1, y: 1.5, w: 0, h: 1, zIndex: 1, blockIds: ["b1"], typography: { fontSize: 18, minFontSize: 16 } },
+        { id: "optional-icon", role: "icon", x: 2, y: 3, w: 0, h: 0, zIndex: 1, blockIds: [] },
+      ],
+    }],
+    diagnostics: [],
+  };
+
+  const diagnostics = visualValidationDiagnostics(layout);
+  const bounds = diagnostics.filter((diagnostic) => diagnostic.code === "VISUAL_REGION_BOUNDS");
+  assert.equal(bounds.length, 1);
+  assert.equal(bounds[0].slideId, "slide-zero-extent");
+  assert.deepEqual(bounds[0].details, { regionId: "body", reason: "non-positive-size" });
+
+  const valid = structuredClone(layout);
+  valid.slides[0].regions[1].w = 5;
+  assert.equal(visualValidationDiagnostics(valid).some((diagnostic) => diagnostic.code === "VISUAL_REGION_BOUNDS"), false);
+
+  for (const [field, value, reason] of [
+    ["h", -1, "non-positive-size"],
+    ["x", Number.NaN, "non-finite-geometry"],
+    ["w", Number.POSITIVE_INFINITY, "non-finite-geometry"],
+  ]) {
+    const invalid = structuredClone(valid);
+    invalid.slides[0].regions[1][field] = value;
+    const invalidBounds = visualValidationDiagnostics(invalid)
+      .filter((diagnostic) => diagnostic.code === "VISUAL_REGION_BOUNDS");
+    assert.equal(invalidBounds.length, 1, `${field}=${String(value)} should emit one bounds diagnostic`);
+    assert.deepEqual(invalidBounds[0].details, { regionId: "body", reason });
+  }
+});
+
 test("visual validation flags unreadable pipeline-one-page evidence rails", () => {
   const diagnostics = visualValidationDiagnostics({
     version: "1.0",

@@ -124,12 +124,30 @@ export function visualValidationDiagnostics(layout: LayoutIR): Diagnostic[] {
 
   for (const slide of layout.slides) {
     for (const region of slide.regions) {
-      if (region.x < 0 || region.y < 0 || region.x + region.w > layout.slideSize.width || region.y + region.h > layout.slideSize.height) {
+      const hasNonFiniteContentGeometry = isContentRegion(region)
+        && ![region.x, region.y, region.w, region.h].every(Number.isFinite);
+      const hasNonPositiveContentSize = isContentRegion(region)
+        && (region.w <= 0 || region.h <= 0);
+      const isOutsideSlide = region.x < 0
+        || region.y < 0
+        || region.x + region.w > layout.slideSize.width
+        || region.y + region.h > layout.slideSize.height;
+      if (hasNonFiniteContentGeometry || hasNonPositiveContentSize || isOutsideSlide) {
+        const reason = hasNonFiniteContentGeometry
+          ? "non-finite-geometry"
+          : hasNonPositiveContentSize
+            ? "non-positive-size"
+            : "outside-slide";
         diagnostics.push({
           level: "error",
           code: "VISUAL_REGION_BOUNDS",
           slideId: slide.sourceSlideId,
-          message: `Region ${region.id} is outside the slide bounds.`,
+          message: reason === "non-finite-geometry"
+            ? `Region ${region.id} has non-finite content geometry.`
+            : reason === "non-positive-size"
+              ? `Region ${region.id} has non-positive content dimensions.`
+              : `Region ${region.id} is outside the slide bounds.`,
+          details: { regionId: region.id, reason },
         });
       }
       const minFontSize = region.typography?.minFontSize ?? layout.theme.minFontSize;
