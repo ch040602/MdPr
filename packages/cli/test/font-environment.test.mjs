@@ -36,6 +36,22 @@ test("missing embedding inputs are errors and are never reported as performed", 
   assert.ok(result.diagnostics.some((diagnostic) => diagnostic.code === "FONT_EMBEDDING_FILE_MISSING"));
 });
 
+test("embedding coverage includes inline style faces that the renderer will emit", () => {
+  const layout = sampleLayout();
+  layout.slides[0].regions = [{ role: "body", typography: {}, blockIds: ["block-1"] }];
+  const presentation = {
+    slides: [{ blocks: [{ id: "block-1", type: "paragraph", inlineRuns: [{ text: "proof", bold: true, italic: true }] }] }],
+  };
+  const result = inspectFontEnvironment(layout, { source: "test", installedFamilies: [] }, false, {
+    requireComplete: true,
+  }, presentation);
+
+  assert.deepEqual(result.summary.embedding.coverage.requiredFaces, [{
+    family: "MDPR Test Sans",
+    styles: ["regular", "boldItalic"],
+  }]);
+});
+
 test("completed package evidence preserves preflight coverage", () => {
   const coverage = {
     requiredFaces: [{ family: "MDPR Test Sans", styles: ["regular"] }],

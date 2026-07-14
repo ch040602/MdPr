@@ -157,13 +157,25 @@ shrink; continuation reasons; continuation group counts; and whether a graph or
 diagram block was split.
 
 The manifest records `validation.fontEnvironment` for every build. It lists the
-theme and region families requested by Layout IR, the host catalog source,
-installed and missing families, and `embedding.performed: false`. The optional
-`--require-font-installed` gate fails on a proven missing family with
-`FONT_FAMILY_NOT_INSTALLED`; if no host catalog can be read, it emits the
-separate `FONT_ENVIRONMENT_UNAVAILABLE` diagnostic rather than claiming every
-family is absent. MDPR does not automatically embed fonts, so this evidence
-describes the export host and is not a cross-machine portability guarantee.
+theme and region families requested by Layout IR, the host catalog source, and
+installed/missing families. `--require-font-installed` fails a proven absence
+with `FONT_FAMILY_NOT_INSTALLED`; an unreadable catalog emits the separate
+`FONT_ENVIRONMENT_UNAVAILABLE` diagnostic.
+
+Repeat `--embed-font <face.ttf|face.otf>` to request explicit PPTX font parts.
+Validation reads the OpenType name and OS/2 tables, rejects malformed or unused
+faces, and blocks restricted, preview/print-only, and bitmap-only `fsType`
+permissions for editable output. `--require-font-embedded` additionally checks
+the family/style faces planned by region weight, inline emphasis, table/chart
+headers, and diagram labels. It reports `FONT_EMBEDDING_FACE_MISSING` only for
+the missing planned faces. TTC/OTC/WOFF containers are not accepted.
+
+PPTX rendering stores each accepted full font as an uncompressed EOT
+`application/x-fontdata` part, adds presentation relationships/declarations,
+and then changes the manifest to `embedding.performed: true` with the source
+SHA-256, permission bits, part paths, and coverage. A preflight pass or host
+catalog match alone never sets `performed: true`; MDPR does not download fonts
+or select an installed file from a family name.
 
 The manifest also exposes normalized `metrics` for companion tools and CI:
 `slideCount`, `overflowCount`, coherence warning/error counts, visual

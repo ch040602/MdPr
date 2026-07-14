@@ -65,8 +65,17 @@
 - `--template`은 기존 master, layout, theme OOXML을 보존하지만 generated text는
   resolved MDPR typography를 사용합니다. 정확히 일치해야 하면
   `typography.fontFamily`를 master theme family로 명시해야 합니다.
-- MDPR은 font를 embed하거나 host 설치 여부를 검증하지 않습니다. authoring과
-  rendering system에 선택한 family가 있어야 하며, CJK·mixed-language 측정은
+- 모든 build manifest는 configured/detected/missing family, probe source,
+  font-package evidence를 `validation.fontEnvironment`에 기록합니다.
+- `--require-font-installed`는 host family 부재와 catalog 검사 불가를 구분해
+  실패합니다. 반복 가능한 `--embed-font <face.ttf|face.otf>`는 명시한 face를
+  라이선스 검사한 뒤 PPTX EOT part로 포함합니다.
+- `--require-font-embedded`는 title, region, inline run, table, chart, diagram이
+  실제 사용하는 family/style coverage가 완전해야 통과합니다. manifest의
+  `embedding.performed: true`는 PPTX package 변경 후에만 기록됩니다.
+- MDPR은 font를 다운로드하거나 family 이름만으로 설치 font를 자동 선택하지
+  않습니다. restricted, preview/print-only, bitmap-only, malformed, duplicate,
+  unused face와 TTC/OTC/WOFF container는 거부합니다. CJK·mixed-language 측정은
   fit을 위해 source text를 임의로 다시 쓰지 않습니다.
 
 <!-- mdpr-runtime-skill-comparison -->
@@ -82,6 +91,7 @@
 | Strict visual failure | 필수 `fontHierarchy`는 모든 active Layout IR region을 `16pt` 기준으로 검사합니다. 더 작은 명시적 override는 `MDPR_POLISH_GATE_FAILED`로 남습니다. | manifest failure를 evidence와 함께 mirror할 뿐 재계산, 완화, override하지 않습니다. |
 | 장식선 | Built-in preset은 자동 title underline, TOC horizontal rule, 고립된 cover-bottom rule을 만들지 않습니다. | source content가 요구하지 않는 synthetic subtitle, title rule, bottom takeaway band를 review evidence에 추가하지 않습니다. |
 | Template font | `--template`은 master/layout/theme OOXML을 보존하지만 generated text는 resolved MDPR typography를 사용합니다. 정확한 family 일치는 `typography.fontFamily`로 지정합니다. | template mismatch를 보고할 수 있지만 master typography를 교체하거나 font 설치·embed를 주장하지 않습니다. |
+| Font portability | 명시한 `--embed-font` face를 license-check 후 PPTX에 포함하고 exact coverage를 기록합니다. `--require-font-embedded`는 portable set 누락을 거부합니다. | MDPR manifest의 coverage를 검토할 수 있지만 font를 embed하거나 MDPR의 license/pass-fail 결정을 바꾸지 않습니다. |
 | 출력 책임 | 최종 좌표, 색상, z-order, object, rendering, pass/fail을 소유합니다. | hint, review report, evidence만 만들며 최종 runtime 결정은 모두 MDPR에 남깁니다. |
 
 ## 미리보기

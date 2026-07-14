@@ -24,7 +24,7 @@ test("inspects an installable OpenType font and wraps it as uncompressed EOT", (
   const eot = createEotFromOpenType(font);
   assert.equal(eot.readUInt32LE(0), eot.length);
   assert.equal(eot.readUInt32LE(4), font.length);
-  assert.equal(eot.readUInt32LE(8), 0x00010000);
+  assert.equal(eot.readUInt32LE(8), 0x00020002);
   assert.equal(eot.readUInt32LE(12), 0);
   assert.equal(eot.readUInt16LE(34), 0x504c);
   assert.deepEqual(eot.subarray(eot.length - font.length), font);
@@ -61,6 +61,16 @@ test("blocks font permissions that cannot be used in an editable presentation", 
       new RegExp(`FONT_EMBEDDING_NOT_EDITABLE.*${expected}`),
     );
   }
+});
+
+test("ignores high fsType bits in OS/2 v0-v1 and rejects reserved bits in current tables", () => {
+  const legacy = syntheticOpenTypeFont({ os2Version: 1, fsType: 0x0200 });
+  assert.equal(inspectOpenTypeFont(legacy).editableEmbeddingAllowed, true);
+  assert.doesNotThrow(() => createEotFromOpenType(legacy));
+
+  const invalidCurrent = syntheticOpenTypeFont({ os2Version: 4, fsType: 0x0010 });
+  assert.equal(inspectOpenTypeFont(invalidCurrent).embeddingPermission, "invalid");
+  assert.throws(() => createEotFromOpenType(invalidCurrent), /FONT_EMBEDDING_NOT_EDITABLE.*invalid/);
 });
 
 test("rejects malformed sfnt offsets instead of reading outside the font", () => {
@@ -136,9 +146,10 @@ function syntheticOpenTypeFont({
   fsType = 0,
   weight = 400,
   italic = false,
+  os2Version = 4,
 } = {}) {
   const os2 = Buffer.alloc(96);
-  os2.writeUInt16BE(4, 0);
+  os2.writeUInt16BE(os2Version, 0);
   os2.writeUInt16BE(weight, 4);
   os2.writeUInt16BE(5, 6);
   os2.writeUInt16BE(fsType, 8);

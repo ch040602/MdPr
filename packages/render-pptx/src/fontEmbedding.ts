@@ -67,7 +67,7 @@ export function createEotFromOpenType(input: Uint8Array): Buffer {
   const fixed = Buffer.alloc(82);
   fixed.writeUInt32LE(0, 0);
   fixed.writeUInt32LE(font.length, 4);
-  fixed.writeUInt32LE(0x00010000, 8);
+  fixed.writeUInt32LE(0x00020002, 8);
   fixed.writeUInt32LE(0, 12);
   parsed.panose.copy(fixed, 16);
   fixed.writeUInt8(1, 26);
@@ -89,6 +89,9 @@ export function createEotFromOpenType(input: Uint8Array): Buffer {
     sizedUtf16Le(parsed.versionName),
     Buffer.alloc(2),
     sizedUtf16Le(parsed.fullName),
+    // EOT v2.0.2: Padding5, empty RootString, checksum, EUDC code page,
+    // Padding6, empty signature, EUDC flags, and empty EUDC font data.
+    Buffer.alloc(24),
     font,
   ]);
   eot.writeUInt32LE(eot.length, 0);
@@ -201,6 +204,7 @@ function parseOpenTypeFont(input: Uint8Array): ParsedOpenTypeFont {
   const os2Version = font.readUInt16BE(os2.offset);
   const weight = font.readUInt16BE(os2.offset + 4);
   const fsType = font.readUInt16BE(os2.offset + 8);
+  const effectiveFsType = os2Version <= 1 ? fsType & 0x000f : fsType;
   const italic = (font.readUInt16BE(os2.offset + 62) & 1) !== 0;
   const names = readNames(font, name);
   const family = names.get(1)?.trim();
@@ -211,7 +215,7 @@ function parseOpenTypeFont(input: Uint8Array): ParsedOpenTypeFont {
   const bold = weight >= 700 || /\b(?:bold|semibold|demibold|black)\b/i.test(subfamily);
   const slanted = italic || /\b(?:italic|oblique)\b/i.test(subfamily);
   const embeddingPermission = resolveEmbeddingPermission(fsType, os2Version);
-  const bitmapOnly = (fsType & 0x0200) !== 0;
+  const bitmapOnly = (effectiveFsType & 0x0200) !== 0;
 
   return {
     family,
@@ -224,7 +228,7 @@ function parseOpenTypeFont(input: Uint8Array): ParsedOpenTypeFont {
     fsType,
     embeddingPermission,
     editableEmbeddingAllowed: !bitmapOnly && (embeddingPermission === "installable" || embeddingPermission === "editable"),
-    noSubsetting: (fsType & 0x0100) !== 0,
+    noSubsetting: (effectiveFsType & 0x0100) !== 0,
     bitmapOnly,
     panose: Buffer.from(font.subarray(os2.offset + 32, os2.offset + 42)),
     unicodeRanges: [42, 46, 50, 54].map((offset) => font.readUInt32BE(os2.offset + offset)),
@@ -282,7 +286,9 @@ function decodeUtf16Be(raw: Buffer): string {
 }
 
 function resolveEmbeddingPermission(fsType: number, os2Version: number): OpenTypeFontInspection["embeddingPermission"] {
-  const usage = fsType & 0x000f;
+  const effectiveFsType = os2Version <= 1 ? fsType & 0x000f : fsType;
+  if (os2Version >= 2 && (effectiveFsType & 0xfcf0) !== 0) return "invalid";
+  const usage = effectiveFsType & 0x000f;
   if (usage === 0) return "installable";
   if ((usage & 0x0001) !== 0) return "invalid";
   const selected = [0x0002, 0x0004, 0x0008].filter((bit) => (usage & bit) !== 0);

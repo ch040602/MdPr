@@ -125,6 +125,7 @@ export function createDeckPlan(inputPath: string, options: OrchestrationOptions 
     options.fontEnvironment ?? probeInstalledFontEnvironment(),
     Boolean(options.requireFontInstalled),
     { fontPaths: options.embedFontPaths, requireComplete: options.requireFontEmbedded },
+    presentation,
   );
   const diagnostics = dedupeDiagnostics([
     ...presentation.diagnostics,

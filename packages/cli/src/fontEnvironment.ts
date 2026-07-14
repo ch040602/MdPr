@@ -1,4 +1,4 @@
-import type { Diagnostic } from "@mdpresent/core";
+import type { BlockIR, Diagnostic, PresentationIR } from "@mdpresent/core";
 import type { LayoutIR } from "@mdpresent/layout";
 import { inspectOpenTypeFont, type EmbeddedFontStyle, type FontEmbeddingResult, type OpenTypeFontInspection } from "@mdpresent/render-pptx";
 import { execFileSync } from "node:child_process";
@@ -81,6 +81,7 @@ export function inspectFontEnvironment(
   catalog: FontEnvironmentCatalog | undefined,
   required: boolean,
   embeddingRequest: { fontPaths?: string[]; requireComplete?: boolean } = {},
+  presentation?: PresentationIR,
 ): { summary: FontEnvironmentSummary; diagnostics: Diagnostic[] } {
   const requestedFamilies = uniqueFamilies([
     layout.theme.fontFamily,
@@ -111,7 +112,7 @@ export function inspectFontEnvironment(
     }
   }
 
-  const embedding = inspectEmbeddingRequest(layout, embeddingRequest.fontPaths ?? [], Boolean(embeddingRequest.requireComplete), diagnostics);
+  const embedding = inspectEmbeddingRequest(layout, embeddingRequest.fontPaths ?? [], Boolean(embeddingRequest.requireComplete), diagnostics, presentation);
 
   return {
     summary: {
@@ -143,11 +144,12 @@ function inspectEmbeddingRequest(
   fontPaths: string[],
   requireComplete: boolean,
   diagnostics: Diagnostic[],
+  presentation?: PresentationIR,
 ): FontEmbeddingSummary {
   if (fontPaths.length === 0 && !requireComplete) return { performed: false, reason: "font-embedding-not-requested" };
   const fonts: Array<OpenTypeFontInspection & { sourcePath: string }> = [];
   const seenFaces = new Set<string>();
-  const requestedFamilies = new Set(requiredFontFaces(layout).map((face) => fontKey(face.family)));
+  const requestedFamilies = new Set(requiredFontFaces(layout, presentation).map((face) => fontKey(face.family)));
 
   for (const sourcePath of fontPaths) {
     if (!existsSync(sourcePath)) {
@@ -198,7 +200,7 @@ function inspectEmbeddingRequest(
     }
   }
 
-  const requiredFaces = requiredFontFaces(layout);
+  const requiredFaces = requiredFontFaces(layout, presentation);
   const coverage = coverageFor(requiredFaces, fonts.map((font) => ({ family: font.family, style: font.style })));
   if (requireComplete) {
     for (const face of coverage.missingFaces) {
@@ -219,8 +221,12 @@ function inspectEmbeddingRequest(
   };
 }
 
-function requiredFontFaces(layout: LayoutIR): FontFaceRequirement[] {
+function requiredFontFaces(layout: LayoutIR, presentation?: PresentationIR): FontFaceRequirement[] {
   const faces = new Map<string, { family: string; styles: Set<EmbeddedFontStyle> }>();
+  const blocks = new Map<string, BlockIR>();
+  for (const slide of presentation?.slides ?? []) {
+    for (const block of slide.blocks) blocks.set(block.id, block);
+  }
   const add = (family: string | undefined, style: EmbeddedFontStyle) => {
     const resolved = family?.trim();
     if (!resolved) return;
@@ -232,10 +238,32 @@ function requiredFontFaces(layout: LayoutIR): FontFaceRequirement[] {
   for (const slide of layout.slides) {
     for (const region of slide.regions) {
       const family = region.typography?.fontFamily ?? layout.theme.fontFamily;
-      add(family, region.role === "title" || region.typography?.fontWeight === "bold" ? "bold" : "regular");
+      const baseBold = region.role === "title" || region.typography?.fontWeight === "bold";
+      add(family, baseBold ? "bold" : "regular");
+      for (const blockId of region.blockIds ?? []) {
+        const block = blocks.get(blockId.replace(/#\d+$/, ""));
+        if (!block) continue;
+        for (const style of blockFontStyles(block, baseBold)) add(family, style);
+      }
     }
   }
   return Array.from(faces.values(), (entry) => ({ family: entry.family, styles: styleOrder(entry.styles) }));
+}
+
+function blockFontStyles(block: BlockIR, baseBold: boolean): Set<EmbeddedFontStyle> {
+  const styles = new Set<EmbeddedFontStyle>();
+  const addRun = (run: { bold?: boolean; italic?: boolean }) => {
+    const bold = baseBold || Boolean(run.bold);
+    styles.add(bold && run.italic ? "boldItalic" : bold ? "bold" : run.italic ? "italic" : "regular");
+  };
+  for (const run of block.inlineRuns ?? []) addRun(run);
+  for (const item of block.listItems ?? []) {
+    if (item.label && item.description) styles.add("bold");
+    for (const run of item.runs ?? []) addRun(run);
+    for (const run of item.descriptionRuns ?? []) addRun(run);
+  }
+  if (["table", "chart", "diagram"].includes(block.type)) styles.add("bold");
+  return styles;
 }
 
 function coverageFor(

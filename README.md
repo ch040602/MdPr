@@ -103,15 +103,22 @@ Typography rules:
   generated text still uses resolved MDPR typography; set `typography.fontFamily`
   to the master theme family when an exact match is required
 - every build manifest records the configured families, detected host families,
-  missing families, probe source, and explicit non-embedding status under
+  missing families, probe source, and font-package evidence under
   `validation.fontEnvironment`
 - `validate` and `build` accept `--require-font-installed`; the command fails
   when a configured theme or region family is missing, and reports a distinct
   error when the host font catalog itself cannot be inspected
-- MDPR does not embed fonts automatically; the manifest keeps
-  `embedding.performed: false` so a successful host check is never presented as
-  a portable-font guarantee. CJK and mixed-language measurement preserves
-  source text instead of rewriting it to make content fit
+- repeat `--embed-font <face.ttf|face.otf>` to package explicit font faces as
+  uncompressed EOT parts in PPTX; restricted, preview/print-only, bitmap-only,
+  malformed, duplicate, and unused faces fail before a portability claim
+- add `--require-font-embedded` to require every family/style face actually
+  planned by titles, regions, inline runs, tables, charts, and diagrams. The
+  manifest records source hashes, `fsType`, package parts, face coverage, and
+  `embedding.performed: true` only after the PPTX package was mutated
+- font selection remains explicit: MDPR does not download fonts or embed a
+  matching installed font by name, and TTC/OTC/WOFF containers are rejected.
+  CJK and mixed-language measurement preserves source text instead of rewriting
+  it to make content fit
 
 Best fit:
 
@@ -151,7 +158,8 @@ agent review. They are complementary, not competing renderers.
 | Strict visual failure | Required `fontHierarchy` checks every active Layout IR region against `16pt`; an explicit smaller override stays visible as `MDPR_POLISH_GATE_FAILED` | Mirrors that manifest failure with evidence and must not recompute, soften, or override it |
 | Decorative lines | Built-in presets omit automatic title underlines, body title bands, TOC horizontal rules, and isolated cover-bottom rules while retaining semantic item/container accents | Review evidence omits synthetic subtitles, title rules, and bottom takeaway bands unless source content requires them |
 | Native tables | Keeps tables editable; eligible three-column comparisons use a compact label column and two equal evidence columns | Reviews rendered balance and source fidelity, but does not set column widths |
-| Template fonts | `--template` preserves master/layout/theme OOXML, but generated text uses resolved MDPR typography; set `typography.fontFamily` for an exact family match | Reports a template mismatch; it does not replace master typography or claim that a font is installed or embedded |
+| Template fonts | `--template` preserves master/layout/theme OOXML, but generated text uses resolved MDPR typography; set `typography.fontFamily` for an exact family match | Reports a template mismatch; it does not replace master typography or infer installation/embedding from a family name |
+| Font portability | Explicit `--embed-font` inputs are license-checked, packaged into PPTX, and recorded with exact face coverage; `--require-font-embedded` rejects an incomplete portable set | Reads MDPR manifest evidence and may flag missing coverage, but never embeds a font or overrides MDPR licensing/pass-fail decisions |
 | Output ownership | Owns final coordinates, colors, z-order, objects, rendering, and pass/fail | Produces hints, review reports, and evidence only; MDPR still makes every final runtime decision |
 
 ## How MDPR Differs
