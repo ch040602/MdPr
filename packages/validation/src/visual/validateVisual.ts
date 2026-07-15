@@ -19,6 +19,8 @@ export type PolishQualitySummary = {
       fontFamily: string;
     };
     layoutComposition: PolishChapterCheck & {
+      applicable: boolean;
+      notApplicableReason?: string;
       structuredLayoutRatio: number;
       genericBlockySlideCount: number;
       averageRegionsPerContentSlide: number;
@@ -312,6 +314,10 @@ export function createPolishQualitySummary(
     layoutComposition: {
       required: true,
       passed: structuredLayoutRatio >= 0.5 && genericBlockySlideCount === 0 && geometryDiversity.passed,
+      applicable: geometryDiversity.applicable,
+      ...(geometryDiversity.notApplicableReason
+        ? { notApplicableReason: geometryDiversity.notApplicableReason }
+        : {}),
       evidence: "Layout presets and visible region geometry are checked for structured composition without deck-wide topology saturation.",
       structuredLayoutRatio: Number(structuredLayoutRatio.toFixed(3)),
       genericBlockySlideCount,
@@ -469,8 +475,13 @@ function geometryDiversityFor(presentation: PresentationIR, layout: LayoutIR) {
     maxSameGeometryInFive = Math.max(maxSameGeometryInFive, ...windowCounts.values());
   }
   const enforcementActive = signatures.length >= 8;
+  const applicable = signatures.length > 0;
   return {
     passed: !enforcementActive || (dominantGeometryRatio <= 0.6 && maxSameGeometryInFive <= 3),
+    applicable,
+    ...(applicable
+      ? {}
+      : { notApplicableReason: "Every content slide uses an explicitly excluded specialized object layout." }),
     eligibleSlideCount: signatures.length,
     dominantGeometry,
     dominantGeometryRatio: Number(dominantGeometryRatio.toFixed(3)),

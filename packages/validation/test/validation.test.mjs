@@ -699,6 +699,7 @@ test("polish quality summary rejects deck-wide 2x2 geometry saturation", () => {
 
   const summary = createPolishQualitySummary(presentation, layout);
   assert.equal(summary.chapters.layoutComposition.passed, false);
+  assert.equal(summary.chapters.layoutComposition.applicable, true);
   assert.equal(summary.chapters.layoutComposition.eligibleSlideCount, 10);
   assert.equal(summary.chapters.layoutComposition.dominantGeometry, "card-grid-2x2");
   assert.equal(summary.chapters.layoutComposition.dominantGeometryRatio, 0.8);
@@ -751,6 +752,11 @@ test("polish geometry diversity excludes forced object layouts", () => {
   const summary = createPolishQualitySummary(presentation, layout);
   assert.equal(summary.chapters.layoutComposition.eligibleSlideCount, 0);
   assert.equal(summary.chapters.layoutComposition.passed, true);
+  assert.equal(summary.chapters.layoutComposition.applicable, false);
+  assert.equal(
+    summary.chapters.layoutComposition.notApplicableReason,
+    "Every content slide uses an explicitly excluded specialized object layout.",
+  );
 });
 
 test("polish quality rejects unqualified comparison chrome but accepts neutral and explicit controls", () => {
