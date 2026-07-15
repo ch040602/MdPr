@@ -10,27 +10,23 @@
 from Markdown with deterministic layout rules instead of a black-box LLM
 runtime.
 
-Markdown goes in. Editable PowerPoint, rendered previews, overflow checks, and
-agent-review boundaries come out. When paired with `mdpr-skill`, the workflow
-can also benchmark the same Markdown corpus against codex-ppt image-only
-baselines and `Presentations` probe decks without giving the agent final layout
-control.
+Markdown goes in; editable PowerPoint, rendered previews, and deterministic
+validation come out. Add `mdpr-skill` only when you also want agent-assisted
+semantic or visual review.
 
 [Preview gallery](https://ch040602.github.io/MdPr/theme-preview/) ·
 [Download preview PPTX](https://github.com/ch040602/MdPr/releases/tag/v0.1.0-preview) ·
 [Optional agent review](https://github.com/ch040602/mdpr-skill) ·
-[Quick usage](#quick-usage) ·
+[Quick start](#quick-start) ·
 [How it differs](#how-mdpr-differs) ·
 [Report a broken deck](https://github.com/ch040602/MdPr/issues/new/choose)
 
-- **Input**: Markdown documents.
-- **Intermediate model**: `Presentation IR` and `Layout IR`.
-- **Outputs**: editable `PPTX`, plus `HTML` and `PDF`.
-- **Runtime**: rule-based parsing, splitting, layout, validation, theme selection, and rendering.
-- **LLM-advised quality**: use [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) when you want agent-side semantic hints, review loops, or visual-quality advice before MDPR builds the deck.
-- **Agent boundary**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) may pass compact semantic hints through `--hints`, but MDPR rejects final layout/style decisions. MDPR owns final structure and output.
-- **Install path**: install MDPR with `npm install -g @mdpresent/cli`; use `mdpr-skill` only when you want optional Codex-assisted review before rendering.
-- **README assets**: the main teaser is built from `examples/readme-teaser/deck.md` with `--pipeline-one-page`; gallery images come from the shared theme preview deck. There is no README-only renderer.
+| | MDPR |
+| --- | --- |
+| Input | Markdown |
+| Output | Editable `PPTX`, `HTML`, and `PDF` |
+| Runtime | Rule-based parsing, splitting, layout, validation, theme binding, and rendering |
+| Optional review | [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) provides semantic hints and evidence without owning final layout |
 
 Language variants: [Korean](README.ko.md), [Chinese](README.zh.md)
 
@@ -38,6 +34,25 @@ Contributions: [Contributing guide](CONTRIBUTING.md) ·
 [Community feedback guide](docs/community-feedback.md) ·
 [International launch kit](docs/international-launch-kit.md) ·
 [Open a Markdown/PPTX issue](https://github.com/ch040602/MdPr/issues/new/choose)
+
+## Quick Start
+
+```bash
+npm install -g @mdpresent/cli
+mdpresent build deck.md --to pptx,pdf,html --out dist --design executive --visual
+```
+
+For a portable PPTX, supply explicit font files and evidence bound to each
+font's SHA-256. MDPR validates the evidence after rendering; it does not make a
+legal determination.
+
+```bash
+mdpresent build deck.md --to pptx --out dist \
+  --embed-font fonts/Pretendard-Regular.ttf \
+  --require-font-embedded \
+  --font-license-evidence font-license-evidence.json \
+  --require-font-license-evidence
+```
 
 ## Visual Proof
 
@@ -244,7 +259,7 @@ Markdown
       -> PDF
 ```
 
-## Quick Usage
+## Command Reference
 
 Installable CLI package:
 

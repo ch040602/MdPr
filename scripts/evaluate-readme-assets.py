@@ -23,22 +23,19 @@ SELECTED_THEME_PREVIEW_TITLES = {
 
 README_ROLE_CONTRACTS = {
     "README.md": [
-        "LLM-advised quality",
         "[`mdpr-skill`](https://github.com/ch040602/mdpr-skill)",
-        "MDPR owns final structure and output",
+        "without owning final layout",
         "no API key, model call",
     ],
     "README.ko.md": [
-        "LLM-advised quality",
         "[`mdpr-skill`](https://github.com/ch040602/mdpr-skill)",
-        "최종 구조와 출력은 MDPR이 결정",
-        "모델 호출 없이",
+        "최종 layout을 소유하지 않고",
+        "LLM이나 API 키가 필요하지 않습니다",
     ],
     "README.zh.md": [
-        "LLM-advised quality",
         "[`mdpr-skill`](https://github.com/ch040602/mdpr-skill)",
-        "MDPR owns final structure and output",
-        "不依赖模型调用",
+        "不拥有最终 layout",
+        "不需要 LLM 或 API key",
     ],
 }
 

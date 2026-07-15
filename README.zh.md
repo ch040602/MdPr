@@ -2,17 +2,36 @@
 
 ![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=bentogrid-pipeline-one-page)
 
-`mdpresent` 是 deterministic Markdown presentation runtime。
+`mdpresent` 是将 Markdown 转换为可编辑 PowerPoint 的确定性演示文稿
+runtime。正常构建不需要 LLM 或 API key。
 
-- **Input**：Markdown documents
-- **Intermediate model**：`Presentation IR` and `Layout IR`
-- **Outputs**：editable `PPTX`, `HTML`, and `PDF`
-- **Runtime**：rule-based parsing, splitting, layout, validation, theme selection, and rendering
-- **LLM-advised quality**：use [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) for agent-side semantic hints, review loops, or visual-quality advice before MDPR builds the deck.
-- **Agent boundary**：[`mdpr-skill`](https://github.com/ch040602/mdpr-skill) may pass compact semantic hints through `--hints`, but MDPR rejects final coordinates, colors, fonts, object choices, and renderer decisions. MDPR owns final structure and output.
-- **README assets**：main teaser is built from `examples/readme-teaser/deck.md` with `--pipeline-one-page`; gallery images come from the shared theme preview deck. There is no README-only renderer.
+| | MDPR |
+| --- | --- |
+| 输入 | Markdown |
+| 输出 | 可编辑的 `PPTX`、`HTML` 和 `PDF` |
+| Runtime | rule-based parsing、splitting、layout、validation、theme binding 和 rendering |
+| 可选 review | [`mdpr-skill`](https://github.com/ch040602/mdpr-skill) 提供 semantic hints 和 evidence，但不拥有最终 layout |
 
 语言版本：[English](README.md), [Korean](README.ko.md)
+
+## 快速开始
+
+```bash
+npm install -g @mdpresent/cli
+mdpresent build deck.md --to pptx,pdf,html --out dist --design executive --visual
+```
+
+需要可移植 PPTX 时，请提供明确的 font 文件，以及绑定到每个 font
+SHA-256 的 license evidence。MDPR 会在 render 后验证 evidence 绑定，但不作
+法律判断。
+
+```bash
+mdpresent build deck.md --to pptx --out dist \
+  --embed-font fonts/Pretendard-Regular.ttf \
+  --require-font-embedded \
+  --font-license-evidence font-license-evidence.json \
+  --require-font-license-evidence
+```
 
 ## 核心功能
 
@@ -60,9 +79,20 @@
 - `--template` 会保留原始 master、layout 与 theme OOXML，但 generated text
   仍使用 resolved MDPR typography。若要求完全一致，应将
   `typography.fontFamily` 明确设置为 master theme family。
-- MDPR 不嵌入 font，也不验证 host 是否已安装所选 family。authoring 和
-  rendering system 必须具备该 family；CJK 与 mixed-language 测量不会为了
-  fit 而改写 source text。
+- 每次 build 都会在 `validation.fontEnvironment` 中记录 configured、
+  detected 和 missing family、probe source 与 font-package evidence。
+- `--require-font-installed` 会区分 family 缺失与 host catalog 无法检查。
+  重复使用 `--embed-font <face.ttf|face.otf>` 可将显式 font face 以 EOT part
+  写入 PPTX；`--require-font-embedded` 要求实际使用的 family/style coverage
+  完整。
+- `--font-license-evidence <evidence.json>` 将 license source 与授权声明绑定到
+  每个 font SHA-256；`--require-font-license-evidence` 会拒绝 missing、
+  malformed、unauthorized、stale 或 post-render hash 不匹配的 record。
+  这验证 evidence 绑定而非法律充分性，因此 manifest 保留
+  `legalDetermination: external`。
+- Font 选择仍是显式的：MDPR 不按 family 名称下载或自动嵌入已安装 font，
+  并拒绝 TTC/OTC/WOFF container。CJK 与 mixed-language 测量不会为了 fit
+  改写 source text。
 
 <!-- mdpr-runtime-skill-comparison -->
 ## MDPR 与 mdpr-skill 一览
@@ -141,7 +171,7 @@ Markdown
       -> PDF
 ```
 
-## 快速使用
+## 命令参考
 
 ```bash
 mdpresent inspect examples/basic/deck.md --json > deck.plan.json

@@ -2,17 +2,36 @@
 
 ![MDPR one-page teaser slide preview](docs/assets/readme-teaser/slides/slide-01.png?v=bentogrid-pipeline-one-page)
 
-`mdpresent`는 deterministic Markdown presentation runtime입니다.
+`mdpresent`는 Markdown을 편집 가능한 PowerPoint로 변환하는 결정론적
+프레젠테이션 런타임입니다. 렌더링에는 LLM이나 API 키가 필요하지 않습니다.
 
-- **입력**: Markdown 문서
-- **중간 모델**: `Presentation IR`, `Layout IR`
-- **출력**: editable `PPTX`, `HTML`, `PDF`
-- **런타임**: 파싱, 분할, 레이아웃, 검증, 테마 선택, 렌더링 모두 rule-based
-- **LLM-advised quality**: agent-side semantic hint, review loop, visual-quality advice가 필요하면 [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)을 사용합니다.
-- **Agent 경계**: [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)은 `--hints`로 compact semantic hint만 전달할 수 있고, 좌표/색상/폰트/객체 선택 같은 최종 결정은 MDPR이 거부하며 최종 구조와 출력은 MDPR이 결정합니다.
-- **README asset**: 메인 teaser는 `examples/readme-teaser/deck.md`를 `--pipeline-one-page`로 빌드하고, gallery 이미지는 공통 theme preview deck에서 추출합니다. README 전용 renderer는 쓰지 않습니다.
+| | MDPR |
+| --- | --- |
+| 입력 | Markdown |
+| 출력 | 편집 가능한 `PPTX`, `HTML`, `PDF` |
+| 런타임 | 규칙 기반 parsing, splitting, layout, validation, theme binding, rendering |
+| 선택적 review | [`mdpr-skill`](https://github.com/ch040602/mdpr-skill)이 최종 layout을 소유하지 않고 semantic hint와 evidence를 제공 |
 
 언어별 문서: [English](README.md), [Chinese](README.zh.md)
+
+## 빠른 시작
+
+```bash
+npm install -g @mdpresent/cli
+mdpresent build deck.md --to pptx,pdf,html --out dist --design executive --visual
+```
+
+이식 가능한 PPTX가 필요하면 명시적인 font file과 각 font SHA-256에 결합된
+license evidence를 함께 제공합니다. MDPR은 render 후 evidence 결합을
+검증하지만 법률적 유효성을 판단하지 않습니다.
+
+```bash
+mdpresent build deck.md --to pptx --out dist \
+  --embed-font fonts/Pretendard-Regular.ttf \
+  --require-font-embedded \
+  --font-license-evidence font-license-evidence.json \
+  --require-font-license-evidence
+```
 
 ## 핵심 기능
 
@@ -161,7 +180,7 @@ Markdown
       -> PDF
 ```
 
-## 빠른 사용법
+## 명령 참고
 
 ```bash
 mdpresent inspect examples/basic/deck.md --json > deck.plan.json
